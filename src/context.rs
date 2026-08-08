@@ -179,9 +179,27 @@ impl Context {
         self.vm.register_native(e)
     }
 
+    /// Collects the heap: reclaims every object unreachable from the roots
+    /// (interned/runtime strings, class statics, monitor keys, and the
+    /// instance retained by the last call). Object handles never move; the
+    /// reclaimed slots are reused by later allocations. Returns the number
+    /// of objects freed. Also called automatically before each top-level
+    /// [`Context::call`]/[`Context::invoke`].
+    pub fn gc(&mut self) -> usize {
+        let last = self.last_instance.unwrap_or(u32::MAX);
+        self.vm.gc(&[last])
+    }
+
     /// Calls a method (by dex name) on `class` with the given arguments.
     /// Instance methods get a fresh instance unless one was already created
     /// by a previous call (see [`Context::invoke`]).
+    ///
+    /// This is a *top-level* call: when the VM is idle the heap is collected
+    /// first (see [`Context::gc`]), so objects created by earlier calls are
+    /// reclaimed unless reachable from class statics or the last retained
+    /// instance. JValues returned by a call must not be kept across later
+    /// top-level calls unless they were stored where the collector can see
+    /// them (a static field, or returned as part of [`Context::invoke`]).
     pub fn call(&mut self, class: &str, method: &str, args: &[JValue]) -> Result<JValue, JvmError> {
         let class = if class.ends_with(';') {
             class.to_string()
@@ -195,6 +213,9 @@ impl Context {
             .position(|m| self.vm.str_of(m.name) == method)
             .ok_or_else(|| JvmError::Resolution(format!("no method {method} in {class}")))?;
         let is_static = self.vm.classes[cid as usize].methods[slot].static_method;
+        if self.vm.frames.is_empty() {
+            self.gc();
+        }
         let mut call_args = Vec::with_capacity(args.len() + 1);
         if !is_static {
             let obj = match self.last_instance {

@@ -215,15 +215,116 @@ pub struct JObject {
     pub native: Option<Native>,
 }
 
-/// Simple growing arena. Objects are never reclaimed within a run; the whole
-/// arena is dropped when the VM is dropped (per-run teardown keeps GC simple).
+impl JObject {
+    /// Appends every object id referenced from this object (fields plus any
+    /// JValue held inside a native payload) to `out`. Used by the mark phase
+    /// of [`Arena::gc`].
+    pub(crate) fn collect_refs(&self, out: &mut Vec<u32>) {
+        for f in &self.fields {
+            if let JValue::Obj(o) = f {
+                out.push(*o);
+            }
+        }
+        if let Some(n) = &self.native {
+            n.collect_refs(out);
+        }
+    }
+}
+
+impl Native {
+    pub(crate) fn collect_refs(&self, out: &mut Vec<u32>) {
+        let push = |v: Option<&JValue>, out: &mut Vec<u32>| {
+            if let Some(JValue::Obj(o)) = v {
+                out.push(*o);
+            }
+        };
+        let push_all = |v: &[JValue], out: &mut Vec<u32>| {
+            for f in v {
+                if let JValue::Obj(o) = f {
+                    out.push(*o);
+                }
+            }
+        };
+        match self {
+            Native::Array(ArrayData::Obj(v)) => push_all(v, out),
+            Native::Throwable { cause, .. } => push(Some(cause), out),
+            Native::List(v) | Native::Set(v) | Native::ArrayDeque(v) => push_all(v, out),
+            Native::Map(v) => {
+                for (k, val) in v {
+                    push(Some(k), out);
+                    push(Some(val), out);
+                }
+            }
+            Native::Iter(k) => match k {
+                IterKind::List { list, .. } => out.push(*list),
+                IterKind::MapEntries { map, .. }
+                | IterKind::MapKeys { map, .. }
+                | IterKind::MapValues { map, .. } => out.push(*map),
+                IterKind::Set { set, .. } => out.push(*set),
+            },
+            Native::MapEntry { map, .. } => out.push(*map),
+            Native::Lazy(v) => push(Some(v), out),
+            Native::Pair(a, b) => {
+                push(Some(a), out);
+                push(Some(b), out);
+            }
+            Native::OkHttpBuilder {
+                interceptors,
+                network_interceptors,
+            } => {
+                push_all(interceptors, out);
+                push_all(network_interceptors, out);
+            }
+            Native::Request { body, .. } => push(body.as_ref(), out),
+            Native::ArrayDesc(ArrayData::Obj(v)) => push_all(v, out),
+            Native::Str(_)
+            | Native::Array(_)
+            | Native::ClassObj(_)
+            | Native::StringBuilder(_)
+            | Native::IntBox(_)
+            | Native::LongBox(_)
+            | Native::FloatBox(_)
+            | Native::DoubleBox(_)
+            | Native::CharBox(_)
+            | Native::BoolBox(_)
+            | Native::ShortBox(_)
+            | Native::ByteBox(_)
+            | Native::Enum { .. }
+            
+            | Native::Pattern { .. }
+            | Native::Matcher(_)
+            | Native::PrintStream
+            | Native::Random(_)
+            | Native::Date(_)
+            | Native::Opaque
+            | Native::TimeZone(_)
+            | Native::DateFormatter { .. }
+            | Native::ParsePosition(_)
+            | Native::ReentrantLock { .. }
+            | Native::HttpUrl(_)
+            | Native::FormBody(_)
+            | Native::IntRange(..)
+            | Native::ArrayDesc(_) => {}
+        }
+    }
+}
+
+/// Simple growing arena with mark-sweep reclamation between top-level calls.
+/// Object ids are stable `u32` handles; the garbage collector never moves
+/// objects, so handles never dangle — dead objects are handed to a free list
+/// and reused by later allocations.
 #[derive(Debug, Default)]
 pub struct Arena {
     pub objects: Vec<JObject>,
+    free: Vec<u32>,
 }
 
 impl Arena {
     pub fn alloc(&mut self, class: u32, fields: Vec<JValue>, native: Option<Native>) -> u32 {
+        if let Some(f) = self.free.pop() {
+            self.objects[f as usize] = JObject { class, fields, native };
+            return f;
+        }
         let id = self.objects.len() as u32;
         self.objects.push(JObject { class, fields, native });
         id
@@ -235,5 +336,14 @@ impl Arena {
 
     pub fn get_mut(&mut self, id: u32) -> Option<&mut JObject> {
         self.objects.get_mut(id as usize)
+    }
+
+    /// Returns a slot to the free list for reuse by a later [`Arena::alloc`].
+    pub(crate) fn reclaim(&mut self, id: u32) {
+        self.free.push(id);
+    }
+
+    pub fn live_count(&self) -> usize {
+        self.objects.len() - self.free.len()
     }
 }

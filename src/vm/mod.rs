@@ -626,6 +626,74 @@ impl Vm {
         }
     }
 
+    // ---- garbage collection ----
+
+    /// Mark-sweep heap reclamation. Called between top-level calls (see
+    /// [`Context::call`](crate::Context::call)); the frame stack must be empty.
+    ///
+    /// Roots: interned/runtime strings, class static fields, monitor keys, and
+    /// `extra` (the context's `last_instance`). Objects reachable from those
+    /// are kept; everything else is returned to the arena free list and its
+    /// slots get reused by later allocations. Handles never move, and any
+    /// JValue the host keeps *outside* the roots is a documented use-after-
+    /// reuse hazard: do not retain values across top-level calls.
+    ///
+    /// Returns the number of objects reclaimed.
+    pub fn gc(&mut self, extra: &[u32]) -> usize {
+        debug_assert!(self.frames.is_empty(), "gc while executing");
+        let n = self.arena.objects.len();
+        if n == 0 {
+            return 0;
+        }
+        let mut marks = vec![false; n];
+        let mut stack: Vec<u32> = Vec::new();
+        let seed = |id: u32, marks: &mut Vec<bool>, stack: &mut Vec<u32>| {
+            if (id as usize) < marks.len() && !marks[id as usize] {
+                marks[id as usize] = true;
+                stack.push(id);
+            }
+        };
+        for &s in self.string_objs.iter().flatten() {
+            seed(s, &mut marks, &mut stack);
+        }
+        for &s in self.runtime_strings.values() {
+            seed(s, &mut marks, &mut stack);
+        }
+        for c in &self.classes {
+            for v in &c.statics {
+                if let JValue::Obj(o) = v {
+                    seed(*o, &mut marks, &mut stack);
+                }
+            }
+        }
+        for &m in self.monitors.keys() {
+            seed(m, &mut marks, &mut stack);
+        }
+        for &e in extra {
+            seed(e, &mut marks, &mut stack);
+        }
+        let mut refs: Vec<u32> = Vec::new();
+        while let Some(id) = stack.pop() {
+            refs.clear();
+            {
+                let obj = &self.arena.objects[id as usize];
+                obj.collect_refs(&mut refs);
+            }
+            for r in &refs {
+                seed(*r, &mut marks, &mut stack);
+            }
+        }
+        let mut freed = 0;
+        for id in 0..n {
+            if !marks[id] {
+                self.arena.reclaim(id as u32);
+                freed += 1;
+            }
+        }
+        self.monitors.retain(|id, _| marks[*id as usize]);
+        freed
+    }
+
     // ---- invocation helpers (used by natives) ----
 
     pub fn invoke_virtual(&mut self, receiver: JValue, name: &str, sig: &str) -> Result<JValue, JvmError> {
