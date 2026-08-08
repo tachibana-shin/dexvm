@@ -1,0 +1,24 @@
+[package]
+name = "dexvm"
+version = "0.1.0"
+edition = "2021"
+description = "Minimal JVM (DEX) interpreter for keiyoushi/Tachiyomi extensions"
+
+[features]
+# host shim classes for the Android framework (android.*)
+android = []
+# host shim classes for OkHttp (okhttp3.*)
+okhttp = []
+# host shim classes for the mihon extension API (eu.kanade.tachiyomi.source.*)
+keiyoushi = ["android", "okhttp"]
+
+[lib]
+name = "dexvm"
+
+[[bin]]
+name = "dexcli"
+path = "src/bin/dexcli.rs"
+
+[dependencies]
+regex = "1"
+zip = "2"
