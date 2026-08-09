@@ -332,7 +332,6 @@ pub(crate) fn class_for_name(vm: &mut Vm, args: &[JValue]) -> R {
     let class = vm.ensure_class_by_desc(&desc).map_err(nat_fatal)?;
     vm.class_obj(class).map_err(nat_fatal)
 }
-
 pub(crate) fn class_is_assignable_from(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(ClassOrPrim::Class(target)) = class_cop(vm, args[0]) else {
         return Ok(JValue::Int(0));

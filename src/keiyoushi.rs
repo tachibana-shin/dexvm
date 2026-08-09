@@ -1,0 +1,514 @@
+//! Typed bridge for running mihon (keiyoushi) extension dex files.
+//!
+//! Usage:
+//! ```no_run
+//! # use dexvm::keiyoushi::*;
+//! let mut ext = Keiyoushi::open("fixtures/tachiyomi-all.akuma-v1.4.10.apk").unwrap();
+//! ext.set_http(move |r| HttpResp::ok("<html></html>"));
+//! let srcs = ext.sources().unwrap();
+//! let pages = ext.popular(&srcs[0], 1).unwrap();
+//! ```
+//!
+//! The bridge follows the classic mihon request/parse contract: build a
+//! request with `popularMangaRequest`-style methods, execute it through the
+//! registered HTTP callback, then hand the response to the matching
+//! `*Parse` method. Host-side defaults (`mangaDetailsRequest` etc.) are
+//! implemented as natives on `HttpSource`.
+
+use std::rc::Rc;
+
+use crate::context::{Context, ContextError, SandboxOptions};
+use crate::vm::object::Native;
+use crate::vm::value::JValue;
+use crate::vm::error::JvmError;
+use crate::vm::Vm;
+use crate::vm::native::keiyoushi::{SMANGA, SCHAPTER, FILTER_LIST, FILTER};
+
+pub use crate::vm::native::keiyoushi::{HttpData, HttpResp};
+
+/// A live engine: one extension dex plus the host bridge.
+pub struct Keiyoushi {
+    ctx: Context,
+}
+
+/// A source instance (arena id stable for the context lifetime).
+#[derive(Debug, Clone, Copy)]
+pub struct Source {
+    inst: u32,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Manga {
+    pub title: String,
+    pub author: String,
+    pub artist: String,
+    pub description: String,
+    pub genre: String,
+    pub status: i32,
+    pub thumbnail_url: String,
+    pub url: String,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Chapter {
+    pub name: String,
+    pub url: String,
+    pub date_upload: i64,
+    pub scanlator: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct PageRef {
+    pub index: i32,
+    pub name: String,
+    pub url: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct MangaPages {
+    pub mangas: Vec<Manga>,
+    pub has_next: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FilterKind {
+    Plain,
+    Header,
+    Separator,
+    Text,
+    Select,
+    TriState,
+    Group,
+}
+
+#[derive(Debug, Clone)]
+pub struct FilterDef {
+    pub kind: FilterKind,
+    pub name: String,
+    pub state: i32,
+    pub options: Vec<String>,
+}
+
+impl Keiyoushi {
+    pub fn new(data: &[u8]) -> Result<Self, ContextError> {
+        Ok(Keiyoushi {
+            ctx: Context::new_with(data, SandboxOptions::allow_all())?,
+        })
+    }
+
+    pub fn open(path: &str) -> Result<Self, ContextError> {
+        let data = std::fs::read(path).map_err(ContextError::Io)?;
+        Keiyoushi::new(&data)
+    }
+
+    pub fn set_http<F>(&mut self, f: F)
+    where
+        F: Fn(&HttpData) -> HttpResp + 'static,
+    {
+        self.ctx.set_http(f);
+    }
+
+    pub fn set_http_rc(&mut self, f: Rc<dyn Fn(&HttpData) -> HttpResp>) {
+        self.ctx.set_http(move |r| f(r));
+    }
+
+    fn vm(&mut self) -> &mut Vm {
+        self.ctx.vm()
+    }
+
+    /// Instantiates the extension's source factory (`createSources`) and
+    /// returns the created sources.
+    pub fn sources(&mut self) -> Result<Vec<Source>, JvmError> {
+        let desc = self.vm().find_factory_class("createSources")?;
+        self.ctx.call(&desc, "<init>", &[])?;
+        let list = self.ctx.invoke("createSources", &[])?;
+        let items = match list {
+            JValue::Obj(id) => match &self.vm().arena.objects[id as usize].native {
+                Some(Native::List(items)) => items.clone(),
+                _ => return Err(JvmError::Resolution("createSources: bad result".into())),
+            },
+            _ => return Err(JvmError::Resolution("createSources: bad result".into())),
+        };
+        let mut out = Vec::new();
+        for item in items {
+            if let JValue::Obj(o) = item {
+                out.push(Source { inst: o });
+            }
+        }
+        Ok(out)
+    }
+
+    pub fn source_name(&mut self, src: &Source) -> Result<String, JvmError> {
+        self.call_str(src, "getName", "()Ljava/lang/String;", &[])
+    }
+
+    pub fn source_lang(&mut self, src: &Source) -> Result<String, JvmError> {
+        self.call_str(src, "getLang", "()Ljava/lang/String;", &[])
+    }
+
+    pub fn supports_latest(&mut self, src: &Source) -> Result<bool, JvmError> {
+        let v = self.ctx.invoke_on(src.inst, "getSupportsLatest", "()Z", &[])?;
+        Ok(!v.is_zero())
+    }
+
+    pub fn popular(&mut self, src: &Source, page: i32) -> Result<MangaPages, JvmError> {
+        let req = self.ctx.invoke_on(
+            src.inst,
+            "popularMangaRequest",
+            "(I)Lokhttp3/Request;",
+            &[JValue::Int(page)],
+        )?;
+        let resp = self.execute(req)?;
+        let mangas = self.ctx.invoke_on(
+            src.inst,
+            "popularMangaParse",
+            "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/MangasPage;",
+            &[resp],
+        )?;
+        self.manga_pages(mangas)
+    }
+
+    pub fn latest(&mut self, src: &Source, page: i32) -> Result<MangaPages, JvmError> {
+        let req = self.ctx.invoke_on(
+            src.inst,
+            "latestUpdatesRequest",
+            "(I)Lokhttp3/Request;",
+            &[JValue::Int(page)],
+        )?;
+        let resp = self.execute(req)?;
+        let mangas = self.ctx.invoke_on(
+            src.inst,
+            "latestUpdatesParse",
+            "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/MangasPage;",
+            &[resp],
+        )?;
+        self.manga_pages(mangas)
+    }
+
+    /// Executes a search: builds the request from the query plus the given
+    /// filter states and parses the result.
+    pub fn search(
+        &mut self,
+        src: &Source,
+        page: i32,
+        query: &str,
+        filters: &[FilterState],
+    ) -> Result<MangaPages, JvmError> {
+        let flist = self.build_filter_list(filters)?;
+        let query_obj = self.ctx.vm().alloc_string(query);
+        let req = self.ctx.invoke_on(
+            src.inst,
+            "searchMangaRequest",
+            "(ILjava/lang/String;Leu/kanade/tachiyomi/source/model/FilterList;)Lokhttp3/Request;",
+            &[JValue::Int(page), query_obj, flist],
+        )?;
+        let resp = self.execute(req)?;
+        let mangas = self.ctx.invoke_on(
+            src.inst,
+            "searchMangaParse",
+            "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/MangasPage;",
+            &[resp],
+        )?;
+        self.manga_pages(mangas)
+    }
+
+    pub fn manga_details(&mut self, src: &Source, manga: &Manga) -> Result<Manga, JvmError> {
+        let m = self.alloc_manga(manga)?;
+        let req = self.ctx.invoke_on(
+            src.inst,
+            "mangaDetailsRequest",
+            "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;",
+            &[m],
+        )?;
+        let resp = self.execute(req)?;
+        let out = self.ctx.invoke_on(
+            src.inst,
+            "mangaDetailsParse",
+            "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/SManga;",
+            &[resp],
+        )?;
+        self.read_manga(out)?.ok_or_else(|| JvmError::Resolution("mangaDetailsParse: not a SManga".into()))
+    }
+
+    pub fn chapters(&mut self, src: &Source, manga: &Manga) -> Result<Vec<Chapter>, JvmError> {
+        let m = self.alloc_manga(manga)?;
+        let req = self.ctx.invoke_on(
+            src.inst,
+            "chapterListRequest",
+            "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;",
+            &[m],
+        )?;
+        let resp = self.execute(req)?;
+        let list = self.ctx.invoke_on(
+            src.inst,
+            "chapterListParse",
+            "(Lokhttp3/Response;)Ljava/util/List;",
+            &[resp],
+        )?;
+        self.read_chapter_list(list)
+    }
+
+    pub fn pages(&mut self, src: &Source, chapter: &Chapter) -> Result<Vec<PageRef>, JvmError> {
+        let (url, name) = (chapter.url.clone(), chapter.name.clone());
+        let c = match self.ctx.vm().ensure_class_by_desc(SCHAPTER) {
+            Ok(cid) => JValue::Obj(self.ctx.vm().arena.alloc(cid, Vec::new(), Some(empty_chapter(url, name)))),
+            Err(e) => return Err(e),
+        };
+        let req = self.ctx.invoke_on(
+            src.inst,
+            "pageListRequest",
+            "(Leu/kanade/tachiyomi/source/model/SChapter;)Lokhttp3/Request;",
+            &[c],
+        )?;
+        let resp = self.execute(req)?;
+        let list = self.ctx.invoke_on(
+            src.inst,
+            "pageListParse",
+            "(Lokhttp3/Response;)Ljava/util/List;",
+            &[resp],
+        )?;
+        self.read_page_list(list)
+    }
+
+    pub fn filters(&mut self, src: &Source) -> Result<Vec<FilterDef>, JvmError> {
+        let flist = self
+            .ctx
+            .invoke_on(src.inst, "getFilterList", "()Leu/kanade/tachiyomi/source/model/FilterList;", &[])?;
+        self.read_filters(flist)
+    }
+}
+
+/// Per-filter state used when building a [`Keiyoushi::search`] call.
+#[derive(Debug, Clone, Default)]
+pub struct FilterState {
+    pub name: String,
+    pub state: i32,
+}
+
+impl Keiyoushi {
+    /// Executes a request through the registered HTTP callback.
+    fn execute(&mut self, req: JValue) -> Result<JValue, JvmError> {
+        let vm = self.ctx.vm();
+        let key = (
+            vm.intern("Leu/kanade/tachiyomi/network/RequestsKt;"),
+            vm.intern("__host_execute"),
+            vm.intern("(Lokhttp3/Request;)Lokhttp3/Response;"),
+        );
+        let f = *vm
+            .natives
+            .get(&key)
+            .ok_or_else(|| JvmError::Resolution("keiyoushi bridge: __host_execute not registered".into()))?;
+        match f(vm, &[req]) {
+            Ok(v) => Ok(v),
+            Err(crate::vm::NatErr::Throw(ex)) => Err(JvmError::Uncaught(ex)),
+            Err(crate::vm::NatErr::Fatal(e)) => Err(e),
+        }
+    }
+
+    fn call_str(&mut self, src: &Source, method: &str, sig: &str, args: &[JValue]) -> Result<String, JvmError> {
+        let v = self.ctx.invoke_on(src.inst, method, sig, args)?;
+        self.ctx
+            .vm()
+            .str_of_jvalue(v)
+            .ok_or_else(|| JvmError::Resolution(format!("{method}: not a String")))
+    }
+
+    fn manga_pages(&mut self, v: JValue) -> Result<MangaPages, JvmError> {
+        let (mangas, has_next) = match self.ctx.vm().payload_of(v) {
+            Some(Native::SMangasPage { mangas, has_next }) => (mangas, has_next),
+            _ => return Err(JvmError::Resolution("not a MangasPage".into())),
+        };
+        let mut out = Vec::with_capacity(mangas.len());
+        for m in mangas {
+            if let Some(manga) = self.read_manga(m)? {
+                out.push(manga);
+            }
+        }
+        Ok(MangaPages {
+            mangas: out,
+            has_next,
+        })
+    }
+
+    fn read_manga(&mut self, v: JValue) -> Result<Option<Manga>, JvmError> {
+        match self.ctx.vm().payload_of(v) {
+            Some(Native::SManga { title, author, artist, description, genre, status, thumbnail_url, url, .. }) => Ok(Some(Manga {
+                title,
+                author: author.unwrap_or_default(),
+                artist: artist.unwrap_or_default(),
+                description: description.unwrap_or_default(),
+                genre: genre.unwrap_or_default(),
+                status,
+                thumbnail_url,
+                url,
+            })),
+            _ => Ok(None),
+        }
+    }
+
+    fn read_chapter_list(&mut self, list: JValue) -> Result<Vec<Chapter>, JvmError> {
+        let items = match self.ctx.vm().payload_of(list) {
+            Some(Native::List(items)) => items,
+            _ => return Err(JvmError::Resolution("not a List".into())),
+        };
+        let mut out = Vec::with_capacity(items.len());
+        for c in items {
+            match self.ctx.vm().payload_of(c) {
+                Some(Native::SChapter { name, url, date_upload, scanlator }) => out.push(Chapter {
+                    name,
+                    url,
+                    date_upload,
+                    scanlator,
+                }),
+                _ => {}
+            }
+        }
+        Ok(out)
+    }
+
+    fn read_page_list(&mut self, list: JValue) -> Result<Vec<PageRef>, JvmError> {
+        let items = match self.ctx.vm().payload_of(list) {
+            Some(Native::List(items)) => items,
+            _ => return Err(JvmError::Resolution("not a List".into())),
+        };
+        let mut out = Vec::with_capacity(items.len());
+        for p in items {
+            match self.ctx.vm().payload_of(p) {
+                Some(Native::SPPage { index, name, url, .. }) => out.push(PageRef { index, name, url }),
+                _ => {}
+            }
+        }
+        Ok(out)
+    }
+
+    fn read_filters(&mut self, flist: JValue) -> Result<Vec<FilterDef>, JvmError> {
+        let items = match self.ctx.vm().payload_of(flist) {
+            Some(Native::SFilterList(items)) => items,
+            _ => return Err(JvmError::Resolution("not a FilterList".into())),
+        };
+        let mut out = Vec::with_capacity(items.len());
+        for f in items {
+            let id = f.as_obj();
+            let kind = self.filter_kind(id);
+            match self.ctx.vm().payload_of(f) {
+                Some(Native::SFilter { name, state, options, children, .. }) => {
+                    if kind == FilterKind::Group {
+                        out.push(FilterDef {
+                            kind,
+                            name,
+                            state,
+                            options: self.str_options(options)?,
+                        });
+                        for c in children {
+                            let cid = c.as_obj();
+                            let k = self.filter_kind(cid);
+                            if let Some(Native::SFilter { name, state, options, .. }) =
+                                self.ctx.vm().payload_of(c)
+                            {
+                                out.push(FilterDef {
+                                    kind: k,
+                                    name,
+                                    state,
+                                    options: self.str_options(options)?,
+                                });
+                            }
+                        }
+                    } else {
+                        out.push(FilterDef {
+                            kind,
+                            name,
+                            state,
+                            options: self.str_options(options)?,
+                        });
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok(out)
+    }
+
+    fn str_options(&mut self, options: Vec<JValue>) -> Result<Vec<String>, JvmError> {
+        let mut out = Vec::with_capacity(options.len());
+        for o in options {
+            if let Some(s) = self.ctx.vm().str_of_jvalue(o) {
+                out.push(s);
+            }
+        }
+        Ok(out)
+    }
+
+    fn filter_kind(&mut self, obj: u32) -> FilterKind {
+        let mut cid = self.ctx.vm().arena.objects[obj as usize].class;
+        loop {
+            let cid_now = cid;
+            let (desc_id, sup) = {
+                let Some(c) = self.ctx.vm().classes.get(cid_now as usize) else {
+                    break;
+                };
+                (c.descriptor, c.superclass)
+            };
+            let desc = self.ctx.vm().str_of(desc_id);
+            match desc {
+                s if s == FILTER_LIST => return FilterKind::Plain,
+                s if s.contains("Text") => return FilterKind::Text,
+                s if s.contains("Select") => return FilterKind::Select,
+                s if s.contains("TriState") => return FilterKind::TriState,
+                s if s.contains("Group") => return FilterKind::Group,
+                s if s.contains("Header") => return FilterKind::Plain,
+                s if s.contains("Separator") => return FilterKind::Separator,
+                s if s.ends_with("Filter;") => return FilterKind::Plain,
+                _ => {}
+            }
+            match sup {
+                Some(s) if s != cid_now => cid = s,
+                _ => break,
+            }
+        }
+        FilterKind::Plain
+    }
+
+    fn alloc_manga(&mut self, m: &Manga) -> Result<JValue, JvmError> {
+        let cid = self.ctx.vm().ensure_class_by_desc(SMANGA)?;
+        let payload = Native::SManga {
+            title: m.title.clone(),
+            author: Some(m.author.clone()).filter(|s| !s.is_empty()),
+            artist: Some(m.artist.clone()).filter(|s| !s.is_empty()),
+            description: Some(m.description.clone()).filter(|s| !s.is_empty()),
+            genre: Some(m.genre.clone()).filter(|s| !s.is_empty()),
+            status: m.status,
+            thumbnail_url: m.thumbnail_url.clone(),
+            url: m.url.clone(),
+            update_strategy: JValue::Null,
+        };
+        Ok(JValue::Obj(self.ctx.vm().arena.alloc(cid, Vec::new(), Some(payload))))
+    }
+
+    /// Builds a FilterList object carrying the given per-filter states.
+    fn build_filter_list(&mut self, states: &[FilterState]) -> Result<JValue, JvmError> {
+        let cid = self.ctx.vm().ensure_class_by_desc(FILTER_LIST)?;
+        let mut children = Vec::new();
+        for s in states {
+            let fc = self.ctx.vm().ensure_class_by_desc(FILTER)?;
+            let payload = Native::SFilter {
+                name: s.name.clone(),
+                state: s.state,
+                is_checked: false,
+                children: Vec::new(),
+                options: Vec::new(),
+                text_value: String::new(),
+            };
+            children.push(JValue::Obj(self.ctx.vm().arena.alloc(fc, Vec::new(), Some(payload))));
+        }
+        Ok(JValue::Obj(self.ctx.vm().arena.alloc(cid, Vec::new(), Some(Native::SFilterList(children)))))
+    }
+}
+
+fn empty_chapter(url: String, name: String) -> Native {
+    Native::SChapter {
+        name,
+        url,
+        date_upload: 0,
+        scanlator: String::new(),
+    }
+}

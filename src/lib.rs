@@ -7,6 +7,8 @@
 
 pub mod context;
 pub mod dex;
+#[cfg(feature = "keiyoushi")]
+pub mod keiyoushi;
 pub mod permission;
 pub mod vm;
 

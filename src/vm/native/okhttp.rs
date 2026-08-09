@@ -138,6 +138,6 @@ pub(crate) fn requests_kt_post_default(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(
         vm,
         "Lokhttp3/Request;",
-        Native::Request { url, body: Some(body) },
+        Native::Request { url, method: "POST".into(), headers: Vec::new(), body: Some(body) },
     )
 }

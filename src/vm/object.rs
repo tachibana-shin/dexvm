@@ -102,9 +102,32 @@ impl ArrayData {
     }
 }
 
+/// Opaque handle to a parsed HTML document; Debug prints only the pointer.
+#[cfg(feature = "keiyoushi")]
+#[derive(Clone)]
+pub struct JsoupDocRef {
+    pub doc: std::rc::Rc<dom_query::Document>,
+    /// Base URI (the response URL) used to resolve `abs:` attributes.
+    pub base: Option<String>,
+}
+
+#[cfg(feature = "keiyoushi")]
+impl std::fmt::Debug for JsoupDocRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "JsoupDoc({:p})", std::rc::Rc::as_ptr(&self.doc))
+    }
+}
+
+#[cfg(feature = "keiyoushi")]
+impl JsoupDocRef {
+    pub fn new(doc: dom_query::Document) -> Self {
+        JsoupDocRef { doc: std::rc::Rc::new(doc), base: None }
+    }
+}
+
 /// Native (Rust-backed) objects. Objects of shim classes carry one of these
 /// instead of interpreted fields.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Native {
     /// java.lang.String payload.
     Str(String),
@@ -168,8 +191,78 @@ pub enum Native {
     HttpUrl(String),
     /// okhttp3.FormBody / FormBody$Builder: name/value pairs.
     FormBody(Vec<(String, String)>),
-    /// okhttp3.Request produced by the RequestsKt helpers.
-    Request { url: String, body: Option<JValue> },
+    /// okhttp3.Request produced by the RequestsKt helpers or Request$Builder.
+    Request { url: String, method: String, headers: Vec<(String, String)>, body: Option<JValue> },
+    /// okhttp3.Request$Builder under construction.
+    RequestBuilder {
+        url: String,
+        method: String,
+        headers: Vec<(String, String)>,
+        body: Option<JValue>,
+    },
+    /// okhttp3.Headers / Headers$Builder: name/value pairs.
+    Headers(Vec<(String, String)>),
+    /// okhttp3.Response produced by the host HTTP bridge.
+    Response {
+        code: i32,
+        message: String,
+        headers: Vec<(String, String)>,
+        body: String,
+        request: JValue,
+    },
+    /// okhttp3.Cookie.
+    Cookie { name: String, value: String },
+    /// eu.kanade.tachiyomi.source.online.HttpSource: name from its ctor.
+    HttpSource { name: String },
+    /// eu.kanade.tachiyomi.source.model.SManga.
+    SManga {
+        title: String,
+        author: Option<String>,
+        artist: Option<String>,
+        description: Option<String>,
+        genre: Option<String>,
+        status: i32,
+        thumbnail_url: String,
+        url: String,
+        update_strategy: JValue,
+    },
+    /// eu.kanade.tachiyomi.source.model.SChapter.
+    SChapter { name: String, url: String, date_upload: i64, scanlator: String },
+    /// eu.kanade.tachiyomi.source.model.Page.
+    SPPage { index: i32, name: String, url: String, image_url: String },
+    /// eu.kanade.tachiyomi.source.model.MangasPage.
+    SMangasPage { mangas: Vec<JValue>, has_next: bool },
+    /// eu.kanade.tachiyomi.source.model.Filter and its subtypes.
+    SFilter {
+        name: String,
+        state: i32,
+        is_checked: bool,
+        children: Vec<JValue>,
+        options: Vec<JValue>,
+        text_value: String,
+    },
+    /// eu.kanade.tachiyomi.source.model.FilterList.
+    SFilterList(Vec<JValue>),
+    /// kotlin.time.Duration value-class payload (nanoseconds).
+    Duration(i64),
+    /// org.jsoup parsed document. Payloads mirror the jsoup-compatible layer
+    /// in rakuyomi's `html_element.rs`: `dom_query` documents with stable
+    /// per-document node ids (a node id is only meaningful inside its own
+    /// document tree).
+    #[cfg(feature = "keiyoushi")]
+    JsoupDoc(JsoupDocRef),
+    /// org.jsoup single element: (document, node id).
+    #[cfg(feature = "keiyoushi")]
+    JsoupElement {
+        doc: JsoupDocRef,
+        id: dom_query::NodeId,
+    },
+    /// org.jsoup Elements: (document, node ids).
+    #[cfg(feature = "keiyoushi")]
+    JsoupElements {
+        doc: JsoupDocRef,
+        ids: Vec<dom_query::NodeId>,
+    },
     /// kotlin Lazy wrapper holding the initializer function (Function0).
     Lazy(JValue),
     /// kotlin Pair (two elements).
@@ -208,11 +301,21 @@ pub struct MatcherState {
 
 /// A heap object. `class` is a class id; `fields` holds interpreted fields by
 /// resolved offset; `native` carries the Rust-side payload for shim classes.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct JObject {
     pub class: u32,
     pub fields: Vec<JValue>,
     pub native: Option<Native>,
+}
+
+impl std::fmt::Debug for JObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("JObject")
+            .field("class", &self.class)
+            .field("fields", &self.fields)
+            .field("native", &self.native.as_ref().map(std::mem::discriminant))
+            .finish()
+    }
 }
 
 impl JObject {
@@ -276,8 +379,20 @@ impl Native {
                 push_all(network_interceptors, out);
             }
             Native::Request { body, .. } => push(body.as_ref(), out),
+            Native::RequestBuilder { body, .. } => push(body.as_ref(), out),
+            Native::Response { request, .. } => push(Some(request), out),
+            Native::SManga {
+                update_strategy, ..
+            } => push(Some(update_strategy), out),
+            Native::SMangasPage { mangas, .. } => push_all(mangas, out),
+            Native::SFilter { children, .. } => push_all(children, out),
+            Native::SFilterList(v) => push_all(v, out),
+            #[cfg(feature = "keiyoushi")]
+            Native::JsoupDoc(_) => {}
+            #[cfg(feature = "keiyoushi")]
+            Native::JsoupElement { .. } | Native::JsoupElements { .. } => {}
             Native::ArrayDesc(ArrayData::Obj(v)) => push_all(v, out),
-            Native::Str(_)
+            Native::HttpSource { .. } | Native::Str(_)
             | Native::Array(_)
             | Native::ClassObj(_)
             | Native::StringBuilder(_)
@@ -303,6 +418,11 @@ impl Native {
             | Native::ReentrantLock { .. }
             | Native::HttpUrl(_)
             | Native::FormBody(_)
+            | Native::Headers(_)
+            | Native::Cookie { .. }
+            | Native::SChapter { .. }
+            | Native::SPPage { .. }
+            | Native::Duration(_)
             | Native::IntRange(..)
             | Native::ArrayDesc(_) => {}
         }

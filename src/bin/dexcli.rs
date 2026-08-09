@@ -212,12 +212,89 @@ fn list_classes(dex: &DexFile) {
     }
 }
 
+fn refs_of(dex: &DexFile, desc: &str) {
+    use dexvm::dex::insn::{decode_all, Insn};
+    use std::collections::BTreeMap;
+    let target = desc.to_string();
+    let mut methods: BTreeMap<(String, String), usize> = BTreeMap::new();
+    let mut fields: BTreeMap<(String, String), usize> = BTreeMap::new();
+    let mut creates: usize = 0;
+    let mut casts: usize = 0;
+    for c in &dex.classes {
+        if let Some(cd) = &c.class_data {
+            for em in cd.direct_methods.iter().chain(&cd.virtual_methods) {
+                let Some(code) = &em.code else { continue };
+                let Ok(dec) = decode_all(&code.insns) else { continue };
+                for (i, _pc) in dec.units.iter().enumerate() {
+                    let insn = &dec.insns[i];
+                    match insn {
+                        Insn::Invoke(_, idx, _) => {
+                            let m = &dex.methods[*idx as usize];
+                            if dex.type_descriptor(m.class) == target {
+                                let name = dex.strings[m.name as usize].to_string();
+                                let sig = proto_sig(dex, m.proto);
+                                *methods.entry((name, sig)).or_default() += 1;
+                            }
+                        }
+                        Insn::IGet(_, _, f)
+                        | Insn::IGetWide(_, _, f)
+                        | Insn::IGetObj(_, _, f)
+                        | Insn::IPut(_, _, f)
+                        | Insn::IPutWide(_, _, f)
+                        | Insn::IPutObj(_, _, f)
+                        | Insn::SGet(_, f)
+                        | Insn::SGetWide(_, f)
+                        | Insn::SGetObj(_, f)
+                        | Insn::SPut(_, f)
+                        | Insn::SPutWide(_, f)
+                        | Insn::SPutObj(_, f) => {
+                            let fd = &dex.fields[*f as usize];
+                            if dex.type_descriptor(fd.class) == target {
+                                let name = dex.strings[fd.name as usize].to_string();
+                                let ty = dex.type_descriptor(fd.ty).to_string();
+                                *fields.entry((name, ty)).or_default() += 1;
+                            }
+                        }
+                        Insn::NewInstance(_, t) => {
+                            if dex.type_descriptor(*t) == target {
+                                creates += 1;
+                            }
+                        }
+                        Insn::CheckCast(_, t) => {
+                            if dex.type_descriptor(*t) == target {
+                                casts += 1;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+    println!("== refs on {target} ==");
+    if creates > 0 {
+        println!("  new-instance x{creates}");
+    }
+    if casts > 0 {
+        println!("  check-cast x{casts}");
+    }
+    println!("-- methods:");
+    for ((name, sig), n) in &methods {
+        println!("  x{n:>3} {name}{sig}");
+    }
+    println!("-- fields:");
+    for ((name, ty), n) in &fields {
+        println!("  x{n:>3} {name} {ty}");
+    }
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut path: Option<String> = None;
     let mut show_types = false;
     let mut show_classes = false;
     let mut show_methods: Option<String> = None;
+    let mut refs_target: Option<String> = None;
     let mut show_code: Option<(String, String)> = None;
     let mut run: Option<(String, String, Vec<i32>)> = None;
     let mut calls: Vec<(String, String, Vec<i32>)> = Vec::new();
@@ -236,6 +313,11 @@ fn main() {
             "--methods" => {
                 i += 1;
                 show_methods = args.get(i).cloned();
+            }
+            "--refs" => {
+                i += 1;
+                let cls = args.get(i).cloned().unwrap_or_default();
+                refs_target = Some(cls);
             }
             "--run" => {
                 i += 1;
@@ -305,6 +387,16 @@ fn main() {
     if show_classes {
         println!("-- classes:");
         list_classes(dex);
+    }
+    if let Some(desc) = refs_target {
+        let mut desc = desc;
+        if !desc.starts_with('L') && !desc.starts_with('[') {
+            desc = format!("L{desc}");
+        }
+        if !desc.ends_with(';') {
+            desc.push(';');
+        }
+        refs_of(dex, &desc);
     }
     if let Some(desc) = show_methods {
         let desc = if desc.ends_with(';') {
@@ -380,7 +472,7 @@ fn display_value(vm: &mut Vm, v: JValue) -> String {
     match v {
         JValue::Obj(o) => match &vm.arena.objects[o as usize].native {
             Some(Native::Str(s)) => format!("Obj(\"{s}\")"),
-            Some(Native::Request { url, body }) => format!("Request(url={url}, body={body:?})"),
+            Some(Native::Request { url, method, headers, body }) => format!("Request(method={method}, url={url}, headers={headers:?}, body={body:?})"),
             Some(Native::HttpUrl(url)) => format!("HttpUrl(\"{url}\")"),
             Some(Native::FormBody(fields)) => format!("FormBody({fields:?})"),
             _ => format!("Obj({o})"),

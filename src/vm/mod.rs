@@ -121,7 +121,9 @@ pub struct Vm {
     pub host_natives: Vec<NativeEntry>,
     /// Sandbox capability grants checked by host natives.
     pub perms: crate::permission::Permissions,
-    array_classes: HashMap<u32, u32>,
+    pub array_classes: HashMap<u32, u32>,
+    #[cfg(feature = "keiyoushi")]
+    pub http: Option<std::rc::Rc<dyn Fn(&native::keiyoushi::HttpData) -> native::keiyoushi::HttpResp>>,
     loading: Vec<usize>,
 }
 
@@ -165,6 +167,8 @@ impl Vm {
             },
             array_classes: HashMap::new(),
             loading: Vec::new(),
+            #[cfg(feature = "keiyoushi")]
+            http: None,
             host_natives: Vec::new(),
             perms: crate::permission::Permissions::new(),
         };
@@ -448,6 +452,8 @@ impl Vm {
         let mut dispatch: HashMap<(u32, u32), u32> = HashMap::new();
         let mut shim_natives: Vec<&NativeEntry> =
             native::NATIVE_TABLE.iter().chain(native::THROWABLE_CTORS.iter()).collect();
+        #[cfg(feature = "keiyoushi")]
+        shim_natives.extend(native::keiyoushi::KEIYOUSHI_TABLE.iter());
         #[cfg(feature = "okhttp")]
         shim_natives.extend(native::OKHTTP_TABLE.iter());
         let host = self.host_natives.clone();
@@ -726,6 +732,73 @@ impl Vm {
         self.call_target(target, args)
     }
 
+    /// Finds any loaded class declaring an instance or static method called
+    /// `name`; returns its full descriptor (e.g. `Lcom/foo/Ext;`).
+    pub fn find_class_with_method(&self, name: &str) -> Option<String> {
+        for c in &self.classes {
+            for m in &c.methods {
+                if self.str_of(m.name) == name {
+                    return Some(self.str_of(c.descriptor).to_string());
+                }
+            }
+        }
+        None
+    }
+
+    /// Scans the raw dex (not just already-loaded classes) for a class
+    /// declaring a method named `name`, loading it on the way. This is how
+    /// the keiyoushi factory (`ExtensionGenerated`) is located.
+    pub fn find_factory_class(&mut self, name: &str) -> Result<String, JvmError> {
+        for cd in &self.dex.classes {
+            let type_str = self
+                .dex
+                .types
+                .get(cd.class_idx as usize)
+                .and_then(|&s| self.dex.strings.get(s as usize).cloned())
+                .unwrap_or_default();
+            let has = match &cd.class_data {
+                Some(data) => data
+                    .direct_methods
+                    .iter()
+                    .chain(data.virtual_methods.iter())
+                    .any(|m| {
+                        self.dex
+                            .strings
+                            .get(self.dex.methods[m.method_idx as usize].name as usize)
+                            .map(|s| s.as_ref() == name)
+                            .unwrap_or(false)
+                    }),
+                None => false,
+            };
+            if has {
+                let cid = self.ensure_class_by_desc(&type_str)?;
+                return Ok(self.str_of(self.classes[cid as usize].descriptor).to_string());
+            }
+        }
+        Err(JvmError::Resolution(format!("no class with method {name} in dex")))
+    }
+
+    /// String payload of a java.lang.String value, if any.
+    pub fn str_of_jvalue(&self, v: JValue) -> Option<String> {
+        if v.is_null() {
+            return None;
+        }
+        let id = v.as_obj();
+        match &self.arena.objects[id as usize].native {
+            Some(object::Native::Str(s)) => Some(s.clone()),
+            _ => None,
+        }
+    }
+
+    /// Owned payload for a non-null object value.
+    pub fn payload_of(&self, v: JValue) -> Option<object::Native> {
+        if v.is_null() {
+            return None;
+        }
+        let id = v.as_obj();
+        self.arena.objects[id as usize].native.clone()
+    }
+
     /// Calls a resolved target with a fresh frame (native or bytecode).
     pub fn call_target(&mut self, target: Target, args: Vec<JValue>) -> Result<JValue, JvmError> {
         match target {
@@ -791,12 +864,6 @@ impl Vm {
         mref: &MethodRef,
         receiver: Option<u32>,
     ) -> Result<Target, JvmError> {
-        eprintln!(
-            "RESOLVE {:?} {} {} receiver={receiver:?}",
-            kind,
-            self.str_of(mref.name),
-            self.str_of(mref.sig)
-        );
         let key = (mref.name, mref.sig);
         // The first class to search depends on the invoke kind.
         let mut c = match kind {
@@ -812,8 +879,9 @@ impl Vm {
                     .ok_or_else(|| JvmError::Resolution("invoke-super with no superclass".into()))?
             }
         };
+        let c0 = c;
         let mut slot: Option<(u32, u32)> = None;
-        while slot.is_none() {
+while slot.is_none() {
             let found = {
                 let class = self.classes.get(c as usize).ok_or_else(|| {
                     JvmError::Resolution(format!("missing class id {c}"))
@@ -835,9 +903,10 @@ impl Vm {
                 None => break,
             }
         }
-        // interface default methods
+        // interface default methods (search the receiver's class, not the
+        // class we walked up to; interfaces have no superclass chain entry)
         if slot.is_none() {
-            if let Some((iface, s)) = self.search_interfaces(c, &key) {
+            if let Some((iface, s)) = self.search_interfaces(c0, &key) {
                 slot = Some((iface, s));
             }
         }
@@ -1298,7 +1367,7 @@ mod tests {
         d.extend_from_slice(&0u16.to_le_bytes()); // tries
         push4(&mut d, 0); // debug_info_off
         push4(&mut d, 3); // insns_size
-        d.extend_from_slice(&0x00a0u16.to_le_bytes()); // add-int v0,v0,v1
+        d.extend_from_slice(&0x0090u16.to_le_bytes()); // add-int v0,v0,v1
         d.extend_from_slice(&0x0100u16.to_le_bytes());
         d.extend_from_slice(&0x000fu16.to_le_bytes()); // return v0
 

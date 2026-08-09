@@ -423,68 +423,92 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
             Ok((Insn::Invoke(kind, u32::from(w1()?), args), pc + 3))
         }
         // unops (12x)
-        0x80 => Ok((Insn::Unop(Unop::NegInt, a4, b4), pc + 1)),
-        0x81 => Ok((Insn::Unop(Unop::NotInt, a4, b4), pc + 1)),
-        0x82 => Ok((Insn::Unop(Unop::NegLong, a4, b4), pc + 1)),
-        0x83 => Ok((Insn::Unop(Unop::NotLong, a4, b4), pc + 1)),
-        0x84 => Ok((Insn::Unop(Unop::NegFloat, a4, b4), pc + 1)),
-        0x85 => Ok((Insn::Unop(Unop::NegDouble, a4, b4), pc + 1)),
-        0x86 => Ok((Insn::Unop(Unop::IntToLong, a4, b4), pc + 1)),
-        0x87 => Ok((Insn::Unop(Unop::IntToFloat, a4, b4), pc + 1)),
-        0x88 => Ok((Insn::Unop(Unop::IntToDouble, a4, b4), pc + 1)),
-        0x89 => Ok((Insn::Unop(Unop::LongToInt, a4, b4), pc + 1)),
-        0x8a => Ok((Insn::Unop(Unop::LongToFloat, a4, b4), pc + 1)),
-        0x8b => Ok((Insn::Unop(Unop::LongToDouble, a4, b4), pc + 1)),
-        0x8c => Ok((Insn::Unop(Unop::FloatToInt, a4, b4), pc + 1)),
-        0x8d => Ok((Insn::Unop(Unop::FloatToLong, a4, b4), pc + 1)),
-        0x8e => Ok((Insn::Unop(Unop::FloatToDouble, a4, b4), pc + 1)),
-        0x8f => Ok((Insn::Unop(Unop::DoubleToInt, a4, b4), pc + 1)),
-        0x90 => Ok((Insn::Unop(Unop::DoubleToLong, a4, b4), pc + 1)),
-        0x91 => Ok((Insn::Unop(Unop::DoubleToFloat, a4, b4), pc + 1)),
-        0x92 => Ok((Insn::Unop(Unop::IntToByte, a4, b4), pc + 1)),
-        0x93 => Ok((Insn::Unop(Unop::IntToChar, a4, b4), pc + 1)),
-        0x94 => Ok((Insn::Unop(Unop::IntToShort, a4, b4), pc + 1)),
-        // binops (23x)
-        0xa0..=0xbf => {
-            let (binop, _wide) = binop_of(op);
+        0x7b => Ok((Insn::Unop(Unop::NegInt, a4, b4), pc + 1)),
+        0x7c => Ok((Insn::Unop(Unop::NotInt, a4, b4), pc + 1)),
+        0x7d => Ok((Insn::Unop(Unop::NegLong, a4, b4), pc + 1)),
+        0x7e => Ok((Insn::Unop(Unop::NotLong, a4, b4), pc + 1)),
+        0x7f => Ok((Insn::Unop(Unop::NegFloat, a4, b4), pc + 1)),
+        0x80 => Ok((Insn::Unop(Unop::NegDouble, a4, b4), pc + 1)),
+        0x81 => Ok((Insn::Unop(Unop::IntToLong, a4, b4), pc + 1)),
+        0x82 => Ok((Insn::Unop(Unop::IntToFloat, a4, b4), pc + 1)),
+        0x83 => Ok((Insn::Unop(Unop::IntToDouble, a4, b4), pc + 1)),
+        0x84 => Ok((Insn::Unop(Unop::LongToInt, a4, b4), pc + 1)),
+        0x85 => Ok((Insn::Unop(Unop::LongToFloat, a4, b4), pc + 1)),
+        0x86 => Ok((Insn::Unop(Unop::LongToDouble, a4, b4), pc + 1)),
+        0x87 => Ok((Insn::Unop(Unop::FloatToInt, a4, b4), pc + 1)),
+        0x88 => Ok((Insn::Unop(Unop::FloatToLong, a4, b4), pc + 1)),
+        0x89 => Ok((Insn::Unop(Unop::FloatToDouble, a4, b4), pc + 1)),
+        0x8a => Ok((Insn::Unop(Unop::DoubleToInt, a4, b4), pc + 1)),
+        0x8b => Ok((Insn::Unop(Unop::DoubleToLong, a4, b4), pc + 1)),
+        0x8c => Ok((Insn::Unop(Unop::DoubleToFloat, a4, b4), pc + 1)),
+        0x8d => Ok((Insn::Unop(Unop::IntToByte, a4, b4), pc + 1)),
+        0x8e => Ok((Insn::Unop(Unop::IntToChar, a4, b4), pc + 1)),
+        0x8f => Ok((Insn::Unop(Unop::IntToShort, a4, b4), pc + 1)),
+        // binops 23x: int 0x90..0x9a, long 0x9b..0xa5, float 0xa6..0xaa, double 0xab..0xaf
+        0x90..=0xaf => {
+            let binop = match op {
+                0x90 | 0x9b | 0xa6 | 0xab => Binop::Add,
+                0x91 | 0x9c | 0xa7 | 0xac => Binop::Sub,
+                0x92 | 0x9d | 0xa8 | 0xad => Binop::Mul,
+                0x93 | 0x9e | 0xa9 | 0xae => Binop::Div,
+                0x94 | 0x9f | 0xaa | 0xaf => Binop::Rem,
+                0x95 | 0xa0 => Binop::And,
+                0x96 | 0xa1 => Binop::Or,
+                0x97 | 0xa2 => Binop::Xor,
+                0x98 | 0xa3 => Binop::Shl,
+                0x99 | 0xa4 => Binop::Shr,
+                _ => Binop::Ushr,
+            };
             Ok((Insn::Binop(binop, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2))
         }
-        // 2addr binops (12x)
-        0xc0..=0xdf => {
-            let (binop, _wide) = binop_of(op - 0x20);
+        // 2addr binops (12x): int 0xb0..0xba, long 0xbb..0xc5, float 0xc6..0xca, double 0xcb..0xcf
+        0xb0..=0xcf => {
+            let binop = match op {
+                0xb0 | 0xbb | 0xc6 | 0xcb => Binop::Add,
+                0xb1 | 0xbc | 0xc7 | 0xcc => Binop::Sub,
+                0xb2 | 0xbd | 0xc8 | 0xcd => Binop::Mul,
+                0xb3 | 0xbe | 0xc9 | 0xce => Binop::Div,
+                0xb4 | 0xbf | 0xca | 0xcf => Binop::Rem,
+                0xb5 | 0xc0 => Binop::And,
+                0xb6 | 0xc1 => Binop::Or,
+                0xb7 | 0xc2 => Binop::Xor,
+                0xb8 | 0xc3 => Binop::Shl,
+                0xb9 | 0xc4 => Binop::Shr,
+                _ => Binop::Ushr,
+            };
             Ok((Insn::Binop(binop, a4, a4, b4), pc + 1))
         }
-        // lit16 (22s)
-        0xe0..=0xe7 => {
+        // lit16 (22s): vA = vA op#+CCCC, A=bits 8-11, B=bits 12-15, literal 16-bit
+        0xd0..=0xd7 => {
             let litop = match op {
-                0xe0 => LitOp::Bin(Binop::Add),
-                0xe1 => LitOp::Rsub,
-                0xe2 => LitOp::Bin(Binop::Mul),
-                0xe3 => LitOp::Bin(Binop::Div),
-                0xe4 => LitOp::Bin(Binop::Rem),
-                0xe5 => LitOp::Bin(Binop::And),
-                0xe6 => LitOp::Bin(Binop::Or),
+                0xd0 => LitOp::Bin(Binop::Add),
+                0xd1 => LitOp::Rsub,
+                0xd2 => LitOp::Bin(Binop::Mul),
+                0xd3 => LitOp::Bin(Binop::Div),
+                0xd4 => LitOp::Bin(Binop::Rem),
+                0xd5 => LitOp::Bin(Binop::And),
+                0xd6 => LitOp::Bin(Binop::Or),
                 _ => LitOp::Bin(Binop::Xor),
             };
             Ok((Insn::BinopLit(litop, a4, b4, i32::from(w1()? as i16)), pc + 2))
         }
-        // lit8 (22b)
-        0xe8..=0xf2 => {
+        // lit8 (22b): vAA = vAA op#BBBB, AA=bits 8-15, src=low byte of u1, literal=high byte of u1
+        0xd8..=0xe2 => {
             let litop = match op {
-                0xe8 => LitOp::Bin(Binop::Add),
-                0xe9 => LitOp::Rsub,
-                0xea => LitOp::Bin(Binop::Mul),
-                0xeb => LitOp::Bin(Binop::Div),
-                0xec => LitOp::Bin(Binop::Rem),
-                0xed => LitOp::Bin(Binop::And),
-                0xee => LitOp::Bin(Binop::Or),
-                0xef => LitOp::Bin(Binop::Xor),
-                0xf0 => LitOp::Bin(Binop::Shl),
-                0xf1 => LitOp::Bin(Binop::Shr),
+                0xd8 => LitOp::Bin(Binop::Add),
+                0xd9 => LitOp::Rsub,
+                0xda => LitOp::Bin(Binop::Mul),
+                0xdb => LitOp::Bin(Binop::Div),
+                0xdc => LitOp::Bin(Binop::Rem),
+                0xdd => LitOp::Bin(Binop::And),
+                0xde => LitOp::Bin(Binop::Or),
+                0xdf => LitOp::Bin(Binop::Xor),
+                0xe0 => LitOp::Bin(Binop::Shl),
+                0xe1 => LitOp::Bin(Binop::Shr),
                 _ => LitOp::Bin(Binop::Ushr),
             };
             let lit = i32::from(w1()? >> 8) as i8 as i32;
-            Ok((Insn::BinopLit(litop, a4, (w1()? & 0xff) as u8, lit), pc + 2))
+            Ok((Insn::BinopLit(litop, a8, (w1()? & 0xff) as u8, lit), pc + 2))
         }
         0xfb | 0xfc => Err(DexError::new(pc * 2, "invoke-polymorphic not supported")),
         0xfd | 0xfe => Err(DexError::new(pc * 2, "invoke-custom not supported")),
@@ -521,26 +545,6 @@ fn args_35c(word: u16, w1: u16, w2: u16) -> Result<(Args, u32), DexError> {
         ((word >> 8) & 0x0f) as u8,  // G: arg 4
     ];
     Ok((Args { count, regs, range: false, base: 0 }, u32::from(w1)))
-}
-
-fn binop_of(op: u8) -> (Binop, bool) {
-    // op in [0xa0,0xbf] or [0xc0,0xdf]; the "wide" flag distinguishes
-    // long/double operand widths which execution derives from the value itself.
-    let (idx, wide) = if op < 0xc0 { (op, false) } else { (op - 0x20, true) };
-    let b = match idx {
-        0xa0 | 0xab | 0xb6 | 0xbb => Binop::Add,
-        0xa1 | 0xac | 0xb7 | 0xbc => Binop::Sub,
-        0xa2 | 0xad | 0xb8 | 0xbd => Binop::Mul,
-        0xa3 | 0xae | 0xb9 | 0xbe => Binop::Div,
-        0xa4 | 0xaf | 0xba | 0xbf => Binop::Rem,
-        0xa5 | 0xb0 => Binop::And,
-        0xa6 | 0xb1 => Binop::Or,
-        0xa7 | 0xb2 => Binop::Xor,
-        0xa8 | 0xb3 => Binop::Shl,
-        0xa9 | 0xb4 => Binop::Shr,
-        _ => Binop::Ushr,
-    };
-    (b, wide)
 }
 
 fn decode_fill_array_data(insns: &[u16], payload: usize) -> Result<FillArray, DexError> {
@@ -746,14 +750,21 @@ mod tests {
 
     #[test]
     fn arithmetic() {
-        assert_eq!(dec(&[0xa0 | (0 << 8), (1 & 0xff) | (2 << 8)], 0), Insn::Binop(Binop::Add, 0, 1, 2));
+        // add-int v0, v1, v2 (23x, int)
+        assert_eq!(dec(&[0x90 | (0 << 8), (1 & 0xff) | (2 << 8)], 0), Insn::Binop(Binop::Add, 0, 1, 2));
+        // sub-double/2addr v3, v4
         assert_eq!(dec(&[0xcc | (3 << 8) | (4 << 12)], 0), Insn::Binop(Binop::Sub, 3, 3, 4));
-        assert_eq!(dec(&[0xe0 | (0 << 8) | (1 << 12), 0xffff], 0), Insn::BinopLit(LitOp::Bin(Binop::Add), 0, 1, -1));
-        assert_eq!(dec(&[0xe1 | (0 << 8) | (1 << 12), 5], 0), Insn::BinopLit(LitOp::Rsub, 0, 1, 5));
-        assert_eq!(dec(&[0xf0 | (0 << 8), (1 & 0xf) | (2 << 8)], 0), Insn::BinopLit(LitOp::Bin(Binop::Shl), 0, 1, 2));
-        assert_eq!(dec(&[0x80 | (0 << 8) | (1 << 12)], 0), Insn::Unop(Unop::NegInt, 0, 1));
-        assert_eq!(dec(&[0x86 | (0 << 8) | (1 << 12)], 0), Insn::Unop(Unop::IntToLong, 0, 1));
-        let r = decode(&[0x9f, 0x12], 0);
+        // add-int/lit16 v0, v1, -1
+        assert_eq!(dec(&[0xd0 | (0 << 8) | (1 << 12), 0xffff], 0), Insn::BinopLit(LitOp::Bin(Binop::Add), 0, 1, -1));
+        assert_eq!(dec(&[0xd1 | (0 << 8) | (1 << 12), 5], 0), Insn::BinopLit(LitOp::Rsub, 0, 1, 5));
+        // shl-int/lit8 v0, v1, 2 (22b: dest bits 8-15, src low byte, lit high byte)
+        assert_eq!(dec(&[0xe0 | (0 << 8), (1 & 0xff) | (2 << 8)], 0), Insn::BinopLit(LitOp::Bin(Binop::Shl), 0, 1, 2));
+        // neg-int (12x unop)
+        assert_eq!(dec(&[0x7b | (0 << 8) | (1 << 12)], 0), Insn::Unop(Unop::NegInt, 0, 1));
+        // int-to-long
+        assert_eq!(dec(&[0x81 | (0 << 8) | (1 << 12)], 0), Insn::Unop(Unop::IntToLong, 0, 1));
+        // quick opcodes (odex-only) are not supported
+        let r = decode(&[0xe3, 0x12], 0);
         assert!(r.is_err());
     }
 }

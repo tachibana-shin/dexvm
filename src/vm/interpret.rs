@@ -55,8 +55,13 @@ impl Frame {
 /// Runs a method with a fresh frame. Used for `<clinit>` and for calls made
 /// from native code.
 pub fn run(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<JValue, JvmError> {
-    push_frame(vm, class, slot, args)?;
-    vm.run_loop()
+    let saved = std::mem::take(&mut vm.frames);
+    let r = (|| {
+        push_frame(vm, class, slot, args)?;
+        vm.run_loop()
+    })();
+    vm.frames = saved;
+    r
 }
 
 fn push_frame(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<(), JvmError> {
@@ -104,15 +109,6 @@ impl Vm {
                 ));
             }
             self.budget -= 1;
-            if std::env::var("DEXVM_TRACE").is_ok() {
-                eprintln!(
-                    "TRACE {} pc={:#06x} {:?} regs={:?}",
-                    self.str_of(self.classes[f.class as usize].descriptor),
-                    f.pc,
-                    f.decoded.insns.get(f.pc).cloned().unwrap_or(Insn::Nop),
-                    f.regs
-                );
-            }
             let step = match self.step(&mut f) {
                 Ok(s) => s,
                 Err(e) => {
@@ -225,13 +221,6 @@ impl Vm {
                     }
                 },
                 StepOutcome::Throw(ex) => {
-                    eprintln!(
-                        "THROW {} pc={:#06x} class={} method={}",
-                        self.str_of(self.classes[f.class as usize].descriptor),
-                        f.pc,
-                        self.class_desc_str(f.class),
-                        self.str_of(self.classes[f.class as usize].methods[f.slot as usize].name),
-                    );
                     f.pending_exc = Some(ex);
                     self.frames.push(f);
                     match self.unwind()? {
@@ -341,8 +330,13 @@ impl Vm {
         let insn = &insns[idx];
         let out = match insn {
             Insn::Nop => Flow::Next(0),
-            Insn::Move(from, to) | Insn::MoveWide(from, to) => {
-                f.regs[*to as usize] = f.regs[*from as usize];
+            Insn::Move(d, s) => {
+                f.regs[*d as usize] = f.regs[*s as usize];
+                Flow::Next(0)
+            }
+            Insn::MoveWide(d, s) => {
+                f.regs[*d as usize] = f.regs[*s as usize];
+                f.regs[*d as usize + 1] = f.regs[*s as usize + 1];
                 Flow::Next(0)
             }
             Insn::Const4(d, lit) => {
@@ -457,13 +451,13 @@ impl Vm {
                 f.regs[*d as usize] = JValue::Obj(self.arena.alloc(class_id, vec![JValue::Null; fields], None));
                 Flow::Next(0)
             }
-            Insn::NewArray(d, elem, len) => {
-                let n = f.regs[*len as usize].as_int();
+            Insn::NewArray(d, size_reg, type_idx) => {
+                let n = f.regs[*size_reg as usize].as_int();
                 if n < 0 {
                     return Ok(StepOutcome::Throw(JValue::Obj(self.err_neg_arr_size())));
                 }
-                let arr_class = self.array_class(u32::from(*elem))?;
-                let elem_desc = self.dex.type_descriptor(u32::from(*elem)).to_string();
+                let arr_class = self.array_class(*type_idx)?;
+                let elem_desc = self.dex.type_descriptor(*type_idx).to_string();
                 let data = ArrayData::new(&elem_desc, n as usize);
                 f.regs[*d as usize] = JValue::Obj(self.arena.alloc(arr_class, Vec::new(), Some(Native::Array(data))));
                 Flow::Next(0)
@@ -486,7 +480,7 @@ impl Vm {
                 }
                 let arr_class = self.array_class(*type_idx)?;
                 let o = self.arena.alloc(arr_class, Vec::new(), Some(Native::Array(data)));
-                f.regs[args.reg_at(0) as usize] = JValue::Obj(o);
+                f.result = JValue::Obj(o);
                 Flow::Next(0)
             }
             Insn::FillArrayData(d, _, data) => {

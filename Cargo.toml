@@ -10,7 +10,7 @@ android = []
 # host shim classes for OkHttp (okhttp3.*)
 okhttp = []
 # host shim classes for the mihon extension API (eu.kanade.tachiyomi.source.*)
-keiyoushi = ["android", "okhttp"]
+keiyoushi = ["android", "okhttp", "dep:dom_query"]
 
 [lib]
 name = "dexvm"
@@ -22,3 +22,4 @@ path = "src/bin/dexcli.rs"
 [dependencies]
 regex = "1"
 zip = "2"
+dom_query = { version = "0.28.0", optional = true }

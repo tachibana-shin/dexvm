@@ -228,11 +228,6 @@ impl Context {
         }
         call_args.extend_from_slice(args);
         let v = interpret::run(&mut self.vm, cid, slot as u32, call_args)?;
-        if let JValue::Obj(o) = v {
-            if self.vm.arena.objects[o as usize].class != self.vm.hot.string {
-                self.last_instance = Some(o);
-            }
-        }
         Ok(v)
     }
 
@@ -262,6 +257,54 @@ impl Context {
     /// Read-only access to the loaded dex file.
     pub fn dex(&self) -> &DexFile {
         &self.vm.dex
+    }
+
+    /// Dispatches `method` (by dex name and signature) on a specific object,
+    /// resolving through the receiver's vtable including inherited natives.
+    ///
+    /// Unlike [`Context::call`]/[`Context::invoke`] this does *not* run a GC
+    /// first: intermediate objects handed to later calls inside one bridge
+    /// transaction stay alive. The receiver becomes the `last_instance`, so
+    /// a following [`Context::invoke`] keeps working on it.
+    pub fn invoke_on(
+        &mut self,
+        obj: u32,
+        name: &str,
+        sig: &str,
+        args: &[JValue],
+    ) -> Result<JValue, JvmError> {
+        use crate::dex::insn::InvokeKind;
+        use crate::vm::MethodRef;
+        let mref = MethodRef {
+            name: self.vm.intern(name),
+            sig: self.vm.intern(sig),
+            ret: 0,
+            args: Vec::new(),
+            class_desc: 0,
+        };
+        let recv = JValue::Obj(obj);
+        let target = self
+            .vm
+            .resolve_target(InvokeKind::Virtual, &mref, Some(obj))
+            .map_err(|e| JvmError::Resolution(format!("invoke_on {name}{sig}: {e}")))?;
+        let mut call_args = Vec::with_capacity(args.len() + 1);
+        call_args.push(recv);
+        call_args.extend_from_slice(args);
+        let v = self.vm.call_target(target, call_args)?;
+        self.last_instance = Some(obj);
+        Ok(v)
+    }
+
+    /// Registers the HTTP client the keiyoushi bridge executes requests
+    /// through (`RequestsKt.__host_execute`). Without one, request
+    /// execution throws an IllegalStateException.
+    #[cfg(feature = "keiyoushi")]
+    pub fn set_http<F>(&mut self, f: F)
+    where
+        F: Fn(&crate::vm::native::keiyoushi::HttpData) -> crate::vm::native::keiyoushi::HttpResp
+            + 'static,
+    {
+        self.vm.http = Some(std::rc::Rc::new(f));
     }
 
     /// Access to the underlying VM for advanced use (registering natives

@@ -130,6 +130,59 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     // mihon extension network API (eu.kanade.tachiyomi.network.*)
     #[cfg(feature = "keiyoushi")]
     shim!("Leu/kanade/tachiyomi/network/NetworkHelper;", Some("Ljava/lang/Object;"), &[], 0),
+    // mihon source model classes (eu.kanade.tachiyomi.source.model.*)
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/SManga;", Some("Ljava/lang/Object;"), &[], 0, [
+        sdef!("Companion", "Leu/kanade/tachiyomi/source/model/SManga$Companion;", ShimValue::Lazy(native::lazy_smanga_companion)),
+    ]),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/SManga$Companion;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/SChapter;", Some("Ljava/lang/Object;"), &[], 0, [
+        sdef!("Companion", "Leu/kanade/tachiyomi/source/model/SChapter$Companion;", ShimValue::Lazy(native::lazy_schapter_companion)),
+    ]),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/SChapter$Companion;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/Page;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/MangasPage;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/FilterList;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/Filter;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/Filter$Header;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/Filter$Separator;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/Filter$Select;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/Filter$Sort;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/Filter$Text;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/Filter$TriState;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/Filter$Group;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/UpdateStrategy;", Some("Ljava/lang/Enum;"), &[], 0, [
+        sdef!("ONLY_FETCH_ONCE", "Leu/kanade/tachiyomi/source/model/UpdateStrategy;", ShimValue::Lazy(native::lazy_update_strategy_once)),
+    ]),
+    // org.jsoup host shims (parsed via dom_query)
+    #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/util/JsoupExtensionsKt;", Some("Ljava/lang/Object;"), &[], 0),
+    // Kotlin stdlib host shims (default-arg synthetic methods)
+    #[cfg(feature = "keiyoushi")]
+    shim!("Lkotlin/text/StringsKt;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Lorg/jsoup/Jsoup;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Lorg/jsoup/nodes/Document;", Some("Lorg/jsoup/nodes/Element;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Lorg/jsoup/nodes/Element;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Lorg/jsoup/select/Elements;", Some("Ljava/lang/Object;"), &[], 0),
     // okhttp host shims
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Interceptor;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
@@ -159,6 +212,10 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!("Lokhttp3/CacheControl;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Request;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokhttp3/Response;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokhttp3/ResponseBody;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
     shim!("Leu/kanade/tachiyomi/network/RequestsKt;", Some("Ljava/lang/Object;"), &[], 0),
     // android framework shims
@@ -359,6 +416,12 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!("Lkotlin/Pair;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;"], 0),
     shim!("Lkotlin/TuplesKt;", Some("Ljava/lang/Object;"), &[], 0),
     shim!("Lkotlin/jvm/internal/DefaultConstructorMarker;", Some("Ljava/lang/Object;"), &[], 0),
+    // injekt DI
+    shim!("Luy/kohesive/injekt/InjektKt;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Luy/kohesive/injekt/api/InjektScope;", None, &["Luy/kohesive/injekt/api/InjektFactory;"], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!("Luy/kohesive/injekt/api/InjektFactory;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!("Luy/kohesive/injekt/api/InjektRegister;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!("Luy/kohesive/injekt/api/FullTypeReference;", Some("Ljava/lang/Object;"), &[], 0),
 ];
 
 #[derive(Debug, Clone, Default)]

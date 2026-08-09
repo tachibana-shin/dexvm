@@ -27,19 +27,6 @@ mod regex;
 mod string;
 mod sync;
 mod text;
-#[cfg(feature = "okhttp")]
-mod okhttp;
-
-pub(crate) use self::{
-    collections::*, io::*, kotlin::*, lang::*, math::*, regex::*, string::*, sync::*, text::*,
-};
-#[cfg(feature = "okhttp")]
-pub(crate) use self::okhttp::*;
-
-// ---------------------------------------------------------------------------
-// table plumbing
-// ---------------------------------------------------------------------------
-
 macro_rules! ne {
     ($class:expr, $name:expr, $sig:expr, $instance:expr, $f:expr) => {
         NativeEntry {
@@ -51,6 +38,25 @@ macro_rules! ne {
         }
     };
 }
+
+
+#[cfg(feature = "okhttp")]
+mod okhttp;
+#[cfg(feature = "keiyoushi")]
+pub mod keiyoushi;
+
+
+pub(crate) use self::{
+    collections::*, io::*, kotlin::*, lang::*, math::*, regex::*, string::*, sync::*, text::*,
+};
+#[cfg(feature = "okhttp")]
+pub(crate) use self::okhttp::*;
+#[cfg(feature = "keiyoushi")]
+pub(crate) use self::keiyoushi::*;
+
+// ---------------------------------------------------------------------------
+// table plumbing
+// ---------------------------------------------------------------------------
 
 /// The four standard `<init>` overloads shared by every throwable shim class.
 /// Generated as a whole-array macro expansion because array literals cannot
@@ -133,9 +139,12 @@ pub const OKHTTP_TABLE: &[NativeEntry] = &[
 ];
 
 pub fn register(vm: &mut Vm) {
+    #[allow(unused_mut)]
     let mut tables: Vec<&[NativeEntry]> = vec![NATIVE_TABLE, THROWABLE_CTORS];
     #[cfg(feature = "okhttp")]
     tables.push(OKHTTP_TABLE);
+    #[cfg(feature = "keiyoushi")]
+    tables.push(keiyoushi::KEIYOUSHI_TABLE);
     for e in tables.into_iter().flatten() {
         let key = (vm.intern(e.class), vm.intern(e.name), vm.intern(e.sig));
         vm.natives.insert(key, e.f);
@@ -227,6 +236,24 @@ fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             "Ljava/lang/Throwable;" => {
                 return Some(Native::Throwable { message: None, cause: JValue::Null });
             }
+            #[cfg(feature = "keiyoushi")]
+            "Leu/kanade/tachiyomi/source/model/Filter;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Header;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Separator;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Select;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Sort;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Text;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$TriState;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Group;" => {
+                return Some(Native::SFilter {
+                    name: String::new(),
+                    state: 0,
+                    is_checked: false,
+                    children: Vec::new(),
+                    options: Vec::new(),
+                    text_value: String::new(),
+                });
+            }
             _ => {}
         }
         c = cl.superclass;
@@ -249,6 +276,10 @@ fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             re: Regex::new("").expect("empty regex"),
             source: String::new(),
         }),
+        "Lkotlin/text/Regex;" => Some(Native::Pattern {
+            re: Regex::new("").expect("empty regex"),
+            source: String::new(),
+        }),
         "Ljava/util/regex/Matcher;" => Some(Native::Matcher(MatcherState {
             pattern: Regex::new("").expect("empty regex"),
             text: String::new(),
@@ -261,6 +292,40 @@ fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
         "Ljava/io/PrintStream;" => Some(Native::PrintStream),
         "Ljava/lang/Thread;" => Some(Native::Opaque),
         "Ljava/util/Map$Entry;" => Some(Native::MapEntry { map: 0, idx: 0 }),
+        #[cfg(feature = "keiyoushi")]
+        "Leu/kanade/tachiyomi/source/model/SManga;" => Some(keiyoushi::empty_smanga()),
+        #[cfg(feature = "keiyoushi")]
+        "Leu/kanade/tachiyomi/source/model/SChapter;" => Some(keiyoushi::empty_schapter()),
+        #[cfg(feature = "keiyoushi")]
+        "Leu/kanade/tachiyomi/source/model/Page;" => Some(Native::SPPage {
+            index: 0,
+            name: String::new(),
+            url: String::new(),
+            image_url: String::new(),
+        }),
+        #[cfg(feature = "keiyoushi")]
+        "Leu/kanade/tachiyomi/source/model/MangasPage;" => Some(Native::SMangasPage {
+            mangas: Vec::new(),
+            has_next: false,
+        }),
+        #[cfg(feature = "keiyoushi")]
+        "Leu/kanade/tachiyomi/source/model/FilterList;" => Some(Native::SFilterList(Vec::new())),
+        #[cfg(feature = "keiyoushi")]
+        "Leu/kanade/tachiyomi/source/model/Filter;"
+        | "Leu/kanade/tachiyomi/source/model/Filter$Header;"
+        | "Leu/kanade/tachiyomi/source/model/Filter$Separator;"
+        | "Leu/kanade/tachiyomi/source/model/Filter$Select;"
+        | "Leu/kanade/tachiyomi/source/model/Filter$Sort;"
+        | "Leu/kanade/tachiyomi/source/model/Filter$Text;"
+        | "Leu/kanade/tachiyomi/source/model/Filter$TriState;"
+        | "Leu/kanade/tachiyomi/source/model/Filter$Group;" => Some(Native::SFilter {
+            name: String::new(),
+            state: 0,
+            is_checked: false,
+            children: Vec::new(),
+            options: Vec::new(),
+            text_value: String::new(),
+        }),
         _ => None,
     }
 }
@@ -307,6 +372,25 @@ fn new_str(vm: &mut Vm, s: &str) -> JValue {
 fn alloc(vm: &mut Vm, desc: &str, native: Native) -> Result<JValue, NatErr> {
     let class = vm.ensure_class_by_desc(desc).map_err(nat_fatal)?;
     Ok(JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(native))))
+}
+
+// injekt DI (kohesive)
+// ---------------------------------------------------------------------------
+
+pub(crate) fn injekt_get_injekt(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Luy/kohesive/injekt/api/InjektScope;", Native::Opaque)
+}
+
+pub(crate) fn injekt_get_instance(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/app/Application;", Native::Opaque)
+}
+
+pub(crate) fn injekt_full_type_init(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
+pub(crate) fn injekt_full_type_get(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Ljava/lang/reflect/Type;", Native::Opaque)
 }
 
 fn boxed(vm: &mut Vm, desc: &str, native: Native) -> Result<JValue, NatErr> {
@@ -1486,6 +1570,10 @@ pub const NATIVE_TABLE: &[NativeEntry] = &[
     // ---- kotlin.stdlib ----
     ne!("Lkotlin/Lazy;", "getValue", "()Ljava/lang/Object;", true, lazy_get_value),
     ne!("Lkotlin/LazyKt;", "lazy", "(Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;", false, lazy_kt_lazy),
+    ne!("Luy/kohesive/injekt/InjektKt;", "getInjekt", "()Luy/kohesive/injekt/api/InjektScope;", false, injekt_get_injekt),
+    ne!("Luy/kohesive/injekt/api/InjektFactory;", "getInstance", "(Ljava/lang/reflect/Type;)Ljava/lang/Object;", true, injekt_get_instance),
+    ne!("Luy/kohesive/injekt/api/FullTypeReference;", "<init>", "()V", true, injekt_full_type_init),
+    ne!("Luy/kohesive/injekt/api/FullTypeReference;", "getType", "()Ljava/lang/reflect/Type;", true, injekt_full_type_get),
     ne!("Lkotlin/time/Duration$Companion;", "getZERO-UwyO8pc", "()J", true, duration_get_zero),
     ne!("Lkotlin/time/DurationKt;", "toDuration", "(ILkotlin/time/DurationUnit;)J", false, duration_to_duration_int),
     ne!("Lkotlin/time/DurationKt;", "toDuration", "(JLkotlin/time/DurationUnit;)J", false, duration_to_duration_long),
