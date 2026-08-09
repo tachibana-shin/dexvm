@@ -86,8 +86,8 @@ pub enum TypeKind {
 pub fn parse_desc(desc: &str) -> TypeKind {
     if let Some(rest) = desc.strip_prefix('L') {
         TypeKind::Class(rest.trim_end_matches(';').to_string())
-    } else if desc.starts_with('[') {
-        TypeKind::Array(desc[1..].to_string())
+    } else if let Some(rest) = desc.strip_prefix('[') {
+        TypeKind::Array(rest.to_string())
     } else {
         TypeKind::Prim(desc.chars().next().unwrap_or('V'))
     }

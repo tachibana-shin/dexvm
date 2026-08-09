@@ -351,7 +351,7 @@ pub(crate) fn element_own_text(vm: &mut Vm, args: &[JValue]) -> R {
     let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
-    Ok(vm.alloc_string(&node.immediate_text().to_string()))
+    Ok(vm.alloc_string(node.immediate_text().as_ref()))
 }
 
 pub(crate) fn element_html(vm: &mut Vm, args: &[JValue]) -> R {
@@ -360,7 +360,7 @@ pub(crate) fn element_html(vm: &mut Vm, args: &[JValue]) -> R {
     let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
-    Ok(vm.alloc_string(&node.inner_html().to_string()))
+    Ok(vm.alloc_string(node.inner_html().as_ref()))
 }
 
 pub(crate) fn element_outer_html(vm: &mut Vm, args: &[JValue]) -> R {
@@ -369,7 +369,7 @@ pub(crate) fn element_outer_html(vm: &mut Vm, args: &[JValue]) -> R {
     let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
-    Ok(vm.alloc_string(&node.html().to_string()))
+    Ok(vm.alloc_string(node.html().as_ref()))
 }
 
 pub(crate) fn elements_first(vm: &mut Vm, args: &[JValue]) -> R {

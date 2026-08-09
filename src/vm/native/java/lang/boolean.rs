@@ -62,7 +62,7 @@ pub(crate) fn bool_parse_boolean(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn bool_compare_to(vm: &mut Vm, args: &[JValue]) -> R {
     let a = bool_of(vm, args[0]);
     let b = bool_of(vm, args[1]);
-    Ok(JValue::Int(i32::from(a.cmp(&b) as i32)))
+    Ok(JValue::Int(a.cmp(&b) as i32))
 }
 
 /// Native methods for Ljava/lang/Boolean;

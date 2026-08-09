@@ -266,14 +266,12 @@ impl Keiyoushi {
 
     pub fn pages(&mut self, src: &Source, chapter: &Chapter) -> Result<Vec<PageRef>, JvmError> {
         let (url, name) = (chapter.url.clone(), chapter.name.clone());
-        let c = match self.ctx.vm().ensure_class_by_desc(SCHAPTER) {
-            Ok(cid) => JValue::Obj(self.ctx.vm().arena.alloc(
-                cid,
-                Vec::new(),
-                Some(empty_chapter(url, name)),
-            )),
-            Err(e) => return Err(e),
-        };
+        let cid = self.ctx.vm().ensure_class_by_desc(SCHAPTER)?;
+        let c = JValue::Obj(self.ctx.vm().arena.alloc(
+            cid,
+            Vec::new(),
+            Some(empty_chapter(url, name)),
+        ));
         let req = self.ctx.invoke_on(
             src.inst,
             "pageListRequest",
@@ -416,20 +414,20 @@ impl Keiyoushi {
         };
         let mut out = Vec::with_capacity(items.len());
         for c in items {
-            match self.ctx.vm().payload_of(c) {
-                Some(Native::SChapter {
+            if let Some(Native::SChapter {
+                name,
+                url,
+                date_upload,
+                scanlator,
+                ..
+            }) = self.ctx.vm().payload_of(c)
+            {
+                out.push(Chapter {
                     name,
                     url,
                     date_upload,
                     scanlator,
-                    ..
-                }) => out.push(Chapter {
-                    name,
-                    url,
-                    date_upload,
-                    scanlator,
-                }),
-                _ => {}
+                });
             }
         }
         Ok(out)
@@ -442,11 +440,11 @@ impl Keiyoushi {
         };
         let mut out = Vec::with_capacity(items.len());
         for p in items {
-            match self.ctx.vm().payload_of(p) {
-                Some(Native::SPPage {
-                    index, name, url, ..
-                }) => out.push(PageRef { index, name, url }),
-                _ => {}
+            if let Some(Native::SPPage {
+                index, name, url, ..
+            }) = self.ctx.vm().payload_of(p)
+            {
+                out.push(PageRef { index, name, url });
             }
         }
         Ok(out)
@@ -461,49 +459,47 @@ impl Keiyoushi {
         for f in items {
             let id = f.as_obj();
             let kind = self.filter_kind(id);
-            match self.ctx.vm().payload_of(f) {
-                Some(Native::SFilter {
-                    name,
-                    state,
-                    options,
-                    children,
-                    ..
-                }) => {
-                    if kind == FilterKind::Group {
-                        out.push(FilterDef {
-                            kind,
+            if let Some(Native::SFilter {
+                name,
+                state,
+                options,
+                children,
+                ..
+            }) = self.ctx.vm().payload_of(f)
+            {
+                if kind == FilterKind::Group {
+                    out.push(FilterDef {
+                        kind,
+                        name,
+                        state,
+                        options: self.str_options(options)?,
+                    });
+                    for c in children {
+                        let cid = c.as_obj();
+                        let k = self.filter_kind(cid);
+                        if let Some(Native::SFilter {
                             name,
                             state,
-                            options: self.str_options(options)?,
-                        });
-                        for c in children {
-                            let cid = c.as_obj();
-                            let k = self.filter_kind(cid);
-                            if let Some(Native::SFilter {
+                            options,
+                            ..
+                        }) = self.ctx.vm().payload_of(c)
+                        {
+                            out.push(FilterDef {
+                                kind: k,
                                 name,
                                 state,
-                                options,
-                                ..
-                            }) = self.ctx.vm().payload_of(c)
-                            {
-                                out.push(FilterDef {
-                                    kind: k,
-                                    name,
-                                    state,
-                                    options: self.str_options(options)?,
-                                });
-                            }
+                                options: self.str_options(options)?,
+                            });
                         }
-                    } else {
-                        out.push(FilterDef {
-                            kind,
-                            name,
-                            state,
-                            options: self.str_options(options)?,
-                        });
                     }
+                } else {
+                    out.push(FilterDef {
+                        kind,
+                        name,
+                        state,
+                        options: self.str_options(options)?,
+                    });
                 }
-                _ => {}
             }
         }
         Ok(out)

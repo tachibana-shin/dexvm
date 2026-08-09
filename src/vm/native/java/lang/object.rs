@@ -32,7 +32,7 @@ pub(crate) fn object_to_string(vm: &mut Vm, args: &[JValue]) -> R {
     let recv = args[0].as_obj();
     let class = obj_class(vm, recv);
     let name = vm.class_desc_str(class);
-    Ok(new_str(vm, &format!("{name}@{:x}", recv as u32)))
+    Ok(new_str(vm, &format!("{name}@{:x}", recv)))
 }
 
 pub(crate) fn object_clone(vm: &mut Vm, args: &[JValue]) -> R {

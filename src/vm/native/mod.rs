@@ -133,10 +133,11 @@ pub(crate) fn form_body_to_string(vm: &mut Vm, body: &Option<JValue>) -> Option<
 
 #[cfg(any(feature = "okhttp", feature = "tachiyomi"))]
 #[cfg_attr(not(feature = "tachiyomi"), allow(dead_code))]
-pub(crate) fn request_parts(
-    vm: &mut Vm,
-    v: JValue,
-) -> Result<(String, String, Vec<(String, String)>, Option<JValue>), NatErr> {
+pub(crate) type RequestParts = (String, String, Vec<(String, String)>, Option<JValue>);
+
+#[cfg(any(feature = "okhttp", feature = "tachiyomi"))]
+#[cfg_attr(not(feature = "tachiyomi"), allow(dead_code))]
+pub(crate) fn request_parts(vm: &mut Vm, v: JValue) -> Result<RequestParts, NatErr> {
     let Some(Native::Request {
         url,
         method,
@@ -146,7 +147,7 @@ pub(crate) fn request_parts(
     else {
         return Err(npe(vm));
     };
-    Ok((url.clone(), method.clone(), headers.clone(), body.clone()))
+    Ok((url.clone(), method.clone(), headers.clone(), *body))
 }
 
 // ---------------------------------------------------------------------------
@@ -254,7 +255,7 @@ pub(crate) fn no_such_elem(vm: &mut Vm) -> NatErr {
 }
 
 /// Immutable access to an object's native payload.
-pub(crate) fn payload<'a>(vm: &'a Vm, v: JValue) -> Option<&'a Native> {
+pub(crate) fn payload(vm: &Vm, v: JValue) -> Option<&Native> {
     match v {
         JValue::Obj(id) => vm.arena.get(id).and_then(|o| o.native.as_ref()),
         _ => None,
@@ -266,12 +267,12 @@ pub(crate) fn payload<'a>(vm: &'a Vm, v: JValue) -> Option<&'a Native> {
 /// Objects created by `new-instance` start with `native: None`; the first
 /// mutable access lazily installs a class-derived default payload so `<init>`
 /// natives (and later reads) work on fresh objects.
-pub(crate) fn payload_mut<'a>(vm: &'a mut Vm, v: JValue) -> Option<&'a mut Native> {
+pub(crate) fn payload_mut(vm: &mut Vm, v: JValue) -> Option<&mut Native> {
     let id = match v {
         JValue::Obj(id) => id,
         _ => return None,
     };
-    let has_native = vm.arena.get(id).map_or(false, |o| o.native.is_some());
+    let has_native = vm.arena.get(id).is_some_and(|o| o.native.is_some());
     if !has_native {
         if let Some(make) = default_native_for(vm, id) {
             vm.arena.get_mut(id)?.native = Some(make);
@@ -431,7 +432,7 @@ pub(crate) fn jstr(vm: &mut Vm, v: JValue) -> Result<String, NatErr> {
 }
 
 /// Borrowed java.lang.String payload (no error helpers or allocs afterwards).
-pub(crate) fn peek_str<'a>(vm: &'a Vm, v: JValue) -> Option<&'a str> {
+pub(crate) fn peek_str(vm: &Vm, v: JValue) -> Option<&str> {
     let n = payload(vm, v)?;
     match n {
         Native::Str(s) => Some(s),
@@ -995,7 +996,7 @@ pub(crate) fn comma_group(mut s: String) -> String {
     let rem = b.len() % 3;
     let mut out = String::with_capacity(b.len() + b.len() / 3);
     for (idx, &c) in b.iter().enumerate() {
-        if idx > 0 && (idx - rem) % 3 == 0 {
+        if idx > 0 && (idx - rem).is_multiple_of(3) {
             out.push(',');
         }
         out.push(c as char);

@@ -94,7 +94,7 @@ pub(crate) fn request_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
             method,
             headers,
             body,
-        }) => (url.clone(), method.clone(), headers.clone(), body.clone()),
+        }) => (url.clone(), method.clone(), headers.clone(), *body),
         _ => return Err(npe(vm)),
     };
     alloc(
@@ -147,7 +147,7 @@ pub(crate) fn request_new_builder(vm: &mut Vm, args: &[JValue]) -> R {
             method,
             headers,
             body,
-        }) => (url.clone(), method.clone(), headers.clone(), body.clone()),
+        }) => (url.clone(), method.clone(), headers.clone(), *body),
         _ => return Err(npe(vm)),
     };
     alloc(
@@ -359,7 +359,7 @@ pub(crate) fn http_url_query_parameter(vm: &mut Vm, args: &[JValue]) -> R {
     let mut out = None;
     for pair in query.split('&') {
         if let Some((k, v)) = pair.split_once('=') {
-            if k == &name {
+            if k == name.as_str() {
                 out = Some(v.to_string());
                 break;
             }

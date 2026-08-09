@@ -129,8 +129,7 @@ pub struct Vm {
     pub perms: crate::permission::Permissions,
     pub array_classes: HashMap<(u32, u32), u32>,
     #[cfg(feature = "tachiyomi")]
-    pub http:
-        Option<std::rc::Rc<dyn Fn(&native::keiyoushi::HttpData) -> native::keiyoushi::HttpResp>>,
+    pub http: Option<native::keiyoushi::HttpCall>,
     loading: Vec<(u32, usize)>,
 }
 
@@ -368,8 +367,10 @@ impl Vm {
         if let Some(cd) = &def.class_data {
             for ef in &cd.static_fields {
                 let f = self.dex_at(dex_idx).fields[ef.field_idx as usize].clone();
-                let name = self.intern(&self.dex_at(dex_idx).strings[f.name as usize].to_string());
-                let ty = self.intern(&self.dex_at(dex_idx).type_descriptor(f.ty).to_string());
+                let f_name = self.dex_at(dex_idx).strings[f.name as usize].clone();
+                let name = self.intern(&f_name);
+                let ty_desc = self.dex_at(dex_idx).type_descriptor(f.ty).to_owned();
+                let ty = self.intern(&ty_desc);
                 let off = statics.len() as u32;
                 statics.push(JValue::Null);
                 statics_lazy.push(None);
@@ -377,8 +378,10 @@ impl Vm {
             }
             for ef in &cd.instance_fields {
                 let f = self.dex_at(dex_idx).fields[ef.field_idx as usize].clone();
-                let name = self.intern(&self.dex_at(dex_idx).strings[f.name as usize].to_string());
-                let ty = self.intern(&self.dex_at(dex_idx).type_descriptor(f.ty).to_string());
+                let f_name = self.dex_at(dex_idx).strings[f.name as usize].clone();
+                let name = self.intern(&f_name);
+                let ty_desc = self.dex_at(dex_idx).type_descriptor(f.ty).to_owned();
+                let ty = self.intern(&ty_desc);
                 let off = instance_fields.len() as u32;
                 field_offsets.insert((name, ty), off);
                 instance_fields.push((name, ty, ef.access_flags));
@@ -399,7 +402,8 @@ impl Vm {
              -> Result<(), JvmError> {
                 for em in list {
                     let m = vm.dex_at(dex_idx).methods[em.method_idx as usize].clone();
-                    let name = vm.intern(&vm.dex_at(dex_idx).strings[m.name as usize].to_string());
+                    let m_name = vm.dex_at(dex_idx).strings[m.name as usize].clone();
+                    let name = vm.intern(&m_name);
                     let sig = vm.intern(&vm.proto_sig(dex_idx, m.proto));
                     let ret_desc = vm
                         .dex_at(dex_idx)
@@ -608,9 +612,12 @@ impl Vm {
             .get(field_idx as usize)
             .cloned()
             .ok_or_else(|| JvmError::Resolution(format!("bad field idx {field_idx}")))?;
-        let name = self.intern(&self.dex_at(dex_idx).strings[f.name as usize].to_string());
-        let ty = self.intern(&self.dex_at(dex_idx).type_descriptor(f.ty).to_string());
-        let class_desc = self.intern(&self.dex_at(dex_idx).type_descriptor(f.class).to_string());
+        let f_name = self.dex_at(dex_idx).strings[f.name as usize].clone();
+        let name = self.intern(&f_name);
+        let ty_desc = self.dex_at(dex_idx).type_descriptor(f.ty).to_owned();
+        let ty = self.intern(&ty_desc);
+        let class_desc_s = self.dex_at(dex_idx).type_descriptor(f.class).to_owned();
+        let class_desc = self.intern(&class_desc_s);
         let fr = FieldRef {
             name,
             ty,
@@ -760,8 +767,8 @@ impl Vm {
             }
         }
         let mut freed = 0;
-        for id in 0..n {
-            if !marks[id] {
+        for (id, &marked) in marks.iter().enumerate().take(n) {
+            if !marked {
                 self.arena.reclaim(id as u32);
                 freed += 1;
             }
@@ -975,7 +982,8 @@ impl Vm {
             .get(method_idx as usize)
             .cloned()
             .ok_or_else(|| JvmError::Resolution(format!("bad method idx {method_idx}")))?;
-        let name = self.intern(&self.dex_at(dex_idx).strings[m.name as usize].to_string());
+        let m_name = self.dex_at(dex_idx).strings[m.name as usize].clone();
+        let name = self.intern(&m_name);
         let sig = self.intern(&self.proto_sig(dex_idx, m.proto));
         let ret_desc = self
             .dex_at(dex_idx)
@@ -988,7 +996,8 @@ impl Vm {
             .map(|&t| self.dex_at(dex_idx).type_descriptor(t).to_string())
             .collect();
         let args: Vec<u32> = arg_descs.iter().map(|d| self.intern(d)).collect();
-        let class_desc = self.intern(&self.dex_at(dex_idx).type_descriptor(m.class).to_string());
+        let class_desc_s = self.dex_at(dex_idx).type_descriptor(m.class).to_owned();
+        let class_desc = self.intern(&class_desc_s);
         let mr = MethodRef {
             name,
             sig,
@@ -1449,7 +1458,7 @@ mod tests {
     }
 
     fn pad4(d: &mut Vec<u8>) {
-        while d.len() % 4 != 0 {
+        while !d.len().is_multiple_of(4) {
             d.push(0);
         }
     }
@@ -1517,7 +1526,7 @@ mod tests {
         let method_ids_off = d.len() as u32;
         push4(&mut d, 0); // class 0, proto 0
         push4(&mut d, 2); // name "f"
-        push4(&mut d, (1u32 << 16) | 0); // class 0, proto 1
+        push4(&mut d, 1u32 << 16); // class 0, proto 1
         push4(&mut d, 3); // name "g"
 
         // class_defs: one class

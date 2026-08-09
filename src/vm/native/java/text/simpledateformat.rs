@@ -64,9 +64,9 @@ pub(crate) fn simple_date_format_parse(vm: &mut Vm, args: &[JValue]) -> R {
         while pi + run < pattern.len() && pattern.as_bytes()[pi + run] == c {
             run += 1;
         }
-        if c == '\'' as u8 {
+        if c == b'\'' {
             pi += 1;
-            while pi < pattern.len() && pattern.as_bytes()[pi] != '\'' as u8 {
+            while pi < pattern.len() && pattern.as_bytes()[pi] != b'\'' {
                 if pos < bytes.len() && bytes[pos] == pattern.as_bytes()[pi] {
                     pos += 1;
                 } else {
@@ -78,9 +78,7 @@ pub(crate) fn simple_date_format_parse(vm: &mut Vm, args: &[JValue]) -> R {
             continue;
         }
         if !c.is_ascii_alphabetic() {
-            if pos < bytes.len() && bytes[pos] == c {
-                pos += 1;
-            } else if c == b' ' && pos < bytes.len() && bytes[pos] == b' ' {
+            if pos < bytes.len() && (bytes[pos] == c || (c == b' ' && bytes[pos] == b' ')) {
                 pos += 1;
             } else {
                 ok = false;
@@ -90,57 +88,51 @@ pub(crate) fn simple_date_format_parse(vm: &mut Vm, args: &[JValue]) -> R {
         }
         match c {
             b'y' | b'Y' => {
-                let v = read_int(&bytes, &mut pos);
-                if v.is_none() {
-                    ok = false;
-                } else {
-                    y = v.unwrap() as i64;
+                if let Some(v) = read_int(bytes, &mut pos) {
+                    y = v as i64;
                     seen_any = true;
+                } else {
+                    ok = false;
                 }
             }
             b'M' => {
-                let v = read_int(&bytes, &mut pos);
-                if v.is_none() {
-                    ok = false;
-                } else {
-                    mo = v.unwrap() as i64;
+                if let Some(v) = read_int(bytes, &mut pos) {
+                    mo = v as i64;
                     seen_any = true;
+                } else {
+                    ok = false;
                 }
             }
             b'd' => {
-                let v = read_int(&bytes, &mut pos);
-                if v.is_none() {
-                    ok = false;
-                } else {
-                    d = v.unwrap() as i64;
+                if let Some(v) = read_int(bytes, &mut pos) {
+                    d = v as i64;
                     seen_any = true;
+                } else {
+                    ok = false;
                 }
             }
             b'H' => {
-                let v = read_int(&bytes, &mut pos);
-                if v.is_none() {
-                    ok = false;
-                } else {
-                    h = v.unwrap() as i64;
+                if let Some(v) = read_int(bytes, &mut pos) {
+                    h = v as i64;
                     seen_any = true;
+                } else {
+                    ok = false;
                 }
             }
             b'm' => {
-                let v = read_int(&bytes, &mut pos);
-                if v.is_none() {
-                    ok = false;
-                } else {
-                    mi = v.unwrap() as i64;
+                if let Some(v) = read_int(bytes, &mut pos) {
+                    mi = v as i64;
                     seen_any = true;
+                } else {
+                    ok = false;
                 }
             }
             b's' => {
-                let v = read_int(&bytes, &mut pos);
-                if v.is_none() {
-                    ok = false;
-                } else {
-                    s = v.unwrap() as i64;
+                if let Some(v) = read_int(bytes, &mut pos) {
+                    s = v as i64;
                     seen_any = true;
+                } else {
+                    ok = false;
                 }
             }
             _ => pi += run,

@@ -124,7 +124,7 @@ pub(crate) fn simple_name_of(desc: &str) -> String {
     s
 }
 
-pub(crate) fn class_cop<'a>(vm: &'a Vm, v: JValue) -> Option<&'a ClassOrPrim> {
+pub(crate) fn class_cop(vm: &Vm, v: JValue) -> Option<&ClassOrPrim> {
     match payload(vm, v) {
         Some(Native::ClassObj(c)) => Some(c),
         _ => None,

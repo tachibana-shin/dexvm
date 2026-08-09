@@ -115,10 +115,7 @@ pub(crate) fn matcher_looking_at(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn matcher_group(vm: &mut Vm, args: &[JValue]) -> R {
     let sub = match payload(vm, args[0]) {
-        Some(Native::Matcher(ms)) => match ms.last {
-            Some((s, e)) => Some(ms.text[s..e].to_string()),
-            None => None,
-        },
+        Some(Native::Matcher(ms)) => ms.last.map(|(s, e)| ms.text[s..e].to_string()),
         _ => return Err(npe(vm)),
     };
     match sub {

@@ -25,7 +25,7 @@ pub struct Args {
 impl Args {
     pub fn reg_at(&self, i: u8) -> u16 {
         if self.range {
-            u16::from(self.base) + u16::from(i)
+            self.base + u16::from(i)
         } else {
             u16::from(self.regs[i as usize])
         }
@@ -391,7 +391,7 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
                 pc + 3,
             ))
         }
-        0x2d | 0x2e | 0x2f | 0x30 | 0x31 => {
+        0x2d..=0x31 => {
             let cmp = match op {
                 0x2d => CmpOp::CmplFloat,
                 0x2e => CmpOp::CmpgFloat,
@@ -404,7 +404,7 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
                 pc + 2,
             ))
         }
-        0x32 | 0x33 | 0x34 | 0x35 | 0x36 | 0x37 => {
+        0x32..=0x37 => {
             let ifop = match op {
                 0x32 => IfOp::Eq,
                 0x33 => IfOp::Ne,
@@ -537,20 +537,20 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
         0x52 => Ok((Insn::IGet(a4, b4, u32::from(w1()?)), pc + 2)),
         0x53 => Ok((Insn::IGetWide(a4, b4, u32::from(w1()?)), pc + 2)),
         0x54 => Ok((Insn::IGetObj(a4, b4, u32::from(w1()?)), pc + 2)),
-        0x55 | 0x56 | 0x57 | 0x58 => Ok((Insn::IGet(a4, b4, u32::from(w1()?)), pc + 2)),
+        0x55..=0x58 => Ok((Insn::IGet(a4, b4, u32::from(w1()?)), pc + 2)),
         0x59 => Ok((Insn::IPut(a4, b4, u32::from(w1()?)), pc + 2)),
         0x5a => Ok((Insn::IPutWide(a4, b4, u32::from(w1()?)), pc + 2)),
         0x5b => Ok((Insn::IPutObj(a4, b4, u32::from(w1()?)), pc + 2)),
-        0x5c | 0x5d | 0x5e | 0x5f => Ok((Insn::IPut(a4, b4, u32::from(w1()?)), pc + 2)),
+        0x5c..=0x5f => Ok((Insn::IPut(a4, b4, u32::from(w1()?)), pc + 2)),
         // sget/sput (21c: AA 8-bit)
         0x60 => Ok((Insn::SGet(a8, u32::from(w1()?)), pc + 2)),
         0x61 => Ok((Insn::SGetWide(a8, u32::from(w1()?)), pc + 2)),
         0x62 => Ok((Insn::SGetObj(a8, u32::from(w1()?)), pc + 2)),
-        0x63 | 0x64 | 0x65 | 0x66 => Ok((Insn::SGet(a8, u32::from(w1()?)), pc + 2)),
+        0x63..=0x66 => Ok((Insn::SGet(a8, u32::from(w1()?)), pc + 2)),
         0x67 => Ok((Insn::SPut(a8, u32::from(w1()?)), pc + 2)),
         0x68 => Ok((Insn::SPutWide(a8, u32::from(w1()?)), pc + 2)),
         0x69 => Ok((Insn::SPutObj(a8, u32::from(w1()?)), pc + 2)),
-        0x6a | 0x6b | 0x6c | 0x6d => Ok((Insn::SPut(a8, u32::from(w1()?)), pc + 2)),
+        0x6a..=0x6d => Ok((Insn::SPut(a8, u32::from(w1()?)), pc + 2)),
         // invoke (35c / 3rc)
         0x6e..=0x72 => {
             let (method_idx, args) = args_35c(word, w1()?, w2()?)?;
@@ -809,7 +809,7 @@ fn payload_span(insn: &Insn) -> Option<(u32, u32)> {
         }
         Insn::FillArrayData(_, payload, data) => {
             let words = match data {
-                FillArray::Byte(v) => (v.len() as u32 + 1) / 2,
+                FillArray::Byte(v) => (v.len() as u32).div_ceil(2),
                 FillArray::Short(v) | FillArray::Char(v) => v.len() as u32,
                 FillArray::Int(v) => 2 * v.len() as u32,
                 FillArray::Wide(v) => 4 * v.len() as u32,
@@ -871,10 +871,7 @@ mod tests {
 
     #[test]
     fn const_forms() {
-        assert_eq!(
-            dec(&[0x12 | (0 << 8) | (0xf << 12)], 0),
-            Insn::Const4(0, -1)
-        );
+        assert_eq!(dec(&[0x12 | (0xf << 12)], 0), Insn::Const4(0, -1));
         assert_eq!(dec(&[0x12 | (2 << 8) | (3 << 12)], 0), Insn::Const4(2, 3));
         assert_eq!(dec(&[0x13 | (3 << 8), 0x1234], 0), Insn::Const16(3, 0x1234));
         assert_eq!(
@@ -906,10 +903,7 @@ mod tests {
             Insn::IfZ(IfOp::Ez, 1, 4 + 0x7f)
         );
         assert_eq!(
-            dec(
-                &[0, 0, 0, 0, 0, 0, 0, 0, 0x33 | (0 << 8) | (1 << 12), 0xfffc],
-                8
-            ),
+            dec(&[0, 0, 0, 0, 0, 0, 0, 0, 0x33 | (1 << 12), 0xfffc], 8),
             Insn::If(IfOp::Ne, 0, 1, 8u32.wrapping_add((-4i32) as u32))
         );
     }
@@ -985,30 +979,21 @@ mod tests {
 
     #[test]
     fn field_ops() {
-        assert_eq!(
-            dec(&[0x52 | (0 << 8) | (1 << 12), 0x2a], 0),
-            Insn::IGet(0, 1, 0x2a)
-        );
+        assert_eq!(dec(&[0x52 | (1 << 12), 0x2a], 0), Insn::IGet(0, 1, 0x2a));
         assert_eq!(dec(&[0x62 | (2 << 8), 0x100], 0), Insn::SGetObj(2, 0x100));
-        assert_eq!(
-            dec(&[0x5a | (0 << 8) | (1 << 12), 7], 0),
-            Insn::IPutWide(0, 1, 7)
-        );
+        assert_eq!(dec(&[0x5a | (1 << 12), 7], 0), Insn::IPutWide(0, 1, 7));
         assert_eq!(dec(&[0x61 | (3 << 8), 0x4], 0), Insn::SGetWide(3, 4));
     }
 
     #[test]
     fn arrays() {
+        assert_eq!(dec(&[0x23 | (1 << 12), 0x4], 0), Insn::NewArray(0, 1, 4));
         assert_eq!(
-            dec(&[0x23 | (0 << 8) | (1 << 12), 0x4], 0),
-            Insn::NewArray(0, 1, 4)
-        );
-        assert_eq!(
-            dec(&[0x44 | (0 << 8), (1 & 0xff) | (2 << 8)], 0),
+            dec(&[0x44, (1 & 0xff) | (2 << 8)], 0),
             Insn::AGet(ArrayElem::Int, 0, 1, 2)
         );
         assert_eq!(
-            dec(&[0x4d | (0 << 8), (1 & 0xff) | (2 << 8)], 0),
+            dec(&[0x4d, (1 & 0xff) | (2 << 8)], 0),
             Insn::APut(ArrayElem::Obj, 0, 1, 2)
         );
     }
@@ -1017,7 +1002,7 @@ mod tests {
     fn arithmetic() {
         // add-int v0, v1, v2 (23x, int)
         assert_eq!(
-            dec(&[0x90 | (0 << 8), (1 & 0xff) | (2 << 8)], 0),
+            dec(&[0x90, (1 & 0xff) | (2 << 8)], 0),
             Insn::Binop(Binop::Add, 0, 1, 2)
         );
         // sub-double/2addr v3, v4
@@ -1027,26 +1012,23 @@ mod tests {
         );
         // add-int/lit16 v0, v1, -1
         assert_eq!(
-            dec(&[0xd0 | (0 << 8) | (1 << 12), 0xffff], 0),
+            dec(&[0xd0 | (1 << 12), 0xffff], 0),
             Insn::BinopLit(LitOp::Bin(Binop::Add), 0, 1, -1)
         );
         assert_eq!(
-            dec(&[0xd1 | (0 << 8) | (1 << 12), 5], 0),
+            dec(&[0xd1 | (1 << 12), 5], 0),
             Insn::BinopLit(LitOp::Rsub, 0, 1, 5)
         );
         // shl-int/lit8 v0, v1, 2 (22b: dest bits 8-15, src low byte, lit high byte)
         assert_eq!(
-            dec(&[0xe0 | (0 << 8), (1 & 0xff) | (2 << 8)], 0),
+            dec(&[0xe0, (1 & 0xff) | (2 << 8)], 0),
             Insn::BinopLit(LitOp::Bin(Binop::Shl), 0, 1, 2)
         );
         // neg-int (12x unop)
-        assert_eq!(
-            dec(&[0x7b | (0 << 8) | (1 << 12)], 0),
-            Insn::Unop(Unop::NegInt, 0, 1)
-        );
+        assert_eq!(dec(&[0x7b | (1 << 12)], 0), Insn::Unop(Unop::NegInt, 0, 1));
         // int-to-long
         assert_eq!(
-            dec(&[0x81 | (0 << 8) | (1 << 12)], 0),
+            dec(&[0x81 | (1 << 12)], 0),
             Insn::Unop(Unop::IntToLong, 0, 1)
         );
         // quick opcodes (odex-only) are not supported

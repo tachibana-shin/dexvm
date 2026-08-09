@@ -502,13 +502,12 @@ mod tests {
         ctx.revoke(&Permission::Network(NetworkPermission::Connect(
             "api.akuma.moe".into(),
         )));
-        assert!(matches!(
-            ctx.vm()
-                .check_permission(&Permission::Network(NetworkPermission::Connect(
-                    "api.akuma.moe".into()
-                ))),
-            Err(_)
-        ));
+        assert!(ctx
+            .vm()
+            .check_permission(&Permission::Network(NetworkPermission::Connect(
+                "api.akuma.moe".into()
+            )))
+            .is_err());
         ctx.grant(Permission::Network(NetworkPermission::Connect(
             "api.akuma.moe".into(),
         )));

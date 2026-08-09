@@ -108,7 +108,9 @@ pub(crate) fn keiyoushi_execute(vm: &mut Vm, args: &[JValue]) -> R {
 
 /// Host callback that returns the stored `lazy_http`? (unused, kept for docs)
 #[allow(dead_code)]
-pub(crate) fn _http_client(vm: &mut Vm) -> Option<Rc<dyn Fn(&HttpData) -> HttpResp>> {
+pub(crate) type HttpCall = Rc<dyn Fn(&HttpData) -> HttpResp>;
+
+pub(crate) fn _http_client(vm: &mut Vm) -> Option<HttpCall> {
     vm.http.clone()
 }
 

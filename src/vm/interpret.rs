@@ -47,7 +47,7 @@ impl Frame {
         let base = registers as usize - ins_size as usize;
         for (i, a) in args.iter().enumerate() {
             if i < ins_size as usize {
-                regs[base + i] = a.clone();
+                regs[base + i] = *a;
             }
         }
         regs
@@ -396,7 +396,7 @@ impl Vm {
                 Flow::Next(0)
             }
             Insn::Const4(d, lit) => {
-                f.regs[*d as usize] = JValue::Int(i32::from(*lit as i8));
+                f.regs[*d as usize] = JValue::Int(i32::from(*lit));
                 Flow::Next(0)
             }
             Insn::Const16(d, lit) => {
@@ -408,15 +408,11 @@ impl Vm {
                 Flow::Next(0)
             }
             Insn::ConstHigh16(d, lit) => {
-                f.regs[*d as usize] = JValue::Int(lit.wrapping_shl(16) as i32);
+                f.regs[*d as usize] = JValue::Int(lit.wrapping_shl(16));
                 Flow::Next(0)
             }
-            Insn::ConstWide16(d, lit) => {
-                f.regs[*d as usize] = JValue::Long(i64::from(*lit));
-                Flow::Next(0)
-            }
-            Insn::ConstWide32(d, lit) => {
-                f.regs[*d as usize] = JValue::Long(i64::from(*lit));
+            Insn::ConstWide16(d, lit) | Insn::ConstWide32(d, lit) => {
+                f.regs[*d as usize] = JValue::Long(*lit);
                 Flow::Next(0)
             }
             Insn::ConstWide(d, lit) => {
@@ -685,13 +681,8 @@ impl Vm {
             | Insn::SGetWide(d, field_idx)
             | Insn::SGetObj(d, field_idx) => {
                 let fr = self.field_ref(f.dex, *field_idx)?;
-                match self.static_field_get(fr) {
-                    Ok(v) => {
-                        f.regs[*d as usize] = v;
-                        Flow::Next(0)
-                    }
-                    Err(e) => return Err(e),
-                }
+                f.regs[*d as usize] = self.static_field_get(fr)?;
+                Flow::Next(0)
             }
             Insn::SPut(src, field_idx)
             | Insn::SPutWide(src, field_idx)
@@ -752,10 +743,7 @@ impl Vm {
                     }
                     Some(r.as_obj())
                 };
-                let target = match self.resolve_target(*kind, &mref, receiver) {
-                    Ok(t) => t,
-                    Err(e) => return Err(e),
-                };
+                let target = self.resolve_target(*kind, &mref, receiver)?;
                 if *kind == InvokeKind::Static {
                     if let Target::Bytecode { class, .. } = &target {
                         self.ensure_class_initialized(*class)?;
