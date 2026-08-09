@@ -774,6 +774,44 @@ impl Vm {
         Err(JvmError::Resolution(format!("no class with method {name} in dex")))
     }
 
+    /// Legacy (pre-factory) extension shape: a class that *is* the source and
+    /// inherits from `HttpSource` directly (e.g. old `ExtensionGenerated`
+    /// classes). Returns the first concrete subclass found in the raw dex.
+    pub fn find_http_source_subclass(&mut self) -> Result<String, JvmError> {
+        const TARGET: &str = "Leu/kanade/tachiyomi/source/online/HttpSource;";
+        for cd in &self.dex.classes {
+            let type_str = self
+                .dex
+                .types
+                .get(cd.class_idx as usize)
+                .and_then(|&s| self.dex.strings.get(s as usize).cloned())
+                .unwrap_or_default();
+            if type_str.as_ref() == TARGET {
+                continue;
+            }
+            let mut sup = cd.superclass_idx;
+            for _ in 0..4 {
+                let Some(&s) = self.dex.types.get(sup as usize) else { break };
+                let Some(sup_str) = self.dex.strings.get(s as usize) else { break };
+                if sup_str.as_ref() == TARGET {
+                    let cid = self.ensure_class_by_desc(&type_str)?;
+                    return Ok(self.str_of(self.classes[cid as usize].descriptor).to_string());
+                }
+                let Some(next) = self
+                    .dex
+                    .classes
+                    .iter()
+                    .find(|c| c.class_idx == sup)
+                    .map(|c| c.superclass_idx)
+                else {
+                    break;
+                };
+                sup = next;
+            }
+        }
+        Err(JvmError::Resolution("no HttpSource subclass in dex".into()))
+    }
+
     /// String payload of a java.lang.String value, if any.
     pub fn str_of_jvalue(&self, v: JValue) -> Option<String> {
         if v.is_null() {

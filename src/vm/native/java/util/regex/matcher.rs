@@ -2,17 +2,37 @@
 
 use crate::vm::native::*;
 
+/// fancy_regex has no `find_at`; emulate it with find_iter.
+fn find_at(re: &fancy_regex::Regex, text: &str, pos: usize) -> Option<(usize, usize)> {
+    for m in re.find_iter(text).flatten() {
+        if m.start() >= pos {
+            return Some((m.start(), m.end()));
+        }
+    }
+    None
+}
+
+/// fancy_regex has no `captures_at`; emulate it with captures_iter. Returns
+/// every group as `(start, end)`, avoiding the version-specific
+/// `Captures<'t, S>` type from the fancy-regex crate.
+fn captures_at(re: &fancy_regex::Regex, text: &str, pos: usize) -> Option<Vec<Option<(usize, usize)>>> {
+    for c in re.captures_iter(text).flatten() {
+        if c.get(0).map(|m| m.start()) == Some(pos) {
+            return Some((0..c.len()).map(|i| c.get(i).map(|m| (m.start(), m.end()))).collect());
+        }
+    }
+    None
+}
+
+
 pub(crate) fn matcher_matches(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(n) = payload_mut(vm, args[0]) else {
         return Err(npe(vm));
     };
     match n {
         Native::Matcher(ms) => {
-            let hit = ms
-                .pattern
-                .find(&ms.text)
-                .filter(|m| m.start() == 0 && m.end() == ms.text.len())
-                .map(|m| (m.start(), m.end()));
+            let hit = find_at(&ms.pattern, &ms.text, 0)
+                .filter(|(s, e)| *s == 0 && *e == ms.text.len());
             match hit {
                 Some((s, e)) => {
                     ms.last = Some((s, e));
@@ -46,10 +66,7 @@ pub(crate) fn matcher_find_at(vm: &mut Vm, args: &[JValue], from: Option<usize>)
             if let Some(p) = from {
                 ms.pos = p;
             }
-            let hit = ms
-                .pattern
-                .find_at(&ms.text, ms.pos)
-                .map(|m| (m.start(), m.end()));
+            let hit = find_at(&ms.pattern, &ms.text, ms.pos);
             match hit {
                 Some((s, e)) => {
                     ms.last = Some((s, e));
@@ -73,11 +90,7 @@ pub(crate) fn matcher_looking_at(vm: &mut Vm, args: &[JValue]) -> R {
     match n {
         Native::Matcher(ms) => {
             let pos = ms.pos;
-            let hit = ms
-                .pattern
-                .find_at(&ms.text, pos)
-                .filter(|m| m.start() == pos)
-                .map(|m| (m.start(), m.end()));
+            let hit = find_at(&ms.pattern, &ms.text, pos).filter(|(s, _)| *s == pos);
             match hit {
                 Some((s, e)) => {
                     ms.last = Some((s, e));
@@ -113,9 +126,9 @@ pub(crate) fn matcher_group_n(vm: &mut Vm, args: &[JValue]) -> R {
     let mut no_match = false;
     match payload(vm, args[0]) {
         Some(Native::Matcher(ms)) => match ms.last {
-            Some((s, _)) => match ms.pattern.captures_at(&ms.text, s) {
-                Some(c) => match c.get(idx as usize) {
-                    Some(m) => out = Some(ms.text[m.start()..m.end()].to_string()),
+            Some((s, _)) => match captures_at(&ms.pattern, &ms.text, s) {
+                Some(c) => match c.get(idx as usize).and_then(|m| *m) {
+                    Some((gs, ge)) => out = Some(ms.text[gs..ge].to_string()),
                     None => no_match = true,
                 },
                 None => no_match = true,
@@ -174,8 +187,8 @@ pub(crate) fn matcher_bound_pair(vm: &mut Vm, v: JValue, idx: i32) -> Option<(us
     match payload(vm, v) {
         Some(Native::Matcher(ms)) => match ms.last {
             Some((s, _)) if idx <= 0 => Some((s, s)),
-            Some((s, _)) => match ms.pattern.captures_at(&ms.text, s) {
-                Some(c) => c.get(idx as usize).map(|m| (m.start(), m.end())),
+            Some((s, _)) => match captures_at(&ms.pattern, &ms.text, s) {
+                Some(c) => c.get(idx as usize).and_then(|m| *m),
                 None => None,
             },
             None => None,

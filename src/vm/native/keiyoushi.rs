@@ -118,8 +118,28 @@ pub(crate) fn _http_client(vm: &mut Vm) -> Option<Rc<dyn Fn(&HttpData) -> HttpRe
 // eu.kanade.tachiyomi.source.online.HttpSource defaults
 // ---------------------------------------------------------------------------
 
-pub(crate) fn http_source_get_base_url(vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(vm.alloc_string("https://api.akuma.moe"))
+/// The per-source getters (`getName`, `getLang`, `getBaseUrl`, `getId`,
+/// `getSupportsLatest`) are implemented by the extension's own dex class —
+/// every concrete mihon source overrides them. The natives below are only
+/// reachable when the receiver's whole class chain lacks the override, which
+/// on a real device is `AbstractMethodError`. Surface that instead of
+/// inventing host-side constants (which would silently lie about sources
+/// like "Comic Fury" vs "Akuma").
+fn http_source_abstract(vm: &mut Vm, args: &[JValue], name: &str) -> R {
+    let receiver = match args.first() {
+        Some(JValue::Obj(o)) => vm
+            .class_desc_str(vm.arena.objects[*o as usize].class)
+            .to_string(),
+        _ => String::new(),
+    };
+    Err(NatErr::Fatal(JvmError::Resolution(format!(
+        "{name}: no override on {} (HttpSource stub method; abstract on real devices)",
+        receiver
+    ))))
+}
+
+pub(crate) fn http_source_get_base_url(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_abstract(vm, args, "getBaseUrl")
 }
 
 pub(crate) fn http_source_get_headers_default(vm: &mut Vm, _args: &[JValue]) -> R {
@@ -130,29 +150,37 @@ pub(crate) fn http_source_headers_builder(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(vm, "Lokhttp3/Headers$Builder;", Native::Headers(Vec::new()))
 }
 
-pub(crate) fn http_source_get_lang(vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(vm.alloc_string("all"))
+pub(crate) fn http_source_get_lang(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_abstract(vm, args, "getLang")
 }
 
-pub(crate) fn http_source_get_name(vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(vm.alloc_string("Akuma"))
+pub(crate) fn http_source_get_name(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_abstract(vm, args, "getName")
 }
 
-pub(crate) fn http_source_get_id(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Long(0))
+pub(crate) fn http_source_get_id(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_abstract(vm, args, "getId")
 }
 
-pub(crate) fn http_source_get_supports_latest(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Int(1))
+pub(crate) fn http_source_get_supports_latest(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_abstract(vm, args, "getSupportsLatest")
 }
 
-fn set_url_relative(p: &mut Native, url: &str, base: &str) {
+fn set_url_relative(p: &mut Native, url: &str) {
     let target = match p {
         Native::SManga { url: u, .. } | Native::SChapter { url: u, .. } => u,
         _ => return,
     };
-    *target = if url.starts_with(base) {
-        url[base.len()..].to_string()
+    *target = if let Some(rest) = url.strip_prefix("http://") {
+        match rest.find('/') {
+            Some(i) => rest[i..].to_string(),
+            None => "/".to_string(),
+        }
+    } else if let Some(rest) = url.strip_prefix("https://") {
+        match rest.find('/') {
+            Some(i) => rest[i..].to_string(),
+            None => "/".to_string(),
+        }
     } else {
         url.to_string()
     };
@@ -165,7 +193,7 @@ pub(crate) fn http_source_set_url_no_domain_manga(vm: &mut Vm, args: &[JValue]) 
     let Some(n) = payload_mut(vm, args[1]) else {
         return Err(npe(vm));
     };
-    set_url_relative(n, &url, "https://api.akuma.moe");
+    set_url_relative(n, &url);
     Ok(JValue::Null)
 }
 
@@ -176,7 +204,7 @@ pub(crate) fn http_source_set_url_no_domain_chapter(vm: &mut Vm, args: &[JValue]
     let Some(n) = payload_mut(vm, args[1]) else {
         return Err(npe(vm));
     };
-    set_url_relative(n, &url, "https://api.akuma.moe");
+    set_url_relative(n, &url);
     Ok(JValue::Null)
 }
 
@@ -188,14 +216,14 @@ fn obj_url(vm: &mut Vm, v: JValue) -> Option<String> {
     }
 }
 
-fn http_source_get_request(vm: &mut Vm, obj: JValue) -> R {
+fn http_source_get_request(vm: &mut Vm, src: JValue, obj: JValue) -> R {
     let Some(url) = obj_url(vm, obj) else {
         return Err(npe(vm));
     };
     let full = if url.starts_with("http") {
         url
     } else {
-        format!("https://api.akuma.moe{url}")
+        format!("{}{url}", source_base_url(vm, src)?)
     };
     alloc(
         vm,
@@ -212,15 +240,42 @@ fn http_source_get_request(vm: &mut Vm, obj: JValue) -> R {
 /// Host default for `mangaDetailsRequest` when the extension does not
 /// override it: `GET baseUrl + manga.url`.
 pub(crate) fn http_source_manga_details_request(vm: &mut Vm, args: &[JValue]) -> R {
-    http_source_get_request(vm, args[1])
+    http_source_get_request(vm, args[0], args[1])
 }
 
 pub(crate) fn http_source_chapter_list_request(vm: &mut Vm, args: &[JValue]) -> R {
-    http_source_get_request(vm, args[1])
+    http_source_get_request(vm, args[0], args[1])
 }
 
 pub(crate) fn http_source_page_list_request(vm: &mut Vm, args: &[JValue]) -> R {
-    http_source_get_request(vm, args[1])
+    http_source_get_request(vm, args[0], args[1])
+}
+
+/// Resolves the source instance's `baseUrl` by invoking its (possibly
+/// R8-renamed) bytecode `getBaseUrl` override.
+fn source_base_url(vm: &mut Vm, src: JValue) -> Result<String, NatErr> {
+    use crate::dex::insn::InvokeKind;
+    use crate::vm::MethodRef;
+    let JValue::Obj(o) = src else {
+        return Err(nat_fatal(crate::vm::error::JvmError::Resolution(
+            "source base url: not a source instance".into(),
+        )));
+    };
+    let mref = MethodRef {
+        name: vm.intern("getBaseUrl"),
+        sig: vm.intern("()Ljava/lang/String;"),
+        ret: 0,
+        args: Vec::new(),
+        class_desc: 0,
+    };
+    let target = vm
+        .resolve_target(InvokeKind::Virtual, &mref, Some(o))
+        .map_err(nat_fatal)?;
+    match vm.call_target(target, vec![src]) {
+        Ok(JValue::Obj(s)) => Ok(jstr(vm, JValue::Obj(s)).unwrap_or_default()),
+        Ok(_) => Ok(String::new()),
+        Err(e) => Err(nat_fatal(e)),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -359,6 +414,10 @@ pub(crate) fn smanga_set_update_strategy(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+pub(crate) fn smanga_set_initialized(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
 // ---- SChapter ----
 
 pub(crate) fn empty_schapter() -> Native {
@@ -367,6 +426,7 @@ pub(crate) fn empty_schapter() -> Native {
         url: String::new(),
         date_upload: 0,
         scanlator: String::new(),
+        chapter_number: 0.0,
     }
 }
 
@@ -426,6 +486,22 @@ pub(crate) fn schapter_set_date_upload(vm: &mut Vm, args: &[JValue]) -> R {
     let v = long_of(vm, args[1]);
     match payload_mut(vm, args[0]) {
         Some(Native::SChapter { date_upload, .. }) => *date_upload = v,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
+pub(crate) fn schapter_get_chapter_number(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::SChapter { chapter_number, .. }) => Ok(JValue::Float(*chapter_number)),
+        _ => Err(npe(vm)),
+    }
+}
+
+pub(crate) fn schapter_set_chapter_number(vm: &mut Vm, args: &[JValue]) -> R {
+    let v = float_of(vm, args[1]);
+    match payload_mut(vm, args[0]) {
+        Some(Native::SChapter { chapter_number, .. }) => *chapter_number = v,
         _ => return Err(npe(vm)),
     }
     Ok(JValue::Null)
@@ -699,11 +775,19 @@ pub(crate) fn filter_set_state(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn filter_select_state_obj(vm: &mut Vm, args: &[JValue]) -> R {
-    let (state, options) = match payload(vm, args[0]) {
-        Some(Native::SFilter { state, options, .. }) => (*state, options.clone()),
+    let state = match payload(vm, args[0]) {
+        Some(Native::SFilter { state, .. }) => *state,
         _ => return Ok(JValue::Null),
     };
-    Ok(options.get(state as usize).copied().unwrap_or(JValue::Null))
+    box_int_value(vm, "Ljava/lang/Integer;", JValue::Int(state))
+}
+
+pub(crate) fn filter_checkbox_state_obj(vm: &mut Vm, args: &[JValue]) -> R {
+    let checked = match payload(vm, args[0]) {
+        Some(Native::SFilter { is_checked, .. }) => *is_checked,
+        _ => return Ok(JValue::Null),
+    };
+    boxed(vm, "Ljava/lang/Boolean;", Native::BoolBox(checked))
 }
 
 pub(crate) fn filter_text_state_obj(vm: &mut Vm, args: &[JValue]) -> R {
@@ -749,8 +833,12 @@ pub(crate) fn filter_tristate_is_included(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn requests_kt_get_default(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(url) = jstr(vm, args[0]).ok() else {
-        return Err(npe(vm));
+    let url = match payload(vm, args[0]) {
+        Some(Native::HttpUrl(u)) => u.clone(),
+        _ => match jstr(vm, args[0]) {
+            Ok(s) => s,
+            Err(_) => return Err(npe(vm)),
+        },
     };
     let headers = match payload(vm, args[1]) {
         Some(Native::Headers(h)) => h.clone(),
@@ -817,6 +905,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "setStatus", "(I)V", true, smanga_set_status),
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "getUpdate_strategy", "()Leu/kanade/tachiyomi/source/model/UpdateStrategy;", true, smanga_get_update_strategy),
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "setUpdate_strategy", "(Leu/kanade/tachiyomi/source/model/UpdateStrategy;)V", true, smanga_set_update_strategy),
+    ne!("Leu/kanade/tachiyomi/source/model/SManga;", "setInitialized", "(Z)V", true, smanga_set_initialized),
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "getUrlWithoutDomain", "()Ljava/lang/String;", true, smanga_get_url),
     ne!("Leu/kanade/tachiyomi/source/model/SManga$Companion;", "create", "()Leu/kanade/tachiyomi/source/model/SManga;", true, smanga_companion_create),
     ne!("Leu/kanade/tachiyomi/source/model/SManga$Companion;", "create", "()Leu/kanade/tachiyomi/source/model/SChapter;", true, smanga_companion_create),
@@ -827,6 +916,8 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "setUrl", "(Ljava/lang/String;)V", true, schapter_set_url),
     ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "getDate_upload", "()J", true, schapter_get_date_upload),
     ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "setDate_upload", "(J)V", true, schapter_set_date_upload),
+    ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "getChapter_number", "()F", true, schapter_get_chapter_number),
+    ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "setChapter_number", "(F)V", true, schapter_set_chapter_number),
     ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "getScanlator", "()Ljava/lang/String;", true, schapter_get_scanlator),
     ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "setScanlator", "(Ljava/lang/String;)V", true, schapter_set_scanlator),
     ne!("Leu/kanade/tachiyomi/source/model/SChapter$Companion;", "create", "()Leu/kanade/tachiyomi/source/model/SChapter;", true, schapter_companion_create),
@@ -859,8 +950,11 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/Filter$TriState;", "isExcluded", "()Z", true, filter_tristate_is_excluded),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$TriState;", "isIncluded", "()Z", true, filter_tristate_is_included),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "<init>", "(Ljava/lang/String;[Ljava/lang/String;)V", true, filter_select_init),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "<init>", "(Ljava/lang/String;[Ljava/lang/Object;I)V", true, filter_select_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "<init>", "(Ljava/lang/String;[Ljava/lang/Object;IILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_select_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "getState", "()Ljava/lang/Object;", true, filter_select_state_obj),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "<init>", "(Ljava/lang/String;Z)V", true, filter_init_checked),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "getState", "()Ljava/lang/Object;", true, filter_checkbox_state_obj),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Group;", "<init>", "(Ljava/lang/String;Ljava/util/List;)V", true, filter_group_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Group;", "<init>", "(Ljava/lang/String;Ljava/util/List;IILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_group_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Group;", "getState", "()Ljava/lang/Object;", true, filter_group_state_obj),
@@ -877,6 +971,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "chapterListRequest", "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;", true, http_source_chapter_list_request),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "pageListRequest", "(Leu/kanade/tachiyomi/source/model/SChapter;)Lokhttp3/Request;", true, http_source_page_list_request),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "GET$default", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_get_default),
+    ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "GET$default", "(Lokhttp3/HttpUrl;Lokhttp3/Headers;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_get_default),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "__host_execute", "(Lokhttp3/Request;)Lokhttp3/Response;", false, keiyoushi_execute),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getNetwork", "()Leu/kanade/tachiyomi/network/NetworkHelper;", true, http_source_get_network),
     ne!("Leu/kanade/tachiyomi/network/NetworkHelper;", "getClient", "()Lokhttp3/OkHttpClient;", true, network_helper_get_client),

@@ -395,7 +395,7 @@ pub(crate) fn string_matches(vm: &mut Vm, args: &[JValue]) -> R {
     let s = jstr(vm, args[0])?;
     let re_str = jstr(vm, args[1])?;
     let re = Regex::new(&re_str).map_err(|e| iae(vm, format!("PatternSyntaxException: {e}")))?;
-    Ok(JValue::Int(i32::from(re.is_match(&s))))
+    Ok(JValue::Int(i32::from(re.is_match(&s).unwrap_or(false))))
 }
 
 pub(crate) fn string_replace_chars(vm: &mut Vm, args: &[JValue]) -> R {

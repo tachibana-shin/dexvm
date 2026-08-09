@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Regenerate the per-class native shim tree from git HEAD and verify it.
+# Regenerate the per-class native shim tree from the pre-refactor baseline and
+# verify it.
 #
 # The split scripts (split_lang.py / split_util.py / split_remaining.py) emit
 # the per-class leaf files. The package mod files (native/mod.rs, java/mod.rs,
@@ -18,6 +19,17 @@
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO"
+
+# Last commit whose tree still has the pre-refactor monolith tables (the
+# parent of the commit that deleted src/vm/native/lang.rs). The split
+# scripts read from this baseline, not from HEAD, which now contains the
+# refactored tree. Override with DEXVM_BASELINE.
+BASELINE="${DEXVM_BASELINE:-}"
+if [ -z "$BASELINE" ]; then
+    DEL="$(git log HEAD --diff-filter=D --format=%H -1 -- src/vm/native/lang.rs)"
+    [ -n "$DEL" ] && BASELINE="$(git rev-parse "$DEL^")" || BASELINE=HEAD
+fi
+export BASELINE
 
 GLUE="src/vm/native/mod.rs src/vm/native/java/mod.rs src/vm/native/java/lang/mod.rs src/vm/native/java/util/mod.rs src/vm/native/java/text/mod.rs src/vm/native/java/util/regex/mod.rs"
 
@@ -73,7 +85,7 @@ print(f'entries: {len(cur)} identical; fns: {len(gen_fns)} generated')
 PYEOF
 
     # --- compile check: overlay regenerated files on a detached worktree ---
-    git worktree add --detach "$WT" HEAD >/dev/null
+    git worktree add --detach "$WT" "$BASELINE" >/dev/null
     cp -r "$OUT/java" "$WT/src/vm/native/java"
     for f in $GLUE; do
         cp "$OUT/${f#src/vm/native/}" "$WT/$f"

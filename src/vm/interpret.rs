@@ -97,6 +97,17 @@ fn push_frame(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<(
 }
 
 impl Vm {
+    fn native_label(&self, nf: crate::vm::NativeFn) -> String {
+        for t in crate::vm::native::native_tables() {
+            for e in t {
+                if e.f as usize == nf as usize {
+                    return format!("{}::{}{}", e.class, e.name, e.sig);
+                }
+            }
+        }
+        "?".into()
+    }
+
     pub fn run_loop(&mut self) -> Result<JValue, JvmError> {
         let mut f = match self.frames.pop() {
             Some(f) => f,
@@ -164,12 +175,21 @@ impl Vm {
                                         f.pc = ret_pc;
                                     }
                                     Err(NatErr::Throw(ex)) => {
+                                        let (dbg_c, dbg_s) = (f.class, f.slot);
                                         f.pc = ret_pc;
                                         f.pending_exc = Some(JValue::Obj(ex));
                                         self.frames.push(f);
                                         match self.unwind()? {
                                             true => f = self.frames.pop().unwrap(),
-                                            false => return Err(JvmError::Uncaught(ex)),
+                                            false => {
+                                                eprintln!(
+                                                    "DBG uncaught native-throw at {}::{} from native {}",
+                                                    self.class_desc_str(dbg_c),
+                                                    self.str_of(self.classes[dbg_c as usize].methods[dbg_s as usize].name),
+                                                    self.native_label(nf),
+                                                );
+                                                return Err(JvmError::Uncaught(ex));
+                                            }
                                         }
                                     }
                                     Err(NatErr::Fatal(e)) => return Err(e),
@@ -226,6 +246,7 @@ impl Vm {
                     }
                 },
                 StepOutcome::Throw(ex) => {
+                    let (dbg_c, dbg_s) = (f.class, f.slot);
                     f.pending_exc = Some(ex);
                     self.frames.push(f);
                     match self.unwind()? {
@@ -235,6 +256,11 @@ impl Vm {
                                 JValue::Obj(o) => o,
                                 _ => 0,
                             };
+                            eprintln!(
+                                "DBG uncaught throw at {}::{}",
+                                self.class_desc_str(dbg_c),
+                                self.str_of(self.classes[dbg_c as usize].methods[dbg_s as usize].name),
+                            );
                             return Err(JvmError::Uncaught(o));
                         }
                     }

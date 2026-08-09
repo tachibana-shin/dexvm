@@ -10,7 +10,7 @@ pub(crate) use std::cmp::Ordering;
 pub(crate) use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 pub(crate) use std::time::{SystemTime, UNIX_EPOCH};
 
-pub(crate) use ::regex::Regex;
+pub(crate) use ::fancy_regex::Regex;
 
 pub(crate) use crate::dex::insn::InvokeKind;
 pub(crate) use crate::vm::error::JvmError;
@@ -691,32 +691,29 @@ pub(crate) fn char_at(s: &str, i: usize) -> Option<u16> {
 
 /// java.util.regex.Pattern.split semantics for the given limit.
 pub(crate) fn split_java(re: &Regex, text: &str, limit: i32) -> Vec<String> {
+    let matches: Vec<(usize, usize)> = re.find_iter(text).flatten().map(|m| (m.start(), m.end())).collect();
+    let mut parts = Vec::new();
+    let mut pos = 0usize;
+    let mut count = 0usize;
+    let max = if limit < 0 { usize::MAX } else { limit as usize };
+    for (s, e) in &matches {
+        if *s < pos {
+            continue;
+        }
+        if count + 1 >= max {
+            break;
+        }
+        parts.push(text[pos..*s].to_string());
+        pos = *e;
+        count += 1;
+    }
+    parts.push(text[pos..].to_string());
     if limit == 0 {
-        let mut parts: Vec<String> = re.split(text).map(String::from).collect();
         while parts.last().is_some_and(|p| p.is_empty()) {
             parts.pop();
         }
-        return parts;
     }
-    if limit < 0 {
-        return re.split(text).map(String::from).collect();
-    }
-    let max = limit as usize;
-    let mut out = Vec::new();
-    let mut pos = 0usize;
-    let mut count = 0usize;
-    while count + 1 < max {
-        match re.find_at(text, pos) {
-            Some(m) => {
-                out.push(text[pos..m.start()].to_string());
-                pos = m.end();
-                count += 1;
-            }
-            None => break,
-        }
-    }
-    out.push(text[pos..].to_string());
-    out
+    parts
 }
 
 const DIGITS: &[char] = &[

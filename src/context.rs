@@ -261,6 +261,12 @@ impl Context {
         &self.vm.dex
     }
 
+    /// The object retained by the most recent instance call ([`Context::call`]
+    /// or [`Context::invoke`]), if any.
+    pub fn last_instance(&self) -> Option<u32> {
+        self.last_instance
+    }
+
     /// Dispatches `method` (by dex name and signature) on a specific object,
     /// resolving through the receiver's vtable including inherited natives.
     ///

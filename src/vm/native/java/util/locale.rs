@@ -7,6 +7,27 @@ pub fn lazy_opaque_locale(vm: &mut Vm) -> JValue {
     JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(Native::Opaque)))
 }
 
+// Locale constants (e.g. Locale.US) used by `String.lowercase(Locale)` etc.
+macro_rules! locale_const {
+    ($name:ident, $tag:expr) => {
+        pub fn $name(vm: &mut Vm) -> JValue {
+            let class = vm
+                .ensure_class_by_desc("Ljava/util/Locale;")
+                .expect("Locale shim");
+            JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(Native::Str($tag.into()))))
+        }
+    };
+}
+locale_const!(lazy_locale_us, "en-US");
+locale_const!(lazy_locale_uk, "en-GB");
+locale_const!(lazy_locale_canada, "en-CA");
+locale_const!(lazy_locale_japan, "ja-JP");
+locale_const!(lazy_locale_korea, "ko-KR");
+locale_const!(lazy_locale_china, "zh-CN");
+locale_const!(lazy_locale_france, "fr-FR");
+locale_const!(lazy_locale_germany, "de-DE");
+locale_const!(lazy_locale_italy, "it-IT");
+
 // java.util.Locale host shims.
 
 

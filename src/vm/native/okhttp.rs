@@ -563,7 +563,60 @@ pub(crate) fn okhttp_http_url_builder_to_string(vm: &mut Vm, args: &[JValue]) ->
 // okhttp3 native table
 // ---------------------------------------------------------------------------
 
+#[cfg(feature = "keiyoushi")]
+pub(crate) fn okhttp_client_new_call(vm: &mut Vm, args: &[JValue]) -> R {
+    let req = match payload(vm, args[1]) {
+        Some(Native::Request { url, method, headers, body }) => {
+            (url.clone(), method.clone(), headers.clone(), *body)
+        }
+        _ => return Err(npe(vm)),
+    };
+    let Some(Native::Opaque) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    alloc(
+        vm,
+        "Lokhttp3/Call;",
+        Native::Request {
+            url: req.0,
+            method: req.1,
+            headers: req.2,
+            body: req.3,
+        },
+    )
+}
+
+#[cfg(feature = "keiyoushi")]
+pub(crate) fn okhttp_call_execute(vm: &mut Vm, args: &[JValue]) -> R {
+    let (url, method, headers, body) = request_parts(vm, args[0])?;
+    let body_str = form_body_to_string(vm, &body);
+    let Some(http) = vm.http.clone() else {
+        return Err(uoe(vm, "no HTTP client registered for this SourceEngine"));
+    };
+    let resp = http(&crate::vm::native::keiyoushi::HttpData {
+        url,
+        method,
+        headers,
+        body: body_str,
+    });
+    alloc(
+        vm,
+        RESPONSE,
+        Native::Response {
+            code: resp.code,
+            message: resp.message,
+            headers: resp.headers,
+            body: resp.body,
+            request: args[0],
+        },
+    )
+}
+
 pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
+    #[cfg(feature = "keiyoushi")]
+    ne!("Lokhttp3/OkHttpClient;", "newCall", "(Lokhttp3/Request;)Lokhttp3/Call;", true, okhttp_client_new_call),
+    #[cfg(feature = "keiyoushi")]
+    ne!("Lokhttp3/Call;", "execute", "()Lokhttp3/Response;", true, okhttp_call_execute),
     ne!("Lokhttp3/Request$Builder;", "<init>", "()V", true, request_builder_init),
     ne!("Lokhttp3/Request$Builder;", "url", "(Ljava/lang/String;)Lokhttp3/Request$Builder;", true, request_builder_url),
     ne!("Lokhttp3/Request$Builder;", "method", "(Ljava/lang/String;Lokhttp3/RequestBody;)Lokhttp3/Request$Builder;", true, request_builder_method),
@@ -611,6 +664,7 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/HttpUrl$Companion;", "parse", "(Ljava/lang/String;)Lokhttp3/HttpUrl;", true, okhttp_http_url_parse),
     ne!("Lokhttp3/HttpUrl;", "newBuilder", "()Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_new_builder),
     ne!("Lokhttp3/HttpUrl$Builder;", "addQueryParameter", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_add_query),
+    ne!("Lokhttp3/HttpUrl$Builder;", "addEncodedQueryParameter", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_add_query),
     ne!("Lokhttp3/HttpUrl$Builder;", "setQueryParameter", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_set_query),
     ne!("Lokhttp3/HttpUrl$Builder;", "build", "()Lokhttp3/HttpUrl;", true, okhttp_http_url_builder_build),
     ne!("Lokhttp3/Request$Builder;", "url", "(Lokhttp3/HttpUrl;)Lokhttp3/Request$Builder;", true, okhttp_request_builder_url),

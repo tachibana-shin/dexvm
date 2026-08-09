@@ -19,8 +19,10 @@ native tables into one file per Java class, each registering its own
 
 ## Regenerating the leaf files
 
-The split scripts read their sources from `git HEAD` (the pre-refactor tree),
-so they stay runnable even though the original files were deleted:
+The split scripts read their sources from the **pre-refactor baseline commit**
+(the parent of the commit that deleted the monolithic tables, i.e. `HEAD^` of
+the refactor commit — auto-detected, overridable with `DEXVM_BASELINE`), so
+they keep working even though `HEAD` now contains the refactored tree:
 
 ```sh
 tools/regenerate.sh OUT_DIR          # regenerate into OUT_DIR

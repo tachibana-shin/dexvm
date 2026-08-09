@@ -161,7 +161,7 @@ pub enum Native {
     /// java.util.Map.Entry.
     MapEntry { map: u32, idx: usize },
     /// java.util.regex.Pattern (source kept for `pattern()`/`toString()`).
-    Pattern { re: regex::Regex, source: String },
+    Pattern { re: fancy_regex::Regex, source: String },
     /// java.util.regex.Matcher.
     Matcher(MatcherState),
     /// java.io.PrintStream (writes to the VM output sink).
@@ -227,7 +227,7 @@ pub enum Native {
         update_strategy: JValue,
     },
     /// eu.kanade.tachiyomi.source.model.SChapter.
-    SChapter { name: String, url: String, date_upload: i64, scanlator: String },
+    SChapter { name: String, url: String, date_upload: i64, scanlator: String, chapter_number: f32 },
     /// eu.kanade.tachiyomi.source.model.Page.
     SPPage { index: i32, name: String, url: String, image_url: String },
     /// eu.kanade.tachiyomi.source.model.MangasPage.
@@ -288,11 +288,17 @@ pub enum IterKind {
     MapKeys { map: u32, idx: usize },
     MapValues { map: u32, idx: usize },
     Set { set: u32, idx: usize },
+    #[cfg(feature = "keiyoushi")]
+    Jsoup {
+        doc: JsoupDocRef,
+        ids: Vec<dom_query::NodeId>,
+        idx: usize,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub struct MatcherState {
-    pub pattern: regex::Regex,
+    pub pattern: fancy_regex::Regex,
     pub text: String,
     pub pos: usize,
     /// (start, end) of the most recent find()/matches().
@@ -364,6 +370,8 @@ impl Native {
                 | IterKind::MapKeys { map, .. }
                 | IterKind::MapValues { map, .. } => out.push(*map),
                 IterKind::Set { set, .. } => out.push(*set),
+                #[cfg(feature = "keiyoushi")]
+                IterKind::Jsoup { .. } => {}
             },
             Native::MapEntry { map, .. } => out.push(*map),
             Native::Lazy(v) => push(Some(v), out),

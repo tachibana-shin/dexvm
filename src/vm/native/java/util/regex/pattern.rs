@@ -2,7 +2,6 @@
 
 use crate::vm::native::*;
 
-use ::regex as regex;
 
 // java.util.regex.Pattern / Matcher
 // ---------------------------------------------------------------------------
@@ -52,7 +51,7 @@ pub(crate) fn pattern_matches_static(vm: &mut Vm, args: &[JValue]) -> R {
     let re_str = jstr(vm, args[0])?;
     let input = charseq_of(vm, args[1])?;
     let re = Regex::new(&re_str).map_err(|e| iae(vm, format!("PatternSyntaxException: {e}")))?;
-    Ok(JValue::Int(i32::from(re.is_match(&input))))
+    Ok(JValue::Int(i32::from(re.is_match(&input).unwrap_or(false))))
 }
 
 pub(crate) fn pattern_compile(vm: &mut Vm, args: &[JValue]) -> R {
@@ -98,7 +97,7 @@ pub(crate) fn pattern_split_seq_limit(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn pattern_quote(vm: &mut Vm, args: &[JValue]) -> R {
     let s = jstr(vm, args[0])?;
-    Ok(new_str(vm, &regex::escape(&s)))
+    Ok(new_str(vm, &fancy_regex::escape(&s)))
 }
 
 

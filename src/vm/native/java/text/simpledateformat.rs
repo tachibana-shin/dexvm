@@ -44,7 +44,7 @@ pub(crate) fn simple_date_format_parse(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::DateFormatter { pattern, zone }) => (pattern.clone(), zone.clone()),
         _ => return Err(npe(vm)),
     };
-    let start = match payload(vm, args[2]) {
+    let start = match args.get(2).and_then(|v| payload(vm, *v)) {
         Some(Native::ParsePosition(i)) => (*i).max(0) as usize,
         _ => 0,
     };
@@ -154,7 +154,7 @@ pub(crate) fn simple_date_format_parse(vm: &mut Vm, args: &[JValue]) -> R {
     if !ok || !seen_any {
         return Ok(JValue::Null);
     }
-    if let Some(Native::ParsePosition(dst)) = payload_mut(vm, args[2]) {
+    if let Some(Native::ParsePosition(dst)) = args.get(2).and_then(|v| payload_mut(vm, *v)) {
         *dst = pos as i32;
     }
     let days = days_from_civil(y, mo, d);
@@ -207,5 +207,6 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/text/SimpleDateFormat;", "<init>", "(Ljava/lang/String;Ljava/util/Locale;)V", true, simple_date_format_init),
     ne!("Ljava/text/SimpleDateFormat;", "<init>", "(Ljava/lang/String;)V", true, simple_date_format_init),
     ne!("Ljava/text/SimpleDateFormat;", "parse", "(Ljava/lang/String;Ljava/text/ParsePosition;)Ljava/util/Date;", true, simple_date_format_parse),
+    ne!("Ljava/text/SimpleDateFormat;", "parse", "(Ljava/lang/String;)Ljava/util/Date;", true, simple_date_format_parse),
     ne!("Ljava/text/SimpleDateFormat;", "toString", "()Ljava/lang/String;", true, simple_date_format_to_string),
 ];

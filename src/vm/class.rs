@@ -158,6 +158,8 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "keiyoushi")]
     shim!("Leu/kanade/tachiyomi/source/model/Filter$Select;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
     #[cfg(feature = "keiyoushi")]
+    shim!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
     shim!("Leu/kanade/tachiyomi/source/model/Filter$Sort;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
     #[cfg(feature = "keiyoushi")]
     shim!("Leu/kanade/tachiyomi/source/model/Filter$Text;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
@@ -182,7 +184,7 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "keiyoushi")]
     shim!("Lorg/jsoup/nodes/Element;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "keiyoushi")]
-    shim!("Lorg/jsoup/select/Elements;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Lorg/jsoup/select/Elements;", Some("Ljava/util/AbstractCollection;"), &[], 0),
     // okhttp host shims
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Interceptor;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
@@ -214,6 +216,8 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!("Lokhttp3/Request$Builder;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Request;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "keiyoushi")]
+    shim!("Lokhttp3/Call;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Response;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
@@ -365,6 +369,15 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!("Ljava/util/Locale;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;", "Ljava/lang/Cloneable;"], 0, [
         sdef!("ROOT", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_opaque_locale)),
         sdef!("ENGLISH", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_opaque_locale)),
+        sdef!("US", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_us)),
+        sdef!("UK", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_uk)),
+        sdef!("CANADA", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_canada)),
+        sdef!("JAPAN", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_japan)),
+        sdef!("KOREA", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_korea)),
+        sdef!("CHINA", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_china)),
+        sdef!("FRANCE", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_france)),
+        sdef!("GERMANY", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_germany)),
+        sdef!("ITALY", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_italy)),
     ]),
     shim!("Ljava/util/TimeZone;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;", "Ljava/lang/Cloneable;"], 0),
     shim!("Ljava/util/ArrayDeque;", Some("Ljava/util/AbstractCollection;"), &["Ljava/util/Deque;", "Ljava/lang/Cloneable;", "Ljava/io/Serializable;"], 0),

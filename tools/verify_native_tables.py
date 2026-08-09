@@ -6,13 +6,14 @@ Checks performed against src/vm/native/:
   2. Every fn referenced by a ne!() entry is defined somewhere in the tree
      (searching all leaf files; re-export chains via package mod.rs are not
      simulated, so table-only classes rely on sibling files defining them).
-  3. Every entry from the pre-refactor tables (git HEAD) is still present
+  3. Every entry from the pre-refactor tables (baseline commit) is still present
      under the same class, except the two known dropped duplicates
      (Request$Builder.build, HttpSource.getHeaders).
-  4. Entry counts per class match git HEAD exactly.
+  4. Entry counts per class match the baseline commit exactly.
 
 Usage: python3 tools/verify_native_tables.py
 """
+import os
 import re
 import subprocess
 import sys
@@ -46,11 +47,28 @@ def parse_tree(root):
     return entries, fns
 
 
+def git_base():
+    """Last commit whose tree still has the pre-refactor monolith tables
+    (parent of the commit that deleted src/vm/native/lang.rs)."""
+    env = os.environ.get('DEXVM_BASELINE')
+    if env:
+        return env
+    r = subprocess.run(
+        ['git', 'log', 'HEAD', '--diff-filter=D', '--format=%H', '-1', '--', 'src/vm/native/lang.rs'],
+        capture_output=True, text=True)
+    if r.returncode == 0 and r.stdout.strip():
+        r2 = subprocess.run(['git', 'rev-parse', r.stdout.strip() + '^'], capture_output=True, text=True)
+        if r2.returncode == 0 and r2.stdout.strip():
+            return r2.stdout.strip()
+    return 'HEAD'
+
+
 def head_entries():
-    """Parse the pre-refactor tables from git HEAD."""
+    """Parse the pre-refactor tables from the baseline commit."""
+    base = git_base()
     entries = {}
     for path in ('src/vm/native/mod.rs', 'src/vm/native/keiyoushi.rs'):
-        r = subprocess.run(['git', 'show', f'HEAD:{path}'], capture_output=True, text=True)
+        r = subprocess.run(['git', 'show', f'{base}:{path}'], capture_output=True, text=True)
         if r.returncode != 0:
             print(f'cannot read git HEAD:{path}: {r.stderr.strip()}')
             sys.exit(1)
@@ -87,12 +105,12 @@ def main():
     missing = [k for k in head if k not in DROPPED and k not in cur]
     extra = [k for k in cur if k not in head]
     if missing:
-        print(f'{len(missing)} entries from git HEAD are missing:')
+        print(f'{len(missing)} entries from the pre-refactor baseline are missing:')
         for k in missing[:10]:
             print('  ', k)
         errors += 1
     if extra:
-        print(f'{len(extra)} new entries not in git HEAD:')
+        print(f'{len(extra)} new entries not in the baseline:')
         for k in extra[:10]:
             print('  ', k)
         errors += 1
@@ -106,11 +124,11 @@ def main():
         cur_by_class[cls] = cur_by_class.get(cls, 0) + 1
     for cls in sorted(set(head_by_class) | set(cur_by_class)):
         if cls not in {k[0] for k in DROPPED} and head_by_class.get(cls, 0) != cur_by_class.get(cls, 0):
-            print(f'COUNT {cls}: HEAD={head_by_class.get(cls, 0)} now={cur_by_class.get(cls, 0)}')
+            print(f'COUNT {cls}: BASE={head_by_class.get(cls, 0)} now={cur_by_class.get(cls, 0)}')
             errors += 1
 
     total = len(cur)
-    print(f'{total} entries, {len(fns)} fns, {len(head)} HEAD entries')
+    print(f'{total} entries, {len(fns)} fns, {len(head)} baseline entries')
     if errors:
         print(f'FAILED: {errors} problem(s)')
         sys.exit(1)

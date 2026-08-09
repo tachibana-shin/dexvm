@@ -82,7 +82,7 @@ pub(crate) fn duration_to_duration_long(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn regex_init(vm: &mut Vm, args: &[JValue]) -> R {
     let src = jstr(vm, args[1])?;
-    let re = ::regex::Regex::new(&src).map_err(|e| iae(vm, format!("bad regex {src}: {e}")))?;
+    let re = ::fancy_regex::Regex::new(&src).map_err(|e| iae(vm, format!("bad regex {src}: {e}")))?;
     let Some(n) = payload_mut(vm, args[0]) else {
         return Err(npe(vm));
     };
@@ -112,7 +112,7 @@ pub(crate) fn regex_matches(vm: &mut Vm, args: &[JValue]) -> R {
         _ => return Err(npe(vm)),
     };
     let text = charseq_of(vm, args[1])?;
-    Ok(JValue::Int(i32::from(re.is_match(&text))))
+    Ok(JValue::Int(i32::from(re.is_match(&text).unwrap_or(false))))
 }
 
 pub(crate) fn regex_to_string(vm: &mut Vm, args: &[JValue]) -> R {
@@ -138,6 +138,25 @@ pub(crate) fn collections_list_of_single(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn kotlin_empty_list(vm: &mut Vm, _args: &[JValue]) -> R {
     list_alloc(vm, Vec::new())
+}
+
+pub(crate) fn stringskt_starts_with_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = charseq_of(vm, args[0])?;
+    let prefix = charseq_of(vm, args[1])?;
+    let ignore = args[2].as_int() != 0;
+    let ignore_case = if args[3].as_int() & 4 != 0 { false } else { ignore };
+    let r = if ignore_case {
+        s.to_lowercase().starts_with(&prefix.to_lowercase())
+    } else {
+        s.starts_with(&prefix)
+    };
+    Ok(JValue::Int(r as i32))
+}
+
+pub(crate) fn collections_reversed(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut items = coll_elems(vm, args[0])?;
+    items.reverse();
+    list_alloc(vm, items)
 }
 
 pub(crate) fn collections_plus_iterable(vm: &mut Vm, args: &[JValue]) -> R {
@@ -241,6 +260,12 @@ pub(crate) fn pair_get_second(vm: &mut Vm, args: &[JValue]) -> R {
         return Err(npe(vm));
     };
     Ok(*b)
+}
+
+pub(crate) fn pair_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let this = args[0].as_obj();
+    vm.arena.objects[this as usize].native = Some(Native::Pair(args[1], args[2]));
+    Ok(JValue::Null)
 }
 
 // kotlin.ranges.IntRange
@@ -389,6 +414,25 @@ fn stringskt_trim(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Ljava/lang/String;", Native::Str(s.trim().to_string()))
 }
 
+fn stringskt_substring_after_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = charseq_of(vm, args[0])?;
+    let delim = charseq_of(vm, args[1])?;
+    let missing = if args[3].as_int() & 2 != 0 {
+        s.clone()
+    } else {
+        charseq_of(vm, args[2])?
+    };
+    let r = if delim.is_empty() {
+        missing.to_string()
+    } else {
+        match s.find(&delim) {
+            Some(i) => s[i + delim.len()..].to_string(),
+            None => missing.to_string(),
+        }
+    };
+    alloc(vm, "Ljava/lang/String;", Native::Str(r))
+}
+
 fn regex_replace_case_insensitive(s: &str, from: &str, to: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut rest = s;
@@ -447,11 +491,14 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "plus", "(Ljava/util/Collection;Ljava/lang/Object;)Ljava/util/List;", false, collections_plus_obj),
     ne!("Lkotlin/collections/CollectionsKt;", "contains", "(Ljava/lang/Iterable;Ljava/lang/Object;)Z", false, collections_contains),
     ne!("Lkotlin/collections/CollectionsKt;", "first", "(Ljava/lang/Iterable;)Ljava/lang/Object;", false, collections_first),
+    ne!("Lkotlin/collections/CollectionsKt;", "reversed", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_reversed),
+    ne!("Lkotlin/text/StringsKt;", "startsWith$default", "(Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Z", false, stringskt_starts_with_default),
     ne!("Lkotlin/collections/CollectionsKt;", "collectionSizeOrDefault", "(Ljava/lang/Iterable;I)I", false, collections_size_or_default),
     ne!("Lkotlin/collections/CollectionsKt;", "joinToString$default", "(Ljava/lang/Iterable;Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;ILjava/lang/CharSequence;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/String;", false, collections_join_to_string_default),
     ne!("Lkotlin/jvm/internal/Intrinsics;", "areEqual", "(Ljava/lang/Object;Ljava/lang/Object;)Z", false, intrinsics_are_equal),
     ne!("Lkotlin/Pair;", "getFirst", "()Ljava/lang/Object;", true, pair_get_first),
     ne!("Lkotlin/Pair;", "getSecond", "()Ljava/lang/Object;", true, pair_get_second),
+    ne!("Lkotlin/Pair;", "<init>", "(Ljava/lang/Object;Ljava/lang/Object;)V", true, pair_init),
     ne!("Lkotlin/TuplesKt;", "to", "(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;", false, tupled_to),
     ne!("Lkotlin/ranges/IntRange;", "<init>", "(II)V", true, int_range_init),
     ne!("Lkotlin/ranges/IntRange;", "getFirst", "()I", true, int_range_get_first),
@@ -463,6 +510,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/jvm/internal/DefaultConstructorMarker;", "<init>", "()V", true, object_noop),
     ne!("Lkotlin/text/StringsKt;", "contains$default", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;ZILjava/lang/Object;)Z", true, stringskt_contains_default),
     ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;", true, stringskt_replace_default),
+    ne!("Lkotlin/text/StringsKt;", "substringAfter$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", true, stringskt_substring_after_default),
     ne!("Lkotlin/text/StringsKt;", "trim", "(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;", true, stringskt_trim),
     ne!("Lkotlin/time/Duration;", "minus-LRDsOJo", "(JJ)J", false, keiyoushi_duration_minus),
     ne!("Lkotlin/time/Duration;", "compareTo-LRDsOJo", "(JJ)I", false, keiyoushi_duration_compare),
