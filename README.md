@@ -1,5 +1,10 @@
 # dexvm
 
+[![Crates.io](https://img.shields.io/crates/v/dexvm)](https://crates.io/crates/dexvm)
+[![docs.rs](https://img.shields.io/docsrs/dexvm)](https://docs.rs/dexvm)
+[![License: Apache](https://img.shields.io/badge/license-Apache-green.svg)](#license)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/tachibana-shin/dexvm)
+
 A minimal DEX (Dalvik bytecode) VM in Rust, embeddable as a library.
 
 `dexvm` loads a plain `.dex` file or an `.apk`/`.zip` archive and executes the

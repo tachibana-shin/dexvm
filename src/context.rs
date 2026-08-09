@@ -345,8 +345,9 @@ impl Context {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(feature = "tachiyomi")]
+    use crate::vm::error::JvmError;
     use crate::vm::object::Native;
+    use crate::vm::value::JValue;
     use crate::vm::NatErr;
 
     const APK: &str = "fixtures/tachiyomi-all.akuma-v1.4.10.apk";
@@ -504,6 +505,77 @@ mod tests {
             _ => panic!("not a string"),
         };
         assert_eq!(s, "pong");
+    }
+
+    #[test]
+    fn per_context_natives_do_not_leak() {
+        fn local(vm: &mut Vm, _args: &[JValue]) -> Result<JValue, NatErr> {
+            Ok(vm.alloc_string("local"))
+        }
+        static LOCAL: &[NativeEntry] = &[NativeEntry {
+            class: "Lcom/example/host/Local;",
+            name: "probe",
+            sig: "()Ljava/lang/String;",
+            instance: false,
+            f: local,
+        }];
+        let mut a = Context::new(&fixture()).unwrap();
+        a.register_natives(&[LOCAL]).unwrap();
+        let mut b = Context::new(&fixture()).unwrap();
+        // a sees the native...
+        a.call("Lcom/example/host/Local;", "probe", &[]).unwrap();
+        // ...b (no registration) must not see it at all.
+        assert!(matches!(
+            b.call("Lcom/example/host/Local;", "probe", &[]),
+            Err(JvmError::Resolution(_))
+        ));
+    }
+
+    #[test]
+    #[cfg(feature = "tachiyomi")]
+    fn native_registered_after_class_loaded_patches_dispatch() {
+        fn late(vm: &mut Vm, _args: &[JValue]) -> Result<JValue, NatErr> {
+            Ok(vm.alloc_string("late"))
+        }
+        let entry = NativeEntry {
+            class: "Lk;",
+            name: "hostProbe",
+            sig: "()Ljava/lang/String;",
+            instance: false,
+            f: late,
+        };
+        let mut ctx = Context::new(&fixture()).unwrap();
+        // Load "Lk" first (it exists in the fixture apk), then patch it.
+        ctx.call("Lk", "<init>", &[JValue::Int(1)]).unwrap();
+        ctx.register_native(entry).unwrap();
+        let JValue::Obj(o) = ctx.call("Lk", "hostProbe", &[]).unwrap() else {
+            panic!("not an object");
+        };
+        let s = match &ctx.vm().arena.objects[o as usize].native {
+            Some(Native::Str(s)) => s.clone(),
+            _ => panic!("not a string"),
+        };
+        assert_eq!(s, "late");
+    }
+
+    #[test]
+    fn host_native_fatal_error_propagates() {
+        fn boom(_vm: &mut Vm, _args: &[JValue]) -> Result<JValue, NatErr> {
+            Err(NatErr::Fatal(JvmError::Fatal("boom".into())))
+        }
+        let entry = NativeEntry {
+            class: "Lcom/example/host/Boom;",
+            name: "fail",
+            sig: "()V",
+            instance: false,
+            f: boom,
+        };
+        let mut ctx = Context::new(&fixture()).unwrap();
+        ctx.register_native(entry).unwrap();
+        assert!(matches!(
+            ctx.call("Lcom/example/host/Boom;", "fail", &[]),
+            Err(JvmError::Fatal(m)) if m == "boom"
+        ));
     }
 
     #[test]
