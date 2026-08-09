@@ -14,6 +14,7 @@
 //! # Quick start
 //!
 //! ```
+//! # #[cfg(all(feature = "tachiyomi", feature = "okhttp"))] {
 //! use dexvm::vm::value::JValue;
 //! use dexvm::{Context, SandboxOptions};
 //!
@@ -22,6 +23,7 @@
 //! ctx.call("Lk", "<init>", &[JValue::Int(1)]).unwrap();
 //! let v = ctx.call("Lk", "getLang", &[]).unwrap();
 //! assert!(matches!(v, JValue::Obj(_)));
+//! # }
 //! ```
 //!
 //! [`SandboxOptions::allow_all`] disables the sandbox; see [`permission`] for
