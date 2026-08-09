@@ -1,0 +1,31 @@
+//! java.util.LinkedHashMap host shims.
+
+use crate::vm::native::*;
+
+// LinkedHashMap shares the map_* impls with HashMap (see hashmap.rs).
+
+
+
+/// Native methods for Ljava/util/LinkedHashMap;
+pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!("Ljava/util/LinkedHashMap;", "<init>", "()V", true, map_init),
+    ne!("Ljava/util/LinkedHashMap;", "<init>", "(I)V", true, map_init),
+    ne!("Ljava/util/LinkedHashMap;", "<init>", "(IF)V", true, map_init),
+    ne!("Ljava/util/LinkedHashMap;", "<init>", "(Ljava/util/Map;)V", true, map_init),
+    ne!("Ljava/util/LinkedHashMap;", "size", "()I", true, map_size),
+    ne!("Ljava/util/LinkedHashMap;", "isEmpty", "()Z", true, map_is_empty),
+    ne!("Ljava/util/LinkedHashMap;", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true, map_get),
+    ne!("Ljava/util/LinkedHashMap;", "getOrDefault", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true, map_get_default),
+    ne!("Ljava/util/LinkedHashMap;", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true, map_put),
+    ne!("Ljava/util/LinkedHashMap;", "putAll", "(Ljava/util/Map;)V", true, map_put_all),
+    ne!("Ljava/util/LinkedHashMap;", "putIfAbsent", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true, map_put_if_absent),
+    ne!("Ljava/util/LinkedHashMap;", "containsKey", "(Ljava/lang/Object;)Z", true, map_contains_key),
+    ne!("Ljava/util/LinkedHashMap;", "containsValue", "(Ljava/lang/Object;)Z", true, map_contains_value),
+    ne!("Ljava/util/LinkedHashMap;", "remove", "(Ljava/lang/Object;)Ljava/lang/Object;", true, map_remove),
+    ne!("Ljava/util/LinkedHashMap;", "remove", "(Ljava/lang/Object;Ljava/lang/Object;)Z", true, map_remove),
+    ne!("Ljava/util/LinkedHashMap;", "clear", "()V", true, map_clear),
+    ne!("Ljava/util/LinkedHashMap;", "keySet", "()Ljava/util/Set;", true, map_keys),
+    ne!("Ljava/util/LinkedHashMap;", "values", "()Ljava/util/Collection;", true, map_values),
+    ne!("Ljava/util/LinkedHashMap;", "entrySet", "()Ljava/util/Set;", true, map_entries),
+    ne!("Ljava/util/LinkedHashMap;", "toString", "()Ljava/lang/String;", true, map_to_string),
+];

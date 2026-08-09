@@ -1,6 +1,9 @@
-//! java.text / java.util.TimeZone host shims.
+//! java.text.SimpleDateFormat host shims.
 
-use super::*;
+use crate::vm::native::*;
+
+// TimeZone helpers (moved from java/text timezone.rs section).
+
 
 pub(crate) fn date_format_set_time_zone(vm: &mut Vm, args: &[JValue]) -> R {
     let zone = match payload(vm, args[1]) {
@@ -199,32 +202,10 @@ fn zone_offset_ms(zone: &str) -> i64 {
     sign * (h * 3_600_000 + m * 60_000)
 }
 
-pub(crate) fn time_zone_get_time_zone(vm: &mut Vm, args: &[JValue]) -> R {
-    let id = jstr(vm, args[0])?;
-    alloc(vm, "Ljava/util/TimeZone;", Native::TimeZone(id))
-}
-
-pub(crate) fn parse_position_init(vm: &mut Vm, args: &[JValue]) -> R {
-    let idx = int_of(vm, args[1]);
-    let Some(Native::ParsePosition(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    *dst = idx;
-    Ok(JValue::Null)
-}
-
-pub(crate) fn parse_position_get_index(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::ParsePosition(i)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    Ok(JValue::Int(*i))
-}
-
-pub(crate) fn parse_position_set_index(vm: &mut Vm, args: &[JValue]) -> R {
-    let idx = int_of(vm, args[1]);
-    let Some(Native::ParsePosition(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    *dst = idx;
-    Ok(JValue::Null)
-}
+/// Native methods for Ljava/text/SimpleDateFormat;
+pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!("Ljava/text/SimpleDateFormat;", "<init>", "(Ljava/lang/String;Ljava/util/Locale;)V", true, simple_date_format_init),
+    ne!("Ljava/text/SimpleDateFormat;", "<init>", "(Ljava/lang/String;)V", true, simple_date_format_init),
+    ne!("Ljava/text/SimpleDateFormat;", "parse", "(Ljava/lang/String;Ljava/text/ParsePosition;)Ljava/util/Date;", true, simple_date_format_parse),
+    ne!("Ljava/text/SimpleDateFormat;", "toString", "()Ljava/lang/String;", true, simple_date_format_to_string),
+];

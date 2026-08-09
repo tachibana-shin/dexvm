@@ -1,4 +1,6 @@
-use super::*;
+//! java.lang.String host shims.
+
+use crate::vm::native::*;
 
 // java.lang.String
 // ---------------------------------------------------------------------------
@@ -208,18 +210,6 @@ pub(crate) fn string_index_of_char(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(idx.map_or(-1, |i| i as i32)))
 }
 
-pub(crate) fn string_index_of_str(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = jstr(vm, args[0])?;
-    let n = jstr(vm, args[1])?;
-    let from = if args.len() > 2 {
-        int_of(vm, args[2]).max(0) as usize
-    } else {
-        0
-    };
-    Ok(JValue::Int(
-        u16_index_of(&s, &n, from).map_or(-1, |i| i as i32),
-    ))
-}
 
 pub(crate) fn string_last_index_of_char(vm: &mut Vm, args: &[JValue]) -> R {
     let s = jstr(vm, args[0])?;
@@ -541,263 +531,17 @@ pub(crate) fn string_format(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &out))
 }
 
-// ---------------------------------------------------------------------------
-// java.lang.StringBuilder
-// ---------------------------------------------------------------------------
-
-pub(crate) fn sb_init(vm: &mut Vm, args: &[JValue]) -> R {
-    let init = if args.len() > 1 && matches!(args[1], JValue::Obj(_)) {
-        jstr(vm, args[1]).ok()
-    } else {
-        None
-    };
-    let Some(n) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    match n {
-        Native::StringBuilder(s) => {
-            s.clear();
-            if let Some(init) = init {
-                s.push_str(&init);
-            }
-        }
-        _ => return Err(npe(vm)),
-    }
-    Ok(JValue::Null)
-}
-
-
-
-pub(crate) fn sb_to_string(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = match payload(vm, args[0]) {
-        Some(Native::StringBuilder(s)) => s.clone(),
-        _ => return Err(npe(vm)),
-    };
-    Ok(new_str(vm, &s))
-}
-
-pub(crate) fn sb_append_str(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = jstr(vm, args[1])?;
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(&s);
-    Ok(args[0])
-}
-
-pub(crate) fn sb_append_charseq(vm: &mut Vm, args: &[JValue]) -> R {
-    if args[1].is_null() {
-        let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-            return Err(npe(vm));
-        };
-        dst.push_str("null");
-        return Ok(args[0]);
-    }
-    let s = charseq_of(vm, args[1])?;
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(&s);
-    Ok(args[0])
-}
-
-pub(crate) fn sb_append_obj(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = to_string_of(vm, args[1])?;
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(&s);
-    Ok(args[0])
-}
-
-pub(crate) fn sb_append_int(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = int_of(vm, args[1]).to_string();
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(&s);
-    Ok(args[0])
-}
-
-pub(crate) fn sb_append_long(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = long_of(vm, args[1]).to_string();
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(&s);
-    Ok(args[0])
-}
-
-pub(crate) fn sb_append_bool(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = if bool_of(vm, args[1]) { "true" } else { "false" };
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(s);
-    Ok(args[0])
-}
-
-pub(crate) fn sb_append_char(vm: &mut Vm, args: &[JValue]) -> R {
-    let c = int_of(vm, args[1]) as u16;
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(&u16str(&[c]));
-    Ok(args[0])
-}
-
-pub(crate) fn sb_append_float(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = fmt_f32(float_of(vm, args[1]));
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(&s);
-    Ok(args[0])
-}
-
-pub(crate) fn sb_append_double(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = fmt_f64(double_of(vm, args[1]));
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(&s);
-    Ok(args[0])
-}
-
-pub(crate) fn sb_append_chars(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::Array(ArrayData::Char(cs))) = payload(vm, args[1]) else {
-        return Err(npe(vm));
-    };
-    let s = u16str(cs);
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(&s);
-    Ok(args[0])
-}
-
-/// kotlin.text.StringsKt.append(StringBuilder, String[]): appends each
-/// element in order (no separator).
-pub(crate) fn strings_append_array(vm: &mut Vm, args: &[JValue]) -> R {
-    let items = match payload(vm, args[1]) {
-        Some(Native::Array(data)) => {
-            let mut v = Vec::new();
-            for i in 0..data.len() {
-                v.push(data.get(i));
-            }
-            v
-        }
-        _ => return Err(npe(vm)),
-    };
-    let mut s = String::new();
-    for item in items {
-        if let Ok(t) = jstr(vm, item) {
-            s.push_str(&t);
-        }
-    }
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    dst.push_str(&s);
-    Ok(args[0])
-}
-
-pub(crate) fn sb_length(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::StringBuilder(s)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    Ok(JValue::Int(u16len(s) as i32))
-}
-
-pub(crate) fn sb_char_at(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::StringBuilder(s)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    let i = int_of(vm, args[1]);
-    match char_at(s, i.max(0) as usize) {
-        Some(c) => Ok(JValue::Int(i32::from(c))),
-        None => Err(ioobe(vm, i)),
-    }
-}
-
-pub(crate) fn sb_substring(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::StringBuilder(s)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    let begin = int_of(vm, args[1]);
-    let end = if args.len() > 2 {
-        int_of(vm, args[2])
-    } else {
-        u16len(s) as i32
-    };
-    let v = u16(s);
-    if begin < 0 || end < begin || end as usize > v.len() {
-        return Err(sioobe(vm, "StringBuilder.substring out of range"));
-    }
-    Ok(new_str(vm, &u16str(&v[begin as usize..end as usize])))
-}
-
-pub(crate) fn sb_delete(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::StringBuilder(s)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    let begin = int_of(vm, args[1]);
-    let end = int_of(vm, args[2]);
-    let v = u16(s);
-    if begin < 0 || begin > v.len() as i32 {
-        return Err(sioobe(vm, "StringBuilder.delete out of range"));
-    }
-    let end = end.clamp(begin, v.len() as i32);
-    let mut kept: Vec<u16> = Vec::with_capacity(v.len() - (end - begin) as usize);
-    kept.extend_from_slice(&v[..begin as usize]);
-    kept.extend_from_slice(&v[end as usize..]);
-    let out = u16str(&kept);
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    *dst = out;
-    Ok(args[0])
-}
-
-pub(crate) fn sb_set_length(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::StringBuilder(s)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    let new_len = int_of(vm, args[1]);
-    if new_len < 0 {
-        return Err(sioobe(vm, "StringBuilder.setLength negative"));
-    }
-    let v = u16(s);
-    let out = if (new_len as usize) <= v.len() {
-        u16str(&v[..new_len as usize])
-    } else {
-        let mut w = v.clone();
-        w.resize(new_len as usize, 0);
-        u16str(&w)
-    };
-    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    *dst = out;
-    Ok(JValue::Null)
-}
-
-pub(crate) fn sb_capacity(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Int(0))
-}
-
-pub(crate) fn sb_index_of(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = match payload(vm, args[0]) {
-        Some(Native::StringBuilder(s)) => s.clone(),
-        _ => return Err(npe(vm)),
-    };
+pub(crate) fn string_index_of_str(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
     let n = jstr(vm, args[1])?;
     let from = if args.len() > 2 {
         int_of(vm, args[2]).max(0) as usize
     } else {
         0
     };
-    Ok(JValue::Int(u16_index_of(&s, &n, from).map_or(-1, |i| i as i32)))
+    Ok(JValue::Int(
+        u16_index_of(&s, &n, from).map_or(-1, |i| i as i32),
+    ))
 }
 
 // ---------------------------------------------------------------------------
@@ -810,3 +554,64 @@ pub(crate) fn string_value_of_chars(vm: &mut Vm, args: &[JValue]) -> R {
     };
     Ok(new_str(vm, &u16str(cs)))
 }
+
+/// Native methods for Ljava/lang/String;
+pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!("Ljava/lang/String;", "<init>", "()V", true, string_init),
+    ne!("Ljava/lang/String;", "<init>", "(Ljava/lang/String;)V", true, string_init_copy),
+    ne!("Ljava/lang/String;", "<init>", "([C)V", true, string_init_chars),
+    ne!("Ljava/lang/String;", "<init>", "([B)V", true, string_init_bytes),
+    ne!("Ljava/lang/String;", "<init>", "([BLjava/lang/String;)V", true, string_init_bytes),
+    ne!("Ljava/lang/String;", "length", "()I", true, string_length),
+    ne!("Ljava/lang/String;", "isEmpty", "()Z", true, string_is_empty),
+    ne!("Ljava/lang/String;", "charAt", "(I)C", true, string_char_at),
+    ne!("Ljava/lang/String;", "equals", "(Ljava/lang/Object;)Z", true, string_equals),
+    ne!("Ljava/lang/String;", "equalsIgnoreCase", "(Ljava/lang/String;)Z", true, string_equals_ignore_case),
+    ne!("Ljava/lang/String;", "hashCode", "()I", true, string_hash_code),
+    ne!("Ljava/lang/String;", "toString", "()Ljava/lang/String;", true, string_to_string),
+    ne!("Ljava/lang/String;", "substring", "(I)Ljava/lang/String;", true, string_substring),
+    ne!("Ljava/lang/String;", "substring", "(II)Ljava/lang/String;", true, string_substring),
+    ne!("Ljava/lang/String;", "subSequence", "(II)Ljava/lang/CharSequence;", true, string_sub_sequence),
+    ne!("Ljava/lang/String;", "concat", "(Ljava/lang/String;)Ljava/lang/String;", true, string_concat),
+    ne!("Ljava/lang/String;", "contains", "(Ljava/lang/CharSequence;)Z", true, string_contains),
+    ne!("Ljava/lang/String;", "startsWith", "(Ljava/lang/String;)Z", true, string_starts_with),
+    ne!("Ljava/lang/String;", "startsWith", "(Ljava/lang/String;I)Z", true, string_starts_with),
+    ne!("Ljava/lang/String;", "endsWith", "(Ljava/lang/String;)Z", true, string_ends_with),
+    ne!("Ljava/lang/String;", "indexOf", "(I)I", true, string_index_of_char),
+    ne!("Ljava/lang/String;", "indexOf", "(II)I", true, string_index_of_char),
+    ne!("Ljava/lang/String;", "indexOf", "(Ljava/lang/String;)I", true, string_index_of_str),
+    ne!("Ljava/lang/String;", "indexOf", "(Ljava/lang/String;I)I", true, string_index_of_str),
+    ne!("Ljava/lang/String;", "lastIndexOf", "(I)I", true, string_last_index_of_char),
+    ne!("Ljava/lang/String;", "lastIndexOf", "(II)I", true, string_last_index_of_char),
+    ne!("Ljava/lang/String;", "lastIndexOf", "(Ljava/lang/String;)I", true, string_last_index_of_str),
+    ne!("Ljava/lang/String;", "lastIndexOf", "(Ljava/lang/String;I)I", true, string_last_index_of_str),
+    ne!("Ljava/lang/String;", "toLowerCase", "()Ljava/lang/String;", true, string_to_lower),
+    ne!("Ljava/lang/String;", "toLowerCase", "(Ljava/util/Locale;)Ljava/lang/String;", true, string_to_lower),
+    ne!("Ljava/lang/String;", "toUpperCase", "()Ljava/lang/String;", true, string_to_upper),
+    ne!("Ljava/lang/String;", "toUpperCase", "(Ljava/util/Locale;)Ljava/lang/String;", true, string_to_upper),
+    ne!("Ljava/lang/String;", "trim", "()Ljava/lang/String;", true, string_trim),
+    ne!("Ljava/lang/String;", "getBytes", "()[B", true, string_get_bytes),
+    ne!("Ljava/lang/String;", "getBytes", "(Ljava/lang/String;)[B", true, string_get_bytes),
+    ne!("Ljava/lang/String;", "getBytes", "(Ljava/nio/charset/Charset;)[B", true, string_get_bytes),
+    ne!("Ljava/lang/String;", "toCharArray", "()[C", true, string_to_char_array),
+    ne!("Ljava/lang/String;", "getChars", "(II[CI)V", true, string_get_chars),
+    ne!("Ljava/lang/String;", "split", "(Ljava/lang/String;)[Ljava/lang/String;", true, string_split),
+    ne!("Ljava/lang/String;", "split", "(Ljava/lang/String;I)[Ljava/lang/String;", true, string_split),
+    ne!("Ljava/lang/String;", "matches", "(Ljava/lang/String;)Z", true, string_matches),
+    ne!("Ljava/lang/String;", "replace", "(CC)Ljava/lang/String;", true, string_replace_chars),
+    ne!("Ljava/lang/String;", "replace", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Ljava/lang/String;", true, string_replace_seq),
+    ne!("Ljava/lang/String;", "compareTo", "(Ljava/lang/String;)I", true, string_compare_to),
+    ne!("Ljava/lang/String;", "compareTo", "(Ljava/lang/Object;)I", true, string_compare_to),
+    ne!("Ljava/lang/String;", "compareToIgnoreCase", "(Ljava/lang/String;)I", true, string_compare_to_ignore_case),
+    ne!("Ljava/lang/String;", "intern", "()Ljava/lang/String;", true, string_intern),
+    ne!("Ljava/lang/String;", "valueOf", "(I)Ljava/lang/String;", false, string_value_of_int),
+    ne!("Ljava/lang/String;", "valueOf", "(J)Ljava/lang/String;", false, string_value_of_long),
+    ne!("Ljava/lang/String;", "valueOf", "(Z)Ljava/lang/String;", false, string_value_of_bool),
+    ne!("Ljava/lang/String;", "valueOf", "(C)Ljava/lang/String;", false, string_value_of_char),
+    ne!("Ljava/lang/String;", "valueOf", "(F)Ljava/lang/String;", false, string_value_of_float),
+    ne!("Ljava/lang/String;", "valueOf", "(D)Ljava/lang/String;", false, string_value_of_double),
+    ne!("Ljava/lang/String;", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false, string_value_of_obj),
+    ne!("Ljava/lang/String;", "valueOf", "([C)Ljava/lang/String;", false, string_value_of_chars),
+    ne!("Ljava/lang/String;", "format", "(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;", false, string_format),
+    ne!("Ljava/lang/String;", "format", "(Ljava/util/Locale;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;", false, string_format),
+];

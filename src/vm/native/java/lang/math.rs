@@ -1,4 +1,6 @@
-use super::*;
+//! java.lang.Math host shims.
+
+use crate::vm::native::*;
 
 // java.lang.Math
 // ---------------------------------------------------------------------------
@@ -187,3 +189,49 @@ pub(crate) fn math_copy_sign_double(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 // ---------------------------------------------------------------------------
+
+/// Native methods for Ljava/lang/Math;
+pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!("Ljava/lang/Math;", "abs", "(I)I", false, math_abs_int),
+    ne!("Ljava/lang/Math;", "abs", "(J)J", false, math_abs_long),
+    ne!("Ljava/lang/Math;", "abs", "(F)F", false, math_abs_float),
+    ne!("Ljava/lang/Math;", "abs", "(D)D", false, math_abs_double),
+    ne!("Ljava/lang/Math;", "max", "(II)I", false, math_max_int),
+    ne!("Ljava/lang/Math;", "max", "(JJ)J", false, math_max_long),
+    ne!("Ljava/lang/Math;", "max", "(FF)F", false, math_max_float),
+    ne!("Ljava/lang/Math;", "max", "(DD)D", false, math_max_double),
+    ne!("Ljava/lang/Math;", "min", "(II)I", false, math_min_int),
+    ne!("Ljava/lang/Math;", "min", "(JJ)J", false, math_min_long),
+    ne!("Ljava/lang/Math;", "min", "(FF)F", false, math_min_float),
+    ne!("Ljava/lang/Math;", "min", "(DD)D", false, math_min_double),
+    ne!("Ljava/lang/Math;", "sqrt", "(D)D", false, math_sqrt),
+    ne!("Ljava/lang/Math;", "cbrt", "(D)D", false, math_cbrt),
+    ne!("Ljava/lang/Math;", "pow", "(DD)D", false, math_pow),
+    ne!("Ljava/lang/Math;", "exp", "(D)D", false, math_exp),
+    ne!("Ljava/lang/Math;", "log", "(D)D", false, math_log),
+    ne!("Ljava/lang/Math;", "log10", "(D)D", false, math_log10),
+    ne!("Ljava/lang/Math;", "log1p", "(D)D", false, math_log1p),
+    ne!("Ljava/lang/Math;", "floor", "(D)D", false, math_floor),
+    ne!("Ljava/lang/Math;", "ceil", "(D)D", false, math_ceil),
+    ne!("Ljava/lang/Math;", "rint", "(D)D", false, math_rint),
+    ne!("Ljava/lang/Math;", "floorDiv", "(II)I", false, math_floor_div_int),
+    ne!("Ljava/lang/Math;", "floorDiv", "(JJ)J", false, math_floor_div_long),
+    ne!("Ljava/lang/Math;", "floorMod", "(II)I", false, math_floor_mod_int),
+    ne!("Ljava/lang/Math;", "floorMod", "(JJ)J", false, math_floor_mod_long),
+    ne!("Ljava/lang/Math;", "round", "(F)I", false, math_round_float),
+    ne!("Ljava/lang/Math;", "round", "(D)J", false, math_round_double),
+    ne!("Ljava/lang/Math;", "signum", "(F)F", false, math_signum_float),
+    ne!("Ljava/lang/Math;", "signum", "(D)D", false, math_signum_double),
+    ne!("Ljava/lang/Math;", "random", "()D", false, math_random),
+    ne!("Ljava/lang/Math;", "sin", "(D)D", false, math_sin),
+    ne!("Ljava/lang/Math;", "cos", "(D)D", false, math_cos),
+    ne!("Ljava/lang/Math;", "tan", "(D)D", false, math_tan),
+    ne!("Ljava/lang/Math;", "asin", "(D)D", false, math_asin),
+    ne!("Ljava/lang/Math;", "acos", "(D)D", false, math_acos),
+    ne!("Ljava/lang/Math;", "atan", "(D)D", false, math_atan),
+    ne!("Ljava/lang/Math;", "atan2", "(DD)D", false, math_atan2),
+    ne!("Ljava/lang/Math;", "toRadians", "(D)D", false, math_to_radians),
+    ne!("Ljava/lang/Math;", "toDegrees", "(D)D", false, math_to_degrees),
+    ne!("Ljava/lang/Math;", "copySign", "(FF)F", false, math_copy_sign_float),
+    ne!("Ljava/lang/Math;", "copySign", "(DD)D", false, math_copy_sign_double),
+];

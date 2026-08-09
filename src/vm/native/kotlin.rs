@@ -128,28 +128,28 @@ pub(crate) fn regex_to_string(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn collections_list_of_array(vm: &mut Vm, args: &[JValue]) -> R {
     let items = coll_elems(vm, args[0])?;
-    collections::list_alloc(vm, items)
+    list_alloc(vm, items)
 }
 
 pub(crate) fn collections_list_of_single(vm: &mut Vm, args: &[JValue]) -> R {
     let items = if args[0].is_null() { Vec::new() } else { vec![args[0]] };
-    collections::list_alloc(vm, items)
+    list_alloc(vm, items)
 }
 
 pub(crate) fn kotlin_empty_list(vm: &mut Vm, _args: &[JValue]) -> R {
-    collections::list_alloc(vm, Vec::new())
+    list_alloc(vm, Vec::new())
 }
 
 pub(crate) fn collections_plus_iterable(vm: &mut Vm, args: &[JValue]) -> R {
     let mut items = coll_elems(vm, args[0])?;
     items.extend(coll_elems(vm, args[1])?);
-    collections::list_alloc(vm, items)
+    list_alloc(vm, items)
 }
 
 pub(crate) fn collections_plus_obj(vm: &mut Vm, args: &[JValue]) -> R {
     let mut items = coll_elems(vm, args[0])?;
     items.push(args[1]);
-    collections::list_alloc(vm, items)
+    list_alloc(vm, items)
 }
 
 pub(crate) fn collections_contains(vm: &mut Vm, args: &[JValue]) -> R {
@@ -325,3 +325,146 @@ pub(crate) fn comparisons_max_of(vm: &mut Vm, args: &[JValue]) -> R {
         _ => Ok(a),
     }
 }
+
+
+// ---------------------------------------------------------------------------
+pub(crate) fn strings_append_array(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = match payload(vm, args[1]) {
+        Some(Native::Array(data)) => {
+            let mut v = Vec::new();
+            for i in 0..data.len() {
+                v.push(data.get(i));
+            }
+            v
+        }
+        _ => return Err(npe(vm)),
+    };
+    let mut s = String::new();
+    for item in items {
+        if let Ok(t) = jstr(vm, item) {
+            s.push_str(&t);
+        }
+    }
+    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    dst.push_str(&s);
+    Ok(args[0])
+}
+
+
+// kotlin.text.StringsKt synthetic default-arg shims (mask bit 2 = ignoreCase default false)
+// ---------------------------------------------------------------------------
+
+// kotlin.text.StringsKt synthetic default-arg shims (mask bit 2 = ignoreCase default false)
+fn stringskt_contains_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let haystack = charseq_of(vm, args[0])?;
+    let needle = charseq_of(vm, args[1])?;
+    let ignore = args[2].as_int() != 0;
+    let ignore_case = if args[3].as_int() & 2 != 0 { false } else { ignore };
+    let found = if ignore_case {
+        haystack.to_lowercase().contains(&needle.to_lowercase())
+    } else {
+        haystack.contains(&needle)
+    };
+    Ok(JValue::Int(found as i32))
+}
+
+fn stringskt_replace_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = charseq_of(vm, args[0])?;
+    let from = charseq_of(vm, args[1])?;
+    let to = charseq_of(vm, args[2])?;
+    let ignore = args[3].as_int() != 0;
+    let ignore_case = if args[4].as_int() & 4 != 0 { false } else { ignore };
+    let r = if ignore_case {
+        regex_replace_case_insensitive(&s, &from, &to)
+    } else {
+        s.replace(&from, &to)
+    };
+    alloc(vm, "Ljava/lang/String;", Native::Str(r))
+}
+
+fn stringskt_trim(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = charseq_of(vm, args[0])?;
+    alloc(vm, "Ljava/lang/String;", Native::Str(s.trim().to_string()))
+}
+
+fn regex_replace_case_insensitive(s: &str, from: &str, to: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s;
+    while let Some(idx) = rest.to_lowercase().find(&from.to_lowercase()) {
+        out.push_str(&rest[..idx]);
+        out.push_str(to);
+        rest = &rest[idx + from.len()..];
+    }
+    out.push_str(rest);
+    out
+}
+
+// ---------------------------------------------------------------------------
+// kotlin.time.Duration value-class methods (host stdlib)
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// kotlin.time.Duration value-class methods (host stdlib)
+// ---------------------------------------------------------------------------
+
+pub(crate) fn keiyoushi_duration_minus(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Long(long_of(vm, args[0]) - long_of(vm, args[1])))
+}
+
+pub(crate) fn keiyoushi_duration_compare(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(long_of(vm, args[0]).cmp(&long_of(vm, args[1])) as i32))
+}
+
+pub(crate) fn keiyoushi_duration_equals(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(i32::from(
+        long_of(vm, args[0]) == long_of(vm, args[1]),
+    )))
+}
+
+
+// ---------------------------------------------------------------------------
+// kotlin stdlib native table
+// ---------------------------------------------------------------------------
+
+pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
+    ne!("Lkotlin/Lazy;", "getValue", "()Ljava/lang/Object;", true, lazy_get_value),
+    ne!("Lkotlin/LazyKt;", "lazy", "(Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;", false, lazy_kt_lazy),
+    ne!("Lkotlin/time/Duration$Companion;", "getZERO-UwyO8pc", "()J", true, duration_get_zero),
+    ne!("Lkotlin/time/DurationKt;", "toDuration", "(ILkotlin/time/DurationUnit;)J", false, duration_to_duration_int),
+    ne!("Lkotlin/time/DurationKt;", "toDuration", "(JLkotlin/time/DurationUnit;)J", false, duration_to_duration_long),
+    ne!("Lkotlin/text/Regex;", "<init>", "(Ljava/lang/String;)V", true, regex_init),
+    ne!("Lkotlin/text/Regex;", "replace", "(Ljava/lang/CharSequence;Ljava/lang/String;)Ljava/lang/String;", true, regex_replace),
+    ne!("Lkotlin/text/Regex;", "matches", "(Ljava/lang/CharSequence;)Z", true, regex_matches),
+    ne!("Lkotlin/text/Regex;", "toString", "()Ljava/lang/String;", true, regex_to_string),
+    ne!("Lkotlin/text/StringsKt;", "append", "(Ljava/lang/StringBuilder;[Ljava/lang/String;)Ljava/lang/StringBuilder;", false, strings_append_array),
+    ne!("Lkotlin/collections/CollectionsKt;", "listOf", "([Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_array),
+    ne!("Lkotlin/collections/CollectionsKt;", "listOf", "(Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_single),
+    ne!("Lkotlin/collections/CollectionsKt;", "mutableListOf", "([Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_array),
+    ne!("Lkotlin/collections/CollectionsKt;", "emptyList", "()Ljava/util/List;", false, kotlin_empty_list),
+    ne!("Lkotlin/collections/CollectionsKt;", "plus", "(Ljava/util/Collection;Ljava/lang/Iterable;)Ljava/util/List;", false, collections_plus_iterable),
+    ne!("Lkotlin/collections/CollectionsKt;", "plus", "(Ljava/util/Collection;Ljava/lang/Object;)Ljava/util/List;", false, collections_plus_obj),
+    ne!("Lkotlin/collections/CollectionsKt;", "contains", "(Ljava/lang/Iterable;Ljava/lang/Object;)Z", false, collections_contains),
+    ne!("Lkotlin/collections/CollectionsKt;", "first", "(Ljava/lang/Iterable;)Ljava/lang/Object;", false, collections_first),
+    ne!("Lkotlin/collections/CollectionsKt;", "collectionSizeOrDefault", "(Ljava/lang/Iterable;I)I", false, collections_size_or_default),
+    ne!("Lkotlin/collections/CollectionsKt;", "joinToString$default", "(Ljava/lang/Iterable;Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;ILjava/lang/CharSequence;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/String;", false, collections_join_to_string_default),
+    ne!("Lkotlin/jvm/internal/Intrinsics;", "areEqual", "(Ljava/lang/Object;Ljava/lang/Object;)Z", false, intrinsics_are_equal),
+    ne!("Lkotlin/Pair;", "getFirst", "()Ljava/lang/Object;", true, pair_get_first),
+    ne!("Lkotlin/Pair;", "getSecond", "()Ljava/lang/Object;", true, pair_get_second),
+    ne!("Lkotlin/TuplesKt;", "to", "(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;", false, tupled_to),
+    ne!("Lkotlin/ranges/IntRange;", "<init>", "(II)V", true, int_range_init),
+    ne!("Lkotlin/ranges/IntRange;", "getFirst", "()I", true, int_range_get_first),
+    ne!("Lkotlin/ranges/IntRange;", "getLast", "()I", true, int_range_get_last),
+    ne!("Lkotlin/collections/IntIterator;", "<init>", "()V", true, int_iterator_init),
+    ne!("Lkotlin/collections/IntIterator;", "nextInt", "()I", true, int_iterator_next_int),
+    ne!("Lkotlin/collections/IntIterator;", "hasNext", "()Z", true, int_iterator_has_next),
+    ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of),
+    ne!("Lkotlin/jvm/internal/DefaultConstructorMarker;", "<init>", "()V", true, object_noop),
+    ne!("Lkotlin/text/StringsKt;", "contains$default", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;ZILjava/lang/Object;)Z", true, stringskt_contains_default),
+    ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;", true, stringskt_replace_default),
+    ne!("Lkotlin/text/StringsKt;", "trim", "(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;", true, stringskt_trim),
+    ne!("Lkotlin/time/Duration;", "minus-LRDsOJo", "(JJ)J", false, keiyoushi_duration_minus),
+    ne!("Lkotlin/time/Duration;", "compareTo-LRDsOJo", "(JJ)I", false, keiyoushi_duration_compare),
+    ne!("Lkotlin/time/Duration;", "equals-impl0", "(JJ)Z", false, keiyoushi_duration_equals),
+];

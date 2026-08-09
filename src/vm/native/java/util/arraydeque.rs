@@ -1,7 +1,6 @@
-//! java.util.ArrayDeque + java.util.concurrent.locks host shims.
-//! Locks are non-blocking no-ops; the queue stores plain Java values.
+//! java.util.ArrayDeque host shims.
 
-use super::*;
+use crate::vm::native::*;
 
 pub(crate) fn deque_init(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::ArrayDeque(dst)) = payload_mut(vm, args[0]) else {
@@ -68,47 +67,15 @@ pub(crate) fn deque_peek_first(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
-pub(crate) fn reentrant_lock_init(vm: &mut Vm, args: &[JValue]) -> R {
-    let fair = int_of(vm, args[1]);
-    let Some(Native::ReentrantLock { locked }) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    *locked = fair != 0;
-    Ok(JValue::Null)
-}
-
-pub(crate) fn reentrant_lock_lock(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::ReentrantLock { locked }) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    *locked = true;
-    Ok(JValue::Null)
-}
-
-pub(crate) fn reentrant_lock_unlock(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::ReentrantLock { locked }) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    *locked = false;
-    Ok(JValue::Null)
-}
-
-pub(crate) fn reentrant_lock_new_condition(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(vm, "Ljava/util/concurrent/locks/Condition;", Native::Opaque)
-}
-
-pub(crate) fn condition_await_nanos(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Long(0))
-}
-
-pub(crate) fn condition_await(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
-}
-
-pub(crate) fn condition_signal(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
-}
-
-pub(crate) fn condition_signal_all(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
-}
+/// Native methods for Ljava/util/ArrayDeque;
+pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!("Ljava/util/ArrayDeque;", "<init>", "()V", true, deque_init),
+    ne!("Ljava/util/ArrayDeque;", "<init>", "(I)V", true, deque_init),
+    ne!("Ljava/util/ArrayDeque;", "addLast", "(Ljava/lang/Object;)V", true, deque_add_last),
+    ne!("Ljava/util/ArrayDeque;", "addFirst", "(Ljava/lang/Object;)V", true, deque_add_first),
+    ne!("Ljava/util/ArrayDeque;", "removeFirst", "()Ljava/lang/Object;", true, deque_remove_first),
+    ne!("Ljava/util/ArrayDeque;", "removeLast", "()Ljava/lang/Object;", true, deque_remove_last),
+    ne!("Ljava/util/ArrayDeque;", "size", "()I", true, deque_size),
+    ne!("Ljava/util/ArrayDeque;", "isEmpty", "()Z", true, deque_is_empty),
+    ne!("Ljava/util/ArrayDeque;", "peekFirst", "()Ljava/lang/Object;", true, deque_peek_first),
+];

@@ -451,11 +451,7 @@ impl Vm {
         let mut methods: Vec<Method> = Vec::new();
         let mut dispatch: HashMap<(u32, u32), u32> = HashMap::new();
         let mut shim_natives: Vec<&NativeEntry> =
-            native::NATIVE_TABLE.iter().chain(native::THROWABLE_CTORS.iter()).collect();
-        #[cfg(feature = "keiyoushi")]
-        shim_natives.extend(native::keiyoushi::KEIYOUSHI_TABLE.iter());
-        #[cfg(feature = "okhttp")]
-        shim_natives.extend(native::OKHTTP_TABLE.iter());
+            native::native_tables().into_iter().flatten().collect();
         let host = self.host_natives.clone();
         shim_natives.extend(host.iter());
         for ne in shim_natives.into_iter().filter(|ne| ne.class == desc) {
