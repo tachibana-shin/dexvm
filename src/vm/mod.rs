@@ -280,11 +280,7 @@ impl Vm {
         if desc.starts_with('[') {
             // find the dex type id for this array descriptor (any dex)
             for (di, dex) in self.dexes.iter().enumerate() {
-                let Some(sid) = dex
-                    .strings
-                    .iter()
-                    .position(|s| s.as_ref() == desc)
-                else {
+                let Some(sid) = dex.strings.iter().position(|s| s.as_ref() == desc) else {
                     continue;
                 };
                 let Some(type_id) = dex.types.iter().position(|t| *t == sid as u32) else {
@@ -310,7 +306,10 @@ impl Vm {
         if let Some(&c) = self.class_by_type.get(&(dex_idx, def.class_idx)) {
             return Ok(c);
         }
-        let desc = self.dex_at(dex_idx).type_descriptor(def.class_idx).to_string();
+        let desc = self
+            .dex_at(dex_idx)
+            .type_descriptor(def.class_idx)
+            .to_string();
         let desc_id = self.intern(&desc);
         if let Some(&c) = self.class_by_desc.get(&desc_id) {
             self.class_by_type.insert((dex_idx, def.class_idx), c);
@@ -433,8 +432,22 @@ impl Vm {
                 }
                 Ok(())
             };
-            push_methods(self, dex_idx, &cd.direct_methods, &mut methods, &mut dispatch, id)?;
-            push_methods(self, dex_idx, &cd.virtual_methods, &mut methods, &mut dispatch, id)?;
+            push_methods(
+                self,
+                dex_idx,
+                &cd.direct_methods,
+                &mut methods,
+                &mut dispatch,
+                id,
+            )?;
+            push_methods(
+                self,
+                dex_idx,
+                &cd.virtual_methods,
+                &mut methods,
+                &mut dispatch,
+                id,
+            )?;
         }
 
         let cl = &mut self.classes[id as usize];
@@ -1286,7 +1299,12 @@ impl Vm {
 
     // ---- encoded values ----
 
-    fn enc_to_value(&mut self, ev: &EncodedValue, dex_idx: u32, _ty: u32) -> Result<JValue, JvmError> {
+    fn enc_to_value(
+        &mut self,
+        ev: &EncodedValue,
+        dex_idx: u32,
+        _ty: u32,
+    ) -> Result<JValue, JvmError> {
         Ok(match ev {
             EncodedValue::Byte(v) => JValue::Int(i32::from(*v)),
             EncodedValue::Short(v) => JValue::Int(i32::from(*v)),

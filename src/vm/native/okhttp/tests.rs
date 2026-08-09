@@ -127,10 +127,7 @@ fn headers_builder_and_lookup() {
 
         assert_eq!(int_of(headers_size(vm, &[hs]).unwrap()), 2);
         let k = s(vm, "content-type");
-        assert_eq!(
-            s_of!(vm, headers_get(vm, &[hs, k])),
-            "application/json"
-        );
+        assert_eq!(s_of!(vm, headers_get(vm, &[hs, k])), "application/json");
         let k = s(vm, "nope");
         assert!(headers_get(vm, &[hs, k]).unwrap().is_null());
 
@@ -162,17 +159,12 @@ fn response_accessors() {
         .unwrap();
 
         assert_eq!(int_of(response_code(vm, &[resp]).unwrap()), 200);
-        assert!(bool_of(
-            response_is_successful(vm, &[resp]).unwrap()
-        ));
+        assert!(bool_of(response_is_successful(vm, &[resp]).unwrap()));
         assert_eq!(s_of!(vm, response_message(vm, &[resp])), "OK");
 
         // header() finds by name (case-insensitive); header(name, default).
         let k = s(vm, "content-type");
-        assert_eq!(
-            s_of!(vm, response_header(vm, &[resp, k])),
-            "text/html"
-        );
+        assert_eq!(s_of!(vm, response_header(vm, &[resp, k])), "text/html");
         let k = s(vm, "missing");
         let def = s(vm, "fallback");
         assert_eq!(
@@ -227,24 +219,13 @@ fn http_url_parsing() {
         );
         let url = request_url(vm, &[req]).unwrap();
         assert_eq!(s_of!(vm, http_url_scheme(vm, &[url])), "https");
-        assert_eq!(
-            s_of!(vm, http_url_host(vm, &[url])),
-            "api.example.com:8443"
-        );
+        assert_eq!(s_of!(vm, http_url_host(vm, &[url])), "api.example.com:8443");
         let k = s(vm, "lang");
-        assert_eq!(
-            s_of!(vm, http_url_query_parameter(vm, &[url, k])),
-            "vi"
-        );
+        assert_eq!(s_of!(vm, http_url_query_parameter(vm, &[url, k])), "vi");
         let k = s(vm, "sort");
-        assert_eq!(
-            s_of!(vm, http_url_query_parameter(vm, &[url, k])),
-            "asc"
-        );
+        assert_eq!(s_of!(vm, http_url_query_parameter(vm, &[url, k])), "asc");
         let k = s(vm, "nope");
-        assert!(http_url_query_parameter(vm, &[url, k])
-            .unwrap()
-            .is_null());
+        assert!(http_url_query_parameter(vm, &[url, k]).unwrap().is_null());
 
         // pathSegments: ["manga", "5"] as a List payload.
         let segs = http_url_path_segments(vm, &[url]).unwrap();

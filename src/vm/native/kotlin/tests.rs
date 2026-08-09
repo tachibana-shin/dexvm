@@ -92,9 +92,7 @@ fn collections_basics() {
             1
         );
         let hit = s(vm, "only");
-        assert!(bool_of(
-            collections_contains(vm, &[l1, hit]).unwrap()
-        ));
+        assert!(bool_of(collections_contains(vm, &[l1, hit]).unwrap()));
         let miss = s(vm, "other");
         assert!(!bool_of(collections_contains(vm, &[l1, miss]).unwrap()));
 

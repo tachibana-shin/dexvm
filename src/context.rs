@@ -414,7 +414,9 @@ mod tests {
         // the primary dex view is still the first file
         assert!(ctx.dex().strings.iter().any(|s| s.as_ref() == "Lm2/Base;"));
         // Helper must resolve from the secondary dex and inherit Base
-        let v = ctx.call("Lm2/Helper;", "add", &[JValue::Int(5), JValue::Int(6)]).unwrap();
+        let v = ctx
+            .call("Lm2/Helper;", "add", &[JValue::Int(5), JValue::Int(6)])
+            .unwrap();
         assert_eq!(v, JValue::Int(11));
         let v = ctx.call("Lm2/Helper;", "VERSION", &[]).unwrap_err();
         assert!(matches!(v, JvmError::Resolution(_)));

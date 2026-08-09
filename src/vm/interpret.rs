@@ -95,7 +95,13 @@ fn push_frame(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<(
             }
         };
         let tries: Arc<[TryItem]> = Arc::from(code.tries.clone());
-        (m.dex_idx, code.ins_size, code.registers_size, decoded, tries)
+        (
+            m.dex_idx,
+            code.ins_size,
+            code.registers_size,
+            decoded,
+            tries,
+        )
     };
     vm.frames.push(Frame {
         class,

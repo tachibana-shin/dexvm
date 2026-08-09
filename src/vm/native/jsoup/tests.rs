@@ -125,18 +125,11 @@ fn attr_abs_hasattr_tag() {
         assert!(!a.is_null(), "selector must find the anchor");
 
         let sel_href = s(vm, "href");
-        assert_eq!(
-            s_of!(vm, element_attr(vm, &[a, sel_href])),
-            "/manga/5"
-        );
+        assert_eq!(s_of!(vm, element_attr(vm, &[a, sel_href])), "/manga/5");
         let sel_class = s(vm, "class");
-        assert!(bool_of(
-            element_has_attr(vm, &[a, sel_class]).unwrap()
-        ));
+        assert!(bool_of(element_has_attr(vm, &[a, sel_class]).unwrap()));
         let sel_missing = s(vm, "missing");
-        assert!(!bool_of(
-            element_has_attr(vm, &[a, sel_missing]).unwrap()
-        ));
+        assert!(!bool_of(element_has_attr(vm, &[a, sel_missing]).unwrap()));
 
         // abs: resolves against the document base URI.
         let sel_abshref = s(vm, "abs:href");
@@ -228,10 +221,7 @@ fn elements_each_text_and_attr() {
         let sel_a = s(vm, "a");
         let links = document_select(vm, &[doc, sel_a]).unwrap();
 
-        assert_eq!(
-            list_of!(vm, elements_each_text(vm, &[links])),
-            ["A", "B"]
-        );
+        assert_eq!(list_of!(vm, elements_each_text(vm, &[links])), ["A", "B"]);
         let sel_href = s(vm, "href");
         assert_eq!(
             list_of!(vm, elements_each_attr(vm, &[links, sel_href])),

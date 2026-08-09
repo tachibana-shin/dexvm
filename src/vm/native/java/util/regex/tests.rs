@@ -97,10 +97,7 @@ fn matcher_matches_find_group() {
         assert!(bool_of(matcher_matches(vm, &[m]).unwrap()));
         assert_eq!(int_of(matcher_group_count(vm, &[m]).unwrap()), 2);
         assert_eq!(s_of!(vm, matcher_group(vm, &[m])), "12-34");
-        assert_eq!(
-            s_of!(vm, matcher_group_n(vm, &[m, JValue::Int(1)])),
-            "12"
-        );
+        assert_eq!(s_of!(vm, matcher_group_n(vm, &[m, JValue::Int(1)])), "12");
         assert_eq!(s_of!(vm, matcher_group_n(vm, &[m, JValue::Int(2)])), "34");
     });
 }
@@ -131,10 +128,7 @@ fn matcher_replace() {
         let p = pattern_of(vm, r"\d+");
         let m = matcher_of(vm, p, "a1b22c333");
         let repl = s(vm, "#");
-        assert_eq!(
-            s_of!(vm, matcher_replace_all(vm, &[m, repl])),
-            "a#b#c#"
-        );
+        assert_eq!(s_of!(vm, matcher_replace_all(vm, &[m, repl])), "a#b#c#");
 
         let m2 = matcher_of(vm, p, "a1b22c333");
         let repl = s(vm, "#");
