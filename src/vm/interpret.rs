@@ -53,8 +53,20 @@ impl Frame {
 }
 
 /// Runs a method with a fresh frame. Used for `<clinit>` and for calls made
-/// from native code.
+/// from native code. Native-backing methods (host APIs) run directly.
 pub fn run(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<JValue, JvmError> {
+    let native_key = vm.classes[class as usize].methods[slot as usize].native_key;
+    if let Some(key) = native_key {
+        let f = *vm
+            .natives
+            .get(&key)
+            .ok_or_else(|| JvmError::Fatal(format!("no native for {key:?}")))?;
+        return match f(vm, &args) {
+            Ok(v) => Ok(v),
+            Err(NatErr::Throw(ex)) => Err(JvmError::Uncaught(ex)),
+            Err(NatErr::Fatal(e)) => Err(e),
+        };
+    }
     let saved = std::mem::take(&mut vm.frames);
     let r = (|| {
         push_frame(vm, class, slot, args)?;

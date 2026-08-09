@@ -103,7 +103,7 @@ impl ArrayData {
 }
 
 /// Opaque handle to a parsed HTML document; Debug prints only the pointer.
-#[cfg(feature = "keiyoushi")]
+#[cfg(feature = "jsoup")]
 #[derive(Clone)]
 pub struct JsoupDocRef {
     pub doc: std::rc::Rc<dom_query::Document>,
@@ -111,14 +111,14 @@ pub struct JsoupDocRef {
     pub base: Option<String>,
 }
 
-#[cfg(feature = "keiyoushi")]
+#[cfg(feature = "jsoup")]
 impl std::fmt::Debug for JsoupDocRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "JsoupDoc({:p})", std::rc::Rc::as_ptr(&self.doc))
     }
 }
 
-#[cfg(feature = "keiyoushi")]
+#[cfg(feature = "jsoup")]
 impl JsoupDocRef {
     pub fn new(doc: dom_query::Document) -> Self {
         JsoupDocRef { doc: std::rc::Rc::new(doc), base: None }
@@ -249,16 +249,16 @@ pub enum Native {
     /// in rakuyomi's `html_element.rs`: `dom_query` documents with stable
     /// per-document node ids (a node id is only meaningful inside its own
     /// document tree).
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "jsoup")]
     JsoupDoc(JsoupDocRef),
     /// org.jsoup single element: (document, node id).
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "jsoup")]
     JsoupElement {
         doc: JsoupDocRef,
         id: dom_query::NodeId,
     },
     /// org.jsoup Elements: (document, node ids).
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "jsoup")]
     JsoupElements {
         doc: JsoupDocRef,
         ids: Vec<dom_query::NodeId>,
@@ -288,7 +288,7 @@ pub enum IterKind {
     MapKeys { map: u32, idx: usize },
     MapValues { map: u32, idx: usize },
     Set { set: u32, idx: usize },
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "jsoup")]
     Jsoup {
         doc: JsoupDocRef,
         ids: Vec<dom_query::NodeId>,
@@ -370,7 +370,7 @@ impl Native {
                 | IterKind::MapKeys { map, .. }
                 | IterKind::MapValues { map, .. } => out.push(*map),
                 IterKind::Set { set, .. } => out.push(*set),
-                #[cfg(feature = "keiyoushi")]
+                #[cfg(feature = "jsoup")]
                 IterKind::Jsoup { .. } => {}
             },
             Native::MapEntry { map, .. } => out.push(*map),
@@ -395,9 +395,9 @@ impl Native {
             Native::SMangasPage { mangas, .. } => push_all(mangas, out),
             Native::SFilter { children, .. } => push_all(children, out),
             Native::SFilterList(v) => push_all(v, out),
-            #[cfg(feature = "keiyoushi")]
+            #[cfg(feature = "jsoup")]
             Native::JsoupDoc(_) => {}
-            #[cfg(feature = "keiyoushi")]
+            #[cfg(feature = "jsoup")]
             Native::JsoupElement { .. } | Native::JsoupElements { .. } => {}
             Native::ArrayDesc(ArrayData::Obj(v)) => push_all(v, out),
             Native::HttpSource { .. } | Native::Str(_)

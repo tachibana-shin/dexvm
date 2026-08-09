@@ -2,38 +2,18 @@
 //! Requests are never executed; the client/builder classes only carry
 //! interceptor lists so extension `<init>` code can run.
 
+pub(crate) const HEADERS: &str = "Lokhttp3/Headers;";
+#[cfg_attr(not(feature = "tachiyomi"), allow(dead_code))]
+pub(crate) const RESPONSE: &str = "Lokhttp3/Response;";
+pub(crate) const REQUEST: &str = "Lokhttp3/Request;";
+pub(crate) const HTTP_URL: &str = "Lokhttp3/HttpUrl;";
+
 use super::*;
 
 // ---------------------------------------------------------------------------
-// HTTP bridge helpers
-// ---------------------------------------------------------------------------
 
-pub(crate) fn form_body_to_string(vm: &mut Vm, body: &Option<JValue>) -> Option<String> {
-    let Some(JValue::Obj(id)) = body.as_ref() else {
-        return None;
-    };
-    let o = vm.arena.get(*id)?;
-    match o.native.as_ref()? {
-        Native::FormBody(fields) => Some(
-            fields
-                .iter()
-                .map(|(k, v)| format!("{k}={v}"))
-                .collect::<Vec<_>>()
-                .join("&"),
-        ),
-        _ => None,
-    }
-}
-
-pub(crate) fn request_parts(vm: &mut Vm, v: JValue) -> Result<(String, String, Vec<(String, String)>, Option<JValue>), NatErr> {
-    let Some(Native::Request { url, method, headers, body }) = payload(vm, v) else {
-        return Err(npe(vm));
-    };
-    Ok((url.clone(), method.clone(), headers.clone(), body.clone()))
-}
-
-/// Bridge entry: executes the request through the registered HTTP callback
-/// and builds an `okhttp3.Response` object for the extension to parse.
+// Bridge entry: executes the request through the registered HTTP callback
+// and builds an `okhttp3.Response` object for the extension to parse.
 // ---------------------------------------------------------------------------
 // okhttp3: Request / Request$Builder / Headers / Cookie / Response
 // ---------------------------------------------------------------------------
@@ -563,7 +543,7 @@ pub(crate) fn okhttp_http_url_builder_to_string(vm: &mut Vm, args: &[JValue]) ->
 // okhttp3 native table
 // ---------------------------------------------------------------------------
 
-#[cfg(feature = "keiyoushi")]
+#[cfg(feature = "okhttp")]
 pub(crate) fn okhttp_client_new_call(vm: &mut Vm, args: &[JValue]) -> R {
     let req = match payload(vm, args[1]) {
         Some(Native::Request { url, method, headers, body }) => {
@@ -586,7 +566,7 @@ pub(crate) fn okhttp_client_new_call(vm: &mut Vm, args: &[JValue]) -> R {
     )
 }
 
-#[cfg(feature = "keiyoushi")]
+#[cfg(feature = "tachiyomi")]
 pub(crate) fn okhttp_call_execute(vm: &mut Vm, args: &[JValue]) -> R {
     let (url, method, headers, body) = request_parts(vm, args[0])?;
     let body_str = form_body_to_string(vm, &body);
@@ -613,9 +593,9 @@ pub(crate) fn okhttp_call_execute(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "okhttp")]
     ne!("Lokhttp3/OkHttpClient;", "newCall", "(Lokhttp3/Request;)Lokhttp3/Call;", true, okhttp_client_new_call),
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "tachiyomi")]
     ne!("Lokhttp3/Call;", "execute", "()Lokhttp3/Response;", true, okhttp_call_execute),
     ne!("Lokhttp3/Request$Builder;", "<init>", "()V", true, request_builder_init),
     ne!("Lokhttp3/Request$Builder;", "url", "(Ljava/lang/String;)Lokhttp3/Request$Builder;", true, request_builder_url),

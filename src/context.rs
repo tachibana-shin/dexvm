@@ -181,6 +181,16 @@ impl Context {
         self.vm.register_native(e)
     }
 
+    /// Convenience for [`Context::register_native`] over a whole table.
+    pub fn register_natives(&mut self, tables: &[&'static [NativeEntry]]) -> Result<(), JvmError> {
+        for t in tables {
+            for e in t.iter() {
+                self.register_native(*e)?;
+            }
+        }
+        Ok(())
+    }
+
     /// Collects the heap: reclaims every object unreachable from the roots
     /// (interned/runtime strings, class statics, monitor keys, and the
     /// instance retained by the last call). Object handles never move; the
@@ -306,7 +316,7 @@ impl Context {
     /// Registers the HTTP client the keiyoushi bridge executes requests
     /// through (`RequestsKt.__host_execute`). Without one, request
     /// execution throws an IllegalStateException.
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "tachiyomi")]
     pub fn set_http<F>(&mut self, f: F)
     where
         F: Fn(&crate::vm::native::keiyoushi::HttpData) -> crate::vm::native::keiyoushi::HttpResp
@@ -325,7 +335,7 @@ impl Context {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "tachiyomi")]
     use crate::vm::object::Native;
     use crate::vm::NatErr;
 
@@ -336,7 +346,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "tachiyomi")]
     fn load_apk_and_call() {
         let data = fixture();
         let mut ctx = Context::new_with(&data, SandboxOptions::allow_all()).unwrap();
@@ -361,7 +371,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "tachiyomi")]
     fn load_raw_dex() {
         let data = std::fs::read("fixtures/classes.dex").unwrap();
         let mut ctx = Context::new_with(&data, SandboxOptions::allow_all()).unwrap();
@@ -422,6 +432,30 @@ mod tests {
         ));
         ctx.grant(Permission::Network(NetworkPermission::Connect("api.akuma.moe".into())));
         assert!(ctx.vm().check_permission(&Permission::Network(NetworkPermission::Connect("api.akuma.moe".into()))).is_ok());
+    }
+
+    #[test]
+    fn global_natives_are_callable_in_every_context() {
+        fn ping(vm: &mut Vm, _args: &[JValue]) -> Result<JValue, NatErr> {
+            Ok(vm.alloc_string("pong"))
+        }
+        static PING: &[NativeEntry] = &[NativeEntry {
+            class: "Lcom/example/host/Ping;",
+            name: "ping",
+            sig: "()Ljava/lang/String;",
+            instance: false,
+            f: ping,
+        }];
+        crate::vm::native::register_global(PING);
+        let mut ctx = Context::new(&fixture()).unwrap();
+        let JValue::Obj(o) = ctx.call("Lcom/example/host/Ping;", "ping", &[]).unwrap() else {
+            panic!("ping returned non-object");
+        };
+        let s = match &ctx.vm().arena.objects[o as usize].native {
+            Some(Native::Str(s)) => s.clone(),
+            _ => panic!("not a string"),
+        };
+        assert_eq!(s, "pong");
     }
 
     #[test]

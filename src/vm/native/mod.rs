@@ -16,7 +16,7 @@ pub(crate) use crate::dex::insn::InvokeKind;
 pub(crate) use crate::vm::error::JvmError;
 pub(crate) use crate::vm::object::{ArrayData, ClassOrPrim, IterKind, MatcherState, Native};
 pub(crate) use crate::vm::value::JValue;
-pub(crate) use crate::vm::{MethodRef, NatErr, NativeEntry, Vm};
+pub use crate::vm::{MethodRef, NatErr, NativeEntry, NativeFn, Target, Vm};
 
 
 pub(crate) type R = Result<JValue, NatErr>;
@@ -100,26 +100,90 @@ mod kotlin;
 mod injekt;
 #[cfg(feature = "okhttp")]
 mod okhttp;
-#[cfg(feature = "keiyoushi")]
+#[cfg(feature = "jsoup")]
 mod jsoup;
-#[cfg(feature = "keiyoushi")]
+#[cfg(feature = "android")]
 mod android;
-#[cfg(feature = "keiyoushi")]
+#[cfg(feature = "tachiyomi")]
 pub mod keiyoushi;
 
 pub(crate) use self::{java::*, kotlin::*};
 #[cfg(feature = "okhttp")]
 pub(crate) use self::okhttp::*;
-#[cfg(feature = "keiyoushi")]
-#[cfg(feature = "keiyoushi")]
+#[cfg(feature = "tachiyomi")]
 pub(crate) use self::keiyoushi::*;
 
 // ---------------------------------------------------------------------------
+// HTTP bridge helpers (okhttp request objects -> plain data)
+// ---------------------------------------------------------------------------
+
+#[cfg(any(feature = "okhttp", feature = "tachiyomi"))]
+#[cfg_attr(not(feature = "tachiyomi"), allow(dead_code))]
+pub(crate) fn form_body_to_string(vm: &mut Vm, body: &Option<JValue>) -> Option<String> {
+    let Some(JValue::Obj(id)) = body.as_ref() else {
+        return None;
+    };
+    let o = vm.arena.get(*id)?;
+    match o.native.as_ref()? {
+        Native::FormBody(fields) => Some(
+            fields
+                .iter()
+                .map(|(k, v)| format!("{k}={v}"))
+                .collect::<Vec<_>>()
+                .join("&"),
+        ),
+        _ => None,
+    }
+}
+
+#[cfg(any(feature = "okhttp", feature = "tachiyomi"))]
+#[cfg_attr(not(feature = "tachiyomi"), allow(dead_code))]
+pub(crate) fn request_parts(vm: &mut Vm, v: JValue) -> Result<(String, String, Vec<(String, String)>, Option<JValue>), NatErr> {
+    let Some(Native::Request { url, method, headers, body }) = payload(vm, v) else {
+        return Err(npe(vm));
+    };
+    Ok((url.clone(), method.clone(), headers.clone(), body.clone()))
+}
+
+// ---------------------------------------------------------------------------
 pub fn register(vm: &mut Vm) {
-    for e in native_tables().into_iter().flatten() {
+    for e in native_tables().into_iter().flatten().chain(global_native_entries()) {
         let key = (vm.intern(e.class), vm.intern(e.name), vm.intern(e.sig));
         vm.natives.insert(key, e.f);
     }
+}
+
+/// Process-wide dynamic native tables.
+///
+/// Tables registered here are installed into **every** [`Context`] created
+/// afterwards (on top of the statically compiled tables), letting embedders
+/// plug their own host libraries without recompiling dexvm. Registrations
+/// are additive and append-only; call as early as possible.
+static GLOBAL_NATIVES: std::sync::OnceLock<std::sync::RwLock<Vec<&'static NativeEntry>>> =
+    std::sync::OnceLock::new();
+
+/// Appends `table` to the process-wide native registry.
+///
+/// ```no_run
+/// # use dexvm::vm::native::register_global;
+/// # use dexvm::vm::{NativeEntry, NatErr, Vm};
+/// # use dexvm::vm::value::JValue;
+/// # static TABLE: &[NativeEntry] = &[];
+/// register_global(TABLE);
+/// ```
+pub fn register_global(table: &'static [NativeEntry]) {
+    let lock = GLOBAL_NATIVES.get_or_init(Default::default);
+    lock.write().unwrap().extend(table.iter());
+}
+
+/// Read-only view of every globally registered native.
+pub fn global_native_entries() -> Vec<&'static NativeEntry> {
+    GLOBAL_NATIVES.get().map_or_else(Vec::new, |l| l.read().unwrap().clone())
+}
+
+/// Number of globally registered natives (introspection / tests).
+pub fn global_count() -> usize {
+    global_native_entries().len()
 }
 
 /// Every native table in the crate, flattened into per-class tables, for
@@ -131,12 +195,12 @@ pub(crate) fn native_tables() -> Vec<&'static [NativeEntry]> {
     out.push(injekt::INJEKT_TABLE);
     #[cfg(feature = "okhttp")]
     out.push(okhttp::OKHTTP_TABLE);
-    #[cfg(feature = "keiyoushi")]
-    {
-        out.push(jsoup::JSOUP_TABLE);
-        out.push(android::ANDROID_TABLE);
-        out.push(keiyoushi::KEIYOUSHI_TABLE);
-    }
+    #[cfg(feature = "jsoup")]
+    out.push(jsoup::JSOUP_TABLE);
+    #[cfg(feature = "android")]
+    out.push(android::ANDROID_TABLE);
+    #[cfg(feature = "tachiyomi")]
+    out.push(keiyoushi::KEIYOUSHI_TABLE);
     out.push(THROWABLE_CTORS);
     out
 }
@@ -225,7 +289,7 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             "Ljava/lang/Throwable;" => {
                 return Some(Native::Throwable { message: None, cause: JValue::Null });
             }
-            #[cfg(feature = "keiyoushi")]
+            #[cfg(feature = "tachiyomi")]
             "Leu/kanade/tachiyomi/source/model/Filter;"
             | "Leu/kanade/tachiyomi/source/model/Filter$Header;"
             | "Leu/kanade/tachiyomi/source/model/Filter$Separator;"
@@ -295,25 +359,25 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
         "Ljava/lang/Thread;" => Some(Native::Opaque),
         "Ljava/util/Map$Entry;" => Some(Native::MapEntry { map: 0, idx: 0 }),
         "Ljava/util/concurrent/locks/ReentrantLock;" => Some(Native::ReentrantLock { locked: false }),
-        #[cfg(feature = "keiyoushi")]
+        #[cfg(feature = "tachiyomi")]
         "Leu/kanade/tachiyomi/source/model/SManga;" => Some(keiyoushi::empty_smanga()),
-        #[cfg(feature = "keiyoushi")]
+        #[cfg(feature = "tachiyomi")]
         "Leu/kanade/tachiyomi/source/model/SChapter;" => Some(keiyoushi::empty_schapter()),
-        #[cfg(feature = "keiyoushi")]
+        #[cfg(feature = "tachiyomi")]
         "Leu/kanade/tachiyomi/source/model/Page;" => Some(Native::SPPage {
             index: 0,
             name: String::new(),
             url: String::new(),
             image_url: String::new(),
         }),
-        #[cfg(feature = "keiyoushi")]
+        #[cfg(feature = "tachiyomi")]
         "Leu/kanade/tachiyomi/source/model/MangasPage;" => Some(Native::SMangasPage {
             mangas: Vec::new(),
             has_next: false,
         }),
-        #[cfg(feature = "keiyoushi")]
+        #[cfg(feature = "tachiyomi")]
         "Leu/kanade/tachiyomi/source/model/FilterList;" => Some(Native::SFilterList(Vec::new())),
-        #[cfg(feature = "keiyoushi")]
+        #[cfg(feature = "tachiyomi")]
         "Leu/kanade/tachiyomi/source/model/Filter;"
         | "Leu/kanade/tachiyomi/source/model/Filter$Header;"
         | "Leu/kanade/tachiyomi/source/model/Filter$Separator;"

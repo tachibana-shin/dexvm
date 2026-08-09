@@ -122,7 +122,7 @@ pub struct Vm {
     /// Sandbox capability grants checked by host natives.
     pub perms: crate::permission::Permissions,
     pub array_classes: HashMap<u32, u32>,
-    #[cfg(feature = "keiyoushi")]
+    #[cfg(feature = "tachiyomi")]
     pub http: Option<std::rc::Rc<dyn Fn(&native::keiyoushi::HttpData) -> native::keiyoushi::HttpResp>>,
     loading: Vec<usize>,
 }
@@ -167,7 +167,7 @@ impl Vm {
             },
             array_classes: HashMap::new(),
             loading: Vec::new(),
-            #[cfg(feature = "keiyoushi")]
+            #[cfg(feature = "tachiyomi")]
             http: None,
             host_natives: Vec::new(),
             perms: crate::permission::Permissions::new(),
@@ -237,7 +237,7 @@ impl Vm {
             self.class_by_type.insert(type_id, c);
             return Ok(c);
         }
-        if SHIM_CLASSES.iter().any(|d| d.desc == desc) {
+        if self.shim_or_native(&desc) {
             let c = self.load_shim_class(desc_id)?;
             self.class_by_type.insert(type_id, c);
             return Ok(c);
@@ -275,7 +275,7 @@ impl Vm {
         if let Some(def_idx) = self.dex.class_by_descriptor(&desc) {
             return self.load_dex_class(def_idx);
         }
-        if SHIM_CLASSES.iter().any(|d| d.desc == desc) {
+        if self.shim_or_native(&desc) {
             return self.load_shim_class(desc_id);
         }
         Err(JvmError::Resolution(format!("class not found: {desc}")))
@@ -420,12 +420,34 @@ impl Vm {
         Ok(id)
     }
 
+
+fn shim_or_native(&self, desc: &str) -> bool {
+    if class::SHIM_CLASSES.iter().any(|d| d.desc == desc) {
+        return true;
+    }
+    if self.host_natives.iter().any(|e| e.class == desc) {
+        return true;
+    }
+    crate::vm::native::native_tables()
+        .into_iter()
+        .flatten()
+        .chain(crate::vm::native::global_native_entries())
+        .any(|e| e.class == desc)
+}
+
     fn load_shim_class(&mut self, desc_id: u32) -> Result<u32, JvmError> {
         let desc = self.str_of(desc_id).to_string();
         let def = SHIM_CLASSES
             .iter()
             .find(|d| d.desc == desc)
-            .ok_or_else(|| JvmError::Resolution(format!("not a shim class: {desc}")))?;
+            .copied()
+            .unwrap_or(class::ShimDef {
+                desc: "",
+                super_desc: Some("Ljava/lang/Object;"),
+                interfaces: &[],
+                flags: class::ACC_PUBLIC,
+                statics: &[],
+            });
         let superclass = match def.super_desc {
             Some(s) => Some(self.ensure_class_by_desc(s)?),
             None => None,
@@ -451,7 +473,7 @@ impl Vm {
         let mut methods: Vec<Method> = Vec::new();
         let mut dispatch: HashMap<(u32, u32), u32> = HashMap::new();
         let mut shim_natives: Vec<&NativeEntry> =
-            native::native_tables().into_iter().flatten().collect();
+            native::native_tables().into_iter().flatten().chain(native::global_native_entries()).collect();
         let host = self.host_natives.clone();
         shim_natives.extend(host.iter());
         for ne in shim_natives.into_iter().filter(|ne| ne.class == desc) {

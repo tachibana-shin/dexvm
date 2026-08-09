@@ -2,15 +2,29 @@
 name = "dexvm"
 version = "0.1.0"
 edition = "2021"
-description = "Minimal JVM (DEX) interpreter for keiyoushi/Tachiyomi extensions"
+description = "Minimal DEX (Dalvik bytecode) VM runtime in Rust, embeddable as a library and tuned for mihon/Tachiyomi (keiyoushi) manga extensions"
+keywords = ["dex", "dalvik", "android", "vm", "mihon"]
+categories = ["embedded", "virtualization", "parser-implementations"]
+readme = "README.md"
 
 [features]
+default = ["java", "kotlin", "injekt", "jsoup", "android", "okhttp", "tachiyomi"]
+# Java standard library host shims (java.*)
+java = []
+# Kotlin stdlib host shims (kotlin.*)
+kotlin = []
+# koan / injekt DI shims (injekt.*)
+injekt = []
+# org.jsoup host shims (parsed via dom_query)
+jsoup = ["dep:dom_query"]
 # host shim classes for the Android framework (android.*)
 android = []
 # host shim classes for OkHttp (okhttp3.*)
 okhttp = []
 # host shim classes for the mihon extension API (eu.kanade.tachiyomi.source.*)
-keiyoushi = ["android", "okhttp", "dep:dom_query"]
+tachiyomi = []
+# compat alias: full mihon/keiyoushi source pipeline (the `keiyoushi` bridge)
+keiyoushi = ["tachiyomi", "kotlin", "injekt", "jsoup", "android", "okhttp"]
 
 [lib]
 name = "dexvm"

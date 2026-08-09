@@ -37,7 +37,7 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
             Some(Native::List(items)) => Ok(items.clone()),
             Some(Native::Set(items)) => Ok(items.clone()),
             Some(Native::Array(ArrayData::Obj(items))) => Ok(items.clone()),
-            #[cfg(feature = "keiyoushi")]
+            #[cfg(feature = "jsoup")]
             Some(Native::JsoupElements { doc, ids }) => {
                 let doc = doc.clone();
                 let ids = ids.clone();
