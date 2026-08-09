@@ -41,6 +41,8 @@ pub struct Method {
     pub args: Vec<u32>,
     pub access_flags: u32,
     pub static_method: bool,
+    /// Dex file (index into `Vm::dexes`) this method's bytecode/ids came from.
+    pub dex_idx: u32,
     /// Present when this method is implemented natively.
     pub native_key: Option<(u32, u32, u32)>,
     pub code: Option<Arc<CodeItem>>,
@@ -1468,8 +1470,8 @@ pub struct Class {
     pub access_flags: u32,
     pub is_interface: bool,
     pub is_abstract: bool,
-    /// For array classes: element type id.
-    pub array_elem: Option<u32>,
+    /// For array classes: (dex index, element type id).
+    pub array_elem: Option<(u32, u32)>,
     /// Instance fields in declaration order (walk order == offset).
     pub instance_fields: Vec<(u32, u32, u32)>, // (name, ty_desc, access)
     /// (name, ty_desc) -> instance offset. Inherited fields are copied in.

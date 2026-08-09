@@ -14,6 +14,8 @@ use crate::vm::{MethodRef, NatErr, Target, Vm};
 pub struct Frame {
     class: u32,
     slot: u32,
+    /// Dex file (index into `Vm::dexes`) the method's ids refer to.
+    dex: u32,
     decoded: Arc<crate::dex::insn::Decoded>,
     tries: Arc<[TryItem]>,
     regs: Vec<JValue>,
@@ -77,7 +79,7 @@ pub fn run(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<JVal
 }
 
 fn push_frame(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<(), JvmError> {
-    let (ins_size, registers, decoded, tries) = {
+    let (dex, ins_size, registers, decoded, tries) = {
         let m = &vm.classes[class as usize].methods[slot as usize];
         let code = m
             .code
@@ -93,11 +95,12 @@ fn push_frame(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<(
             }
         };
         let tries: Arc<[TryItem]> = Arc::from(code.tries.clone());
-        (code.ins_size, code.registers_size, decoded, tries)
+        (m.dex_idx, code.ins_size, code.registers_size, decoded, tries)
     };
     vm.frames.push(Frame {
         class,
         slot,
+        dex,
         decoded,
         tries,
         regs: Frame::make_regs(&args, ins_size, registers),
@@ -236,12 +239,15 @@ impl Vm {
                                     JvmError::Resolution("callee has no code item".into())
                                 })?;
                                 let tries: Arc<[TryItem]> = Arc::from(code.tries.clone());
+                                let callee_dex =
+                                    self.classes[*class as usize].methods[*slot as usize].dex_idx;
                                 f.pc = ret_pc;
                                 let caller = std::mem::replace(
                                     &mut f,
                                     Frame {
                                         class: *class,
                                         slot: *slot,
+                                        dex: callee_dex,
                                         decoded: decoded.clone(),
                                         tries,
                                         regs: Frame::make_regs(&call_args, *ins_size, *registers),
@@ -289,7 +295,7 @@ impl Vm {
     fn unwind(&mut self) -> Result<bool, JvmError> {
         let mut carried: Option<JValue> = None;
         loop {
-            let (insn_addr, tries, exc) = {
+            let (dex, insn_addr, tries, exc) = {
                 let f = match self.frames.last_mut() {
                     Some(f) => f,
                     None => return Ok(false),
@@ -299,7 +305,7 @@ impl Vm {
                     None => return Err(JvmError::Fatal("unwind without pending exception".into())),
                 };
                 let insn_addr = f.decoded.units.get(f.err_pc).copied().unwrap_or(0);
-                (insn_addr, f.tries.clone(), exc)
+                (f.dex, insn_addr, f.tries.clone(), exc)
             };
             let catch_addr = {
                 let mut found = None;
@@ -310,7 +316,7 @@ impl Vm {
                     }
                     for &(type_idx, addr) in &t.handlers {
                         let matches = {
-                            let catch_class = self.ensure_class_by_type(type_idx)?;
+                            let catch_class = self.ensure_class_by_type(dex, type_idx)?;
                             let obj_class = match exc {
                                 JValue::Obj(o) => Some(self.arena.objects[o as usize].class),
                                 _ => None,
@@ -416,12 +422,13 @@ impl Vm {
                 Flow::Next(0)
             }
             Insn::ConstString(d, str_idx) | Insn::ConstStringJumbo(d, str_idx) => {
-                let s = self.dex.strings[*str_idx as usize].clone();
+                let s = self.dex_at(f.dex).strings[*str_idx as usize].clone();
                 f.regs[*d as usize] = self.alloc_string(&s);
                 Flow::Next(0)
             }
             Insn::ConstClass(d, type_idx) => {
-                f.regs[*d as usize] = self.class_obj(*type_idx)?;
+                let c = self.ensure_class_by_type(f.dex, *type_idx)?;
+                f.regs[*d as usize] = self.class_obj(c)?;
                 Flow::Next(0)
             }
             Insn::MoveResult(d) | Insn::MoveResultWide(d) => {
@@ -456,21 +463,21 @@ impl Vm {
                 Flow::Next(0)
             }
             Insn::CheckCast(d, type_idx) => {
-                let target = self.ensure_class_by_type(*type_idx)?;
+                let target = self.ensure_class_by_type(f.dex, *type_idx)?;
                 if let JValue::Obj(o) = f.regs[*d as usize] {
                     let oc = self.arena.objects[o as usize].class;
                     if !self.is_assignable(oc, target)? {
                         return Ok(StepOutcome::Throw(JValue::Obj(self.err_cce(format!(
                             "{} cannot be cast to {}",
                             self.class_desc_str(oc),
-                            self.dex.type_descriptor(*type_idx)
+                            self.dex_at(f.dex).type_descriptor(*type_idx)
                         )))));
                     }
                 }
                 Flow::Next(0)
             }
             Insn::InstanceOf(d, src, type_idx) => {
-                let target = self.ensure_class_by_type(*type_idx)?;
+                let target = self.ensure_class_by_type(f.dex, *type_idx)?;
                 let r = match f.regs[*src as usize] {
                     JValue::Obj(o) => {
                         self.is_assignable(self.arena.objects[o as usize].class, target)?
@@ -494,7 +501,7 @@ impl Vm {
                 Flow::Next(0)
             }
             Insn::NewInstance(d, type_idx) => {
-                let class_id = self.ensure_class_by_type(*type_idx)?;
+                let class_id = self.ensure_class_by_type(f.dex, *type_idx)?;
                 let fields = self.classes[class_id as usize].field_offsets.len();
                 f.regs[*d as usize] =
                     JValue::Obj(self.arena.alloc(class_id, vec![JValue::Null; fields], None));
@@ -505,8 +512,8 @@ impl Vm {
                 if n < 0 {
                     return Ok(StepOutcome::Throw(JValue::Obj(self.err_neg_arr_size())));
                 }
-                let arr_class = self.array_class(*type_idx)?;
-                let elem_desc = self.dex.type_descriptor(*type_idx).to_string();
+                let arr_class = self.array_class(f.dex, *type_idx)?;
+                let elem_desc = self.dex_at(f.dex).type_descriptor(*type_idx).to_string();
                 let data = ArrayData::new(&elem_desc, n as usize);
                 f.regs[*d as usize] = JValue::Obj(self.arena.alloc(
                     arr_class,
@@ -516,7 +523,7 @@ impl Vm {
                 Flow::Next(0)
             }
             Insn::FilledNewArray(args, type_idx) => {
-                let desc = self.dex.type_descriptor(*type_idx).to_string();
+                let desc = self.dex_at(f.dex).type_descriptor(*type_idx).to_string();
                 let elem_desc = desc
                     .strip_prefix('[')
                     .map(|s| s.to_string())
@@ -531,7 +538,7 @@ impl Vm {
                         ri += 1;
                     }
                 }
-                let arr_class = self.array_class(*type_idx)?;
+                let arr_class = self.array_class(f.dex, *type_idx)?;
                 let o = self
                     .arena
                     .alloc(arr_class, Vec::new(), Some(Native::Array(data)));
@@ -671,7 +678,7 @@ impl Vm {
             Insn::SGet(d, field_idx)
             | Insn::SGetWide(d, field_idx)
             | Insn::SGetObj(d, field_idx) => {
-                let fr = self.field_ref(*field_idx)?;
+                let fr = self.field_ref(f.dex, *field_idx)?;
                 match self.static_field_get(fr) {
                     Ok(v) => {
                         f.regs[*d as usize] = v;
@@ -683,7 +690,7 @@ impl Vm {
             Insn::SPut(src, field_idx)
             | Insn::SPutWide(src, field_idx)
             | Insn::SPutObj(src, field_idx) => {
-                let fr = self.field_ref(*field_idx)?;
+                let fr = self.field_ref(f.dex, *field_idx)?;
                 let v = f.regs[*src as usize];
                 match self.static_field_put(fr, v) {
                     Ok(()) => Flow::Next(0),
@@ -698,7 +705,7 @@ impl Vm {
                     _ => return Ok(StepOutcome::Throw(JValue::Obj(self.err_npe()))),
                 };
                 let oc = self.arena.objects[o as usize].class;
-                let fr = self.field_ref(*field_idx)?;
+                let fr = self.field_ref(f.dex, *field_idx)?;
                 let off = self.field_offset(oc, fr.name, fr.ty).ok_or_else(|| {
                     JvmError::Resolution(format!(
                         "no field {} in {}",
@@ -717,7 +724,7 @@ impl Vm {
                     _ => return Ok(StepOutcome::Throw(JValue::Obj(self.err_npe()))),
                 };
                 let oc = self.arena.objects[o as usize].class;
-                let fr = self.field_ref(*field_idx)?;
+                let fr = self.field_ref(f.dex, *field_idx)?;
                 let off = self.field_offset(oc, fr.name, fr.ty).ok_or_else(|| {
                     JvmError::Resolution(format!(
                         "no field {} in {}",
@@ -729,7 +736,7 @@ impl Vm {
                 Flow::Next(0)
             }
             Insn::Invoke(kind, method_idx, args) => {
-                let mref = self.method_ref(*method_idx)?;
+                let mref = self.method_ref(f.dex, *method_idx)?;
                 let receiver = if *kind == InvokeKind::Static {
                     None
                 } else {

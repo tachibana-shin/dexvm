@@ -99,19 +99,25 @@ pub struct FieldRef {
 }
 
 pub struct Vm {
-    pub dex: DexFile,
+    /// All dex files of the loaded program. Ids in dex tables (strings,
+    /// types, methods, fields) are relative to the file that defines the
+    /// referencing class; the class namespace is shared across dexes with
+    /// earlier files winning on duplicates.
+    pub dexes: Vec<DexFile>,
     pub intern: Vec<Arc<str>>,
     pub intern_map: HashMap<String, u32>,
     pub classes: Vec<Class>,
     pub class_by_desc: HashMap<u32, u32>,
-    pub class_by_type: HashMap<u32, u32>,
+    /// (dex index, dex type id) -> loaded class id.
+    pub class_by_type: HashMap<(u32, u32), u32>,
     pub arena: Arena,
-    pub string_objs: Vec<Option<u32>>,
+    /// (dex index, dex string id) -> String object.
+    pub string_objs: HashMap<(u32, u32), u32>,
     pub runtime_strings: HashMap<String, u32>,
     pub natives: HashMap<(u32, u32, u32), NativeFn>,
     pub monitors: HashMap<u32, usize>,
-    pub method_refs: HashMap<u32, MethodRef>,
-    pub field_refs: HashMap<u32, FieldRef>,
+    pub method_refs: HashMap<(u32, u32), MethodRef>,
+    pub field_refs: HashMap<(u32, u32), FieldRef>,
     pub out: Box<dyn Write>,
     pub budget: i64,
     pub depth_limit: usize,
@@ -121,24 +127,24 @@ pub struct Vm {
     pub host_natives: Vec<NativeEntry>,
     /// Sandbox capability grants checked by host natives.
     pub perms: crate::permission::Permissions,
-    pub array_classes: HashMap<u32, u32>,
+    pub array_classes: HashMap<(u32, u32), u32>,
     #[cfg(feature = "tachiyomi")]
     pub http:
         Option<std::rc::Rc<dyn Fn(&native::keiyoushi::HttpData) -> native::keiyoushi::HttpResp>>,
-    loading: Vec<usize>,
+    loading: Vec<(u32, usize)>,
 }
 
 impl Vm {
-    pub fn new(dex: DexFile, out: Box<dyn Write>) -> Result<Vm, JvmError> {
+    pub fn new(dexes: Vec<DexFile>, out: Box<dyn Write>) -> Result<Vm, JvmError> {
         let mut vm = Vm {
-            dex,
+            dexes,
             intern: Vec::new(),
             intern_map: HashMap::new(),
             classes: Vec::new(),
             class_by_desc: HashMap::new(),
             class_by_type: HashMap::new(),
             arena: Arena::default(),
-            string_objs: Vec::new(),
+            string_objs: HashMap::new(),
             runtime_strings: HashMap::new(),
             natives: HashMap::new(),
             monitors: HashMap::new(),
@@ -220,27 +226,42 @@ impl Vm {
 
     // ---- class loading ----
 
-    pub fn ensure_class_by_type(&mut self, type_id: u32) -> Result<u32, JvmError> {
-        if let Some(&c) = self.class_by_type.get(&type_id) {
+    /// The dex file whose id tables the given index refers to.
+    pub fn dex_at(&self, dex_idx: u32) -> &DexFile {
+        &self.dexes[dex_idx as usize]
+    }
+
+    /// Locates a class descriptor across all dex files, earlier dexes win.
+    pub fn class_location(&self, desc: &str) -> Option<(u32, usize)> {
+        for (i, dex) in self.dexes.iter().enumerate() {
+            if let Some(def_idx) = dex.class_by_descriptor(desc) {
+                return Some((i as u32, def_idx));
+            }
+        }
+        None
+    }
+
+    pub fn ensure_class_by_type(&mut self, dex_idx: u32, type_id: u32) -> Result<u32, JvmError> {
+        if let Some(&c) = self.class_by_type.get(&(dex_idx, type_id)) {
             return Ok(c);
         }
-        let desc = self.dex.type_descriptor(type_id).to_string();
+        let desc = self.dex_at(dex_idx).type_descriptor(type_id).to_string();
         if desc.starts_with('[') {
-            return self.array_class(type_id);
+            return self.array_class(dex_idx, type_id);
         }
         let desc_id = self.intern(&desc);
         if let Some(&c) = self.class_by_desc.get(&desc_id) {
-            self.class_by_type.insert(type_id, c);
+            self.class_by_type.insert((dex_idx, type_id), c);
             return Ok(c);
         }
-        if let Some(def_idx) = self.dex.class_by_descriptor(&desc) {
-            let c = self.load_dex_class(def_idx)?;
-            self.class_by_type.insert(type_id, c);
+        if let Some((dx, def_idx)) = self.class_location(&desc) {
+            let c = self.load_dex_class(dx, def_idx)?;
+            self.class_by_type.insert((dex_idx, type_id), c);
             return Ok(c);
         }
         if self.shim_or_native(&desc) {
             let c = self.load_shim_class(desc_id)?;
-            self.class_by_type.insert(type_id, c);
+            self.class_by_type.insert((dex_idx, type_id), c);
             return Ok(c);
         }
         Err(JvmError::Resolution(format!("class not found: {desc}")))
@@ -257,26 +278,26 @@ impl Vm {
         }
         let desc = self.str_of(desc_id).to_string();
         if desc.starts_with('[') {
-            // find the dex type id for this array descriptor
-            let sid = self
-                .dex
-                .strings
-                .iter()
-                .position(|s| s.as_ref() == desc)
-                .ok_or_else(|| {
-                    JvmError::Resolution(format!("array descriptor not in dex: {desc}"))
-                })? as u32;
-            let type_id = self
-                .dex
-                .types
-                .iter()
-                .position(|t| *t == sid)
-                .ok_or_else(|| JvmError::Resolution(format!("array type not in dex: {desc}")))?
-                as u32;
-            return self.array_class(type_id);
+            // find the dex type id for this array descriptor (any dex)
+            for (di, dex) in self.dexes.iter().enumerate() {
+                let Some(sid) = dex
+                    .strings
+                    .iter()
+                    .position(|s| s.as_ref() == desc)
+                else {
+                    continue;
+                };
+                let Some(type_id) = dex.types.iter().position(|t| *t == sid as u32) else {
+                    continue;
+                };
+                return self.array_class(di as u32, type_id as u32);
+            }
+            return Err(JvmError::Resolution(format!(
+                "array descriptor not in dex: {desc}"
+            )));
         }
-        if let Some(def_idx) = self.dex.class_by_descriptor(&desc) {
-            return self.load_dex_class(def_idx);
+        if let Some((dx, def_idx)) = self.class_location(&desc) {
+            return self.load_dex_class(dx, def_idx);
         }
         if self.shim_or_native(&desc) {
             return self.load_shim_class(desc_id);
@@ -284,21 +305,21 @@ impl Vm {
         Err(JvmError::Resolution(format!("class not found: {desc}")))
     }
 
-    fn load_dex_class(&mut self, def_idx: usize) -> Result<u32, JvmError> {
-        let def = self.dex.classes[def_idx].clone();
-        if let Some(&c) = self.class_by_type.get(&def.class_idx) {
+    fn load_dex_class(&mut self, dex_idx: u32, def_idx: usize) -> Result<u32, JvmError> {
+        let def = self.dex_at(dex_idx).classes[def_idx].clone();
+        if let Some(&c) = self.class_by_type.get(&(dex_idx, def.class_idx)) {
             return Ok(c);
         }
-        let desc = self.dex.type_descriptor(def.class_idx).to_string();
+        let desc = self.dex_at(dex_idx).type_descriptor(def.class_idx).to_string();
         let desc_id = self.intern(&desc);
         if let Some(&c) = self.class_by_desc.get(&desc_id) {
-            self.class_by_type.insert(def.class_idx, c);
+            self.class_by_type.insert((dex_idx, def.class_idx), c);
             return Ok(c);
         }
-        if self.loading.contains(&def_idx) {
+        if self.loading.contains(&(dex_idx, def_idx)) {
             return Err(JvmError::Resolution("cyclic class hierarchy".into()));
         }
-        self.loading.push(def_idx);
+        self.loading.push((dex_idx, def_idx));
 
         let is_object = desc_id == self.hot.object;
         let superclass = if def.superclass_idx == u32::MAX {
@@ -308,11 +329,11 @@ impl Vm {
                 Some(self.ensure_class_by_desc_id(self.hot.object)?)
             }
         } else {
-            Some(self.ensure_class_by_type(def.superclass_idx)?)
+            Some(self.ensure_class_by_type(dex_idx, def.superclass_idx)?)
         };
         let mut interfaces = Vec::new();
         for &t in &def.interfaces {
-            interfaces.push(self.ensure_class_by_type(t)?);
+            interfaces.push(self.ensure_class_by_type(dex_idx, t)?);
         }
 
         let id = self.classes.len() as u32;
@@ -327,7 +348,7 @@ impl Vm {
             ..Default::default()
         });
         self.class_by_desc.insert(desc_id, id);
-        self.class_by_type.insert(def.class_idx, id);
+        self.class_by_type.insert((dex_idx, def.class_idx), id);
 
         // instance fields: inherit super's offsets, then assign own
         let mut field_offsets = superclass
@@ -347,48 +368,49 @@ impl Vm {
 
         if let Some(cd) = &def.class_data {
             for ef in &cd.static_fields {
-                let f = self.dex.fields[ef.field_idx as usize].clone();
-                let name = self.intern(&self.dex.strings[f.name as usize].to_string());
-                let ty = self.intern(&self.dex.type_descriptor(f.ty).to_string());
+                let f = self.dex_at(dex_idx).fields[ef.field_idx as usize].clone();
+                let name = self.intern(&self.dex_at(dex_idx).strings[f.name as usize].to_string());
+                let ty = self.intern(&self.dex_at(dex_idx).type_descriptor(f.ty).to_string());
                 let off = statics.len() as u32;
                 statics.push(JValue::Null);
                 statics_lazy.push(None);
                 static_fields.insert((name, ty), (id, off));
             }
             for ef in &cd.instance_fields {
-                let f = self.dex.fields[ef.field_idx as usize].clone();
-                let name = self.intern(&self.dex.strings[f.name as usize].to_string());
-                let ty = self.intern(&self.dex.type_descriptor(f.ty).to_string());
+                let f = self.dex_at(dex_idx).fields[ef.field_idx as usize].clone();
+                let name = self.intern(&self.dex_at(dex_idx).strings[f.name as usize].to_string());
+                let ty = self.intern(&self.dex_at(dex_idx).type_descriptor(f.ty).to_string());
                 let off = instance_fields.len() as u32;
                 field_offsets.insert((name, ty), off);
                 instance_fields.push((name, ty, ef.access_flags));
             }
             // encoded static values (in declaration order)
             for (i, ev) in def.static_values.iter().enumerate() {
-                let ty = self.dex.fields[cd.static_fields[i].field_idx as usize].ty;
-                let ty_desc = self.dex.type_descriptor(ty).to_string();
+                let ty = self.dex_at(dex_idx).fields[cd.static_fields[i].field_idx as usize].ty;
+                let ty_desc = self.dex_at(dex_idx).type_descriptor(ty).to_string();
                 let ty_id = self.intern(&ty_desc);
-                statics[i] = self.enc_to_value(ev, ty_id)?;
+                statics[i] = self.enc_to_value(ev, dex_idx, ty_id)?;
             }
             let push_methods = |vm: &mut Self,
+                                dex_idx: u32,
                                 list: &[crate::dex::EncodedMethod],
                                 methods: &mut Vec<Method>,
                                 dispatch: &mut HashMap<(u32, u32), u32>,
                                 class_id: u32|
              -> Result<(), JvmError> {
                 for em in list {
-                    let m = vm.dex.methods[em.method_idx as usize].clone();
-                    let name = vm.intern(&vm.dex.strings[m.name as usize].to_string());
-                    let sig = vm.intern(&vm.proto_sig(m.proto));
+                    let m = vm.dex_at(dex_idx).methods[em.method_idx as usize].clone();
+                    let name = vm.intern(&vm.dex_at(dex_idx).strings[m.name as usize].to_string());
+                    let sig = vm.intern(&vm.proto_sig(dex_idx, m.proto));
                     let ret_desc = vm
-                        .dex
-                        .type_descriptor(vm.dex.protos[m.proto as usize].return_type)
+                        .dex_at(dex_idx)
+                        .type_descriptor(vm.dex_at(dex_idx).protos[m.proto as usize].return_type)
                         .to_string();
                     let ret = vm.intern(&ret_desc);
-                    let arg_descs: Vec<String> = vm.dex.protos[m.proto as usize]
+                    let arg_descs: Vec<String> = vm.dex_at(dex_idx).protos[m.proto as usize]
                         .params
                         .iter()
-                        .map(|&t| vm.dex.type_descriptor(t).to_string())
+                        .map(|&t| vm.dex_at(dex_idx).type_descriptor(t).to_string())
                         .collect();
                     let args: Vec<u32> = arg_descs.iter().map(|d| vm.intern(d)).collect();
                     let static_method = em.access_flags & ACC_STATIC != 0;
@@ -403,6 +425,7 @@ impl Vm {
                         args,
                         access_flags: em.access_flags,
                         static_method,
+                        dex_idx,
                         native_key: None,
                         code: em.code.clone(),
                         insns: OnceLock::new(),
@@ -410,8 +433,8 @@ impl Vm {
                 }
                 Ok(())
             };
-            push_methods(self, &cd.direct_methods, &mut methods, &mut dispatch, id)?;
-            push_methods(self, &cd.virtual_methods, &mut methods, &mut dispatch, id)?;
+            push_methods(self, dex_idx, &cd.direct_methods, &mut methods, &mut dispatch, id)?;
+            push_methods(self, dex_idx, &cd.virtual_methods, &mut methods, &mut dispatch, id)?;
         }
 
         let cl = &mut self.classes[id as usize];
@@ -500,6 +523,7 @@ impl Vm {
                 args: args.iter().map(|a| self.intern(a)).collect(),
                 access_flags: class::ACC_PUBLIC | if static_method { ACC_STATIC } else { 0 },
                 static_method,
+                dex_idx: 0,
                 native_key: Some((desc_id, name, sig)),
                 code: None,
                 insns: OnceLock::new(),
@@ -535,11 +559,11 @@ impl Vm {
         Ok(id)
     }
 
-    pub(crate) fn array_class(&mut self, elem_type: u32) -> Result<u32, JvmError> {
-        if let Some(&c) = self.array_classes.get(&elem_type) {
+    pub(crate) fn array_class(&mut self, dex_idx: u32, elem_type: u32) -> Result<u32, JvmError> {
+        if let Some(&c) = self.array_classes.get(&(dex_idx, elem_type)) {
             return Ok(c);
         }
-        let elem_desc = self.dex.type_descriptor(elem_type);
+        let elem_desc = self.dex_at(dex_idx).type_descriptor(elem_type).to_string();
         let desc = format!("[{elem_desc}");
         let desc_id = self.intern(&desc);
         let object = self.ensure_class_by_desc_id(self.hot.object)?;
@@ -551,35 +575,35 @@ impl Vm {
             descriptor: desc_id,
             superclass: Some(object),
             interfaces: vec![cloneable, serializable],
-            array_elem: Some(elem_type),
+            array_elem: Some((dex_idx, elem_type)),
             ..Default::default()
         });
         self.class_by_desc.insert(desc_id, id);
-        self.array_classes.insert(elem_type, id);
+        self.array_classes.insert((dex_idx, elem_type), id);
         Ok(id)
     }
 
     // ---- field resolution ----
 
-    pub fn field_ref(&mut self, field_idx: u32) -> Result<FieldRef, JvmError> {
-        if let Some(fr) = self.field_refs.get(&field_idx) {
+    pub fn field_ref(&mut self, dex_idx: u32, field_idx: u32) -> Result<FieldRef, JvmError> {
+        if let Some(fr) = self.field_refs.get(&(dex_idx, field_idx)) {
             return Ok(*fr);
         }
         let f = self
-            .dex
+            .dex_at(dex_idx)
             .fields
             .get(field_idx as usize)
             .cloned()
             .ok_or_else(|| JvmError::Resolution(format!("bad field idx {field_idx}")))?;
-        let name = self.intern(&self.dex.strings[f.name as usize].to_string());
-        let ty = self.intern(&self.dex.type_descriptor(f.ty).to_string());
-        let class_desc = self.intern(&self.dex.type_descriptor(f.class).to_string());
+        let name = self.intern(&self.dex_at(dex_idx).strings[f.name as usize].to_string());
+        let ty = self.intern(&self.dex_at(dex_idx).type_descriptor(f.ty).to_string());
+        let class_desc = self.intern(&self.dex_at(dex_idx).type_descriptor(f.class).to_string());
         let fr = FieldRef {
             name,
             ty,
             class_desc,
         };
-        self.field_refs.insert(field_idx, fr);
+        self.field_refs.insert((dex_idx, field_idx), fr);
         Ok(fr)
     }
 
@@ -692,7 +716,7 @@ impl Vm {
                 stack.push(id);
             }
         };
-        for &s in self.string_objs.iter().flatten() {
+        for &s in self.string_objs.values() {
             seed(s, &mut marks, &mut stack);
         }
         for &s in self.runtime_strings.values() {
@@ -793,32 +817,32 @@ impl Vm {
     /// declaring a method named `name`, loading it on the way. This is how
     /// the keiyoushi factory (`ExtensionGenerated`) is located.
     pub fn find_factory_class(&mut self, name: &str) -> Result<String, JvmError> {
-        for cd in &self.dex.classes {
-            let type_str = self
-                .dex
-                .types
-                .get(cd.class_idx as usize)
-                .and_then(|&s| self.dex.strings.get(s as usize).cloned())
-                .unwrap_or_default();
-            let has = match &cd.class_data {
-                Some(data) => data
-                    .direct_methods
-                    .iter()
-                    .chain(data.virtual_methods.iter())
-                    .any(|m| {
-                        self.dex
-                            .strings
-                            .get(self.dex.methods[m.method_idx as usize].name as usize)
-                            .map(|s| s.as_ref() == name)
-                            .unwrap_or(false)
-                    }),
-                None => false,
-            };
-            if has {
-                let cid = self.ensure_class_by_desc(&type_str)?;
-                return Ok(self
-                    .str_of(self.classes[cid as usize].descriptor)
-                    .to_string());
+        for dex in &self.dexes {
+            for cd in &dex.classes {
+                let type_str = dex
+                    .types
+                    .get(cd.class_idx as usize)
+                    .and_then(|&s| dex.strings.get(s as usize).cloned())
+                    .unwrap_or_default();
+                let has = match &cd.class_data {
+                    Some(data) => data
+                        .direct_methods
+                        .iter()
+                        .chain(data.virtual_methods.iter())
+                        .any(|m| {
+                            dex.strings
+                                .get(dex.methods[m.method_idx as usize].name as usize)
+                                .map(|s| s.as_ref() == name)
+                                .unwrap_or(false)
+                        }),
+                    None => false,
+                };
+                if has {
+                    let cid = self.ensure_class_by_desc(&type_str)?;
+                    return Ok(self
+                        .str_of(self.classes[cid as usize].descriptor)
+                        .to_string());
+                }
             }
         }
         Err(JvmError::Resolution(format!(
@@ -831,40 +855,46 @@ impl Vm {
     /// classes). Returns the first concrete subclass found in the raw dex.
     pub fn find_http_source_subclass(&mut self) -> Result<String, JvmError> {
         const TARGET: &str = "Leu/kanade/tachiyomi/source/online/HttpSource;";
-        for cd in &self.dex.classes {
-            let type_str = self
-                .dex
-                .types
-                .get(cd.class_idx as usize)
-                .and_then(|&s| self.dex.strings.get(s as usize).cloned())
-                .unwrap_or_default();
-            if type_str.as_ref() == TARGET {
-                continue;
-            }
-            let mut sup = cd.superclass_idx;
-            for _ in 0..4 {
-                let Some(&s) = self.dex.types.get(sup as usize) else {
-                    break;
-                };
-                let Some(sup_str) = self.dex.strings.get(s as usize) else {
-                    break;
-                };
-                if sup_str.as_ref() == TARGET {
-                    let cid = self.ensure_class_by_desc(&type_str)?;
-                    return Ok(self
-                        .str_of(self.classes[cid as usize].descriptor)
-                        .to_string());
+        for dex in &self.dexes {
+            for cd in &dex.classes {
+                let type_str = dex
+                    .types
+                    .get(cd.class_idx as usize)
+                    .and_then(|&s| dex.strings.get(s as usize).cloned())
+                    .unwrap_or_default();
+                if type_str.as_ref() == TARGET {
+                    continue;
                 }
-                let Some(next) = self
-                    .dex
-                    .classes
-                    .iter()
-                    .find(|c| c.class_idx == sup)
-                    .map(|c| c.superclass_idx)
-                else {
-                    break;
+                // walk the superclass chain across dexes via descriptors
+                let mut sup_desc: Option<Arc<str>> = match cd.superclass_idx {
+                    u32::MAX => None,
+                    s => dex
+                        .types
+                        .get(s as usize)
+                        .and_then(|&si| dex.strings.get(si as usize).cloned()),
                 };
-                sup = next;
+                for _ in 0..4 {
+                    let Some(sup) = sup_desc else {
+                        break;
+                    };
+                    if sup.as_ref() == TARGET {
+                        let cid = self.ensure_class_by_desc(&type_str)?;
+                        return Ok(self
+                            .str_of(self.classes[cid as usize].descriptor)
+                            .to_string());
+                    }
+                    sup_desc = self.class_location(&sup).and_then(|(di, def_idx)| {
+                        let d = &self.dexes[di as usize];
+                        let cd2 = &d.classes[def_idx];
+                        match cd2.superclass_idx {
+                            u32::MAX => None,
+                            s => d
+                                .types
+                                .get(s as usize)
+                                .and_then(|&si| d.strings.get(si as usize).cloned()),
+                        }
+                    });
+                }
             }
         }
         Err(JvmError::Resolution("no HttpSource subclass in dex".into()))
@@ -911,41 +941,41 @@ impl Vm {
 
     // ---- prototypes/signatures ----
 
-    pub fn proto_sig(&self, proto_id: u32) -> String {
-        let p = &self.dex.protos[proto_id as usize];
+    pub fn proto_sig(&self, dex_idx: u32, proto_id: u32) -> String {
+        let p = &self.dex_at(dex_idx).protos[proto_id as usize];
         let mut s = String::from("(");
         for &t in &p.params {
-            s.push_str(self.dex.type_descriptor(t));
+            s.push_str(self.dex_at(dex_idx).type_descriptor(t));
         }
         s.push(')');
-        s.push_str(self.dex.type_descriptor(p.return_type));
+        s.push_str(self.dex_at(dex_idx).type_descriptor(p.return_type));
         s
     }
 
-    pub fn method_ref(&mut self, method_idx: u32) -> Result<MethodRef, JvmError> {
-        if let Some(mr) = self.method_refs.get(&method_idx) {
+    pub fn method_ref(&mut self, dex_idx: u32, method_idx: u32) -> Result<MethodRef, JvmError> {
+        if let Some(mr) = self.method_refs.get(&(dex_idx, method_idx)) {
             return Ok(mr.clone());
         }
         let m = self
-            .dex
+            .dex_at(dex_idx)
             .methods
             .get(method_idx as usize)
             .cloned()
             .ok_or_else(|| JvmError::Resolution(format!("bad method idx {method_idx}")))?;
-        let name = self.intern(&self.dex.strings[m.name as usize].to_string());
-        let sig = self.intern(&self.proto_sig(m.proto));
+        let name = self.intern(&self.dex_at(dex_idx).strings[m.name as usize].to_string());
+        let sig = self.intern(&self.proto_sig(dex_idx, m.proto));
         let ret_desc = self
-            .dex
-            .type_descriptor(self.dex.protos[m.proto as usize].return_type)
+            .dex_at(dex_idx)
+            .type_descriptor(self.dex_at(dex_idx).protos[m.proto as usize].return_type)
             .to_string();
         let ret = self.intern(&ret_desc);
-        let arg_descs: Vec<String> = self.dex.protos[m.proto as usize]
+        let arg_descs: Vec<String> = self.dex_at(dex_idx).protos[m.proto as usize]
             .params
             .iter()
-            .map(|&t| self.dex.type_descriptor(t).to_string())
+            .map(|&t| self.dex_at(dex_idx).type_descriptor(t).to_string())
             .collect();
         let args: Vec<u32> = arg_descs.iter().map(|d| self.intern(d)).collect();
-        let class_desc = self.intern(&self.dex.type_descriptor(m.class).to_string());
+        let class_desc = self.intern(&self.dex_at(dex_idx).type_descriptor(m.class).to_string());
         let mr = MethodRef {
             name,
             sig,
@@ -953,7 +983,7 @@ impl Vm {
             args,
             class_desc,
         };
-        self.method_refs.insert(method_idx, mr.clone());
+        self.method_refs.insert((dex_idx, method_idx), mr.clone());
         Ok(mr)
     }
 
@@ -976,10 +1006,10 @@ impl Vm {
                 self.ensure_class_by_desc_id(mref.class_desc)?
             }
             InvokeKind::Super => {
-                let c = self.ensure_class_by_desc_id(mref.class_desc)?;
-                self.classes[c as usize]
-                    .superclass
-                    .ok_or_else(|| JvmError::Resolution("invoke-super with no superclass".into()))?
+                // Dalvik: resolve against the ref class and its ancestors.
+                // The ref class (not its superclass) is where the method is
+                // declared; starting at the superclass misses that member.
+                self.ensure_class_by_desc_id(mref.class_desc)?
             }
         };
         let c0 = c;
@@ -1111,12 +1141,12 @@ impl Vm {
         JValue::Obj(id)
     }
 
-    pub fn dex_string(&mut self, string_id: u32) -> Result<JValue, JvmError> {
-        if let Some(&Some(o)) = self.string_objs.get(string_id as usize) {
+    pub fn dex_string(&mut self, dex_idx: u32, string_id: u32) -> Result<JValue, JvmError> {
+        if let Some(&o) = self.string_objs.get(&(dex_idx, string_id)) {
             return Ok(JValue::Obj(o));
         }
         let s = self
-            .dex
+            .dex_at(dex_idx)
             .strings
             .get(string_id as usize)
             .ok_or_else(|| JvmError::Resolution(format!("bad string idx {string_id}")))?;
@@ -1125,10 +1155,7 @@ impl Vm {
             Vec::new(),
             Some(Native::Str(s.to_string())),
         );
-        while self.string_objs.len() <= string_id as usize {
-            self.string_objs.push(None);
-        }
-        self.string_objs[string_id as usize] = Some(o);
+        self.string_objs.insert((dex_idx, string_id), o);
         Ok(JValue::Obj(o))
     }
 
@@ -1220,12 +1247,12 @@ impl Vm {
             if cc == target {
                 return Ok(true);
             }
-            if let Some(elem) = cl.array_elem {
+            if let Some((edx, elem)) = cl.array_elem {
                 // array targets
                 if is_target_array {
-                    let t_elem = self.classes[target as usize].array_elem.unwrap();
-                    let e_desc = self.dex.type_descriptor(elem);
-                    let t_desc = self.dex.type_descriptor(t_elem);
+                    let (tdx, t_elem) = self.classes[target as usize].array_elem.unwrap();
+                    let e_desc = self.dex_at(edx).type_descriptor(elem).to_string();
+                    let t_desc = self.dex_at(tdx).type_descriptor(t_elem).to_string();
                     if e_desc == t_desc {
                         return Ok(true);
                     }
@@ -1235,8 +1262,8 @@ impl Vm {
                     if e_desc.len() == 1 || t_desc.len() == 1 {
                         return Ok(false); // primitive arrays only match identical
                     }
-                    let ec = self.ensure_class_by_type(elem)?;
-                    let tc = self.ensure_class_by_type(t_elem)?;
+                    let ec = self.ensure_class_by_type(edx, elem)?;
+                    let tc = self.ensure_class_by_type(tdx, t_elem)?;
                     return self.is_assignable(ec, tc);
                 }
                 // array to Cloneable/Serializable/Object
@@ -1259,7 +1286,7 @@ impl Vm {
 
     // ---- encoded values ----
 
-    fn enc_to_value(&mut self, ev: &EncodedValue, _ty: u32) -> Result<JValue, JvmError> {
+    fn enc_to_value(&mut self, ev: &EncodedValue, dex_idx: u32, _ty: u32) -> Result<JValue, JvmError> {
         Ok(match ev {
             EncodedValue::Byte(v) => JValue::Int(i32::from(*v)),
             EncodedValue::Short(v) => JValue::Int(i32::from(*v)),
@@ -1270,9 +1297,9 @@ impl Vm {
             EncodedValue::Double(v) => JValue::Double(*v),
             EncodedValue::Bool(v) => JValue::Int(i32::from(*v)),
             EncodedValue::Null => JValue::Null,
-            EncodedValue::String(s) => self.dex_string(*s)?,
+            EncodedValue::String(s) => self.dex_string(dex_idx, *s)?,
             EncodedValue::Type(t) => {
-                let c = self.ensure_class_by_type(*t)?;
+                let c = self.ensure_class_by_type(dex_idx, *t)?;
                 self.class_obj(c)?
             }
             _ => JValue::Null,
@@ -1332,6 +1359,7 @@ impl Vm {
                 args,
                 access_flags: class::ACC_PUBLIC | if static_method { ACC_STATIC } else { 0 },
                 static_method,
+                dex_idx: 0,
                 native_key: Some((class, name, sig)),
                 code: None,
                 insns: OnceLock::new(),
@@ -1588,7 +1616,7 @@ mod tests {
     #[test]
     fn runs_hello_dex() {
         let dex = DexFile::parse(&hello_dex()).expect("parse dex");
-        let mut vm = Vm::new(dex, Box::new(Vec::new())).expect("vm");
+        let mut vm = Vm::new(vec![dex], Box::new(Vec::new())).expect("vm");
         let cid = vm.ensure_class_by_desc("LHello;").expect("load LHello;");
         let f_slot = vm.classes[cid as usize]
             .methods

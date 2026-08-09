@@ -98,10 +98,12 @@ pub struct Context {
     last_instance: Option<u32>,
 }
 
-/// Extract the first `classes*.dex` entry from a zip/apk container.
-fn dex_from_apk(data: &[u8]) -> Result<Vec<u8>, ContextError> {
+/// Extract every `classes*.dex` entry from a zip/apk container, in dex order
+/// (`classes.dex`, `classes2.dex`, ...), so multidex programs load completely.
+fn dexes_from_apk(data: &[u8]) -> Result<Vec<Vec<u8>>, ContextError> {
     let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data))
         .map_err(|e| ContextError::BadArchive(e.to_string()))?;
+    let mut entries = Vec::new();
     for i in 0..archive.len() {
         let mut f = archive
             .by_index(i)
@@ -110,15 +112,27 @@ fn dex_from_apk(data: &[u8]) -> Result<Vec<u8>, ContextError> {
             let mut buf = Vec::new();
             f.read_to_end(&mut buf)
                 .map_err(|e| ContextError::BadArchive(format!("read {}: {e}", f.name())))?;
-            return Ok(buf);
+            entries.push((f.name().to_string(), buf));
         }
     }
-    Err(ContextError::BadArchive("no classes*.dex entry".into()))
+    if entries.is_empty() {
+        return Err(ContextError::BadArchive("no classes*.dex entry".into()));
+    }
+    entries.sort_by(|(a, _), (b, _)| {
+        let num = |name: &str| -> u32 {
+            name.strip_prefix("classes")
+                .and_then(|s| s.strip_suffix(".dex"))
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0)
+        };
+        num(a).cmp(&num(b))
+    });
+    Ok(entries.into_iter().map(|(_, b)| b).collect())
 }
 
 impl Context {
     /// Loads a dex from raw bytes: either a plain `.dex` file or an
-    /// `.apk`/`.zip` container (the first `classes*.dex` entry is used).
+    /// `.apk`/`.zip` container (every `classes*.dex` entry, i.e. multidex).
     /// All capabilities are denied by default.
     pub fn new(data: &[u8]) -> Result<Context, ContextError> {
         Context::new_with(data, SandboxOptions::default())
@@ -126,13 +140,16 @@ impl Context {
 
     /// Loads a dex with the given sandbox grants pre-applied.
     pub fn new_with(data: &[u8], options: SandboxOptions) -> Result<Context, ContextError> {
-        let dex_data = if data.starts_with(b"PK\x03\x04") || data.starts_with(b"PK\x05\x06") {
-            dex_from_apk(data)?
+        let dexes_data = if data.starts_with(b"PK\x03\x04") || data.starts_with(b"PK\x05\x06") {
+            dexes_from_apk(data)?
         } else {
-            data.to_vec()
+            vec![data.to_vec()]
         };
-        let dex = DexFile::parse(&dex_data).map_err(|e| ContextError::Dex(e.to_string()))?;
-        let mut vm = Vm::new(dex, Box::new(std::io::sink()))?;
+        let mut dexes = Vec::with_capacity(dexes_data.len());
+        for d in dexes_data {
+            dexes.push(DexFile::parse(&d).map_err(|e| ContextError::Dex(e.to_string()))?);
+        }
+        let mut vm = Vm::new(dexes, Box::new(std::io::sink()))?;
         if let Some(p) = options.network {
             vm.perms.grant(Permission::Network(p));
         }
@@ -276,9 +293,9 @@ impl Context {
         Ok(v)
     }
 
-    /// Read-only access to the loaded dex file.
+    /// Read-only access to the primary loaded dex file.
     pub fn dex(&self) -> &DexFile {
-        &self.vm.dex
+        &self.vm.dexes[0]
     }
 
     /// The object retained by the most recent instance call ([`Context::call`]
@@ -383,6 +400,24 @@ mod tests {
             _ => panic!("not a string"),
         };
         assert_eq!(s, "spanish");
+    }
+
+    #[test]
+    fn multidex_cross_dex_calls() {
+        // classes.dex: m2.Base (superclass) + m2.Main; classes2.dex:
+        // m2.Helper which extends Base. Exercises cross-dex class loading,
+        // static/instance calls, static fields and superclass resolution.
+        let data = std::fs::read("fixtures/multidex.apk").unwrap();
+        let mut ctx = Context::new_with(&data, SandboxOptions::allow_all()).unwrap();
+        let v = ctx.call("Lm2/Main;", "run", &[]).unwrap();
+        assert_eq!(v, JValue::Int(36));
+        // the primary dex view is still the first file
+        assert!(ctx.dex().strings.iter().any(|s| s.as_ref() == "Lm2/Base;"));
+        // Helper must resolve from the secondary dex and inherit Base
+        let v = ctx.call("Lm2/Helper;", "add", &[JValue::Int(5), JValue::Int(6)]).unwrap();
+        assert_eq!(v, JValue::Int(11));
+        let v = ctx.call("Lm2/Helper;", "VERSION", &[]).unwrap_err();
+        assert!(matches!(v, JvmError::Resolution(_)));
     }
 
     #[test]

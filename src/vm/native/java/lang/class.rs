@@ -224,10 +224,10 @@ pub(crate) fn class_get_component_type(vm: &mut Vm, args: &[JValue]) -> R {
     };
     match cop {
         ClassOrPrim::Class(c) => {
-            let Some(elem) = vm.classes[*c as usize].array_elem else {
+            let Some((edx, elem)) = vm.classes[*c as usize].array_elem else {
                 return Ok(JValue::Null);
             };
-            let e_desc = vm.dex.type_descriptor(elem).to_string();
+            let e_desc = vm.dex_at(edx).type_descriptor(elem).to_string();
             if e_desc.len() == 1 {
                 let class_class = vm
                     .ensure_class_by_desc("Ljava/lang/Class;")
@@ -240,7 +240,7 @@ pub(crate) fn class_get_component_type(vm: &mut Vm, args: &[JValue]) -> R {
                     ))),
                 )));
             }
-            let ec = vm.ensure_class_by_type(elem).map_err(nat_fatal)?;
+            let ec = vm.ensure_class_by_type(edx, elem).map_err(nat_fatal)?;
             vm.class_obj(ec).map_err(nat_fatal)
         }
         ClassOrPrim::Primitive(_) => Ok(JValue::Null),
