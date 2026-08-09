@@ -724,3 +724,6 @@ pub(crate) const JSOUP_TABLE: &[NativeEntry] = &[
         elements_select
     ),
 ];
+
+#[cfg(test)]
+mod tests;

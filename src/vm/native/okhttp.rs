@@ -378,11 +378,16 @@ pub(crate) fn http_url_path_segments(vm: &mut Vm, args: &[JValue]) -> R {
         .and_then(|s| s.split(['?', '#']).next())
         .unwrap_or("");
     let path_owned = path.to_string();
-    let segments = path_owned
-        .split('/')
-        .filter(|s| !s.is_empty())
-        .map(|s| vm.alloc_string(s))
-        .collect::<Vec<_>>();
+    // The authority (host[:port]) precedes the first '/'; path segments
+    // start after it.
+    let segments = match path_owned.split_once('/') {
+        Some((_, rest)) => rest
+            .split('/')
+            .filter(|s| !s.is_empty())
+            .map(|s| vm.alloc_string(s))
+            .collect::<Vec<_>>(),
+        None => Vec::new(),
+    };
     list_alloc(vm, segments)
 }
 
@@ -681,3 +686,6 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Request$Builder;", "url", "(Lokhttp3/HttpUrl;)Lokhttp3/Request$Builder;", true, okhttp_request_builder_url),
     ne!("Lokhttp3/HttpUrl$Builder;", "toString", "()Ljava/lang/String;", true, okhttp_http_url_builder_to_string),
 ];
+
+#[cfg(test)]
+mod tests;

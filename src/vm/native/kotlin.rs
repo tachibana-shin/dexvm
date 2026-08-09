@@ -113,7 +113,12 @@ pub(crate) fn regex_matches(vm: &mut Vm, args: &[JValue]) -> R {
         _ => return Err(npe(vm)),
     };
     let text = charseq_of(vm, args[1])?;
-    Ok(JValue::Int(i32::from(re.is_match(&text).unwrap_or(false))))
+    let full = re
+        .find(&text)
+        .ok()
+        .flatten()
+        .is_some_and(|m| m.start() == 0 && m.end() == text.len());
+    Ok(JValue::Int(i32::from(full)))
 }
 
 pub(crate) fn regex_to_string(vm: &mut Vm, args: &[JValue]) -> R {
@@ -558,3 +563,6 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/time/Duration;", "compareTo-LRDsOJo", "(JJ)I", false, keiyoushi_duration_compare),
     ne!("Lkotlin/time/Duration;", "equals-impl0", "(JJ)Z", false, keiyoushi_duration_equals),
 ];
+
+#[cfg(test)]
+mod tests;

@@ -791,7 +791,7 @@ pub(crate) fn split_java(re: &Regex, text: &str, limit: i32) -> Vec<String> {
     let mut parts = Vec::new();
     let mut pos = 0usize;
     let mut count = 0usize;
-    let max = if limit < 0 {
+    let max = if limit <= 0 {
         usize::MAX
     } else {
         limit as usize

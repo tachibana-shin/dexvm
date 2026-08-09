@@ -50,7 +50,12 @@ pub(crate) fn pattern_matches_static(vm: &mut Vm, args: &[JValue]) -> R {
     let re_str = jstr(vm, args[0])?;
     let input = charseq_of(vm, args[1])?;
     let re = Regex::new(&re_str).map_err(|e| iae(vm, format!("PatternSyntaxException: {e}")))?;
-    Ok(JValue::Int(i32::from(re.is_match(&input).unwrap_or(false))))
+    let full = re
+        .find(&input)
+        .ok()
+        .flatten()
+        .is_some_and(|m| m.start() == 0 && m.end() == input.len());
+    Ok(JValue::Int(i32::from(full)))
 }
 
 pub(crate) fn pattern_compile(vm: &mut Vm, args: &[JValue]) -> R {

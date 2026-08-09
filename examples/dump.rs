@@ -5,8 +5,8 @@ fn main() {
     let dex = DexFile::parse(&data).unwrap();
     for cd in &dex.classes {
         let Some(d) = &cd.class_data else { continue };
-        let desc = dex.type_descriptor(cd.class_idx as u32).to_string();
-        let mk = |m: &dexvm::dex::EncodedMethod| dex.method_key(m.method_idx as u32).unwrap();
+        let desc = dex.type_descriptor(cd.class_idx).to_string();
+        let mk = |m: &dexvm::dex::EncodedMethod| dex.method_key(m.method_idx).unwrap();
         let has = d
             .direct_methods
             .iter()

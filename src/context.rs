@@ -357,7 +357,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "tachiyomi")]
+    #[cfg(all(feature = "tachiyomi", feature = "okhttp"))]
     fn load_apk_and_call() {
         let data = fixture();
         let mut ctx = Context::new_with(&data, SandboxOptions::allow_all()).unwrap();
@@ -532,7 +532,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "tachiyomi")]
+    #[cfg(all(feature = "tachiyomi", feature = "okhttp"))]
     fn native_registered_after_class_loaded_patches_dispatch() {
         fn late(vm: &mut Vm, _args: &[JValue]) -> Result<JValue, NatErr> {
             Ok(vm.alloc_string("late"))

@@ -291,11 +291,10 @@ fn refs_of(dex: &DexFile, desc: &str) {
                                 creates += 1;
                             }
                         }
-                        Insn::CheckCast(_, t) => {
-                            if dex.type_descriptor(*t) == target {
+                        Insn::CheckCast(_, t)
+                            if dex.type_descriptor(*t) == target => {
                                 casts += 1;
                             }
-                        }
                         _ => {}
                     }
                 }
@@ -393,7 +392,7 @@ fn main() {
             std::process::exit(1);
         }
     };
-    let dex = &*ctx.dex();
+    let dex = ctx.dex();
     println!("dex: {} bytes", dex.data.len());
     println!(
         "strings={} types={} protos={} fields={} methods={} classes={}",

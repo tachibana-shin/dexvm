@@ -200,7 +200,7 @@ pub(crate) fn matcher_end_n(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn matcher_bound_pair(vm: &mut Vm, v: JValue, idx: i32) -> Option<(usize, usize)> {
     match payload(vm, v) {
         Some(Native::Matcher(ms)) => match ms.last {
-            Some((s, _)) if idx <= 0 => Some((s, s)),
+            Some((s, e)) if idx <= 0 => Some((s, e)),
             Some((s, _)) => match captures_at(&ms.pattern, &ms.text, s) {
                 Some(c) => c.get(idx as usize).and_then(|m| *m),
                 None => None,

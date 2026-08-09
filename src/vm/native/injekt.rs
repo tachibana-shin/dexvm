@@ -59,3 +59,6 @@ pub(crate) const INJEKT_TABLE: &[NativeEntry] = &[
         injekt_full_type_get
     ),
 ];
+
+#[cfg(test)]
+mod tests;

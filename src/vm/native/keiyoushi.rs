@@ -16,8 +16,6 @@ pub(crate) const FILTER: &str = "Leu/kanade/tachiyomi/source/model/Filter;";
 pub(crate) const HEADERS: &str = "Lokhttp3/Headers;";
 pub(crate) const RESPONSE: &str = "Lokhttp3/Response;";
 pub(crate) const REQUEST: &str = "Lokhttp3/Request;";
-#[cfg_attr(feature = "okhttp", allow(dead_code))]
-pub(crate) const HTTP_URL: &str = "Lokhttp3/HttpUrl;";
 
 /// A request built by the extension, handed to the host HTTP callback.
 #[derive(Debug, Clone)]

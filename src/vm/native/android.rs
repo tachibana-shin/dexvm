@@ -140,3 +140,6 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         prefs_set
     ),
 ];
+
+#[cfg(test)]
+mod tests;
