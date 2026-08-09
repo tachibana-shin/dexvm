@@ -47,7 +47,10 @@ fn main() {
                         println!("  {pc:04x} CHECKCAST {}", dex.type_descriptor(*ty));
                     }
                     dexvm::dex::insn::Insn::ConstString(d, si) => {
-                        println!("  {pc:04x} CONST-STRING r{d} {:?}", dex.strings[*si as usize]);
+                        println!(
+                            "  {pc:04x} CONST-STRING r{d} {:?}",
+                            dex.strings[*si as usize]
+                        );
                     }
                     _ => {}
                 }

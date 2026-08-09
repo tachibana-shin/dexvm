@@ -9,9 +9,9 @@ mod date;
 mod hashmap;
 mod hashset;
 mod iterator;
-mod list_iterator;
 mod linkedhashmap;
 mod linkedhashset;
+mod list_iterator;
 mod locale;
 mod map_entry;
 mod objects;
@@ -46,7 +46,10 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
                         alloc(
                             vm,
                             "Lorg/jsoup/nodes/Element;",
-                            Native::JsoupElement { doc: doc.clone(), id },
+                            Native::JsoupElement {
+                                doc: doc.clone(),
+                                id,
+                            },
                         )
                     })
                     .collect()

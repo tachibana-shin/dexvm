@@ -24,8 +24,8 @@ use std::io::Read;
 use crate::dex::DexFile;
 use crate::permission::{FilesystemPermission, NetworkPermission, Permission, ProcessPermission};
 use crate::vm::error::JvmError;
-use crate::vm::{interpret, NativeEntry};
 use crate::vm::value::JValue;
+use crate::vm::{interpret, NativeEntry};
 use crate::Vm;
 
 /// Errors produced while constructing a [`Context`] from bytes or a file.
@@ -145,7 +145,10 @@ impl Context {
         if options.env {
             vm.perms.grant(Permission::Env);
         }
-        Ok(Context { vm, last_instance: None })
+        Ok(Context {
+            vm,
+            last_instance: None,
+        })
     }
 
     /// Opens a `.dex` or `.apk` file from disk.
@@ -231,8 +234,13 @@ impl Context {
         let mut call_args = Vec::with_capacity(args.len() + 1);
         if !is_static {
             let obj = match self.last_instance {
-                Some(o) if self.vm.classes[self.vm.arena.objects[o as usize].class as usize].descriptor
-                    == self.vm.intern(&class) => o,
+                Some(o)
+                    if self.vm.classes[self.vm.arena.objects[o as usize].class as usize]
+                        .descriptor
+                        == self.vm.intern(&class) =>
+                {
+                    o
+                }
                 _ => self.vm.alloc_instance(cid)?,
             };
             call_args.push(JValue::Obj(obj));
@@ -247,7 +255,9 @@ impl Context {
     /// [`Context::call`], mirroring `d4rt_rs::Context::invoke`.
     pub fn invoke(&mut self, method: &str, args: &[JValue]) -> Result<JValue, JvmError> {
         let obj = self.last_instance.ok_or_else(|| {
-            JvmError::Resolution("no instance from a previous call; call an instance method first".into())
+            JvmError::Resolution(
+                "no instance from a previous call; call an instance method first".into(),
+            )
         })?;
         let cid = self.vm.arena.objects[obj as usize].class;
         let slot = self.vm.classes[cid as usize]
@@ -355,14 +365,18 @@ mod tests {
         let v = ctx.call("Lk", "<init>", &[JValue::Int(1)]).unwrap();
         assert_eq!(v, JValue::Null);
         let lang = ctx.call("Lk", "getLang", &[]).unwrap();
-        let JValue::Obj(o) = lang else { panic!("not an object") };
+        let JValue::Obj(o) = lang else {
+            panic!("not an object")
+        };
         let s = match &ctx.vm().arena.objects[o as usize].native {
             Some(Native::Str(s)) => s.clone(),
             _ => panic!("not a string"),
         };
         assert_eq!(s, "es");
         let mapped = ctx.call("Lk", "a", &[]).unwrap();
-        let JValue::Obj(o) = mapped else { panic!("not an object") };
+        let JValue::Obj(o) = mapped else {
+            panic!("not an object")
+        };
         let s = match &ctx.vm().arena.objects[o as usize].native {
             Some(Native::Str(s)) => s.clone(),
             _ => panic!("not a string"),
@@ -391,13 +405,33 @@ mod tests {
     fn grant_revoke_has() {
         let data = fixture();
         let mut ctx = Context::new(&data).unwrap();
-        ctx.grant(Permission::Network(NetworkPermission::Connect("api.akuma.moe".into())));
-        assert!(ctx.has_permission(&Permission::Network(NetworkPermission::Connect("api.akuma.moe:443".into()))));
-        assert!(!ctx.has_permission(&Permission::Network(NetworkPermission::Connect("evil.example:443".into()))));
-        ctx.revoke(&Permission::Network(NetworkPermission::Connect("api.akuma.moe:443".into())));
-        assert!(!ctx.has_permission(&Permission::Network(NetworkPermission::Connect("api.akuma.moe:443".into()))));
+        ctx.grant(Permission::Network(NetworkPermission::Connect(
+            "api.akuma.moe".into(),
+        )));
+        assert!(
+            ctx.has_permission(&Permission::Network(NetworkPermission::Connect(
+                "api.akuma.moe:443".into()
+            )))
+        );
+        assert!(
+            !ctx.has_permission(&Permission::Network(NetworkPermission::Connect(
+                "evil.example:443".into()
+            )))
+        );
+        ctx.revoke(&Permission::Network(NetworkPermission::Connect(
+            "api.akuma.moe:443".into(),
+        )));
+        assert!(
+            !ctx.has_permission(&Permission::Network(NetworkPermission::Connect(
+                "api.akuma.moe:443".into()
+            )))
+        );
         ctx.grant(Permission::Network(NetworkPermission::Any));
-        assert!(ctx.has_permission(&Permission::Network(NetworkPermission::Connect("evil.example:443".into()))));
+        assert!(
+            ctx.has_permission(&Permission::Network(NetworkPermission::Connect(
+                "evil.example:443".into()
+            )))
+        );
     }
 
     #[test]
@@ -405,8 +439,10 @@ mod tests {
         // Host API: a fake network call native that refuses to run unless
         // network access to the host is granted.
         fn fetch(vm: &mut Vm, args: &[JValue]) -> Result<JValue, NatErr> {
-            vm.check_permission(&Permission::Network(NetworkPermission::Connect("api.akuma.moe".into())))
-                .map_err(NatErr::Fatal)?;
+            vm.check_permission(&Permission::Network(NetworkPermission::Connect(
+                "api.akuma.moe".into(),
+            )))
+            .map_err(NatErr::Fatal)?;
             let s = match &vm.arena.objects[args[1].as_obj() as usize].native {
                 Some(crate::vm::object::Native::Str(s)) => s.clone(),
                 _ => String::new(),
@@ -425,13 +461,25 @@ mod tests {
         ctx.register_native(entry).unwrap();
         // denv: deny network -> the native must fail
         ctx.revoke(&Permission::Network(NetworkPermission::Any));
-        ctx.revoke(&Permission::Network(NetworkPermission::Connect("api.akuma.moe".into())));
+        ctx.revoke(&Permission::Network(NetworkPermission::Connect(
+            "api.akuma.moe".into(),
+        )));
         assert!(matches!(
-            ctx.vm().check_permission(&Permission::Network(NetworkPermission::Connect("api.akuma.moe".into()))),
+            ctx.vm()
+                .check_permission(&Permission::Network(NetworkPermission::Connect(
+                    "api.akuma.moe".into()
+                ))),
             Err(_)
         ));
-        ctx.grant(Permission::Network(NetworkPermission::Connect("api.akuma.moe".into())));
-        assert!(ctx.vm().check_permission(&Permission::Network(NetworkPermission::Connect("api.akuma.moe".into()))).is_ok());
+        ctx.grant(Permission::Network(NetworkPermission::Connect(
+            "api.akuma.moe".into(),
+        )));
+        assert!(ctx
+            .vm()
+            .check_permission(&Permission::Network(NetworkPermission::Connect(
+                "api.akuma.moe".into()
+            )))
+            .is_ok());
     }
 
     #[test]
@@ -464,7 +512,10 @@ mod tests {
             Ok(_) => panic!("expected error"),
             Err(e) => e,
         };
-        assert!(matches!(err, ContextError::Dex(_) | ContextError::BadArchive(_)));
+        assert!(matches!(
+            err,
+            ContextError::Dex(_) | ContextError::BadArchive(_)
+        ));
         assert!(!err.to_string().is_empty());
     }
 }

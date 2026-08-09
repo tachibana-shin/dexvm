@@ -32,7 +32,9 @@ pub(crate) fn objects_require_non_null(vm: &mut Vm, args: &[JValue]) -> R {
         } else {
             "null".to_string()
         };
-        Err(NatErr::Throw(vm.throwable_of("Ljava/lang/NullPointerException;", msg)))
+        Err(NatErr::Throw(
+            vm.throwable_of("Ljava/lang/NullPointerException;", msg),
+        ))
     } else {
         Ok(args[0])
     }
@@ -73,14 +75,74 @@ pub(crate) fn objects_non_null(_vm: &mut Vm, args: &[JValue]) -> R {
 
 /// Native methods for Ljava/util/Objects;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/util/Objects;", "equals", "(Ljava/lang/Object;Ljava/lang/Object;)Z", false, objects_equals),
-    ne!("Ljava/util/Objects;", "hashCode", "(Ljava/lang/Object;)I", false, objects_hash_code),
-    ne!("Ljava/util/Objects;", "hash", "([Ljava/lang/Object;)I", false, objects_hash),
-    ne!("Ljava/util/Objects;", "requireNonNull", "(Ljava/lang/Object;)Ljava/lang/Object;", false, objects_require_non_null),
-    ne!("Ljava/util/Objects;", "requireNonNull", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;", false, objects_require_non_null),
-    ne!("Ljava/util/Objects;", "requireNonNullElse", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", false, objects_require_non_null_else),
-    ne!("Ljava/util/Objects;", "toString", "(Ljava/lang/Object;)Ljava/lang/String;", false, objects_to_string),
-    ne!("Ljava/util/Objects;", "toString", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;", false, objects_to_string_def),
-    ne!("Ljava/util/Objects;", "isNull", "(Ljava/lang/Object;)Z", false, objects_is_null),
-    ne!("Ljava/util/Objects;", "nonNull", "(Ljava/lang/Object;)Z", false, objects_non_null),
+    ne!(
+        "Ljava/util/Objects;",
+        "equals",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Z",
+        false,
+        objects_equals
+    ),
+    ne!(
+        "Ljava/util/Objects;",
+        "hashCode",
+        "(Ljava/lang/Object;)I",
+        false,
+        objects_hash_code
+    ),
+    ne!(
+        "Ljava/util/Objects;",
+        "hash",
+        "([Ljava/lang/Object;)I",
+        false,
+        objects_hash
+    ),
+    ne!(
+        "Ljava/util/Objects;",
+        "requireNonNull",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        false,
+        objects_require_non_null
+    ),
+    ne!(
+        "Ljava/util/Objects;",
+        "requireNonNull",
+        "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;",
+        false,
+        objects_require_non_null
+    ),
+    ne!(
+        "Ljava/util/Objects;",
+        "requireNonNullElse",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        false,
+        objects_require_non_null_else
+    ),
+    ne!(
+        "Ljava/util/Objects;",
+        "toString",
+        "(Ljava/lang/Object;)Ljava/lang/String;",
+        false,
+        objects_to_string
+    ),
+    ne!(
+        "Ljava/util/Objects;",
+        "toString",
+        "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;",
+        false,
+        objects_to_string_def
+    ),
+    ne!(
+        "Ljava/util/Objects;",
+        "isNull",
+        "(Ljava/lang/Object;)Z",
+        false,
+        objects_is_null
+    ),
+    ne!(
+        "Ljava/util/Objects;",
+        "nonNull",
+        "(Ljava/lang/Object;)Z",
+        false,
+        objects_non_null
+    ),
 ];

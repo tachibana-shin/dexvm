@@ -1,7 +1,7 @@
 use crate::vm::native::*;
 
-mod lang;
 mod io;
+mod lang;
 mod nio;
 mod text;
 mod util;

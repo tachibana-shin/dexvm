@@ -132,8 +132,6 @@ pub(crate) fn jsoup_parse(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Lorg/jsoup/nodes/Document;", Native::JsoupDoc(refd))
 }
 
-
-
 fn jsoup_first_selector_arg(vm: &mut Vm, args: &[JValue]) -> Result<String, NatErr> {
     jstr(vm, args[1]).map_err(|_| npe(vm))
 }
@@ -182,10 +180,7 @@ pub(crate) fn document_text(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn element_select(vm: &mut Vm, args: &[JValue]) -> R {
-    let (doc, selector) = (
-        doc_of(vm, args[0])?,
-        jsoup_first_selector_arg(vm, args)?,
-    );
+    let (doc, selector) = (doc_of(vm, args[0])?, jsoup_first_selector_arg(vm, args)?);
     let node_payload = payload(vm, args[0]);
     let Some(node_id) = node_payload.and_then(element_id_of) else {
         return Err(npe(vm));
@@ -222,7 +217,11 @@ pub(crate) fn element_select_first(vm: &mut Vm, args: &[JValue]) -> R {
         }
     };
     match out_id {
-        Some(id) => alloc(vm, "Lorg/jsoup/nodes/Element;", Native::JsoupElement { doc, id }),
+        Some(id) => alloc(
+            vm,
+            "Lorg/jsoup/nodes/Element;",
+            Native::JsoupElement { doc, id },
+        ),
         None => Ok(JValue::Null),
     }
 }
@@ -230,9 +229,7 @@ pub(crate) fn element_select_first(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn element_text(vm: &mut Vm, args: &[JValue]) -> R {
     let doc = doc_of(vm, args[0])?;
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     Ok(vm.alloc_string(&soup_text(node)))
@@ -241,9 +238,7 @@ pub(crate) fn element_text(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn element_attr(vm: &mut Vm, args: &[JValue]) -> R {
     let (doc, name) = (doc_of(vm, args[0])?, jsoup_first_selector_arg(vm, args)?);
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     let (abs, name) = match name.strip_prefix("abs:") {
@@ -286,9 +281,7 @@ fn jsoup_abs_attr(doc: &JsoupDocRef, raw: &str) -> String {
 pub(crate) fn element_children(vm: &mut Vm, args: &[JValue]) -> R {
     let doc = doc_of(vm, args[0])?;
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     let ids: Vec<dom_query::NodeId> = node.children().iter().map(|c| c.id).collect();
@@ -298,13 +291,18 @@ pub(crate) fn element_children(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn element_parent(vm: &mut Vm, args: &[JValue]) -> R {
     let doc = doc_of(vm, args[0])?;
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     match node.parent() {
-        Some(p) => alloc(vm, "Lorg/jsoup/nodes/Element;", Native::JsoupElement { doc: doc.clone(), id: p.id }),
+        Some(p) => alloc(
+            vm,
+            "Lorg/jsoup/nodes/Element;",
+            Native::JsoupElement {
+                doc: doc.clone(),
+                id: p.id,
+            },
+        ),
         None => Ok(JValue::Null),
     }
 }
@@ -312,9 +310,7 @@ pub(crate) fn element_parent(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn element_abs_url(vm: &mut Vm, args: &[JValue]) -> R {
     let (doc, name) = (doc_of(vm, args[0])?, jsoup_first_selector_arg(vm, args)?);
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     let v = node.attr(&name).unwrap_or_default().to_string();
@@ -324,9 +320,7 @@ pub(crate) fn element_abs_url(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn element_has_attr(vm: &mut Vm, args: &[JValue]) -> R {
     let (doc, name) = (doc_of(vm, args[0])?, jsoup_first_selector_arg(vm, args)?);
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     Ok(JValue::Int(i32::from(node.has_attr(&name))))
@@ -335,9 +329,7 @@ pub(crate) fn element_has_attr(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn element_id_attr(vm: &mut Vm, args: &[JValue]) -> R {
     let doc = doc_of(vm, args[0])?;
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     Ok(vm.alloc_string(&node.attr("id").unwrap_or_default()))
@@ -346,9 +338,7 @@ pub(crate) fn element_id_attr(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn element_tag_name(vm: &mut Vm, args: &[JValue]) -> R {
     let doc = doc_of(vm, args[0])?;
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     let tag = node.node_name().unwrap_or_default().to_lowercase();
@@ -358,9 +348,7 @@ pub(crate) fn element_tag_name(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn element_own_text(vm: &mut Vm, args: &[JValue]) -> R {
     let doc = doc_of(vm, args[0])?;
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     Ok(vm.alloc_string(&node.immediate_text().to_string()))
@@ -369,9 +357,7 @@ pub(crate) fn element_own_text(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn element_html(vm: &mut Vm, args: &[JValue]) -> R {
     let doc = doc_of(vm, args[0])?;
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     Ok(vm.alloc_string(&node.inner_html().to_string()))
@@ -380,9 +366,7 @@ pub(crate) fn element_html(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn element_outer_html(vm: &mut Vm, args: &[JValue]) -> R {
     let doc = doc_of(vm, args[0])?;
     let payload0 = payload(vm, args[0]);
-    let id = payload0
-        .and_then(element_id_of)
-        .ok_or_else(|| npe(vm))?;
+    let id = payload0.and_then(element_id_of).ok_or_else(|| npe(vm))?;
     let d = &*doc.doc;
     let node = node_ref_of(d, id);
     Ok(vm.alloc_string(&node.html().to_string()))
@@ -394,7 +378,11 @@ pub(crate) fn elements_first(vm: &mut Vm, args: &[JValue]) -> R {
         _ => return Err(npe(vm)),
     };
     match ids.first() {
-        Some(id) => alloc(vm, "Lorg/jsoup/nodes/Element;", Native::JsoupElement { doc, id: *id }),
+        Some(id) => alloc(
+            vm,
+            "Lorg/jsoup/nodes/Element;",
+            Native::JsoupElement { doc, id: *id },
+        ),
         None => Ok(JValue::Null),
     }
 }
@@ -406,7 +394,11 @@ pub(crate) fn elements_get(vm: &mut Vm, args: &[JValue]) -> R {
     };
     let idx = int_of(vm, args[1]);
     match ids.get(idx as usize) {
-        Some(id) => alloc(vm, "Lorg/jsoup/nodes/Element;", Native::JsoupElement { doc, id: *id }),
+        Some(id) => alloc(
+            vm,
+            "Lorg/jsoup/nodes/Element;",
+            Native::JsoupElement { doc, id: *id },
+        ),
         None => Err(aioobe(vm, idx, ids.len() as i32)),
     }
 }
@@ -537,37 +529,198 @@ pub(crate) fn elements_select(vm: &mut Vm, args: &[JValue]) -> R {
     jsoup_elements(vm, doc, out)
 }
 
-
 // ---------------------------------------------------------------------------
 // org.jsoup native table
 // ---------------------------------------------------------------------------
 
 pub(crate) const JSOUP_TABLE: &[NativeEntry] = &[
-    ne!("Leu/kanade/tachiyomi/util/JsoupExtensionsKt;", "asJsoup$default", "(Lokhttp3/Response;Ljava/lang/String;ILjava/lang/Object;)Lorg/jsoup/nodes/Document;", true, jsoup_parse),
-    ne!("Lorg/jsoup/nodes/Document;", "select", "(Ljava/lang/String;)Lorg/jsoup/select/Elements;", true, document_select),
-    ne!("Lorg/jsoup/nodes/Document;", "text", "()Ljava/lang/String;", true, document_text),
-    ne!("Lorg/jsoup/nodes/Element;", "select", "(Ljava/lang/String;)Lorg/jsoup/select/Elements;", true, element_select),
-    ne!("Lorg/jsoup/nodes/Element;", "selectFirst", "(Ljava/lang/String;)Lorg/jsoup/nodes/Element;", true, element_select_first),
-    ne!("Lorg/jsoup/nodes/Element;", "text", "()Ljava/lang/String;", true, element_text),
-    ne!("Lorg/jsoup/nodes/Element;", "attr", "(Ljava/lang/String;)Ljava/lang/String;", true, element_attr),
-    ne!("Lorg/jsoup/nodes/Element;", "absUrl", "(Ljava/lang/String;)Ljava/lang/String;", true, element_abs_url),
-    ne!("Lorg/jsoup/nodes/Element;", "parent", "()Lorg/jsoup/nodes/Element;", true, element_parent),
-    ne!("Lorg/jsoup/nodes/Element;", "children", "()Lorg/jsoup/select/Elements;", true, element_children),
-    ne!("Lorg/jsoup/nodes/Element;", "hasAttr", "(Ljava/lang/String;)Z", true, element_has_attr),
-    ne!("Lorg/jsoup/nodes/Element;", "id", "()Ljava/lang/String;", true, element_id_attr),
-    ne!("Lorg/jsoup/nodes/Element;", "tagName", "()Ljava/lang/String;", true, element_tag_name),
-    ne!("Lorg/jsoup/nodes/Element;", "ownText", "()Ljava/lang/String;", true, element_own_text),
-    ne!("Lorg/jsoup/nodes/Element;", "html", "()Ljava/lang/String;", true, element_html),
-    ne!("Lorg/jsoup/nodes/Element;", "outerHtml", "()Ljava/lang/String;", true, element_outer_html),
-    ne!("Lorg/jsoup/select/Elements;", "first", "()Lorg/jsoup/nodes/Element;", true, elements_first),
-    ne!("Lorg/jsoup/select/Elements;", "get", "(I)Lorg/jsoup/nodes/Element;", true, elements_get),
-    ne!("Lorg/jsoup/select/Elements;", "get", "(I)Ljava/lang/Object;", true, elements_get),
-    ne!("Lorg/jsoup/select/Elements;", "size", "()I", true, elements_size),
-    ne!("Lorg/jsoup/select/Elements;", "isEmpty", "()Z", true, elements_is_empty),
-    ne!("Lorg/jsoup/select/Elements;", "text", "()Ljava/lang/String;", true, elements_text),
-    ne!("Lorg/jsoup/select/Elements;", "last", "()Lorg/jsoup/nodes/Element;", true, elements_last),
-    ne!("Lorg/jsoup/select/Elements;", "eachText", "()Ljava/util/List;", true, elements_each_text),
-    ne!("Lorg/jsoup/select/Elements;", "attr", "(Ljava/lang/String;)Ljava/lang/String;", true, elements_attr),
-    ne!("Lorg/jsoup/select/Elements;", "eachAttr", "(Ljava/lang/String;)Ljava/util/List;", true, elements_each_attr),
-    ne!("Lorg/jsoup/select/Elements;", "select", "(Ljava/lang/String;)Lorg/jsoup/select/Elements;", true, elements_select),
+    ne!(
+        "Leu/kanade/tachiyomi/util/JsoupExtensionsKt;",
+        "asJsoup$default",
+        "(Lokhttp3/Response;Ljava/lang/String;ILjava/lang/Object;)Lorg/jsoup/nodes/Document;",
+        true,
+        jsoup_parse
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Document;",
+        "select",
+        "(Ljava/lang/String;)Lorg/jsoup/select/Elements;",
+        true,
+        document_select
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Document;",
+        "text",
+        "()Ljava/lang/String;",
+        true,
+        document_text
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "select",
+        "(Ljava/lang/String;)Lorg/jsoup/select/Elements;",
+        true,
+        element_select
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "selectFirst",
+        "(Ljava/lang/String;)Lorg/jsoup/nodes/Element;",
+        true,
+        element_select_first
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "text",
+        "()Ljava/lang/String;",
+        true,
+        element_text
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "attr",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        true,
+        element_attr
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "absUrl",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        true,
+        element_abs_url
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "parent",
+        "()Lorg/jsoup/nodes/Element;",
+        true,
+        element_parent
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "children",
+        "()Lorg/jsoup/select/Elements;",
+        true,
+        element_children
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "hasAttr",
+        "(Ljava/lang/String;)Z",
+        true,
+        element_has_attr
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "id",
+        "()Ljava/lang/String;",
+        true,
+        element_id_attr
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "tagName",
+        "()Ljava/lang/String;",
+        true,
+        element_tag_name
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "ownText",
+        "()Ljava/lang/String;",
+        true,
+        element_own_text
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "html",
+        "()Ljava/lang/String;",
+        true,
+        element_html
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "outerHtml",
+        "()Ljava/lang/String;",
+        true,
+        element_outer_html
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "first",
+        "()Lorg/jsoup/nodes/Element;",
+        true,
+        elements_first
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "get",
+        "(I)Lorg/jsoup/nodes/Element;",
+        true,
+        elements_get
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "get",
+        "(I)Ljava/lang/Object;",
+        true,
+        elements_get
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "size",
+        "()I",
+        true,
+        elements_size
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "isEmpty",
+        "()Z",
+        true,
+        elements_is_empty
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "text",
+        "()Ljava/lang/String;",
+        true,
+        elements_text
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "last",
+        "()Lorg/jsoup/nodes/Element;",
+        true,
+        elements_last
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "eachText",
+        "()Ljava/util/List;",
+        true,
+        elements_each_text
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "attr",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        true,
+        elements_attr
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "eachAttr",
+        "(Ljava/lang/String;)Ljava/util/List;",
+        true,
+        elements_each_attr
+    ),
+    ne!(
+        "Lorg/jsoup/select/Elements;",
+        "select",
+        "(Ljava/lang/String;)Lorg/jsoup/select/Elements;",
+        true,
+        elements_select
+    ),
 ];

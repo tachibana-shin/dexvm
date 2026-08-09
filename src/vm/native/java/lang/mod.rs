@@ -1,29 +1,29 @@
 use crate::vm::native::*;
 
-mod object;
-mod string;
-mod stringbuilder;
-mod class;
-mod r#enum;
-mod throwable;
-mod system;
-mod thread;
-mod math;
-mod integer;
-mod long;
-mod short;
+mod boolean;
 mod byte;
 mod character;
-mod boolean;
-mod float;
+mod class;
 mod double;
+mod r#enum;
+mod float;
+mod integer;
+mod long;
+mod math;
+mod object;
+mod short;
+mod string;
+mod stringbuilder;
+mod system;
+mod thread;
+mod throwable;
 
+pub(crate) use boolean::*;
+pub(crate) use class::*;
+pub(crate) use integer::*;
 pub(crate) use object::*;
 pub(crate) use string::*;
-pub(crate) use class::*;
 pub(crate) use throwable::*;
-pub(crate) use integer::*;
-pub(crate) use boolean::*;
 
 /// All java.lang native tables, grouped for `register`.
 pub(crate) const LANG_TABLE: &[&[NativeEntry]] = &[

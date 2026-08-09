@@ -71,11 +71,47 @@ pub(crate) fn deque_peek_first(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/util/ArrayDeque;", "<init>", "()V", true, deque_init),
     ne!("Ljava/util/ArrayDeque;", "<init>", "(I)V", true, deque_init),
-    ne!("Ljava/util/ArrayDeque;", "addLast", "(Ljava/lang/Object;)V", true, deque_add_last),
-    ne!("Ljava/util/ArrayDeque;", "addFirst", "(Ljava/lang/Object;)V", true, deque_add_first),
-    ne!("Ljava/util/ArrayDeque;", "removeFirst", "()Ljava/lang/Object;", true, deque_remove_first),
-    ne!("Ljava/util/ArrayDeque;", "removeLast", "()Ljava/lang/Object;", true, deque_remove_last),
+    ne!(
+        "Ljava/util/ArrayDeque;",
+        "addLast",
+        "(Ljava/lang/Object;)V",
+        true,
+        deque_add_last
+    ),
+    ne!(
+        "Ljava/util/ArrayDeque;",
+        "addFirst",
+        "(Ljava/lang/Object;)V",
+        true,
+        deque_add_first
+    ),
+    ne!(
+        "Ljava/util/ArrayDeque;",
+        "removeFirst",
+        "()Ljava/lang/Object;",
+        true,
+        deque_remove_first
+    ),
+    ne!(
+        "Ljava/util/ArrayDeque;",
+        "removeLast",
+        "()Ljava/lang/Object;",
+        true,
+        deque_remove_last
+    ),
     ne!("Ljava/util/ArrayDeque;", "size", "()I", true, deque_size),
-    ne!("Ljava/util/ArrayDeque;", "isEmpty", "()Z", true, deque_is_empty),
-    ne!("Ljava/util/ArrayDeque;", "peekFirst", "()Ljava/lang/Object;", true, deque_peek_first),
+    ne!(
+        "Ljava/util/ArrayDeque;",
+        "isEmpty",
+        "()Z",
+        true,
+        deque_is_empty
+    ),
+    ne!(
+        "Ljava/util/ArrayDeque;",
+        "peekFirst",
+        "()Ljava/lang/Object;",
+        true,
+        deque_peek_first
+    ),
 ];

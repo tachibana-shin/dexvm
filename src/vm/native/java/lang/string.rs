@@ -117,9 +117,7 @@ pub(crate) fn string_equals(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn string_equals_ignore_case(vm: &mut Vm, args: &[JValue]) -> R {
     let s = jstr(vm, args[0])?;
     let t = jstr(vm, args[1])?;
-    Ok(JValue::Int(i32::from(
-        s.to_lowercase() == t.to_lowercase(),
-    )))
+    Ok(JValue::Int(i32::from(s.to_lowercase() == t.to_lowercase())))
 }
 
 pub(crate) fn string_hash_code(vm: &mut Vm, args: &[JValue]) -> R {
@@ -210,7 +208,6 @@ pub(crate) fn string_index_of_char(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(idx.map_or(-1, |i| i as i32)))
 }
 
-
 pub(crate) fn string_last_index_of_char(vm: &mut Vm, args: &[JValue]) -> R {
     let s = jstr(vm, args[0])?;
     let c = int_of(vm, args[1]) as u16;
@@ -273,7 +270,14 @@ pub(crate) fn string_value_of_long(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn string_value_of_bool(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(new_str(vm, if bool_of(vm, args[0]) { "true" } else { "false" }))
+    Ok(new_str(
+        vm,
+        if bool_of(vm, args[0]) {
+            "true"
+        } else {
+            "false"
+        },
+    ))
 }
 
 pub(crate) fn string_value_of_char(vm: &mut Vm, args: &[JValue]) -> R {
@@ -308,7 +312,10 @@ pub(crate) fn string_get_bytes(vm: &mut Vm, args: &[JValue]) -> R {
     let class = vm
         .ensure_class_by_desc("[B")
         .map_err(nat_fatal)
-        .or_else(|_| vm.ensure_class_by_desc("[Ljava/lang/Object;").map_err(nat_fatal))?;
+        .or_else(|_| {
+            vm.ensure_class_by_desc("[Ljava/lang/Object;")
+                .map_err(nat_fatal)
+        })?;
     Ok(JValue::Obj(vm.arena.alloc(
         class,
         Vec::new(),
@@ -370,7 +377,9 @@ pub(crate) fn string_split(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn str_array(vm: &mut Vm, parts: Vec<String>) -> Result<JValue, NatErr> {
-    let class = vm.ensure_class_by_desc("[Ljava/lang/String;").map_err(nat_fatal)?;
+    let class = vm
+        .ensure_class_by_desc("[Ljava/lang/String;")
+        .map_err(nat_fatal)?;
     let items: Vec<JValue> = parts.iter().map(|p| vm.alloc_string(p)).collect();
     Ok(JValue::Obj(vm.arena.alloc(
         class,
@@ -558,60 +567,384 @@ pub(crate) fn string_value_of_chars(vm: &mut Vm, args: &[JValue]) -> R {
 /// Native methods for Ljava/lang/String;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/lang/String;", "<init>", "()V", true, string_init),
-    ne!("Ljava/lang/String;", "<init>", "(Ljava/lang/String;)V", true, string_init_copy),
-    ne!("Ljava/lang/String;", "<init>", "([C)V", true, string_init_chars),
-    ne!("Ljava/lang/String;", "<init>", "([B)V", true, string_init_bytes),
-    ne!("Ljava/lang/String;", "<init>", "([BLjava/lang/String;)V", true, string_init_bytes),
+    ne!(
+        "Ljava/lang/String;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        string_init_copy
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "<init>",
+        "([C)V",
+        true,
+        string_init_chars
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "<init>",
+        "([B)V",
+        true,
+        string_init_bytes
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "<init>",
+        "([BLjava/lang/String;)V",
+        true,
+        string_init_bytes
+    ),
     ne!("Ljava/lang/String;", "length", "()I", true, string_length),
-    ne!("Ljava/lang/String;", "isEmpty", "()Z", true, string_is_empty),
+    ne!(
+        "Ljava/lang/String;",
+        "isEmpty",
+        "()Z",
+        true,
+        string_is_empty
+    ),
     ne!("Ljava/lang/String;", "charAt", "(I)C", true, string_char_at),
-    ne!("Ljava/lang/String;", "equals", "(Ljava/lang/Object;)Z", true, string_equals),
-    ne!("Ljava/lang/String;", "equalsIgnoreCase", "(Ljava/lang/String;)Z", true, string_equals_ignore_case),
-    ne!("Ljava/lang/String;", "hashCode", "()I", true, string_hash_code),
-    ne!("Ljava/lang/String;", "toString", "()Ljava/lang/String;", true, string_to_string),
-    ne!("Ljava/lang/String;", "substring", "(I)Ljava/lang/String;", true, string_substring),
-    ne!("Ljava/lang/String;", "substring", "(II)Ljava/lang/String;", true, string_substring),
-    ne!("Ljava/lang/String;", "subSequence", "(II)Ljava/lang/CharSequence;", true, string_sub_sequence),
-    ne!("Ljava/lang/String;", "concat", "(Ljava/lang/String;)Ljava/lang/String;", true, string_concat),
-    ne!("Ljava/lang/String;", "contains", "(Ljava/lang/CharSequence;)Z", true, string_contains),
-    ne!("Ljava/lang/String;", "startsWith", "(Ljava/lang/String;)Z", true, string_starts_with),
-    ne!("Ljava/lang/String;", "startsWith", "(Ljava/lang/String;I)Z", true, string_starts_with),
-    ne!("Ljava/lang/String;", "endsWith", "(Ljava/lang/String;)Z", true, string_ends_with),
-    ne!("Ljava/lang/String;", "indexOf", "(I)I", true, string_index_of_char),
-    ne!("Ljava/lang/String;", "indexOf", "(II)I", true, string_index_of_char),
-    ne!("Ljava/lang/String;", "indexOf", "(Ljava/lang/String;)I", true, string_index_of_str),
-    ne!("Ljava/lang/String;", "indexOf", "(Ljava/lang/String;I)I", true, string_index_of_str),
-    ne!("Ljava/lang/String;", "lastIndexOf", "(I)I", true, string_last_index_of_char),
-    ne!("Ljava/lang/String;", "lastIndexOf", "(II)I", true, string_last_index_of_char),
-    ne!("Ljava/lang/String;", "lastIndexOf", "(Ljava/lang/String;)I", true, string_last_index_of_str),
-    ne!("Ljava/lang/String;", "lastIndexOf", "(Ljava/lang/String;I)I", true, string_last_index_of_str),
-    ne!("Ljava/lang/String;", "toLowerCase", "()Ljava/lang/String;", true, string_to_lower),
-    ne!("Ljava/lang/String;", "toLowerCase", "(Ljava/util/Locale;)Ljava/lang/String;", true, string_to_lower),
-    ne!("Ljava/lang/String;", "toUpperCase", "()Ljava/lang/String;", true, string_to_upper),
-    ne!("Ljava/lang/String;", "toUpperCase", "(Ljava/util/Locale;)Ljava/lang/String;", true, string_to_upper),
-    ne!("Ljava/lang/String;", "trim", "()Ljava/lang/String;", true, string_trim),
-    ne!("Ljava/lang/String;", "getBytes", "()[B", true, string_get_bytes),
-    ne!("Ljava/lang/String;", "getBytes", "(Ljava/lang/String;)[B", true, string_get_bytes),
-    ne!("Ljava/lang/String;", "getBytes", "(Ljava/nio/charset/Charset;)[B", true, string_get_bytes),
-    ne!("Ljava/lang/String;", "toCharArray", "()[C", true, string_to_char_array),
-    ne!("Ljava/lang/String;", "getChars", "(II[CI)V", true, string_get_chars),
-    ne!("Ljava/lang/String;", "split", "(Ljava/lang/String;)[Ljava/lang/String;", true, string_split),
-    ne!("Ljava/lang/String;", "split", "(Ljava/lang/String;I)[Ljava/lang/String;", true, string_split),
-    ne!("Ljava/lang/String;", "matches", "(Ljava/lang/String;)Z", true, string_matches),
-    ne!("Ljava/lang/String;", "replace", "(CC)Ljava/lang/String;", true, string_replace_chars),
-    ne!("Ljava/lang/String;", "replace", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Ljava/lang/String;", true, string_replace_seq),
-    ne!("Ljava/lang/String;", "compareTo", "(Ljava/lang/String;)I", true, string_compare_to),
-    ne!("Ljava/lang/String;", "compareTo", "(Ljava/lang/Object;)I", true, string_compare_to),
-    ne!("Ljava/lang/String;", "compareToIgnoreCase", "(Ljava/lang/String;)I", true, string_compare_to_ignore_case),
-    ne!("Ljava/lang/String;", "intern", "()Ljava/lang/String;", true, string_intern),
-    ne!("Ljava/lang/String;", "valueOf", "(I)Ljava/lang/String;", false, string_value_of_int),
-    ne!("Ljava/lang/String;", "valueOf", "(J)Ljava/lang/String;", false, string_value_of_long),
-    ne!("Ljava/lang/String;", "valueOf", "(Z)Ljava/lang/String;", false, string_value_of_bool),
-    ne!("Ljava/lang/String;", "valueOf", "(C)Ljava/lang/String;", false, string_value_of_char),
-    ne!("Ljava/lang/String;", "valueOf", "(F)Ljava/lang/String;", false, string_value_of_float),
-    ne!("Ljava/lang/String;", "valueOf", "(D)Ljava/lang/String;", false, string_value_of_double),
-    ne!("Ljava/lang/String;", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false, string_value_of_obj),
-    ne!("Ljava/lang/String;", "valueOf", "([C)Ljava/lang/String;", false, string_value_of_chars),
-    ne!("Ljava/lang/String;", "format", "(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;", false, string_format),
-    ne!("Ljava/lang/String;", "format", "(Ljava/util/Locale;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;", false, string_format),
+    ne!(
+        "Ljava/lang/String;",
+        "equals",
+        "(Ljava/lang/Object;)Z",
+        true,
+        string_equals
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "equalsIgnoreCase",
+        "(Ljava/lang/String;)Z",
+        true,
+        string_equals_ignore_case
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "hashCode",
+        "()I",
+        true,
+        string_hash_code
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        string_to_string
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "substring",
+        "(I)Ljava/lang/String;",
+        true,
+        string_substring
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "substring",
+        "(II)Ljava/lang/String;",
+        true,
+        string_substring
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "subSequence",
+        "(II)Ljava/lang/CharSequence;",
+        true,
+        string_sub_sequence
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "concat",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        true,
+        string_concat
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "contains",
+        "(Ljava/lang/CharSequence;)Z",
+        true,
+        string_contains
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "startsWith",
+        "(Ljava/lang/String;)Z",
+        true,
+        string_starts_with
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "startsWith",
+        "(Ljava/lang/String;I)Z",
+        true,
+        string_starts_with
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "endsWith",
+        "(Ljava/lang/String;)Z",
+        true,
+        string_ends_with
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "indexOf",
+        "(I)I",
+        true,
+        string_index_of_char
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "indexOf",
+        "(II)I",
+        true,
+        string_index_of_char
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "indexOf",
+        "(Ljava/lang/String;)I",
+        true,
+        string_index_of_str
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "indexOf",
+        "(Ljava/lang/String;I)I",
+        true,
+        string_index_of_str
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "lastIndexOf",
+        "(I)I",
+        true,
+        string_last_index_of_char
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "lastIndexOf",
+        "(II)I",
+        true,
+        string_last_index_of_char
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "lastIndexOf",
+        "(Ljava/lang/String;)I",
+        true,
+        string_last_index_of_str
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "lastIndexOf",
+        "(Ljava/lang/String;I)I",
+        true,
+        string_last_index_of_str
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "toLowerCase",
+        "()Ljava/lang/String;",
+        true,
+        string_to_lower
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "toLowerCase",
+        "(Ljava/util/Locale;)Ljava/lang/String;",
+        true,
+        string_to_lower
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "toUpperCase",
+        "()Ljava/lang/String;",
+        true,
+        string_to_upper
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "toUpperCase",
+        "(Ljava/util/Locale;)Ljava/lang/String;",
+        true,
+        string_to_upper
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "trim",
+        "()Ljava/lang/String;",
+        true,
+        string_trim
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "getBytes",
+        "()[B",
+        true,
+        string_get_bytes
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "getBytes",
+        "(Ljava/lang/String;)[B",
+        true,
+        string_get_bytes
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "getBytes",
+        "(Ljava/nio/charset/Charset;)[B",
+        true,
+        string_get_bytes
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "toCharArray",
+        "()[C",
+        true,
+        string_to_char_array
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "getChars",
+        "(II[CI)V",
+        true,
+        string_get_chars
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "split",
+        "(Ljava/lang/String;)[Ljava/lang/String;",
+        true,
+        string_split
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "split",
+        "(Ljava/lang/String;I)[Ljava/lang/String;",
+        true,
+        string_split
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "matches",
+        "(Ljava/lang/String;)Z",
+        true,
+        string_matches
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "replace",
+        "(CC)Ljava/lang/String;",
+        true,
+        string_replace_chars
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "replace",
+        "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Ljava/lang/String;",
+        true,
+        string_replace_seq
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "compareTo",
+        "(Ljava/lang/String;)I",
+        true,
+        string_compare_to
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "compareTo",
+        "(Ljava/lang/Object;)I",
+        true,
+        string_compare_to
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "compareToIgnoreCase",
+        "(Ljava/lang/String;)I",
+        true,
+        string_compare_to_ignore_case
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "intern",
+        "()Ljava/lang/String;",
+        true,
+        string_intern
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "valueOf",
+        "(I)Ljava/lang/String;",
+        false,
+        string_value_of_int
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "valueOf",
+        "(J)Ljava/lang/String;",
+        false,
+        string_value_of_long
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "valueOf",
+        "(Z)Ljava/lang/String;",
+        false,
+        string_value_of_bool
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "valueOf",
+        "(C)Ljava/lang/String;",
+        false,
+        string_value_of_char
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "valueOf",
+        "(F)Ljava/lang/String;",
+        false,
+        string_value_of_float
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "valueOf",
+        "(D)Ljava/lang/String;",
+        false,
+        string_value_of_double
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "valueOf",
+        "(Ljava/lang/Object;)Ljava/lang/String;",
+        false,
+        string_value_of_obj
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "valueOf",
+        "([C)Ljava/lang/String;",
+        false,
+        string_value_of_chars
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "format",
+        "(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;",
+        false,
+        string_format
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "format",
+        "(Ljava/util/Locale;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;",
+        false,
+        string_format
+    ),
 ];

@@ -44,27 +44,86 @@ pub(crate) fn thread_init(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
-
 /// Native methods for Ljava/lang/Thread;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/lang/Thread;", "<init>", "()V", true, thread_init),
-    ne!("Ljava/lang/Thread;", "<init>", "(Ljava/lang/Runnable;)V", true, thread_init),
-    ne!("Ljava/lang/Thread;", "<init>", "(Ljava/lang/String;)V", true, thread_init),
-    ne!("Ljava/lang/Thread;", "<init>", "(Ljava/lang/Runnable;Ljava/lang/String;)V", true, thread_init),
-    ne!("Ljava/lang/Thread;", "currentThread", "()Ljava/lang/Thread;", false, thread_current),
+    ne!(
+        "Ljava/lang/Thread;",
+        "<init>",
+        "(Ljava/lang/Runnable;)V",
+        true,
+        thread_init
+    ),
+    ne!(
+        "Ljava/lang/Thread;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        thread_init
+    ),
+    ne!(
+        "Ljava/lang/Thread;",
+        "<init>",
+        "(Ljava/lang/Runnable;Ljava/lang/String;)V",
+        true,
+        thread_init
+    ),
+    ne!(
+        "Ljava/lang/Thread;",
+        "currentThread",
+        "()Ljava/lang/Thread;",
+        false,
+        thread_current
+    ),
     ne!("Ljava/lang/Thread;", "start", "()V", true, thread_noop),
     ne!("Ljava/lang/Thread;", "run", "()V", true, thread_noop),
     ne!("Ljava/lang/Thread;", "yield", "()V", true, thread_noop),
     ne!("Ljava/lang/Thread;", "interrupt", "()V", true, thread_noop),
-    ne!("Ljava/lang/Thread;", "interrupted", "()Z", false, thread_is_interrupted),
+    ne!(
+        "Ljava/lang/Thread;",
+        "interrupted",
+        "()Z",
+        false,
+        thread_is_interrupted
+    ),
     ne!("Ljava/lang/Thread;", "sleep", "(J)V", true, thread_noop),
     ne!("Ljava/lang/Thread;", "sleep", "(JI)V", true, thread_noop),
-    ne!("Ljava/lang/Thread;", "setName", "(Ljava/lang/String;)V", true, thread_noop),
+    ne!(
+        "Ljava/lang/Thread;",
+        "setName",
+        "(Ljava/lang/String;)V",
+        true,
+        thread_noop
+    ),
     ne!("Ljava/lang/Thread;", "setDaemon", "(Z)V", true, thread_noop),
     ne!("Ljava/lang/Thread;", "join", "()V", true, thread_noop),
-    ne!("Ljava/lang/Thread;", "getName", "()Ljava/lang/String;", true, thread_get_name),
+    ne!(
+        "Ljava/lang/Thread;",
+        "getName",
+        "()Ljava/lang/String;",
+        true,
+        thread_get_name
+    ),
     ne!("Ljava/lang/Thread;", "getId", "()J", true, thread_get_id),
-    ne!("Ljava/lang/Thread;", "isAlive", "()Z", true, thread_is_alive),
-    ne!("Ljava/lang/Thread;", "isDaemon", "()Z", true, thread_is_daemon),
-    ne!("Ljava/lang/Thread;", "isInterrupted", "()Z", true, thread_is_interrupted),
+    ne!(
+        "Ljava/lang/Thread;",
+        "isAlive",
+        "()Z",
+        true,
+        thread_is_alive
+    ),
+    ne!(
+        "Ljava/lang/Thread;",
+        "isDaemon",
+        "()Z",
+        true,
+        thread_is_daemon
+    ),
+    ne!(
+        "Ljava/lang/Thread;",
+        "isInterrupted",
+        "()Z",
+        true,
+        thread_is_interrupted
+    ),
 ];

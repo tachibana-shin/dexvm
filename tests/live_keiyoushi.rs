@@ -44,7 +44,12 @@ fn real_http(req: &HttpData) -> HttpResp {
         }
         match rq.send(req.body.as_deref().unwrap_or("")) {
             Ok(r) => to_resp(r),
-            Err(e) => HttpResp { code: 0, message: e.to_string(), headers: Vec::new(), body: String::new() },
+            Err(e) => HttpResp {
+                code: 0,
+                message: e.to_string(),
+                headers: Vec::new(),
+                body: String::new(),
+            },
         }
     } else {
         let mut rq = agent.get(&req.url);
@@ -53,7 +58,12 @@ fn real_http(req: &HttpData) -> HttpResp {
         }
         match rq.call() {
             Ok(r) => to_resp(r),
-            Err(e) => HttpResp { code: 0, message: e.to_string(), headers: Vec::new(), body: String::new() },
+            Err(e) => HttpResp {
+                code: 0,
+                message: e.to_string(),
+                headers: Vec::new(),
+                body: String::new(),
+            },
         }
     }
 }
@@ -81,7 +91,13 @@ fn save_fixtures(caps: &[(String, String, i32, String)], blocked: bool) {
         let slug: String = url
             .replace("https://", "")
             .chars()
-            .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '.' { c } else { '-' })
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == '-' || c == '.' {
+                    c
+                } else {
+                    '-'
+                }
+            })
             .collect();
         let fname: String = format!("{n:03}-{slug}").chars().take(100).collect();
         let _ = std::fs::write(format!("{LIVE_DIR}/{fname}"), body);
@@ -111,9 +127,12 @@ fn live_full_pipeline() {
         let captures = captures.clone();
         ext.set_http_rc(Rc::new(move |req| {
             let resp = real_http(req);
-            captures
-                .borrow_mut()
-                .push((req.method.clone(), req.url.clone(), resp.code, resp.body.clone()));
+            captures.borrow_mut().push((
+                req.method.clone(),
+                req.url.clone(),
+                resp.code,
+                resp.body.clone(),
+            ));
             resp
         }));
     }
@@ -133,12 +152,21 @@ fn live_full_pipeline() {
         Err(e) => panic!("filters failed: {}", ext.describe_error(&e)),
     };
     assert!(!fl.is_empty(), "no filters listed");
-    let states: Vec<FilterState> =
-        fl.iter().map(|f| FilterState { name: f.name.clone(), state: f.state }).collect();
+    let states: Vec<FilterState> = fl
+        .iter()
+        .map(|f| FilterState {
+            name: f.name.clone(),
+            state: f.state,
+        })
+        .collect();
 
     // real network: popular + search
-    let popular = ext.popular(src, 1).unwrap_or_else(|e| panic!("popular failed: {}", ext.describe_error(&e)));
-    let found = ext.search(src, 1, QUERY, &states).unwrap_or_else(|e| panic!("search failed: {}", ext.describe_error(&e)));
+    let popular = ext
+        .popular(src, 1)
+        .unwrap_or_else(|e| panic!("popular failed: {}", ext.describe_error(&e)));
+    let found = ext
+        .search(src, 1, QUERY, &states)
+        .unwrap_or_else(|e| panic!("search failed: {}", ext.describe_error(&e)));
 
     let live = !(popular.mangas.is_empty() && found.mangas.is_empty());
     if !live {
@@ -158,7 +186,11 @@ fn live_full_pipeline() {
             url: "/manga/1".into(),
             ..Default::default()
         });
-    assert!(!m0.url.is_empty() && m0.url.starts_with('/'), "bad manga url: {:?}", m0.url);
+    assert!(
+        !m0.url.is_empty() && m0.url.starts_with('/'),
+        "bad manga url: {:?}",
+        m0.url
+    );
 
     // details / chapters / pages
     let details = ext.manga_details(src, &m0);
@@ -183,9 +215,14 @@ fn live_full_pipeline() {
         assert!(!p.url.is_empty());
     }
     if live {
-        let details = details.unwrap_or_else(|e| panic!("manga_details failed on live data: {e:?}"));
-        assert_eq!(details.url, m0.url, "details must echo the requested manga url");
-        let chapters = chapters.unwrap_or_else(|e| panic!("chapters failed on live data: {}", ext.describe_error(&e)));
+        let details =
+            details.unwrap_or_else(|e| panic!("manga_details failed on live data: {e:?}"));
+        assert_eq!(
+            details.url, m0.url,
+            "details must echo the requested manga url"
+        );
+        let chapters = chapters
+            .unwrap_or_else(|e| panic!("chapters failed on live data: {}", ext.describe_error(&e)));
         assert!(!chapters.is_empty(), "expected chapters on live data");
         if pages.is_empty() {
             eprintln!(
@@ -201,7 +238,10 @@ fn live_full_pipeline() {
         match ext.latest(src, 1) {
             Ok(p) => {
                 if live {
-                    assert!(!p.mangas.is_empty(), "expected mangas from the live latest page");
+                    assert!(
+                        !p.mangas.is_empty(),
+                        "expected mangas from the live latest page"
+                    );
                 }
             }
             Err(e) => {
@@ -211,12 +251,19 @@ fn live_full_pipeline() {
             }
         }
     } else {
-        assert!(ext.latest(src, 1).is_err(), "source without latest support must fail");
+        assert!(
+            ext.latest(src, 1).is_err(),
+            "source without latest support must fail"
+        );
     }
 
     let caps = captures.borrow();
     assert!(!caps.is_empty(), "pipeline must issue real HTTP requests");
     let net_ok = caps.iter().filter(|(_, _, c, _)| *c == 200).count();
-    eprintln!("live: {} requests issued, {} with HTTP 200", caps.len(), net_ok);
+    eprintln!(
+        "live: {} requests issued, {} with HTTP 200",
+        caps.len(),
+        net_ok
+    );
     save_fixtures(&caps, !live);
 }

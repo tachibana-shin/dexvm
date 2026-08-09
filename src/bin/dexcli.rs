@@ -23,9 +23,13 @@ fn disassemble(dex: &DexFile, class: &str, method: &str) {
     let c = &dex.classes[def_idx];
     let mut em: Option<(String, &dexvm::dex::EncodedMethod)> = None;
     if let Some(cd) = &c.class_data {
-        for (owner, list) in [("direct", &cd.direct_methods), ("virtual", &cd.virtual_methods)] {
+        for (owner, list) in [
+            ("direct", &cd.direct_methods),
+            ("virtual", &cd.virtual_methods),
+        ] {
             for m in list {
-                if dex.strings[dex.methods[m.method_idx as usize].name as usize].as_ref() == method {
+                if dex.strings[dex.methods[m.method_idx as usize].name as usize].as_ref() == method
+                {
                     em = Some((owner.to_string(), m));
                 }
             }
@@ -59,10 +63,16 @@ fn disassemble(dex: &DexFile, class: &str, method: &str) {
                 ));
             }
             Insn::ConstString(r, s) => {
-                line.push_str(&format!("const-string v{r}, \"{}\"", dex.strings[*s as usize]));
+                line.push_str(&format!(
+                    "const-string v{r}, \"{}\"",
+                    dex.strings[*s as usize]
+                ));
             }
             Insn::ConstStringJumbo(r, s) => {
-                line.push_str(&format!("const-string/jumbo v{r}, \"{}\"", dex.strings[*s as usize]));
+                line.push_str(&format!(
+                    "const-string/jumbo v{r}, \"{}\"",
+                    dex.strings[*s as usize]
+                ));
             }
             Insn::ConstClass(r, t) => {
                 line.push_str(&format!("const-class v{r}, {}", dex.type_descriptor(*t)));
@@ -71,7 +81,10 @@ fn disassemble(dex: &DexFile, class: &str, method: &str) {
                 line.push_str(&format!("new-instance v{r}, {}", dex.type_descriptor(*t)));
             }
             Insn::NewArray(a, b, t) => {
-                line.push_str(&format!("new-array v{a}, v{b}, {}", dex.type_descriptor(*t)));
+                line.push_str(&format!(
+                    "new-array v{a}, v{b}, {}",
+                    dex.type_descriptor(*t)
+                ));
             }
             Insn::FilledNewArray(args, t) => {
                 let regs: Vec<String> = (0..args.count)
@@ -87,7 +100,10 @@ fn disassemble(dex: &DexFile, class: &str, method: &str) {
                 line.push_str(&format!("check-cast v{r}, {}", dex.type_descriptor(*t)));
             }
             Insn::InstanceOf(a, b, t) => {
-                line.push_str(&format!("instance-of v{a}, v{b}, {}", dex.type_descriptor(*t)));
+                line.push_str(&format!(
+                    "instance-of v{a}, v{b}, {}",
+                    dex.type_descriptor(*t)
+                ));
             }
             Insn::IGet(a, b, f) | Insn::IGetWide(a, b, f) | Insn::IGetObj(a, b, f) => {
                 let fd = &dex.fields[*f as usize];
@@ -146,9 +162,7 @@ fn disassemble(dex: &DexFile, class: &str, method: &str) {
                 ));
             }
             Insn::Goto(t) => line.push_str(&format!("goto ->{t:04x}")),
-            Insn::If(op, a, b, t) => {
-                line.push_str(&format!("if-{op:?} v{a}, v{b} ->{t:04x}"))
-            }
+            Insn::If(op, a, b, t) => line.push_str(&format!("if-{op:?} v{a}, v{b} ->{t:04x}")),
             Insn::IfZ(op, r, t) => line.push_str(&format!("if-{op:?}z v{r} ->{t:04x}")),
             Insn::PackedSwitch(r, _, base, targets) => {
                 line.push_str(&format!(
@@ -180,18 +194,33 @@ fn disassemble(dex: &DexFile, class: &str, method: &str) {
 fn list_classes(dex: &DexFile) {
     for (def_idx, c) in dex.classes.iter().enumerate() {
         let mut flags: Vec<&str> = Vec::new();
-        if c.access_flags & 0x1 != 0 { flags.push("public"); }
-        if c.access_flags & 0x200 != 0 { flags.push("interface"); }
-        if c.access_flags & 0x400 != 0 { flags.push("abstract"); }
-        if c.access_flags & 0x1000 != 0 { flags.push("synthetic"); }
-        let kind = if c.access_flags & 0x200 != 0 { "interface" } else { "class" };
+        if c.access_flags & 0x1 != 0 {
+            flags.push("public");
+        }
+        if c.access_flags & 0x200 != 0 {
+            flags.push("interface");
+        }
+        if c.access_flags & 0x400 != 0 {
+            flags.push("abstract");
+        }
+        if c.access_flags & 0x1000 != 0 {
+            flags.push("synthetic");
+        }
+        let kind = if c.access_flags & 0x200 != 0 {
+            "interface"
+        } else {
+            "class"
+        };
         let cls = dex.type_descriptor(c.class_idx);
         let mut line = format!("{def_idx:>3}: {kind} {cls}");
         if !flags.is_empty() {
             line.push_str(&format!(" ({})", flags.join(" ")));
         }
         if c.superclass_idx != u32::MAX {
-            line.push_str(&format!(" extends {}", dex.type_descriptor(c.superclass_idx)));
+            line.push_str(&format!(
+                " extends {}",
+                dex.type_descriptor(c.superclass_idx)
+            ));
         }
         println!("{line}");
         if let Some(cd) = &c.class_data {
@@ -224,7 +253,9 @@ fn refs_of(dex: &DexFile, desc: &str) {
         if let Some(cd) = &c.class_data {
             for em in cd.direct_methods.iter().chain(&cd.virtual_methods) {
                 let Some(code) = &em.code else { continue };
-                let Ok(dec) = decode_all(&code.insns) else { continue };
+                let Ok(dec) = decode_all(&code.insns) else {
+                    continue;
+                };
                 for (i, _pc) in dec.units.iter().enumerate() {
                     let insn = &dec.insns[i];
                     match insn {
@@ -351,11 +382,10 @@ fn main() {
         eprintln!("usage: dexcli [--types] [--classes] [--methods <class>] [--code <class> <method>] [--run <class> <method> [ints...]] [--call ...] <file.dex|file.apk>");
         std::process::exit(2);
     });
-    let data = std::fs::read(&path)
-        .unwrap_or_else(|e| {
-            eprintln!("open {path}: {e}");
-            std::process::exit(1);
-        });
+    let data = std::fs::read(&path).unwrap_or_else(|e| {
+        eprintln!("open {path}: {e}");
+        std::process::exit(1);
+    });
     let mut ctx = match Context::new_with(&data, SandboxOptions::allow_all()) {
         Ok(c) => c,
         Err(e) => {
@@ -472,7 +502,14 @@ fn display_value(vm: &mut Vm, v: JValue) -> String {
     match v {
         JValue::Obj(o) => match &vm.arena.objects[o as usize].native {
             Some(Native::Str(s)) => format!("Obj(\"{s}\")"),
-            Some(Native::Request { url, method, headers, body }) => format!("Request(method={method}, url={url}, headers={headers:?}, body={body:?})"),
+            Some(Native::Request {
+                url,
+                method,
+                headers,
+                body,
+            }) => {
+                format!("Request(method={method}, url={url}, headers={headers:?}, body={body:?})")
+            }
             Some(Native::HttpUrl(url)) => format!("HttpUrl(\"{url}\")"),
             Some(Native::FormBody(fields)) => format!("FormBody({fields:?})"),
             _ => format!("Obj({o})"),

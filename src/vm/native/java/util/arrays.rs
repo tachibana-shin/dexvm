@@ -142,7 +142,13 @@ pub(crate) fn arrays_sort_obj_cmp(vm: &mut Vm, args: &[JValue]) -> R {
     let mut items = items;
     let mut err: Option<NatErr> = None;
     items.sort_by(|a, b| {
-        match inv_virt(vm, cmp, "compare", "(Ljava/lang/Object;Ljava/lang/Object;)I", &[*a, *b]) {
+        match inv_virt(
+            vm,
+            cmp,
+            "compare",
+            "(Ljava/lang/Object;Ljava/lang/Object;)I",
+            &[*a, *b],
+        ) {
             Ok(JValue::Int(i)) => i.cmp(&0),
             Ok(_) => Ordering::Equal,
             Err(e) => {
@@ -230,11 +236,17 @@ pub(crate) fn arrays_fill(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn arrays_equals(vm: &mut Vm, args: &[JValue]) -> R {
     let (la, av) = match payload(vm, args[0]) {
-        Some(Native::Array(data)) => (data.len(), (0..data.len()).map(|i| data.get(i)).collect::<Vec<_>>()),
+        Some(Native::Array(data)) => (
+            data.len(),
+            (0..data.len()).map(|i| data.get(i)).collect::<Vec<_>>(),
+        ),
         _ => return Err(npe(vm)),
     };
     let (lb, bv) = match payload(vm, args[1]) {
-        Some(Native::Array(data)) => (data.len(), (0..data.len()).map(|i| data.get(i)).collect::<Vec<_>>()),
+        Some(Native::Array(data)) => (
+            data.len(),
+            (0..data.len()).map(|i| data.get(i)).collect::<Vec<_>>(),
+        ),
         _ => return Err(npe(vm)),
     };
     if la != lb {
@@ -252,44 +264,272 @@ pub(crate) fn arrays_equals(vm: &mut Vm, args: &[JValue]) -> R {
 
 /// Native methods for Ljava/util/Arrays;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/util/Arrays;", "asList", "([Ljava/lang/Object;)Ljava/util/List;", false, arrays_as_list),
-    ne!("Ljava/util/Arrays;", "copyOf", "([BI)[B", false, arrays_copy_of),
-    ne!("Ljava/util/Arrays;", "copyOf", "([CI)[C", false, arrays_copy_of),
-    ne!("Ljava/util/Arrays;", "copyOf", "([SI)[S", false, arrays_copy_of),
-    ne!("Ljava/util/Arrays;", "copyOf", "([II)[I", false, arrays_copy_of),
-    ne!("Ljava/util/Arrays;", "copyOf", "([JI)[J", false, arrays_copy_of),
-    ne!("Ljava/util/Arrays;", "copyOf", "([FI)[F", false, arrays_copy_of),
-    ne!("Ljava/util/Arrays;", "copyOf", "([DI)[D", false, arrays_copy_of),
-    ne!("Ljava/util/Arrays;", "copyOf", "([ZI)[Z", false, arrays_copy_of),
-    ne!("Ljava/util/Arrays;", "copyOf", "([Ljava/lang/Object;I)[Ljava/lang/Object;", false, arrays_copy_of),
-    ne!("Ljava/util/Arrays;", "copyOfRange", "([BII)[B", false, arrays_copy_of_range),
-    ne!("Ljava/util/Arrays;", "copyOfRange", "([CII)[C", false, arrays_copy_of_range),
-    ne!("Ljava/util/Arrays;", "copyOfRange", "([SII)[S", false, arrays_copy_of_range),
-    ne!("Ljava/util/Arrays;", "copyOfRange", "([III)[I", false, arrays_copy_of_range),
-    ne!("Ljava/util/Arrays;", "copyOfRange", "([JII)[J", false, arrays_copy_of_range),
-    ne!("Ljava/util/Arrays;", "copyOfRange", "([FII)[F", false, arrays_copy_of_range),
-    ne!("Ljava/util/Arrays;", "copyOfRange", "([DII)[D", false, arrays_copy_of_range),
-    ne!("Ljava/util/Arrays;", "copyOfRange", "([ZII)[Z", false, arrays_copy_of_range),
-    ne!("Ljava/util/Arrays;", "copyOfRange", "([Ljava/lang/Object;II)[Ljava/lang/Object;", false, arrays_copy_of_range),
-    ne!("Ljava/util/Arrays;", "sort", "([I)V", false, arrays_sort_prim),
-    ne!("Ljava/util/Arrays;", "sort", "([J)V", false, arrays_sort_prim),
-    ne!("Ljava/util/Arrays;", "sort", "([B)V", false, arrays_sort_prim),
-    ne!("Ljava/util/Arrays;", "sort", "([C)V", false, arrays_sort_prim),
-    ne!("Ljava/util/Arrays;", "sort", "([S)V", false, arrays_sort_prim),
-    ne!("Ljava/util/Arrays;", "sort", "([F)V", false, arrays_sort_prim),
-    ne!("Ljava/util/Arrays;", "sort", "([D)V", false, arrays_sort_prim),
-    ne!("Ljava/util/Arrays;", "sort", "([Z)V", false, arrays_sort_prim),
-    ne!("Ljava/util/Arrays;", "sort", "([Ljava/lang/Object;)V", false, arrays_sort_obj),
-    ne!("Ljava/util/Arrays;", "sort", "([Ljava/lang/Object;Ljava/util/Comparator;)V", false, arrays_sort_obj_cmp),
-    ne!("Ljava/util/Arrays;", "toString", "([B)Ljava/lang/String;", false, arrays_to_string),
-    ne!("Ljava/util/Arrays;", "toString", "([C)Ljava/lang/String;", false, arrays_to_string),
-    ne!("Ljava/util/Arrays;", "toString", "([S)Ljava/lang/String;", false, arrays_to_string),
-    ne!("Ljava/util/Arrays;", "toString", "([I)Ljava/lang/String;", false, arrays_to_string),
-    ne!("Ljava/util/Arrays;", "toString", "([J)Ljava/lang/String;", false, arrays_to_string),
-    ne!("Ljava/util/Arrays;", "toString", "([F)Ljava/lang/String;", false, arrays_to_string),
-    ne!("Ljava/util/Arrays;", "toString", "([D)Ljava/lang/String;", false, arrays_to_string),
-    ne!("Ljava/util/Arrays;", "toString", "([Z)Ljava/lang/String;", false, arrays_to_string),
-    ne!("Ljava/util/Arrays;", "toString", "([Ljava/lang/Object;)Ljava/lang/String;", false, arrays_to_string),
+    ne!(
+        "Ljava/util/Arrays;",
+        "asList",
+        "([Ljava/lang/Object;)Ljava/util/List;",
+        false,
+        arrays_as_list
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOf",
+        "([BI)[B",
+        false,
+        arrays_copy_of
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOf",
+        "([CI)[C",
+        false,
+        arrays_copy_of
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOf",
+        "([SI)[S",
+        false,
+        arrays_copy_of
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOf",
+        "([II)[I",
+        false,
+        arrays_copy_of
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOf",
+        "([JI)[J",
+        false,
+        arrays_copy_of
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOf",
+        "([FI)[F",
+        false,
+        arrays_copy_of
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOf",
+        "([DI)[D",
+        false,
+        arrays_copy_of
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOf",
+        "([ZI)[Z",
+        false,
+        arrays_copy_of
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOf",
+        "([Ljava/lang/Object;I)[Ljava/lang/Object;",
+        false,
+        arrays_copy_of
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOfRange",
+        "([BII)[B",
+        false,
+        arrays_copy_of_range
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOfRange",
+        "([CII)[C",
+        false,
+        arrays_copy_of_range
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOfRange",
+        "([SII)[S",
+        false,
+        arrays_copy_of_range
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOfRange",
+        "([III)[I",
+        false,
+        arrays_copy_of_range
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOfRange",
+        "([JII)[J",
+        false,
+        arrays_copy_of_range
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOfRange",
+        "([FII)[F",
+        false,
+        arrays_copy_of_range
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOfRange",
+        "([DII)[D",
+        false,
+        arrays_copy_of_range
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOfRange",
+        "([ZII)[Z",
+        false,
+        arrays_copy_of_range
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "copyOfRange",
+        "([Ljava/lang/Object;II)[Ljava/lang/Object;",
+        false,
+        arrays_copy_of_range
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "sort",
+        "([I)V",
+        false,
+        arrays_sort_prim
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "sort",
+        "([J)V",
+        false,
+        arrays_sort_prim
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "sort",
+        "([B)V",
+        false,
+        arrays_sort_prim
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "sort",
+        "([C)V",
+        false,
+        arrays_sort_prim
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "sort",
+        "([S)V",
+        false,
+        arrays_sort_prim
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "sort",
+        "([F)V",
+        false,
+        arrays_sort_prim
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "sort",
+        "([D)V",
+        false,
+        arrays_sort_prim
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "sort",
+        "([Z)V",
+        false,
+        arrays_sort_prim
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "sort",
+        "([Ljava/lang/Object;)V",
+        false,
+        arrays_sort_obj
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "sort",
+        "([Ljava/lang/Object;Ljava/util/Comparator;)V",
+        false,
+        arrays_sort_obj_cmp
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "toString",
+        "([B)Ljava/lang/String;",
+        false,
+        arrays_to_string
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "toString",
+        "([C)Ljava/lang/String;",
+        false,
+        arrays_to_string
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "toString",
+        "([S)Ljava/lang/String;",
+        false,
+        arrays_to_string
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "toString",
+        "([I)Ljava/lang/String;",
+        false,
+        arrays_to_string
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "toString",
+        "([J)Ljava/lang/String;",
+        false,
+        arrays_to_string
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "toString",
+        "([F)Ljava/lang/String;",
+        false,
+        arrays_to_string
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "toString",
+        "([D)Ljava/lang/String;",
+        false,
+        arrays_to_string
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "toString",
+        "([Z)Ljava/lang/String;",
+        false,
+        arrays_to_string
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "toString",
+        "([Ljava/lang/Object;)Ljava/lang/String;",
+        false,
+        arrays_to_string
+    ),
     ne!("Ljava/util/Arrays;", "fill", "([II)V", false, arrays_fill),
     ne!("Ljava/util/Arrays;", "fill", "([JI)V", false, arrays_fill),
     ne!("Ljava/util/Arrays;", "fill", "([BI)V", false, arrays_fill),
@@ -298,14 +538,74 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/util/Arrays;", "fill", "([FI)V", false, arrays_fill),
     ne!("Ljava/util/Arrays;", "fill", "([DI)V", false, arrays_fill),
     ne!("Ljava/util/Arrays;", "fill", "([ZI)V", false, arrays_fill),
-    ne!("Ljava/util/Arrays;", "fill", "([Ljava/lang/Object;Ljava/lang/Object;)V", false, arrays_fill),
-    ne!("Ljava/util/Arrays;", "equals", "([B[B)Z", false, arrays_equals),
-    ne!("Ljava/util/Arrays;", "equals", "([C[C)Z", false, arrays_equals),
-    ne!("Ljava/util/Arrays;", "equals", "([S[S)Z", false, arrays_equals),
-    ne!("Ljava/util/Arrays;", "equals", "([I[I)Z", false, arrays_equals),
-    ne!("Ljava/util/Arrays;", "equals", "([J[J)Z", false, arrays_equals),
-    ne!("Ljava/util/Arrays;", "equals", "([F[F)Z", false, arrays_equals),
-    ne!("Ljava/util/Arrays;", "equals", "([D[D)Z", false, arrays_equals),
-    ne!("Ljava/util/Arrays;", "equals", "([Z[Z)Z", false, arrays_equals),
-    ne!("Ljava/util/Arrays;", "equals", "([Ljava/lang/Object;[Ljava/lang/Object;)Z", false, arrays_equals),
+    ne!(
+        "Ljava/util/Arrays;",
+        "fill",
+        "([Ljava/lang/Object;Ljava/lang/Object;)V",
+        false,
+        arrays_fill
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "equals",
+        "([B[B)Z",
+        false,
+        arrays_equals
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "equals",
+        "([C[C)Z",
+        false,
+        arrays_equals
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "equals",
+        "([S[S)Z",
+        false,
+        arrays_equals
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "equals",
+        "([I[I)Z",
+        false,
+        arrays_equals
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "equals",
+        "([J[J)Z",
+        false,
+        arrays_equals
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "equals",
+        "([F[F)Z",
+        false,
+        arrays_equals
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "equals",
+        "([D[D)Z",
+        false,
+        arrays_equals
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "equals",
+        "([Z[Z)Z",
+        false,
+        arrays_equals
+    ),
+    ne!(
+        "Ljava/util/Arrays;",
+        "equals",
+        "([Ljava/lang/Object;[Ljava/lang/Object;)Z",
+        false,
+        arrays_equals
+    ),
 ];

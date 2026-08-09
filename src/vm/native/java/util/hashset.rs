@@ -110,7 +110,11 @@ pub(crate) fn set_clear(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn set_iterator(vm: &mut Vm, args: &[JValue]) -> R {
     let set = args[0].as_obj();
-    alloc(vm, "Ljava/util/Iterator;", Native::Iter(IterKind::Set { set, idx: 0 }))
+    alloc(
+        vm,
+        "Ljava/util/Iterator;",
+        Native::Iter(IterKind::Set { set, idx: 0 }),
+    )
 }
 
 pub(crate) fn set_add_all(vm: &mut Vm, args: &[JValue]) -> R {
@@ -161,19 +165,60 @@ pub(crate) fn set_to_string(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &s))
 }
 
-
 /// Native methods for Ljava/util/HashSet;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/util/HashSet;", "<init>", "()V", true, set_init),
     ne!("Ljava/util/HashSet;", "<init>", "(I)V", true, set_init),
-    ne!("Ljava/util/HashSet;", "<init>", "(Ljava/util/Collection;)V", true, set_init),
+    ne!(
+        "Ljava/util/HashSet;",
+        "<init>",
+        "(Ljava/util/Collection;)V",
+        true,
+        set_init
+    ),
     ne!("Ljava/util/HashSet;", "size", "()I", true, set_size),
     ne!("Ljava/util/HashSet;", "isEmpty", "()Z", true, set_is_empty),
-    ne!("Ljava/util/HashSet;", "contains", "(Ljava/lang/Object;)Z", true, set_contains),
-    ne!("Ljava/util/HashSet;", "add", "(Ljava/lang/Object;)Z", true, set_add),
-    ne!("Ljava/util/HashSet;", "remove", "(Ljava/lang/Object;)Z", true, set_remove),
+    ne!(
+        "Ljava/util/HashSet;",
+        "contains",
+        "(Ljava/lang/Object;)Z",
+        true,
+        set_contains
+    ),
+    ne!(
+        "Ljava/util/HashSet;",
+        "add",
+        "(Ljava/lang/Object;)Z",
+        true,
+        set_add
+    ),
+    ne!(
+        "Ljava/util/HashSet;",
+        "remove",
+        "(Ljava/lang/Object;)Z",
+        true,
+        set_remove
+    ),
     ne!("Ljava/util/HashSet;", "clear", "()V", true, set_clear),
-    ne!("Ljava/util/HashSet;", "iterator", "()Ljava/util/Iterator;", true, set_iterator),
-    ne!("Ljava/util/HashSet;", "addAll", "(Ljava/util/Collection;)Z", true, set_add_all),
-    ne!("Ljava/util/HashSet;", "toString", "()Ljava/lang/String;", true, set_to_string),
+    ne!(
+        "Ljava/util/HashSet;",
+        "iterator",
+        "()Ljava/util/Iterator;",
+        true,
+        set_iterator
+    ),
+    ne!(
+        "Ljava/util/HashSet;",
+        "addAll",
+        "(Ljava/util/Collection;)Z",
+        true,
+        set_add_all
+    ),
+    ne!(
+        "Ljava/util/HashSet;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        set_to_string
+    ),
 ];

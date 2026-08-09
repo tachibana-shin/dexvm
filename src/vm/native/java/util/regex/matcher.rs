@@ -15,15 +15,22 @@ fn find_at(re: &fancy_regex::Regex, text: &str, pos: usize) -> Option<(usize, us
 /// fancy_regex has no `captures_at`; emulate it with captures_iter. Returns
 /// every group as `(start, end)`, avoiding the version-specific
 /// `Captures<'t, S>` type from the fancy-regex crate.
-fn captures_at(re: &fancy_regex::Regex, text: &str, pos: usize) -> Option<Vec<Option<(usize, usize)>>> {
+fn captures_at(
+    re: &fancy_regex::Regex,
+    text: &str,
+    pos: usize,
+) -> Option<Vec<Option<(usize, usize)>>> {
     for c in re.captures_iter(text).flatten() {
         if c.get(0).map(|m| m.start()) == Some(pos) {
-            return Some((0..c.len()).map(|i| c.get(i).map(|m| (m.start(), m.end()))).collect());
+            return Some(
+                (0..c.len())
+                    .map(|i| c.get(i).map(|m| (m.start(), m.end())))
+                    .collect(),
+            );
         }
     }
     None
 }
-
 
 pub(crate) fn matcher_matches(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(n) = payload_mut(vm, args[0]) else {
@@ -31,8 +38,8 @@ pub(crate) fn matcher_matches(vm: &mut Vm, args: &[JValue]) -> R {
     };
     match n {
         Native::Matcher(ms) => {
-            let hit = find_at(&ms.pattern, &ms.text, 0)
-                .filter(|(s, e)| *s == 0 && *e == ms.text.len());
+            let hit =
+                find_at(&ms.pattern, &ms.text, 0).filter(|(s, e)| *s == 0 && *e == ms.text.len());
             match hit {
                 Some((s, e)) => {
                     ms.last = Some((s, e));
@@ -139,7 +146,14 @@ pub(crate) fn matcher_group_n(vm: &mut Vm, args: &[JValue]) -> R {
     }
     match out {
         Some(s) => Ok(new_str(vm, &s)),
-        None => Err(iae(vm, if no_match { "No match found" } else { "No group" })),
+        None => Err(iae(
+            vm,
+            if no_match {
+                "No match found"
+            } else {
+                "No group"
+            },
+        )),
     }
 }
 
@@ -260,7 +274,11 @@ pub(crate) fn matcher_pattern(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::Matcher(ms)) => (ms.pattern.clone(), ms.pattern.to_string()),
         _ => return Err(npe(vm)),
     };
-    alloc(vm, "Ljava/util/regex/Pattern;", Native::Pattern { re, source: src })
+    alloc(
+        vm,
+        "Ljava/util/regex/Pattern;",
+        Native::Pattern { re, source: src },
+    )
 }
 
 pub(crate) fn matcher_to_string(vm: &mut Vm, _args: &[JValue]) -> R {
@@ -271,22 +289,124 @@ pub(crate) fn matcher_to_string(vm: &mut Vm, _args: &[JValue]) -> R {
 
 /// Native methods for Ljava/util/regex/Matcher;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/util/regex/Matcher;", "matches", "()Z", true, matcher_matches),
-    ne!("Ljava/util/regex/Matcher;", "find", "()Z", true, matcher_find),
-    ne!("Ljava/util/regex/Matcher;", "find", "(I)Z", true, matcher_find_from),
-    ne!("Ljava/util/regex/Matcher;", "lookingAt", "()Z", true, matcher_looking_at),
-    ne!("Ljava/util/regex/Matcher;", "group", "()Ljava/lang/String;", true, matcher_group),
-    ne!("Ljava/util/regex/Matcher;", "group", "(I)Ljava/lang/String;", true, matcher_group_n),
-    ne!("Ljava/util/regex/Matcher;", "groupCount", "()I", true, matcher_group_count),
-    ne!("Ljava/util/regex/Matcher;", "start", "()I", true, matcher_start),
-    ne!("Ljava/util/regex/Matcher;", "start", "(I)I", true, matcher_start_n),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "matches",
+        "()Z",
+        true,
+        matcher_matches
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "find",
+        "()Z",
+        true,
+        matcher_find
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "find",
+        "(I)Z",
+        true,
+        matcher_find_from
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "lookingAt",
+        "()Z",
+        true,
+        matcher_looking_at
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "group",
+        "()Ljava/lang/String;",
+        true,
+        matcher_group
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "group",
+        "(I)Ljava/lang/String;",
+        true,
+        matcher_group_n
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "groupCount",
+        "()I",
+        true,
+        matcher_group_count
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "start",
+        "()I",
+        true,
+        matcher_start
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "start",
+        "(I)I",
+        true,
+        matcher_start_n
+    ),
     ne!("Ljava/util/regex/Matcher;", "end", "()I", true, matcher_end),
-    ne!("Ljava/util/regex/Matcher;", "end", "(I)I", true, matcher_end_n),
-    ne!("Ljava/util/regex/Matcher;", "replaceAll", "(Ljava/lang/String;)Ljava/lang/String;", true, matcher_replace_all),
-    ne!("Ljava/util/regex/Matcher;", "replaceFirst", "(Ljava/lang/String;)Ljava/lang/String;", true, matcher_replace_first),
-    ne!("Ljava/util/regex/Matcher;", "reset", "()Ljava/util/regex/Matcher;", true, matcher_reset),
-    ne!("Ljava/util/regex/Matcher;", "reset", "(Ljava/lang/CharSequence;)Ljava/util/regex/Matcher;", true, matcher_reset_seq),
-    ne!("Ljava/util/regex/Matcher;", "region", "(II)Ljava/util/regex/Matcher;", true, matcher_region),
-    ne!("Ljava/util/regex/Matcher;", "pattern", "()Ljava/util/regex/Pattern;", true, matcher_pattern),
-    ne!("Ljava/util/regex/Matcher;", "toString", "()Ljava/lang/String;", true, matcher_to_string),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "end",
+        "(I)I",
+        true,
+        matcher_end_n
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "replaceAll",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        true,
+        matcher_replace_all
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "replaceFirst",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        true,
+        matcher_replace_first
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "reset",
+        "()Ljava/util/regex/Matcher;",
+        true,
+        matcher_reset
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "reset",
+        "(Ljava/lang/CharSequence;)Ljava/util/regex/Matcher;",
+        true,
+        matcher_reset_seq
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "region",
+        "(II)Ljava/util/regex/Matcher;",
+        true,
+        matcher_region
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "pattern",
+        "()Ljava/util/regex/Pattern;",
+        true,
+        matcher_pattern
+    ),
+    ne!(
+        "Ljava/util/regex/Matcher;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        matcher_to_string
+    ),
 ];

@@ -54,10 +54,27 @@ pub(crate) fn entry_set_value(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(old)
 }
 
-
 /// Native methods for Ljava/util/Map$Entry;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/util/Map$Entry;", "getKey", "()Ljava/lang/Object;", true, entry_get_key),
-    ne!("Ljava/util/Map$Entry;", "getValue", "()Ljava/lang/Object;", true, entry_get_value),
-    ne!("Ljava/util/Map$Entry;", "setValue", "(Ljava/lang/Object;)Ljava/lang/Object;", true, entry_set_value),
+    ne!(
+        "Ljava/util/Map$Entry;",
+        "getKey",
+        "()Ljava/lang/Object;",
+        true,
+        entry_get_key
+    ),
+    ne!(
+        "Ljava/util/Map$Entry;",
+        "getValue",
+        "()Ljava/lang/Object;",
+        true,
+        entry_get_value
+    ),
+    ne!(
+        "Ljava/util/Map$Entry;",
+        "setValue",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        entry_set_value
+    ),
 ];

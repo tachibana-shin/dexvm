@@ -89,9 +89,12 @@ pub(crate) fn request_builder_tag(_vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn request_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
     let (url, method, headers, body) = match payload(vm, args[0]) {
-        Some(Native::RequestBuilder { url, method, headers, body }) => {
-            (url.clone(), method.clone(), headers.clone(), body.clone())
-        }
+        Some(Native::RequestBuilder {
+            url,
+            method,
+            headers,
+            body,
+        }) => (url.clone(), method.clone(), headers.clone(), body.clone()),
         _ => return Err(npe(vm)),
     };
     alloc(
@@ -139,9 +142,12 @@ pub(crate) fn request_header(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn request_new_builder(vm: &mut Vm, args: &[JValue]) -> R {
     let (url, method, headers, body) = match payload(vm, args[0]) {
-        Some(Native::Request { url, method, headers, body }) => {
-            (url.clone(), method.clone(), headers.clone(), body.clone())
-        }
+        Some(Native::Request {
+            url,
+            method,
+            headers,
+            body,
+        }) => (url.clone(), method.clone(), headers.clone(), body.clone()),
         _ => return Err(npe(vm)),
     };
     alloc(
@@ -322,7 +328,11 @@ pub(crate) fn http_url_host(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::HttpUrl(url)) => url.clone(),
         _ => return Err(npe(vm)),
     };
-    let host = url.split("://").nth(1).and_then(|r| r.split(['/', '?']).next()).unwrap_or("");
+    let host = url
+        .split("://")
+        .nth(1)
+        .and_then(|r| r.split(['/', '?']).next())
+        .unwrap_or("");
     let h = host.to_string();
     Ok(vm.alloc_string(&h))
 }
@@ -362,7 +372,11 @@ pub(crate) fn http_url_path_segments(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::HttpUrl(url)) = payload(vm, args[0]) else {
         return Err(npe(vm));
     };
-    let path = url.split("://").nth(1).and_then(|s| s.split(['?', '#']).next()).unwrap_or("");
+    let path = url
+        .split("://")
+        .nth(1)
+        .and_then(|s| s.split(['?', '#']).next())
+        .unwrap_or("");
     let path_owned = path.to_string();
     let segments = path_owned
         .split('/')
@@ -379,7 +393,6 @@ pub(crate) fn http_url_to_string(vm: &mut Vm, args: &[JValue]) -> R {
     };
     Ok(vm.alloc_string(&s))
 }
-
 
 // ---------------------------------------------------------------------------
 // OkHttpClient / FormBody / HttpUrl / builder shims
@@ -405,7 +418,11 @@ pub(crate) fn okhttp_builder_add_interceptor(vm: &mut Vm, args: &[JValue]) -> R 
 }
 
 pub(crate) fn okhttp_builder_add_network_interceptor(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::OkHttpBuilder { network_interceptors, .. }) = payload_mut(vm, args[0]) else {
+    let Some(Native::OkHttpBuilder {
+        network_interceptors,
+        ..
+    }) = payload_mut(vm, args[0])
+    else {
         return Err(npe(vm));
     };
     network_interceptors.push(args[1]);
@@ -422,7 +439,10 @@ pub(crate) fn okhttp_builder_interceptors(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn okhttp_builder_network_interceptors(vm: &mut Vm, args: &[JValue]) -> R {
     let items = match payload(vm, args[0]) {
-        Some(Native::OkHttpBuilder { network_interceptors, .. }) => network_interceptors.clone(),
+        Some(Native::OkHttpBuilder {
+            network_interceptors,
+            ..
+        }) => network_interceptors.clone(),
         _ => return Err(npe(vm)),
     };
     list_alloc(vm, items)
@@ -439,7 +459,11 @@ pub(crate) fn lazy_http_url_companion(vm: &mut Vm) -> JValue {
 }
 
 pub(crate) fn okhttp_form_builder_init(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(vm, "Lokhttp3/FormBody$Builder;", Native::FormBody(Vec::new()))
+    alloc(
+        vm,
+        "Lokhttp3/FormBody$Builder;",
+        Native::FormBody(Vec::new()),
+    )
 }
 
 pub(crate) fn okhttp_form_builder_add(vm: &mut Vm, args: &[JValue]) -> R {
@@ -471,7 +495,11 @@ pub(crate) fn okhttp_http_url_new_builder(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::HttpUrl(url)) = payload(vm, args[0]) else {
         return Err(npe(vm));
     };
-    alloc(vm, "Lokhttp3/HttpUrl$Builder;", Native::HttpUrl(url.clone()))
+    alloc(
+        vm,
+        "Lokhttp3/HttpUrl$Builder;",
+        Native::HttpUrl(url.clone()),
+    )
 }
 
 pub(crate) fn okhttp_http_url_builder_add_query(vm: &mut Vm, args: &[JValue]) -> R {
@@ -546,9 +574,12 @@ pub(crate) fn okhttp_http_url_builder_to_string(vm: &mut Vm, args: &[JValue]) ->
 #[cfg(feature = "okhttp")]
 pub(crate) fn okhttp_client_new_call(vm: &mut Vm, args: &[JValue]) -> R {
     let req = match payload(vm, args[1]) {
-        Some(Native::Request { url, method, headers, body }) => {
-            (url.clone(), method.clone(), headers.clone(), *body)
-        }
+        Some(Native::Request {
+            url,
+            method,
+            headers,
+            body,
+        }) => (url.clone(), method.clone(), headers.clone(), *body),
         _ => return Err(npe(vm)),
     };
     let Some(Native::Opaque) = payload(vm, args[0]) else {

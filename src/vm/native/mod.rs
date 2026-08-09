@@ -18,9 +18,7 @@ pub(crate) use crate::vm::object::{ArrayData, ClassOrPrim, IterKind, MatcherStat
 pub(crate) use crate::vm::value::JValue;
 pub use crate::vm::{MethodRef, NatErr, NativeEntry, NativeFn, Target, Vm};
 
-
 pub(crate) type R = Result<JValue, NatErr>;
-
 
 // table plumbing
 // ---------------------------------------------------------------------------
@@ -35,8 +33,6 @@ macro_rules! ne {
         }
     };
 }
-
-
 
 // ---------------------------------------------------------------------------
 // table plumbing
@@ -94,24 +90,23 @@ pub const THROWABLE_CTORS: &[NativeEntry] = throwable_ctors_table![
     "Ljava/lang/SecurityException;",
 ];
 
-
-mod java;
-mod kotlin;
-mod injekt;
-#[cfg(feature = "okhttp")]
-mod okhttp;
-#[cfg(feature = "jsoup")]
-mod jsoup;
 #[cfg(feature = "android")]
 mod android;
+mod injekt;
+mod java;
+#[cfg(feature = "jsoup")]
+mod jsoup;
 #[cfg(feature = "tachiyomi")]
 pub mod keiyoushi;
-
-pub(crate) use self::{java::*, kotlin::*};
+mod kotlin;
 #[cfg(feature = "okhttp")]
-pub(crate) use self::okhttp::*;
+mod okhttp;
+
 #[cfg(feature = "tachiyomi")]
 pub(crate) use self::keiyoushi::*;
+#[cfg(feature = "okhttp")]
+pub(crate) use self::okhttp::*;
+pub(crate) use self::{java::*, kotlin::*};
 
 // ---------------------------------------------------------------------------
 // HTTP bridge helpers (okhttp request objects -> plain data)
@@ -138,8 +133,17 @@ pub(crate) fn form_body_to_string(vm: &mut Vm, body: &Option<JValue>) -> Option<
 
 #[cfg(any(feature = "okhttp", feature = "tachiyomi"))]
 #[cfg_attr(not(feature = "tachiyomi"), allow(dead_code))]
-pub(crate) fn request_parts(vm: &mut Vm, v: JValue) -> Result<(String, String, Vec<(String, String)>, Option<JValue>), NatErr> {
-    let Some(Native::Request { url, method, headers, body }) = payload(vm, v) else {
+pub(crate) fn request_parts(
+    vm: &mut Vm,
+    v: JValue,
+) -> Result<(String, String, Vec<(String, String)>, Option<JValue>), NatErr> {
+    let Some(Native::Request {
+        url,
+        method,
+        headers,
+        body,
+    }) = payload(vm, v)
+    else {
         return Err(npe(vm));
     };
     Ok((url.clone(), method.clone(), headers.clone(), body.clone()))
@@ -147,7 +151,11 @@ pub(crate) fn request_parts(vm: &mut Vm, v: JValue) -> Result<(String, String, V
 
 // ---------------------------------------------------------------------------
 pub fn register(vm: &mut Vm) {
-    for e in native_tables().into_iter().flatten().chain(global_native_entries()) {
+    for e in native_tables()
+        .into_iter()
+        .flatten()
+        .chain(global_native_entries())
+    {
         let key = (vm.intern(e.class), vm.intern(e.name), vm.intern(e.sig));
         vm.natives.insert(key, e.f);
     }
@@ -178,7 +186,9 @@ pub fn register_global(table: &'static [NativeEntry]) {
 
 /// Read-only view of every globally registered native.
 pub fn global_native_entries() -> Vec<&'static NativeEntry> {
-    GLOBAL_NATIVES.get().map_or_else(Vec::new, |l| l.read().unwrap().clone())
+    GLOBAL_NATIVES
+        .get()
+        .map_or_else(Vec::new, |l| l.read().unwrap().clone())
 }
 
 /// Number of globally registered natives (introspection / tests).
@@ -284,10 +294,16 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
         let cl = &vm.classes[cc as usize];
         match vm.str_of(cl.descriptor) {
             "Ljava/lang/Enum;" => {
-                return Some(Native::Enum { name: String::new(), ordinal: 0 });
+                return Some(Native::Enum {
+                    name: String::new(),
+                    ordinal: 0,
+                });
             }
             "Ljava/lang/Throwable;" => {
-                return Some(Native::Throwable { message: None, cause: JValue::Null });
+                return Some(Native::Throwable {
+                    message: None,
+                    cause: JValue::Null,
+                });
             }
             #[cfg(feature = "tachiyomi")]
             "Leu/kanade/tachiyomi/source/model/Filter;"
@@ -358,7 +374,9 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
         "Ljava/io/PrintStream;" => Some(Native::PrintStream),
         "Ljava/lang/Thread;" => Some(Native::Opaque),
         "Ljava/util/Map$Entry;" => Some(Native::MapEntry { map: 0, idx: 0 }),
-        "Ljava/util/concurrent/locks/ReentrantLock;" => Some(Native::ReentrantLock { locked: false }),
+        "Ljava/util/concurrent/locks/ReentrantLock;" => {
+            Some(Native::ReentrantLock { locked: false })
+        }
         #[cfg(feature = "tachiyomi")]
         "Leu/kanade/tachiyomi/source/model/SManga;" => Some(keiyoushi::empty_smanga()),
         #[cfg(feature = "tachiyomi")]
@@ -441,7 +459,6 @@ pub(crate) fn alloc(vm: &mut Vm, desc: &str, native: Native) -> Result<JValue, N
     Ok(JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(native))))
 }
 
-
 pub(crate) fn boxed(vm: &mut Vm, desc: &str, native: Native) -> Result<JValue, NatErr> {
     alloc(vm, desc, native)
 }
@@ -459,11 +476,16 @@ pub(crate) fn alloc_arr(
     let (class, data) = match vm.ensure_class_by_desc(&full) {
         Ok(c) => (c, fill()),
         Err(_) => (
-            vm.ensure_class_by_desc("[Ljava/lang/Object;").map_err(nat_fatal)?,
+            vm.ensure_class_by_desc("[Ljava/lang/Object;")
+                .map_err(nat_fatal)?,
             fill_fallback(elem_desc, len),
         ),
     };
-    Ok(JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(Native::Array(data)))))
+    Ok(JValue::Obj(vm.arena.alloc(
+        class,
+        Vec::new(),
+        Some(Native::Array(data)),
+    )))
 }
 
 pub(crate) fn fill_fallback(elem_desc: &str, len: usize) -> ArrayData {
@@ -606,7 +628,13 @@ pub(crate) fn fmt_f64(v: f64) -> String {
 }
 
 /// Virtual call helper for natives (extra args appended after the receiver).
-pub(crate) fn inv_virt(vm: &mut Vm, recv: JValue, name: &str, sig: &str, extra: &[JValue]) -> Result<JValue, NatErr> {
+pub(crate) fn inv_virt(
+    vm: &mut Vm,
+    recv: JValue,
+    name: &str,
+    sig: &str,
+    extra: &[JValue],
+) -> Result<JValue, NatErr> {
     let mref = MethodRef {
         name: vm.intern(name),
         sig: vm.intern(sig),
@@ -755,11 +783,19 @@ pub(crate) fn char_at(s: &str, i: usize) -> Option<u16> {
 
 /// java.util.regex.Pattern.split semantics for the given limit.
 pub(crate) fn split_java(re: &Regex, text: &str, limit: i32) -> Vec<String> {
-    let matches: Vec<(usize, usize)> = re.find_iter(text).flatten().map(|m| (m.start(), m.end())).collect();
+    let matches: Vec<(usize, usize)> = re
+        .find_iter(text)
+        .flatten()
+        .map(|m| (m.start(), m.end()))
+        .collect();
     let mut parts = Vec::new();
     let mut pos = 0usize;
     let mut count = 0usize;
-    let max = if limit < 0 { usize::MAX } else { limit as usize };
+    let max = if limit < 0 {
+        usize::MAX
+    } else {
+        limit as usize
+    };
     for (s, e) in &matches {
         if *s < pos {
             continue;

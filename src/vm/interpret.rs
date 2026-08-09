@@ -86,7 +86,8 @@ fn push_frame(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<(
         let decoded = match m.insns.get() {
             Some(d) => d.clone(),
             None => {
-                let d = Arc::new(crate::dex::insn::decode_all(&code.insns).map_err(JvmError::from)?);
+                let d =
+                    Arc::new(crate::dex::insn::decode_all(&code.insns).map_err(JvmError::from)?);
                 m.insns.set(d.clone()).expect("decode race");
                 d
             }
@@ -231,11 +232,9 @@ impl Vm {
                                         ri += 1;
                                     }
                                 }
-                                let code = code
-                                    .clone()
-                                    .ok_or_else(|| {
-                                        JvmError::Resolution("callee has no code item".into())
-                                    })?;
+                                let code = code.clone().ok_or_else(|| {
+                                    JvmError::Resolution("callee has no code item".into())
+                                })?;
                                 let tries: Arc<[TryItem]> = Arc::from(code.tries.clone());
                                 f.pc = ret_pc;
                                 let caller = std::mem::replace(
@@ -271,7 +270,9 @@ impl Vm {
                             eprintln!(
                                 "DBG uncaught throw at {}::{}",
                                 self.class_desc_str(dbg_c),
-                                self.str_of(self.classes[dbg_c as usize].methods[dbg_s as usize].name),
+                                self.str_of(
+                                    self.classes[dbg_c as usize].methods[dbg_s as usize].name
+                                ),
                             );
                             return Err(JvmError::Uncaught(o));
                         }
@@ -432,7 +433,9 @@ impl Vm {
                 Flow::Next(0)
             }
             Insn::ConstMethodHandle(..) | Insn::ConstMethodType(..) => {
-                return Err(JvmError::Fatal("const-method-handle/type unsupported".into()));
+                return Err(JvmError::Fatal(
+                    "const-method-handle/type unsupported".into(),
+                ));
             }
             Insn::MonitorEnter(d) | Insn::MonitorExit(d) => {
                 let o = match f.regs[*d as usize] {
@@ -469,7 +472,9 @@ impl Vm {
             Insn::InstanceOf(d, src, type_idx) => {
                 let target = self.ensure_class_by_type(*type_idx)?;
                 let r = match f.regs[*src as usize] {
-                    JValue::Obj(o) => self.is_assignable(self.arena.objects[o as usize].class, target)?,
+                    JValue::Obj(o) => {
+                        self.is_assignable(self.arena.objects[o as usize].class, target)?
+                    }
                     // untyped register zero in a reference slot behaves as null
                     _ => false,
                 };
@@ -491,7 +496,8 @@ impl Vm {
             Insn::NewInstance(d, type_idx) => {
                 let class_id = self.ensure_class_by_type(*type_idx)?;
                 let fields = self.classes[class_id as usize].field_offsets.len();
-                f.regs[*d as usize] = JValue::Obj(self.arena.alloc(class_id, vec![JValue::Null; fields], None));
+                f.regs[*d as usize] =
+                    JValue::Obj(self.arena.alloc(class_id, vec![JValue::Null; fields], None));
                 Flow::Next(0)
             }
             Insn::NewArray(d, size_reg, type_idx) => {
@@ -502,7 +508,11 @@ impl Vm {
                 let arr_class = self.array_class(*type_idx)?;
                 let elem_desc = self.dex.type_descriptor(*type_idx).to_string();
                 let data = ArrayData::new(&elem_desc, n as usize);
-                f.regs[*d as usize] = JValue::Obj(self.arena.alloc(arr_class, Vec::new(), Some(Native::Array(data))));
+                f.regs[*d as usize] = JValue::Obj(self.arena.alloc(
+                    arr_class,
+                    Vec::new(),
+                    Some(Native::Array(data)),
+                ));
                 Flow::Next(0)
             }
             Insn::FilledNewArray(args, type_idx) => {
@@ -522,7 +532,9 @@ impl Vm {
                     }
                 }
                 let arr_class = self.array_class(*type_idx)?;
-                let o = self.arena.alloc(arr_class, Vec::new(), Some(Native::Array(data)));
+                let o = self
+                    .arena
+                    .alloc(arr_class, Vec::new(), Some(Native::Array(data)));
                 f.result = JValue::Obj(o);
                 Flow::Next(0)
             }
@@ -645,22 +657,20 @@ impl Vm {
                     Flow::Next(0)
                 }
             }
-            Insn::AGet(_, d, arr, idx) => {
-                match self.array_get(f, *arr, *idx) {
-                    Ok(v) => {
-                        f.regs[*d as usize] = v;
-                        Flow::Next(0)
-                    }
-                    Err(ex) => return Ok(StepOutcome::Throw(ex)),
+            Insn::AGet(_, d, arr, idx) => match self.array_get(f, *arr, *idx) {
+                Ok(v) => {
+                    f.regs[*d as usize] = v;
+                    Flow::Next(0)
                 }
-            }
-            Insn::APut(_, src, arr, idx) => {
-                match self.array_put(f, *src, *arr, *idx) {
-                    Ok(()) => Flow::Next(0),
-                    Err(ex) => return Ok(StepOutcome::Throw(ex)),
-                }
-            }
-            Insn::SGet(d, field_idx) | Insn::SGetWide(d, field_idx) | Insn::SGetObj(d, field_idx) => {
+                Err(ex) => return Ok(StepOutcome::Throw(ex)),
+            },
+            Insn::APut(_, src, arr, idx) => match self.array_put(f, *src, *arr, *idx) {
+                Ok(()) => Flow::Next(0),
+                Err(ex) => return Ok(StepOutcome::Throw(ex)),
+            },
+            Insn::SGet(d, field_idx)
+            | Insn::SGetWide(d, field_idx)
+            | Insn::SGetObj(d, field_idx) => {
                 let fr = self.field_ref(*field_idx)?;
                 match self.static_field_get(fr) {
                     Ok(v) => {
@@ -670,7 +680,9 @@ impl Vm {
                     Err(e) => return Err(e),
                 }
             }
-            Insn::SPut(src, field_idx) | Insn::SPutWide(src, field_idx) | Insn::SPutObj(src, field_idx) => {
+            Insn::SPut(src, field_idx)
+            | Insn::SPutWide(src, field_idx)
+            | Insn::SPutObj(src, field_idx) => {
                 let fr = self.field_ref(*field_idx)?;
                 let v = f.regs[*src as usize];
                 match self.static_field_put(fr, v) {
@@ -678,7 +690,9 @@ impl Vm {
                     Err(e) => return Err(e),
                 }
             }
-            Insn::IGet(d, obj, field_idx) | Insn::IGetWide(d, obj, field_idx) | Insn::IGetObj(d, obj, field_idx) => {
+            Insn::IGet(d, obj, field_idx)
+            | Insn::IGetWide(d, obj, field_idx)
+            | Insn::IGetObj(d, obj, field_idx) => {
                 let o = match f.regs[*obj as usize] {
                     JValue::Obj(o) => o,
                     _ => return Ok(StepOutcome::Throw(JValue::Obj(self.err_npe()))),
@@ -695,7 +709,9 @@ impl Vm {
                 f.regs[*d as usize] = self.arena.objects[o as usize].fields[off as usize];
                 Flow::Next(0)
             }
-            Insn::IPut(src, obj, field_idx) | Insn::IPutWide(src, obj, field_idx) | Insn::IPutObj(src, obj, field_idx) => {
+            Insn::IPut(src, obj, field_idx)
+            | Insn::IPutWide(src, obj, field_idx)
+            | Insn::IPutObj(src, obj, field_idx) => {
                 let o = match f.regs[*obj as usize] {
                     JValue::Obj(o) => o,
                     _ => return Ok(StepOutcome::Throw(JValue::Obj(self.err_npe()))),
@@ -804,7 +820,10 @@ impl Vm {
 
     fn fill_array(&mut self, obj: u32, data: &FillArray) -> Result<(), JvmError> {
         let values: Vec<JValue> = match data {
-            FillArray::Byte(raw) => raw.iter().map(|x| JValue::Int(i32::from(*x as i8))).collect(),
+            FillArray::Byte(raw) => raw
+                .iter()
+                .map(|x| JValue::Int(i32::from(*x as i8)))
+                .collect(),
             FillArray::Short(v) => v.iter().map(|x| JValue::Int(i32::from(*x))).collect(),
             FillArray::Char(v) => v.iter().map(|x| JValue::Int(i32::from(*x))).collect(),
             FillArray::Int(v) => v.iter().map(|x| JValue::Int(*x as i32)).collect(),
@@ -845,7 +864,13 @@ impl Vm {
         Ok(v)
     }
 
-    fn array_put(&mut self, f: &Frame, src_reg: u8, arr_reg: u8, idx_reg: u8) -> Result<(), JValue> {
+    fn array_put(
+        &mut self,
+        f: &Frame,
+        src_reg: u8,
+        arr_reg: u8,
+        idx_reg: u8,
+    ) -> Result<(), JValue> {
         let arr = match f.regs[arr_reg as usize] {
             JValue::Obj(o) => o,
             _ => return Err(JValue::Obj(self.err_npe())),

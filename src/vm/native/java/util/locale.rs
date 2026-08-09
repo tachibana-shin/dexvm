@@ -14,7 +14,10 @@ macro_rules! locale_const {
             let class = vm
                 .ensure_class_by_desc("Ljava/util/Locale;")
                 .expect("Locale shim");
-            JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(Native::Str($tag.into()))))
+            JValue::Obj(
+                vm.arena
+                    .alloc(class, Vec::new(), Some(Native::Str($tag.into()))),
+            )
         }
     };
 }
@@ -29,7 +32,6 @@ locale_const!(lazy_locale_germany, "de-DE");
 locale_const!(lazy_locale_italy, "it-IT");
 
 // java.util.Locale host shims.
-
 
 // java.util.Locale
 // ---------------------------------------------------------------------------
@@ -87,15 +89,62 @@ pub(crate) fn locale_for_language_tag(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Ljava/util/Locale;", Native::Str(tag))
 }
 
-
 /// Native methods for Ljava/util/Locale;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/util/Locale;", "<init>", "(Ljava/lang/String;)V", true, locale_init),
-    ne!("Ljava/util/Locale;", "<init>", "(Ljava/lang/String;Ljava/lang/String;)V", true, locale_init),
-    ne!("Ljava/util/Locale;", "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", true, locale_init),
-    ne!("Ljava/util/Locale;", "getDefault", "()Ljava/util/Locale;", false, locale_get_default),
-    ne!("Ljava/util/Locale;", "toString", "()Ljava/lang/String;", true, locale_to_string),
-    ne!("Ljava/util/Locale;", "getLanguage", "()Ljava/lang/String;", true, locale_get_language),
-    ne!("Ljava/util/Locale;", "getCountry", "()Ljava/lang/String;", true, locale_get_country),
-    ne!("Ljava/util/Locale;", "forLanguageTag", "(Ljava/lang/String;)Ljava/util/Locale;", false, locale_for_language_tag),
+    ne!(
+        "Ljava/util/Locale;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        locale_init
+    ),
+    ne!(
+        "Ljava/util/Locale;",
+        "<init>",
+        "(Ljava/lang/String;Ljava/lang/String;)V",
+        true,
+        locale_init
+    ),
+    ne!(
+        "Ljava/util/Locale;",
+        "<init>",
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
+        true,
+        locale_init
+    ),
+    ne!(
+        "Ljava/util/Locale;",
+        "getDefault",
+        "()Ljava/util/Locale;",
+        false,
+        locale_get_default
+    ),
+    ne!(
+        "Ljava/util/Locale;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        locale_to_string
+    ),
+    ne!(
+        "Ljava/util/Locale;",
+        "getLanguage",
+        "()Ljava/lang/String;",
+        true,
+        locale_get_language
+    ),
+    ne!(
+        "Ljava/util/Locale;",
+        "getCountry",
+        "()Ljava/lang/String;",
+        true,
+        locale_get_country
+    ),
+    ne!(
+        "Ljava/util/Locale;",
+        "forLanguageTag",
+        "(Ljava/lang/String;)Ljava/util/Locale;",
+        false,
+        locale_for_language_tag
+    ),
 ];

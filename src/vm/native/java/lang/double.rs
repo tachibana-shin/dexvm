@@ -102,28 +102,147 @@ pub(crate) fn double_long_bits_to_double(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Double(f64::from_bits(long_of(vm, args[0]) as u64)))
 }
 
-
 /// Native methods for Ljava/lang/Double;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/lang/Double;", "valueOf", "(D)Ljava/lang/Double;", false, double_value_of),
-    ne!("Ljava/lang/Double;", "valueOf", "(Ljava/lang/String;)Ljava/lang/Double;", false, double_value_of_str),
-    ne!("Ljava/lang/Double;", "parseDouble", "(Ljava/lang/String;)D", false, double_parse_double),
-    ne!("Ljava/lang/Double;", "intValue", "()I", true, double_int_value),
-    ne!("Ljava/lang/Double;", "longValue", "()J", true, double_long_value),
-    ne!("Ljava/lang/Double;", "floatValue", "()F", true, double_float_value),
-    ne!("Ljava/lang/Double;", "doubleValue", "()D", true, double_double_value),
-    ne!("Ljava/lang/Double;", "byteValue", "()B", true, double_byte_value),
-    ne!("Ljava/lang/Double;", "shortValue", "()S", true, double_short_value),
-    ne!("Ljava/lang/Double;", "equals", "(Ljava/lang/Object;)Z", true, double_equals),
-    ne!("Ljava/lang/Double;", "hashCode", "()I", true, double_hash_code),
-    ne!("Ljava/lang/Double;", "toString", "()Ljava/lang/String;", true, double_to_string),
-    ne!("Ljava/lang/Double;", "toString", "(D)Ljava/lang/String;", false, double_to_string_static),
-    ne!("Ljava/lang/Double;", "compareTo", "(Ljava/lang/Double;)I", true, double_compare_to),
-    ne!("Ljava/lang/Double;", "compareTo", "(Ljava/lang/Object;)I", true, double_compare_to),
-    ne!("Ljava/lang/Double;", "compare", "(DD)I", false, double_compare),
+    ne!(
+        "Ljava/lang/Double;",
+        "valueOf",
+        "(D)Ljava/lang/Double;",
+        false,
+        double_value_of
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "valueOf",
+        "(Ljava/lang/String;)Ljava/lang/Double;",
+        false,
+        double_value_of_str
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "parseDouble",
+        "(Ljava/lang/String;)D",
+        false,
+        double_parse_double
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "intValue",
+        "()I",
+        true,
+        double_int_value
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "longValue",
+        "()J",
+        true,
+        double_long_value
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "floatValue",
+        "()F",
+        true,
+        double_float_value
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "doubleValue",
+        "()D",
+        true,
+        double_double_value
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "byteValue",
+        "()B",
+        true,
+        double_byte_value
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "shortValue",
+        "()S",
+        true,
+        double_short_value
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "equals",
+        "(Ljava/lang/Object;)Z",
+        true,
+        double_equals
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "hashCode",
+        "()I",
+        true,
+        double_hash_code
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        double_to_string
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "toString",
+        "(D)Ljava/lang/String;",
+        false,
+        double_to_string_static
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "compareTo",
+        "(Ljava/lang/Double;)I",
+        true,
+        double_compare_to
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "compareTo",
+        "(Ljava/lang/Object;)I",
+        true,
+        double_compare_to
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "compare",
+        "(DD)I",
+        false,
+        double_compare
+    ),
     ne!("Ljava/lang/Double;", "isNaN", "(D)Z", false, double_is_nan),
-    ne!("Ljava/lang/Double;", "isInfinite", "(D)Z", false, double_is_infinite),
-    ne!("Ljava/lang/Double;", "doubleToLongBits", "(D)J", false, double_to_long_bits),
-    ne!("Ljava/lang/Double;", "doubleToRawLongBits", "(D)J", false, double_to_long_bits),
-    ne!("Ljava/lang/Double;", "longBitsToDouble", "(J)D", false, double_long_bits_to_double),
+    ne!(
+        "Ljava/lang/Double;",
+        "isInfinite",
+        "(D)Z",
+        false,
+        double_is_infinite
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "doubleToLongBits",
+        "(D)J",
+        false,
+        double_to_long_bits
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "doubleToRawLongBits",
+        "(D)J",
+        false,
+        double_to_long_bits
+    ),
+    ne!(
+        "Ljava/lang/Double;",
+        "longBitsToDouble",
+        "(J)D",
+        false,
+        double_long_bits_to_double
+    ),
 ];

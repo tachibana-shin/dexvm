@@ -101,28 +101,147 @@ pub(crate) fn float_int_bits_to_float(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Float(f32::from_bits(int_of(vm, args[0]) as u32)))
 }
 
-
 /// Native methods for Ljava/lang/Float;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/lang/Float;", "valueOf", "(F)Ljava/lang/Float;", false, float_value_of),
-    ne!("Ljava/lang/Float;", "valueOf", "(Ljava/lang/String;)Ljava/lang/Float;", false, float_value_of_str),
-    ne!("Ljava/lang/Float;", "parseFloat", "(Ljava/lang/String;)F", false, float_parse_float),
-    ne!("Ljava/lang/Float;", "intValue", "()I", true, float_int_value),
-    ne!("Ljava/lang/Float;", "longValue", "()J", true, float_long_value),
-    ne!("Ljava/lang/Float;", "floatValue", "()F", true, float_float_value),
-    ne!("Ljava/lang/Float;", "doubleValue", "()D", true, float_double_value),
-    ne!("Ljava/lang/Float;", "byteValue", "()B", true, float_byte_value),
-    ne!("Ljava/lang/Float;", "shortValue", "()S", true, float_short_value),
-    ne!("Ljava/lang/Float;", "equals", "(Ljava/lang/Object;)Z", true, float_equals),
-    ne!("Ljava/lang/Float;", "hashCode", "()I", true, float_hash_code),
-    ne!("Ljava/lang/Float;", "toString", "()Ljava/lang/String;", true, float_to_string),
-    ne!("Ljava/lang/Float;", "toString", "(F)Ljava/lang/String;", false, float_to_string_static),
-    ne!("Ljava/lang/Float;", "compareTo", "(Ljava/lang/Float;)I", true, float_compare_to),
-    ne!("Ljava/lang/Float;", "compareTo", "(Ljava/lang/Object;)I", true, float_compare_to),
-    ne!("Ljava/lang/Float;", "compare", "(FF)I", false, float_compare),
+    ne!(
+        "Ljava/lang/Float;",
+        "valueOf",
+        "(F)Ljava/lang/Float;",
+        false,
+        float_value_of
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "valueOf",
+        "(Ljava/lang/String;)Ljava/lang/Float;",
+        false,
+        float_value_of_str
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "parseFloat",
+        "(Ljava/lang/String;)F",
+        false,
+        float_parse_float
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "intValue",
+        "()I",
+        true,
+        float_int_value
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "longValue",
+        "()J",
+        true,
+        float_long_value
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "floatValue",
+        "()F",
+        true,
+        float_float_value
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "doubleValue",
+        "()D",
+        true,
+        float_double_value
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "byteValue",
+        "()B",
+        true,
+        float_byte_value
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "shortValue",
+        "()S",
+        true,
+        float_short_value
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "equals",
+        "(Ljava/lang/Object;)Z",
+        true,
+        float_equals
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "hashCode",
+        "()I",
+        true,
+        float_hash_code
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        float_to_string
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "toString",
+        "(F)Ljava/lang/String;",
+        false,
+        float_to_string_static
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "compareTo",
+        "(Ljava/lang/Float;)I",
+        true,
+        float_compare_to
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "compareTo",
+        "(Ljava/lang/Object;)I",
+        true,
+        float_compare_to
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "compare",
+        "(FF)I",
+        false,
+        float_compare
+    ),
     ne!("Ljava/lang/Float;", "isNaN", "(F)Z", false, float_is_nan),
-    ne!("Ljava/lang/Float;", "isInfinite", "(F)Z", false, float_is_infinite),
-    ne!("Ljava/lang/Float;", "floatToIntBits", "(F)I", false, float_to_int_bits),
-    ne!("Ljava/lang/Float;", "floatToRawIntBits", "(F)I", false, float_to_int_bits),
-    ne!("Ljava/lang/Float;", "intBitsToFloat", "(I)F", false, float_int_bits_to_float),
+    ne!(
+        "Ljava/lang/Float;",
+        "isInfinite",
+        "(F)Z",
+        false,
+        float_is_infinite
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "floatToIntBits",
+        "(F)I",
+        false,
+        float_to_int_bits
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "floatToRawIntBits",
+        "(F)I",
+        false,
+        float_to_int_bits
+    ),
+    ne!(
+        "Ljava/lang/Float;",
+        "intBitsToFloat",
+        "(I)F",
+        false,
+        float_int_bits_to_float
+    ),
 ];

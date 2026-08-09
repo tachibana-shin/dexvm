@@ -255,10 +255,16 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
         // const forms
         0x12 => Ok((Insn::Const4(a4, ((b4 << 4) as i8) >> 4), pc + 1)), // sign-extend 4 bits
         0x13 => Ok((Insn::Const16(a8, w1()? as i16), pc + 2)),
-        0x14 => Ok((Insn::Const(a8, i32::from(w1()?) | (i32::from(w2()?) << 16)), pc + 3)),
+        0x14 => Ok((
+            Insn::Const(a8, i32::from(w1()?) | (i32::from(w2()?) << 16)),
+            pc + 3,
+        )),
         0x15 => Ok((Insn::ConstHigh16(a8, i32::from(w1()? as i16) << 16), pc + 2)),
         0x16 => Ok((Insn::ConstWide16(a8, i64::from(w1()? as i16)), pc + 2)),
-        0x17 => Ok((Insn::ConstWide32(a8, i64::from(w1()?) | (i64::from(w2()?) << 16)), pc + 3)),
+        0x17 => Ok((
+            Insn::ConstWide32(a8, i64::from(w1()?) | (i64::from(w2()?) << 16)),
+            pc + 3,
+        )),
         0x18 => {
             let v = i64::from(w1()?)
                 | (i64::from(w2()?) << 16)
@@ -266,9 +272,15 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
                 | (i64::from(w4(insns, pc)?) << 48);
             Ok((Insn::ConstWide(a8, v), pc + 5))
         }
-        0x19 => Ok((Insn::ConstWideHigh16(a8, i64::from(w1()? as i16) << 48), pc + 2)),
+        0x19 => Ok((
+            Insn::ConstWideHigh16(a8, i64::from(w1()? as i16) << 48),
+            pc + 2,
+        )),
         0x1a => Ok((Insn::ConstString(a8, u32::from(w1()?)), pc + 2)),
-        0x1b => Ok((Insn::ConstStringJumbo(a8, u32::from(w1()?) | (u32::from(w2()?) << 16)), pc + 3)),
+        0x1b => Ok((
+            Insn::ConstStringJumbo(a8, u32::from(w1()?) | (u32::from(w2()?) << 16)),
+            pc + 3,
+        )),
         0x1c => Ok((Insn::ConstClass(a8, u32::from(w1()?)), pc + 2)),
         0x1d => Ok((Insn::MonitorEnter(a8), pc + 1)),
         0x1e => Ok((Insn::MonitorExit(a8), pc + 1)),
@@ -282,10 +294,15 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
             Ok((Insn::FilledNewArray(args, type_idx), pc + 3))
         }
         0x25 => {
-            let args = Args { count: a8, regs: [0; 5], range: true, base: w2()? };
+            let args = Args {
+                count: a8,
+                regs: [0; 5],
+                range: true,
+                base: w2()?,
+            };
             Ok((Insn::FilledNewArray(args, u32::from(w1()?)), pc + 3))
         }
-         0x26 => {
+        0x26 => {
             let off = i32::from(w1()?) | (i32::from(w2()?) << 16);
             let payload = tgt(off) as usize;
             let data = decode_fill_array_data(insns, payload)?;
@@ -298,22 +315,42 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
             let off = i32::from(w1()?) | (i32::from(w2()?) << 16);
             Ok((Insn::Goto(tgt(off)), pc + 3))
         }
-         0x2b => {
+        0x2b => {
             let off = i32::from(w1()?) | (i32::from(w2()?) << 16);
             let payload = tgt(off) as usize;
             if insns.get(payload).copied() != Some(0x0100) {
                 return Err(DexError::new(payload * 2, "bad packed-switch payload"));
             }
-            let size = *insns.get(payload + 1).ok_or_else(|| DexError::new(payload * 2, "switch oob"))? as usize;
-            let first_key = i32::from(*insns.get(payload + 2).ok_or_else(|| DexError::new(payload * 2, "switch oob"))?)
-                | (i32::from(*insns.get(payload + 3).ok_or_else(|| DexError::new(payload * 2, "switch oob"))?) << 16);
+            let size = *insns
+                .get(payload + 1)
+                .ok_or_else(|| DexError::new(payload * 2, "switch oob"))?
+                as usize;
+            let first_key = i32::from(
+                *insns
+                    .get(payload + 2)
+                    .ok_or_else(|| DexError::new(payload * 2, "switch oob"))?,
+            ) | (i32::from(
+                *insns
+                    .get(payload + 3)
+                    .ok_or_else(|| DexError::new(payload * 2, "switch oob"))?,
+            ) << 16);
             let mut targets = Vec::with_capacity(size);
             for i in 0..size {
-                let t = i32::from(*insns.get(payload + 4 + i * 2).ok_or_else(|| DexError::new(payload * 2, "switch oob"))?)
-                    | (i32::from(*insns.get(payload + 5 + i * 2).ok_or_else(|| DexError::new(payload * 2, "switch oob"))?) << 16);
+                let t = i32::from(
+                    *insns
+                        .get(payload + 4 + i * 2)
+                        .ok_or_else(|| DexError::new(payload * 2, "switch oob"))?,
+                ) | (i32::from(
+                    *insns
+                        .get(payload + 5 + i * 2)
+                        .ok_or_else(|| DexError::new(payload * 2, "switch oob"))?,
+                ) << 16);
                 targets.push(tgt(t) as i32);
             }
-            Ok((Insn::PackedSwitch(a8, payload as u32, first_key, targets), pc + 3))
+            Ok((
+                Insn::PackedSwitch(a8, payload as u32, first_key, targets),
+                pc + 3,
+            ))
         }
         0x2c => {
             let off = i32::from(w1()?) | (i32::from(w2()?) << 16);
@@ -321,18 +358,38 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
             if insns.get(payload).copied() != Some(0x0200) {
                 return Err(DexError::new(payload * 2, "bad sparse-switch payload"));
             }
-            let size = *insns.get(payload + 1).ok_or_else(|| DexError::new(payload * 2, "switch oob"))? as usize;
+            let size = *insns
+                .get(payload + 1)
+                .ok_or_else(|| DexError::new(payload * 2, "switch oob"))?
+                as usize;
             let mut keys = Vec::with_capacity(size);
             let mut targets = Vec::with_capacity(size);
             for i in 0..size {
-                let k = i32::from(*insns.get(payload + 2 + i * 2).ok_or_else(|| DexError::new(payload * 2, "switch oob"))?)
-                    | (i32::from(*insns.get(payload + 3 + i * 2).ok_or_else(|| DexError::new(payload * 2, "switch oob"))?) << 16);
+                let k = i32::from(
+                    *insns
+                        .get(payload + 2 + i * 2)
+                        .ok_or_else(|| DexError::new(payload * 2, "switch oob"))?,
+                ) | (i32::from(
+                    *insns
+                        .get(payload + 3 + i * 2)
+                        .ok_or_else(|| DexError::new(payload * 2, "switch oob"))?,
+                ) << 16);
                 keys.push(k);
-                let t = i32::from(*insns.get(payload + 2 + (size + i) * 2).ok_or_else(|| DexError::new(payload * 2, "switch oob"))?)
-                    | (i32::from(*insns.get(payload + 3 + (size + i) * 2).ok_or_else(|| DexError::new(payload * 2, "switch oob"))?) << 16);
+                let t = i32::from(
+                    *insns
+                        .get(payload + 2 + (size + i) * 2)
+                        .ok_or_else(|| DexError::new(payload * 2, "switch oob"))?,
+                ) | (i32::from(
+                    *insns
+                        .get(payload + 3 + (size + i) * 2)
+                        .ok_or_else(|| DexError::new(payload * 2, "switch oob"))?,
+                ) << 16);
                 targets.push(tgt(t) as i32);
             }
-            Ok((Insn::SparseSwitch(a8, payload as u32, keys, targets), pc + 3))
+            Ok((
+                Insn::SparseSwitch(a8, payload as u32, keys, targets),
+                pc + 3,
+            ))
         }
         0x2d | 0x2e | 0x2f | 0x30 | 0x31 => {
             let cmp = match op {
@@ -342,7 +399,10 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
                 0x30 => CmpOp::CmpgDouble,
                 _ => CmpOp::CmpLong,
             };
-            Ok((Insn::Cmp(cmp, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2))
+            Ok((
+                Insn::Cmp(cmp, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8),
+                pc + 2,
+            ))
         }
         0x32 | 0x33 | 0x34 | 0x35 | 0x36 | 0x37 => {
             let ifop = match op {
@@ -367,20 +427,112 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
             Ok((Insn::IfZ(ifop, a8, tgt(i32::from(w1()? as i16))), pc + 2))
         }
         // aget/aput (23x: AA|op CC|BB)
-        0x44 => Ok((Insn::AGet(ArrayElem::Int, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x45 => Ok((Insn::AGet(ArrayElem::Wide, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x46 => Ok((Insn::AGet(ArrayElem::Obj, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x47 => Ok((Insn::AGet(ArrayElem::Bool, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x48 => Ok((Insn::AGet(ArrayElem::Byte, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x49 => Ok((Insn::AGet(ArrayElem::Char, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x4a => Ok((Insn::AGet(ArrayElem::Short, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x4b => Ok((Insn::APut(ArrayElem::Int, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x4c => Ok((Insn::APut(ArrayElem::Wide, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x4d => Ok((Insn::APut(ArrayElem::Obj, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x4e => Ok((Insn::APut(ArrayElem::Bool, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x4f => Ok((Insn::APut(ArrayElem::Byte, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x50 => Ok((Insn::APut(ArrayElem::Char, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
-        0x51 => Ok((Insn::APut(ArrayElem::Short, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2)),
+        0x44 => Ok((
+            Insn::AGet(ArrayElem::Int, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8),
+            pc + 2,
+        )),
+        0x45 => Ok((
+            Insn::AGet(
+                ArrayElem::Wide,
+                a8,
+                (w1()? & 0xff) as u8,
+                (w1()? >> 8) as u8,
+            ),
+            pc + 2,
+        )),
+        0x46 => Ok((
+            Insn::AGet(ArrayElem::Obj, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8),
+            pc + 2,
+        )),
+        0x47 => Ok((
+            Insn::AGet(
+                ArrayElem::Bool,
+                a8,
+                (w1()? & 0xff) as u8,
+                (w1()? >> 8) as u8,
+            ),
+            pc + 2,
+        )),
+        0x48 => Ok((
+            Insn::AGet(
+                ArrayElem::Byte,
+                a8,
+                (w1()? & 0xff) as u8,
+                (w1()? >> 8) as u8,
+            ),
+            pc + 2,
+        )),
+        0x49 => Ok((
+            Insn::AGet(
+                ArrayElem::Char,
+                a8,
+                (w1()? & 0xff) as u8,
+                (w1()? >> 8) as u8,
+            ),
+            pc + 2,
+        )),
+        0x4a => Ok((
+            Insn::AGet(
+                ArrayElem::Short,
+                a8,
+                (w1()? & 0xff) as u8,
+                (w1()? >> 8) as u8,
+            ),
+            pc + 2,
+        )),
+        0x4b => Ok((
+            Insn::APut(ArrayElem::Int, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8),
+            pc + 2,
+        )),
+        0x4c => Ok((
+            Insn::APut(
+                ArrayElem::Wide,
+                a8,
+                (w1()? & 0xff) as u8,
+                (w1()? >> 8) as u8,
+            ),
+            pc + 2,
+        )),
+        0x4d => Ok((
+            Insn::APut(ArrayElem::Obj, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8),
+            pc + 2,
+        )),
+        0x4e => Ok((
+            Insn::APut(
+                ArrayElem::Bool,
+                a8,
+                (w1()? & 0xff) as u8,
+                (w1()? >> 8) as u8,
+            ),
+            pc + 2,
+        )),
+        0x4f => Ok((
+            Insn::APut(
+                ArrayElem::Byte,
+                a8,
+                (w1()? & 0xff) as u8,
+                (w1()? >> 8) as u8,
+            ),
+            pc + 2,
+        )),
+        0x50 => Ok((
+            Insn::APut(
+                ArrayElem::Char,
+                a8,
+                (w1()? & 0xff) as u8,
+                (w1()? >> 8) as u8,
+            ),
+            pc + 2,
+        )),
+        0x51 => Ok((
+            Insn::APut(
+                ArrayElem::Short,
+                a8,
+                (w1()? & 0xff) as u8,
+                (w1()? >> 8) as u8,
+            ),
+            pc + 2,
+        )),
         // iget/iput (22c: A|B 4-bit each)
         0x52 => Ok((Insn::IGet(a4, b4, u32::from(w1()?)), pc + 2)),
         0x53 => Ok((Insn::IGetWide(a4, b4, u32::from(w1()?)), pc + 2)),
@@ -412,7 +564,12 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
             Ok((Insn::Invoke(kind, args, method_idx), pc + 3))
         }
         0x74..=0x78 => {
-            let args = Args { count: a8, regs: [0; 5], range: true, base: w2()? };
+            let args = Args {
+                count: a8,
+                regs: [0; 5],
+                range: true,
+                base: w2()?,
+            };
             let kind = match op {
                 0x74 => InvokeKind::Virtual,
                 0x75 => InvokeKind::Super,
@@ -459,7 +616,10 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
                 0x99 | 0xa4 => Binop::Shr,
                 _ => Binop::Ushr,
             };
-            Ok((Insn::Binop(binop, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8), pc + 2))
+            Ok((
+                Insn::Binop(binop, a8, (w1()? & 0xff) as u8, (w1()? >> 8) as u8),
+                pc + 2,
+            ))
         }
         // 2addr binops (12x): int 0xb0..0xba, long 0xbb..0xc5, float 0xc6..0xca, double 0xcb..0xcf
         0xb0..=0xcf => {
@@ -490,7 +650,10 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
                 0xd6 => LitOp::Bin(Binop::Or),
                 _ => LitOp::Bin(Binop::Xor),
             };
-            Ok((Insn::BinopLit(litop, a4, b4, i32::from(w1()? as i16)), pc + 2))
+            Ok((
+                Insn::BinopLit(litop, a4, b4, i32::from(w1()? as i16)),
+                pc + 2,
+            ))
         }
         // lit8 (22b): vAA = vAA op#BBBB, AA=bits 8-15, src=low byte of u1, literal=high byte of u1
         0xd8..=0xe2 => {
@@ -513,10 +676,12 @@ pub fn decode(insns: &[u16], pc: usize) -> Result<(Insn, usize), DexError> {
         0xfb | 0xfc => Err(DexError::new(pc * 2, "invoke-polymorphic not supported")),
         0xfd | 0xfe => Err(DexError::new(pc * 2, "invoke-custom not supported")),
         0xff => Ok((Insn::ConstMethodHandle(a8, u32::from(w1()?)), pc + 2)),
-        other => Err(DexError::new(pc * 2, format!("unknown opcode {other:#04x}"))),
+        other => Err(DexError::new(
+            pc * 2,
+            format!("unknown opcode {other:#04x}"),
+        )),
     }
 }
-
 
 fn w3(insns: &[u16], pc: usize) -> Result<u16, DexError> {
     insns
@@ -538,28 +703,51 @@ fn w4(insns: &[u16], pc: usize) -> Result<u16, DexError> {
 fn args_35c(word: u16, w1: u16, w2: u16) -> Result<(Args, u32), DexError> {
     let count = ((word >> 12) & 0x0f) as u8;
     let regs = [
-        (w2 & 0x0f) as u8,           // C: arg 0
-        ((w2 >> 4) & 0x0f) as u8,    // D: arg 1
-        ((w2 >> 8) & 0x0f) as u8,    // E: arg 2
-        ((w2 >> 12) & 0x0f) as u8,   // F: arg 3
-        ((word >> 8) & 0x0f) as u8,  // G: arg 4
+        (w2 & 0x0f) as u8,          // C: arg 0
+        ((w2 >> 4) & 0x0f) as u8,   // D: arg 1
+        ((w2 >> 8) & 0x0f) as u8,   // E: arg 2
+        ((w2 >> 12) & 0x0f) as u8,  // F: arg 3
+        ((word >> 8) & 0x0f) as u8, // G: arg 4
     ];
-    Ok((Args { count, regs, range: false, base: 0 }, u32::from(w1)))
+    Ok((
+        Args {
+            count,
+            regs,
+            range: false,
+            base: 0,
+        },
+        u32::from(w1),
+    ))
 }
 
 fn decode_fill_array_data(insns: &[u16], payload: usize) -> Result<FillArray, DexError> {
     if insns.get(payload).copied() != Some(0x0300) {
         return Err(DexError::new(payload * 2, "bad fill-array-data payload"));
     }
-    let width = *insns.get(payload + 1).ok_or_else(|| DexError::new(payload * 2, "fill-array oob"))? as usize;
-    let size = (u32::from(*insns.get(payload + 2).ok_or_else(|| DexError::new(payload * 2, "fill-array oob"))?)
-        | (u32::from(*insns.get(payload + 3).ok_or_else(|| DexError::new(payload * 2, "fill-array oob"))?) << 16)) as usize;
+    let width = *insns
+        .get(payload + 1)
+        .ok_or_else(|| DexError::new(payload * 2, "fill-array oob"))? as usize;
+    let size = (u32::from(
+        *insns
+            .get(payload + 2)
+            .ok_or_else(|| DexError::new(payload * 2, "fill-array oob"))?,
+    ) | (u32::from(
+        *insns
+            .get(payload + 3)
+            .ok_or_else(|| DexError::new(payload * 2, "fill-array oob"))?,
+    ) << 16)) as usize;
     let bytes = size * width;
     let start = payload + 4;
     let mut raw = Vec::with_capacity(bytes);
     for i in 0..bytes {
-        let w = insns.get(start + i / 2).ok_or_else(|| DexError::new((start + i / 2) * 2, "fill-array oob"))?;
-        let b = if i % 2 == 0 { (w & 0xff) as u8 } else { (w >> 8) as u8 };
+        let w = insns
+            .get(start + i / 2)
+            .ok_or_else(|| DexError::new((start + i / 2) * 2, "fill-array oob"))?;
+        let b = if i % 2 == 0 {
+            (w & 0xff) as u8
+        } else {
+            (w >> 8) as u8
+        };
         raw.push(b);
     }
     Ok(match width {
@@ -574,7 +762,12 @@ fn decode_fill_array_data(insns: &[u16], payload: usize) -> Result<FillArray, De
         4 => {
             let mut v = Vec::with_capacity(size);
             for i in 0..size {
-                v.push(u32::from_le_bytes([raw[i * 4], raw[i * 4 + 1], raw[i * 4 + 2], raw[i * 4 + 3]]));
+                v.push(u32::from_le_bytes([
+                    raw[i * 4],
+                    raw[i * 4 + 1],
+                    raw[i * 4 + 2],
+                    raw[i * 4 + 3],
+                ]));
             }
             FillArray::Int(v)
         }
@@ -582,13 +775,24 @@ fn decode_fill_array_data(insns: &[u16], payload: usize) -> Result<FillArray, De
             let mut v = Vec::with_capacity(size);
             for i in 0..size {
                 v.push(u64::from_le_bytes([
-                    raw[i * 8], raw[i * 8 + 1], raw[i * 8 + 2], raw[i * 8 + 3],
-                    raw[i * 8 + 4], raw[i * 8 + 5], raw[i * 8 + 6], raw[i * 8 + 7],
+                    raw[i * 8],
+                    raw[i * 8 + 1],
+                    raw[i * 8 + 2],
+                    raw[i * 8 + 3],
+                    raw[i * 8 + 4],
+                    raw[i * 8 + 5],
+                    raw[i * 8 + 6],
+                    raw[i * 8 + 7],
                 ]));
             }
             FillArray::Wide(v)
         }
-        other => return Err(DexError::new(payload * 2, format!("bad fill-array-data width {other}"))),
+        other => {
+            return Err(DexError::new(
+                payload * 2,
+                format!("bad fill-array-data width {other}"),
+            ))
+        }
     })
 }
 
@@ -667,11 +871,20 @@ mod tests {
 
     #[test]
     fn const_forms() {
-        assert_eq!(dec(&[0x12 | (0 << 8) | (0xf << 12)], 0), Insn::Const4(0, -1));
+        assert_eq!(
+            dec(&[0x12 | (0 << 8) | (0xf << 12)], 0),
+            Insn::Const4(0, -1)
+        );
         assert_eq!(dec(&[0x12 | (2 << 8) | (3 << 12)], 0), Insn::Const4(2, 3));
         assert_eq!(dec(&[0x13 | (3 << 8), 0x1234], 0), Insn::Const16(3, 0x1234));
-        assert_eq!(dec(&[0x14 | (1 << 8), 0x5678, 0x1234], 0), Insn::Const(1, 0x12345678));
-        assert_eq!(dec(&[0x15 | (4 << 8), 0x1234], 0), Insn::ConstHigh16(4, 0x12340000));
+        assert_eq!(
+            dec(&[0x14 | (1 << 8), 0x5678, 0x1234], 0),
+            Insn::Const(1, 0x12345678)
+        );
+        assert_eq!(
+            dec(&[0x15 | (4 << 8), 0x1234], 0),
+            Insn::ConstHigh16(4, 0x12340000)
+        );
         assert_eq!(
             dec(&[0x18, 0xdef0, 0x9abc, 0x5678, 0x1234], 0),
             Insn::ConstWide(0, 0x123456789abcdef0)
@@ -684,10 +897,19 @@ mod tests {
     fn branches() {
         assert_eq!(dec(&[0x28 | (3 << 8)], 0), Insn::Goto(3));
         assert_eq!(dec(&[0x28 | (0xfd << 8)], 0), Insn::Goto((-3i32) as u32));
-        assert_eq!(dec(&[0, 0, 0x29, 0xfff6], 2), Insn::Goto(2 + (-10i32) as u32));
-        assert_eq!(dec(&[0, 0, 0, 0, 0x38 | (1 << 8), 0x7f], 4), Insn::IfZ(IfOp::Ez, 1, 4 + 0x7f));
         assert_eq!(
-            dec(&[0, 0, 0, 0, 0, 0, 0, 0, 0x33 | (0 << 8) | (1 << 12), 0xfffc], 8),
+            dec(&[0, 0, 0x29, 0xfff6], 2),
+            Insn::Goto(2 + (-10i32) as u32)
+        );
+        assert_eq!(
+            dec(&[0, 0, 0, 0, 0x38 | (1 << 8), 0x7f], 4),
+            Insn::IfZ(IfOp::Ez, 1, 4 + 0x7f)
+        );
+        assert_eq!(
+            dec(
+                &[0, 0, 0, 0, 0, 0, 0, 0, 0x33 | (0 << 8) | (1 << 12), 0xfffc],
+                8
+            ),
             Insn::If(IfOp::Ne, 0, 1, 8u32.wrapping_add((-4i32) as u32))
         );
     }
@@ -702,23 +924,46 @@ mod tests {
             Insn::Invoke(
                 InvokeKind::Static,
                 0x1234,
-                Args { count: 2, regs: [1, 2, 0, 0, 0], range: false, base: 0 }
+                Args {
+                    count: 2,
+                    regs: [1, 2, 0, 0, 0],
+                    range: false,
+                    base: 0
+                }
             )
         );
         // invoke-virtual/range {v5..v8}, method#1
         assert_eq!(
             dec(&[0x74 | (4 << 8), 1, 5], 0),
-            Insn::Invoke(InvokeKind::Virtual, 1, Args { count: 4, regs: [0; 5], range: true, base: 5 })
+            Insn::Invoke(
+                InvokeKind::Virtual,
+                1,
+                Args {
+                    count: 4,
+                    regs: [0; 5],
+                    range: true,
+                    base: 5
+                }
+            )
         );
         // invoke-interface with 5 args: regs C=1,D=2,E=3,F=4,G=5
         // word0: A=5, G=5; word1: BBBB=0; word2: F=4,E=3,D=2,C=1
-        let insns = [0x72 | (5 << 12) | (5 << 8), 0, (4 << 12) | (3 << 8) | (2 << 4) | 1];
+        let insns = [
+            0x72 | (5 << 12) | (5 << 8),
+            0,
+            (4 << 12) | (3 << 8) | (2 << 4) | 1,
+        ];
         assert_eq!(
             dec(&insns, 0),
             Insn::Invoke(
                 InvokeKind::Interface,
                 0,
-                Args { count: 5, regs: [1, 2, 3, 4, 5], range: false, base: 0 }
+                Args {
+                    count: 5,
+                    regs: [1, 2, 3, 4, 5],
+                    range: false,
+                    base: 0
+                }
             )
         );
         // real akuma bytes: invoke-direct {v1, v0}, Lk;-><init>(I)V (method#138)
@@ -728,41 +973,82 @@ mod tests {
             Insn::Invoke(
                 InvokeKind::Direct,
                 138,
-                Args { count: 2, regs: [1, 0, 0, 0, 0], range: false, base: 0 }
+                Args {
+                    count: 2,
+                    regs: [1, 0, 0, 0, 0],
+                    range: false,
+                    base: 0
+                }
             )
         );
     }
 
     #[test]
     fn field_ops() {
-        assert_eq!(dec(&[0x52 | (0 << 8) | (1 << 12), 0x2a], 0), Insn::IGet(0, 1, 0x2a));
+        assert_eq!(
+            dec(&[0x52 | (0 << 8) | (1 << 12), 0x2a], 0),
+            Insn::IGet(0, 1, 0x2a)
+        );
         assert_eq!(dec(&[0x62 | (2 << 8), 0x100], 0), Insn::SGetObj(2, 0x100));
-        assert_eq!(dec(&[0x5a | (0 << 8) | (1 << 12), 7], 0), Insn::IPutWide(0, 1, 7));
+        assert_eq!(
+            dec(&[0x5a | (0 << 8) | (1 << 12), 7], 0),
+            Insn::IPutWide(0, 1, 7)
+        );
         assert_eq!(dec(&[0x61 | (3 << 8), 0x4], 0), Insn::SGetWide(3, 4));
     }
 
     #[test]
     fn arrays() {
-        assert_eq!(dec(&[0x23 | (0 << 8) | (1 << 12), 0x4], 0), Insn::NewArray(0, 1, 4));
-        assert_eq!(dec(&[0x44 | (0 << 8), (1 & 0xff) | (2 << 8)], 0), Insn::AGet(ArrayElem::Int, 0, 1, 2));
-        assert_eq!(dec(&[0x4d | (0 << 8), (1 & 0xff) | (2 << 8)], 0), Insn::APut(ArrayElem::Obj, 0, 1, 2));
+        assert_eq!(
+            dec(&[0x23 | (0 << 8) | (1 << 12), 0x4], 0),
+            Insn::NewArray(0, 1, 4)
+        );
+        assert_eq!(
+            dec(&[0x44 | (0 << 8), (1 & 0xff) | (2 << 8)], 0),
+            Insn::AGet(ArrayElem::Int, 0, 1, 2)
+        );
+        assert_eq!(
+            dec(&[0x4d | (0 << 8), (1 & 0xff) | (2 << 8)], 0),
+            Insn::APut(ArrayElem::Obj, 0, 1, 2)
+        );
     }
 
     #[test]
     fn arithmetic() {
         // add-int v0, v1, v2 (23x, int)
-        assert_eq!(dec(&[0x90 | (0 << 8), (1 & 0xff) | (2 << 8)], 0), Insn::Binop(Binop::Add, 0, 1, 2));
+        assert_eq!(
+            dec(&[0x90 | (0 << 8), (1 & 0xff) | (2 << 8)], 0),
+            Insn::Binop(Binop::Add, 0, 1, 2)
+        );
         // sub-double/2addr v3, v4
-        assert_eq!(dec(&[0xcc | (3 << 8) | (4 << 12)], 0), Insn::Binop(Binop::Sub, 3, 3, 4));
+        assert_eq!(
+            dec(&[0xcc | (3 << 8) | (4 << 12)], 0),
+            Insn::Binop(Binop::Sub, 3, 3, 4)
+        );
         // add-int/lit16 v0, v1, -1
-        assert_eq!(dec(&[0xd0 | (0 << 8) | (1 << 12), 0xffff], 0), Insn::BinopLit(LitOp::Bin(Binop::Add), 0, 1, -1));
-        assert_eq!(dec(&[0xd1 | (0 << 8) | (1 << 12), 5], 0), Insn::BinopLit(LitOp::Rsub, 0, 1, 5));
+        assert_eq!(
+            dec(&[0xd0 | (0 << 8) | (1 << 12), 0xffff], 0),
+            Insn::BinopLit(LitOp::Bin(Binop::Add), 0, 1, -1)
+        );
+        assert_eq!(
+            dec(&[0xd1 | (0 << 8) | (1 << 12), 5], 0),
+            Insn::BinopLit(LitOp::Rsub, 0, 1, 5)
+        );
         // shl-int/lit8 v0, v1, 2 (22b: dest bits 8-15, src low byte, lit high byte)
-        assert_eq!(dec(&[0xe0 | (0 << 8), (1 & 0xff) | (2 << 8)], 0), Insn::BinopLit(LitOp::Bin(Binop::Shl), 0, 1, 2));
+        assert_eq!(
+            dec(&[0xe0 | (0 << 8), (1 & 0xff) | (2 << 8)], 0),
+            Insn::BinopLit(LitOp::Bin(Binop::Shl), 0, 1, 2)
+        );
         // neg-int (12x unop)
-        assert_eq!(dec(&[0x7b | (0 << 8) | (1 << 12)], 0), Insn::Unop(Unop::NegInt, 0, 1));
+        assert_eq!(
+            dec(&[0x7b | (0 << 8) | (1 << 12)], 0),
+            Insn::Unop(Unop::NegInt, 0, 1)
+        );
         // int-to-long
-        assert_eq!(dec(&[0x81 | (0 << 8) | (1 << 12)], 0), Insn::Unop(Unop::IntToLong, 0, 1));
+        assert_eq!(
+            dec(&[0x81 | (0 << 8) | (1 << 12)], 0),
+            Insn::Unop(Unop::IntToLong, 0, 1)
+        );
         // quick opcodes (odex-only) are not supported
         let r = decode(&[0xe3, 0x12], 0);
         assert!(r.is_err());

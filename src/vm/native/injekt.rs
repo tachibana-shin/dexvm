@@ -30,8 +30,32 @@ pub(crate) fn injekt_full_type_get(vm: &mut Vm, _args: &[JValue]) -> R {
 // ---------------------------------------------------------------------------
 
 pub(crate) const INJEKT_TABLE: &[NativeEntry] = &[
-    ne!("Luy/kohesive/injekt/InjektKt;", "getInjekt", "()Luy/kohesive/injekt/api/InjektScope;", false, injekt_get_injekt),
-    ne!("Luy/kohesive/injekt/api/InjektFactory;", "getInstance", "(Ljava/lang/reflect/Type;)Ljava/lang/Object;", true, injekt_get_instance),
-    ne!("Luy/kohesive/injekt/api/FullTypeReference;", "<init>", "()V", true, injekt_full_type_init),
-    ne!("Luy/kohesive/injekt/api/FullTypeReference;", "getType", "()Ljava/lang/reflect/Type;", true, injekt_full_type_get),
+    ne!(
+        "Luy/kohesive/injekt/InjektKt;",
+        "getInjekt",
+        "()Luy/kohesive/injekt/api/InjektScope;",
+        false,
+        injekt_get_injekt
+    ),
+    ne!(
+        "Luy/kohesive/injekt/api/InjektFactory;",
+        "getInstance",
+        "(Ljava/lang/reflect/Type;)Ljava/lang/Object;",
+        true,
+        injekt_get_instance
+    ),
+    ne!(
+        "Luy/kohesive/injekt/api/FullTypeReference;",
+        "<init>",
+        "()V",
+        true,
+        injekt_full_type_init
+    ),
+    ne!(
+        "Luy/kohesive/injekt/api/FullTypeReference;",
+        "getType",
+        "()Ljava/lang/reflect/Type;",
+        true,
+        injekt_full_type_get
+    ),
 ];

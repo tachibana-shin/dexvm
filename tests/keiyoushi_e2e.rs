@@ -1,7 +1,7 @@
 //! End-to-end: run the bundled keiyoushi fixture extension through the typed
 //! bridge (`keiyoushi::Keiyoushi`).
 
-use dexvm::keiyoushi::{FilterKind, Keiyoushi, HttpResp};
+use dexvm::keiyoushi::{FilterKind, HttpResp, Keiyoushi};
 
 const APK: &str = "fixtures/tachiyomi-all.akuma-v1.4.10.apk";
 

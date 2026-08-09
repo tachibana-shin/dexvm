@@ -123,7 +123,8 @@ pub struct Vm {
     pub perms: crate::permission::Permissions,
     pub array_classes: HashMap<u32, u32>,
     #[cfg(feature = "tachiyomi")]
-    pub http: Option<std::rc::Rc<dyn Fn(&native::keiyoushi::HttpData) -> native::keiyoushi::HttpResp>>,
+    pub http:
+        Option<std::rc::Rc<dyn Fn(&native::keiyoushi::HttpData) -> native::keiyoushi::HttpResp>>,
     loading: Vec<usize>,
 }
 
@@ -262,7 +263,9 @@ impl Vm {
                 .strings
                 .iter()
                 .position(|s| s.as_ref() == desc)
-                .ok_or_else(|| JvmError::Resolution(format!("array descriptor not in dex: {desc}")))? as u32;
+                .ok_or_else(|| {
+                    JvmError::Resolution(format!("array descriptor not in dex: {desc}"))
+                })? as u32;
             let type_id = self
                 .dex
                 .types
@@ -377,7 +380,10 @@ impl Vm {
                     let m = vm.dex.methods[em.method_idx as usize].clone();
                     let name = vm.intern(&vm.dex.strings[m.name as usize].to_string());
                     let sig = vm.intern(&vm.proto_sig(m.proto));
-                    let ret_desc = vm.dex.type_descriptor(vm.dex.protos[m.proto as usize].return_type).to_string();
+                    let ret_desc = vm
+                        .dex
+                        .type_descriptor(vm.dex.protos[m.proto as usize].return_type)
+                        .to_string();
                     let ret = vm.intern(&ret_desc);
                     let arg_descs: Vec<String> = vm.dex.protos[m.proto as usize]
                         .params
@@ -420,20 +426,19 @@ impl Vm {
         Ok(id)
     }
 
-
-fn shim_or_native(&self, desc: &str) -> bool {
-    if class::SHIM_CLASSES.iter().any(|d| d.desc == desc) {
-        return true;
+    fn shim_or_native(&self, desc: &str) -> bool {
+        if class::SHIM_CLASSES.iter().any(|d| d.desc == desc) {
+            return true;
+        }
+        if self.host_natives.iter().any(|e| e.class == desc) {
+            return true;
+        }
+        crate::vm::native::native_tables()
+            .into_iter()
+            .flatten()
+            .chain(crate::vm::native::global_native_entries())
+            .any(|e| e.class == desc)
     }
-    if self.host_natives.iter().any(|e| e.class == desc) {
-        return true;
-    }
-    crate::vm::native::native_tables()
-        .into_iter()
-        .flatten()
-        .chain(crate::vm::native::global_native_entries())
-        .any(|e| e.class == desc)
-}
 
     fn load_shim_class(&mut self, desc_id: u32) -> Result<u32, JvmError> {
         let desc = self.str_of(desc_id).to_string();
@@ -472,8 +477,11 @@ fn shim_or_native(&self, desc: &str) -> bool {
         // methods from the native table (statics + host-registered APIs)
         let mut methods: Vec<Method> = Vec::new();
         let mut dispatch: HashMap<(u32, u32), u32> = HashMap::new();
-        let mut shim_natives: Vec<&NativeEntry> =
-            native::native_tables().into_iter().flatten().chain(native::global_native_entries()).collect();
+        let mut shim_natives: Vec<&NativeEntry> = native::native_tables()
+            .into_iter()
+            .flatten()
+            .chain(native::global_native_entries())
+            .collect();
         let host = self.host_natives.clone();
         shim_natives.extend(host.iter());
         for ne in shim_natives.into_iter().filter(|ne| ne.class == desc) {
@@ -566,7 +574,11 @@ fn shim_or_native(&self, desc: &str) -> bool {
         let name = self.intern(&self.dex.strings[f.name as usize].to_string());
         let ty = self.intern(&self.dex.type_descriptor(f.ty).to_string());
         let class_desc = self.intern(&self.dex.type_descriptor(f.class).to_string());
-        let fr = FieldRef { name, ty, class_desc };
+        let fr = FieldRef {
+            name,
+            ty,
+            class_desc,
+        };
         self.field_refs.insert(field_idx, fr);
         Ok(fr)
     }
@@ -610,7 +622,10 @@ fn shim_or_native(&self, desc: &str) -> bool {
     fn static_field_owner(&mut self, start: u32, fr: FieldRef) -> Result<(u32, u32), JvmError> {
         let mut c = Some(start);
         while let Some(cc) = c {
-            if let Some(&(owner, off)) = self.classes[cc as usize].static_fields.get(&(fr.name, fr.ty)) {
+            if let Some(&(owner, off)) = self.classes[cc as usize]
+                .static_fields
+                .get(&(fr.name, fr.ty))
+            {
                 return Ok((owner, off));
             }
             c = self.classes[cc as usize].superclass;
@@ -720,7 +735,12 @@ fn shim_or_native(&self, desc: &str) -> bool {
 
     // ---- invocation helpers (used by natives) ----
 
-    pub fn invoke_virtual(&mut self, receiver: JValue, name: &str, sig: &str) -> Result<JValue, JvmError> {
+    pub fn invoke_virtual(
+        &mut self,
+        receiver: JValue,
+        name: &str,
+        sig: &str,
+    ) -> Result<JValue, JvmError> {
         let mref = MethodRef {
             name: self.intern(name),
             sig: self.intern(sig),
@@ -738,7 +758,13 @@ fn shim_or_native(&self, desc: &str) -> bool {
         self.call_target(target, args)
     }
 
-    pub fn invoke_static(&mut self, class_desc: &str, name: &str, sig: &str, args: Vec<JValue>) -> Result<JValue, JvmError> {
+    pub fn invoke_static(
+        &mut self,
+        class_desc: &str,
+        name: &str,
+        sig: &str,
+        args: Vec<JValue>,
+    ) -> Result<JValue, JvmError> {
         let mref = MethodRef {
             name: self.intern(name),
             sig: self.intern(sig),
@@ -790,10 +816,14 @@ fn shim_or_native(&self, desc: &str) -> bool {
             };
             if has {
                 let cid = self.ensure_class_by_desc(&type_str)?;
-                return Ok(self.str_of(self.classes[cid as usize].descriptor).to_string());
+                return Ok(self
+                    .str_of(self.classes[cid as usize].descriptor)
+                    .to_string());
             }
         }
-        Err(JvmError::Resolution(format!("no class with method {name} in dex")))
+        Err(JvmError::Resolution(format!(
+            "no class with method {name} in dex"
+        )))
     }
 
     /// Legacy (pre-factory) extension shape: a class that *is* the source and
@@ -813,11 +843,17 @@ fn shim_or_native(&self, desc: &str) -> bool {
             }
             let mut sup = cd.superclass_idx;
             for _ in 0..4 {
-                let Some(&s) = self.dex.types.get(sup as usize) else { break };
-                let Some(sup_str) = self.dex.strings.get(s as usize) else { break };
+                let Some(&s) = self.dex.types.get(sup as usize) else {
+                    break;
+                };
+                let Some(sup_str) = self.dex.strings.get(s as usize) else {
+                    break;
+                };
                 if sup_str.as_ref() == TARGET {
                     let cid = self.ensure_class_by_desc(&type_str)?;
-                    return Ok(self.str_of(self.classes[cid as usize].descriptor).to_string());
+                    return Ok(self
+                        .str_of(self.classes[cid as usize].descriptor)
+                        .to_string());
                 }
                 let Some(next) = self
                     .dex
@@ -898,7 +934,10 @@ fn shim_or_native(&self, desc: &str) -> bool {
             .ok_or_else(|| JvmError::Resolution(format!("bad method idx {method_idx}")))?;
         let name = self.intern(&self.dex.strings[m.name as usize].to_string());
         let sig = self.intern(&self.proto_sig(m.proto));
-        let ret_desc = self.dex.type_descriptor(self.dex.protos[m.proto as usize].return_type).to_string();
+        let ret_desc = self
+            .dex
+            .type_descriptor(self.dex.protos[m.proto as usize].return_type)
+            .to_string();
         let ret = self.intern(&ret_desc);
         let arg_descs: Vec<String> = self.dex.protos[m.proto as usize]
             .params
@@ -907,7 +946,13 @@ fn shim_or_native(&self, desc: &str) -> bool {
             .collect();
         let args: Vec<u32> = arg_descs.iter().map(|d| self.intern(d)).collect();
         let class_desc = self.intern(&self.dex.type_descriptor(m.class).to_string());
-        let mr = MethodRef { name, sig, ret, args, class_desc };
+        let mr = MethodRef {
+            name,
+            sig,
+            ret,
+            args,
+            class_desc,
+        };
         self.method_refs.insert(method_idx, mr.clone());
         Ok(mr)
     }
@@ -927,7 +972,9 @@ fn shim_or_native(&self, desc: &str) -> bool {
                 .and_then(|o| self.arena.objects.get(o as usize))
                 .map(|o| o.class)
                 .ok_or_else(|| JvmError::Resolution("null receiver for virtual call".into()))?,
-            InvokeKind::Static | InvokeKind::Direct => self.ensure_class_by_desc_id(mref.class_desc)?,
+            InvokeKind::Static | InvokeKind::Direct => {
+                self.ensure_class_by_desc_id(mref.class_desc)?
+            }
             InvokeKind::Super => {
                 let c = self.ensure_class_by_desc_id(mref.class_desc)?;
                 self.classes[c as usize]
@@ -937,11 +984,12 @@ fn shim_or_native(&self, desc: &str) -> bool {
         };
         let c0 = c;
         let mut slot: Option<(u32, u32)> = None;
-while slot.is_none() {
+        while slot.is_none() {
             let found = {
-                let class = self.classes.get(c as usize).ok_or_else(|| {
-                    JvmError::Resolution(format!("missing class id {c}"))
-                })?;
+                let class = self
+                    .classes
+                    .get(c as usize)
+                    .ok_or_else(|| JvmError::Resolution(format!("missing class id {c}")))?;
                 class.dispatch.get(&key).copied()
             };
             if let Some(s) = found {
@@ -986,7 +1034,9 @@ while slot.is_none() {
                 Some(match m.insns.get() {
                     Some(d) => d.clone(),
                     None => {
-                        let d = Arc::new(crate::dex::insn::decode_all(&code.insns).map_err(JvmError::from)?);
+                        let d = Arc::new(
+                            crate::dex::insn::decode_all(&code.insns).map_err(JvmError::from)?,
+                        );
                         m.insns.set(d.clone()).expect("decode race");
                         d
                     }
@@ -1052,9 +1102,11 @@ while slot.is_none() {
         if let Some(&id) = self.runtime_strings.get(s) {
             return JValue::Obj(id);
         }
-        let id = self
-            .arena
-            .alloc(self.hot.string, Vec::new(), Some(Native::Str(s.to_string())));
+        let id = self.arena.alloc(
+            self.hot.string,
+            Vec::new(),
+            Some(Native::Str(s.to_string())),
+        );
         self.runtime_strings.insert(s.to_string(), id);
         JValue::Obj(id)
     }
@@ -1068,9 +1120,11 @@ while slot.is_none() {
             .strings
             .get(string_id as usize)
             .ok_or_else(|| JvmError::Resolution(format!("bad string idx {string_id}")))?;
-        let o = self
-            .arena
-            .alloc(self.hot.string, Vec::new(), Some(Native::Str(s.to_string())));
+        let o = self.arena.alloc(
+            self.hot.string,
+            Vec::new(),
+            Some(Native::Str(s.to_string())),
+        );
         while self.string_objs.len() <= string_id as usize {
             self.string_objs.push(None);
         }
@@ -1092,9 +1146,17 @@ while slot.is_none() {
     // ---- throwables ----
 
     pub fn throwable_of(&mut self, class_desc: &str, message: impl Into<String>) -> u32 {
-        let class = self.ensure_class_by_desc(class_desc).expect("shim throwable");
-        self.arena
-            .alloc(class, Vec::new(), Some(Native::Throwable { message: Some(message.into()), cause: JValue::Null }))
+        let class = self
+            .ensure_class_by_desc(class_desc)
+            .expect("shim throwable");
+        self.arena.alloc(
+            class,
+            Vec::new(),
+            Some(Native::Throwable {
+                message: Some(message.into()),
+                cause: JValue::Null,
+            }),
+        )
     }
 
     pub fn err_npe(&mut self) -> u32 {
@@ -1113,7 +1175,10 @@ while slot.is_none() {
         )
     }
     pub fn err_ioobe(&mut self, idx: i32) -> u32 {
-        self.throwable_of("Ljava/lang/IndexOutOfBoundsException;", format!("Index {idx}"))
+        self.throwable_of(
+            "Ljava/lang/IndexOutOfBoundsException;",
+            format!("Index {idx}"),
+        )
     }
     pub fn err_cce(&mut self, msg: impl Into<String>) -> u32 {
         self.throwable_of("Ljava/lang/ClassCastException;", msg)
@@ -1241,7 +1306,11 @@ while slot.is_none() {
     /// `invoke-static`/`invoke-virtual`. The class is loaded on demand with
     /// this native as its only method.
     pub fn register_native(&mut self, e: NativeEntry) -> Result<(), JvmError> {
-        let (class, name, sig) = (self.intern(e.class), self.intern(e.name), self.intern(e.sig));
+        let (class, name, sig) = (
+            self.intern(e.class),
+            self.intern(e.name),
+            self.intern(e.sig),
+        );
         let key = (class, name, sig);
         self.natives.insert(key, e.f);
         let already = self.class_by_desc.contains_key(&class);
@@ -1267,7 +1336,9 @@ while slot.is_none() {
                 code: None,
                 insns: OnceLock::new(),
             });
-            self.classes[cid as usize].dispatch.insert((name, sig), slot);
+            self.classes[cid as usize]
+                .dispatch
+                .insert((name, sig), slot);
         }
         Ok(())
     }
@@ -1524,7 +1595,8 @@ mod tests {
             .iter()
             .position(|m| vm.str_of(m.name) == "f")
             .expect("method f") as u32;
-        let r = interpret::run(&mut vm, cid, f_slot, vec![JValue::Int(2), JValue::Int(3)]).expect("run f");
+        let r = interpret::run(&mut vm, cid, f_slot, vec![JValue::Int(2), JValue::Int(3)])
+            .expect("run f");
         assert_eq!(r, JValue::Int(5));
         let g_slot = vm.classes[cid as usize]
             .methods

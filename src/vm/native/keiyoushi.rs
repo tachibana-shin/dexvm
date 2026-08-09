@@ -8,7 +8,6 @@
 use super::*;
 use std::rc::Rc;
 
-
 pub(crate) const SMANGA: &str = "Leu/kanade/tachiyomi/source/model/SManga;";
 pub(crate) const SCHAPTER: &str = "Leu/kanade/tachiyomi/source/model/SChapter;";
 pub(crate) const PAGE: &str = "Leu/kanade/tachiyomi/source/model/Page;";
@@ -402,14 +401,18 @@ pub(crate) fn smanga_set_status(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn smanga_get_update_strategy(vm: &mut Vm, args: &[JValue]) -> R {
     match payload(vm, args[0]) {
-        Some(Native::SManga { update_strategy, .. }) => Ok(*update_strategy),
+        Some(Native::SManga {
+            update_strategy, ..
+        }) => Ok(*update_strategy),
         _ => Err(npe(vm)),
     }
 }
 
 pub(crate) fn smanga_set_update_strategy(vm: &mut Vm, args: &[JValue]) -> R {
     match payload_mut(vm, args[0]) {
-        Some(Native::SManga { update_strategy, .. }) => *update_strategy = args[1],
+        Some(Native::SManga {
+            update_strategy, ..
+        }) => *update_strategy = args[1],
         _ => return Err(npe(vm)),
     }
     Ok(JValue::Null)
@@ -575,7 +578,10 @@ pub(crate) fn mangas_page_init(vm: &mut Vm, args: &[JValue]) -> R {
         return Err(npe(vm));
     };
     match n {
-        Native::SMangasPage { mangas: dst, has_next: dst_next } => {
+        Native::SMangasPage {
+            mangas: dst,
+            has_next: dst_next,
+        } => {
             *dst = mangas;
             *dst_next = has_next;
         }
@@ -736,8 +742,24 @@ fn set_filter_payload(vm: &mut Vm, v: JValue, f: Native) -> R {
         return Err(npe(vm));
     };
     match (n, f) {
-        (Native::SFilter { name, state, is_checked, children, options, text_value },
-         Native::SFilter { name: n2, state: st2, is_checked: ic2, children: ch2, options: op2, text_value: tv2 }) => {
+        (
+            Native::SFilter {
+                name,
+                state,
+                is_checked,
+                children,
+                options,
+                text_value,
+            },
+            Native::SFilter {
+                name: n2,
+                state: st2,
+                is_checked: ic2,
+                children: ch2,
+                options: op2,
+                text_value: tv2,
+            },
+        ) => {
             *name = n2;
             *state = st2;
             *is_checked = ic2;
@@ -808,7 +830,9 @@ pub(crate) fn filter_group_state_obj(vm: &mut Vm, args: &[JValue]) -> R {
     };
     for c in &children {
         match payload(vm, *c) {
-            Some(Native::SFilter { state, is_checked, .. }) => {
+            Some(Native::SFilter {
+                state, is_checked, ..
+            }) => {
                 if *state != 0 || *is_checked {
                     return Ok(*c);
                 }
@@ -857,13 +881,16 @@ pub(crate) fn requests_kt_get_default(vm: &mut Vm, args: &[JValue]) -> R {
     )
 }
 
-
 // ---------------------------------------------------------------------------
 // eu.kanade network helpers (from OkHttp shim)
 // ---------------------------------------------------------------------------
 
 pub(crate) fn http_source_get_network(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(vm, "Leu/kanade/tachiyomi/network/NetworkHelper;", Native::Opaque)
+    alloc(
+        vm,
+        "Leu/kanade/tachiyomi/network/NetworkHelper;",
+        Native::Opaque,
+    )
 }
 
 pub(crate) fn network_helper_get_client(vm: &mut Vm, _args: &[JValue]) -> R {
@@ -878,7 +905,12 @@ pub(crate) fn requests_kt_post_default(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(
         vm,
         "Lokhttp3/Request;",
-        Native::Request { url, method: "POST".into(), headers: Vec::new(), body: Some(body) },
+        Native::Request {
+            url,
+            method: "POST".into(),
+            headers: Vec::new(),
+            body: Some(body),
+        },
     )
 }
 

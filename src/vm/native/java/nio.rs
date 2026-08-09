@@ -4,7 +4,10 @@ pub(crate) fn lazy_charset(vm: &mut Vm, name: &str) -> JValue {
     let class = vm
         .ensure_class_by_desc("Ljava/nio/charset/Charset;")
         .expect("Charset shim");
-    JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(Native::Str(name.to_string()))))
+    JValue::Obj(
+        vm.arena
+            .alloc(class, Vec::new(), Some(Native::Str(name.to_string()))),
+    )
 }
 
 pub fn lazy_charset_utf8(vm: &mut Vm) -> JValue {
@@ -17,7 +20,6 @@ pub fn lazy_charset_ascii(vm: &mut Vm) -> JValue {
     lazy_charset(vm, "US-ASCII")
 }
 // java.nio.charset.Charset host shims.
-
 
 // java.nio.charset.Charset
 // ---------------------------------------------------------------------------
@@ -73,15 +75,62 @@ pub(crate) fn charset_is_supported(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(i32::from(normalize_charset(&name).is_some())))
 }
 
-
 /// Native methods for Ljava/nio/charset/Charset;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/nio/charset/Charset;", "forName", "(Ljava/lang/String;)Ljava/nio/charset/Charset;", false, charset_for_name),
-    ne!("Ljava/nio/charset/Charset;", "name", "()Ljava/lang/String;", true, charset_name),
-    ne!("Ljava/nio/charset/Charset;", "toString", "()Ljava/lang/String;", true, charset_name),
-    ne!("Ljava/nio/charset/Charset;", "displayName", "()Ljava/lang/String;", true, charset_name),
-    ne!("Ljava/nio/charset/Charset;", "displayName", "(Ljava/util/Locale;)Ljava/lang/String;", true, charset_name),
-    ne!("Ljava/nio/charset/Charset;", "canEncode", "()Z", true, charset_can_encode),
-    ne!("Ljava/nio/charset/Charset;", "defaultCharset", "()Ljava/nio/charset/Charset;", false, charset_default_charset),
-    ne!("Ljava/nio/charset/Charset;", "isSupported", "(Ljava/lang/String;)Z", false, charset_is_supported),
+    ne!(
+        "Ljava/nio/charset/Charset;",
+        "forName",
+        "(Ljava/lang/String;)Ljava/nio/charset/Charset;",
+        false,
+        charset_for_name
+    ),
+    ne!(
+        "Ljava/nio/charset/Charset;",
+        "name",
+        "()Ljava/lang/String;",
+        true,
+        charset_name
+    ),
+    ne!(
+        "Ljava/nio/charset/Charset;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        charset_name
+    ),
+    ne!(
+        "Ljava/nio/charset/Charset;",
+        "displayName",
+        "()Ljava/lang/String;",
+        true,
+        charset_name
+    ),
+    ne!(
+        "Ljava/nio/charset/Charset;",
+        "displayName",
+        "(Ljava/util/Locale;)Ljava/lang/String;",
+        true,
+        charset_name
+    ),
+    ne!(
+        "Ljava/nio/charset/Charset;",
+        "canEncode",
+        "()Z",
+        true,
+        charset_can_encode
+    ),
+    ne!(
+        "Ljava/nio/charset/Charset;",
+        "defaultCharset",
+        "()Ljava/nio/charset/Charset;",
+        false,
+        charset_default_charset
+    ),
+    ne!(
+        "Ljava/nio/charset/Charset;",
+        "isSupported",
+        "(Ljava/lang/String;)Z",
+        false,
+        charset_is_supported
+    ),
 ];

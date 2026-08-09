@@ -146,17 +146,70 @@ pub(crate) fn random_set_seed(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
-
 /// Native methods for Ljava/util/Random;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/util/Random;", "<init>", "()V", true, random_init),
-    ne!("Ljava/util/Random;", "<init>", "(J)V", true, random_init_seed),
-    ne!("Ljava/util/Random;", "nextInt", "()I", true, random_next_int),
-    ne!("Ljava/util/Random;", "nextInt", "(I)I", true, random_next_int_bound),
-    ne!("Ljava/util/Random;", "nextLong", "()J", true, random_next_long),
-    ne!("Ljava/util/Random;", "nextDouble", "()D", true, random_next_double),
-    ne!("Ljava/util/Random;", "nextFloat", "()F", true, random_next_float),
-    ne!("Ljava/util/Random;", "nextBoolean", "()Z", true, random_next_boolean),
-    ne!("Ljava/util/Random;", "nextBytes", "([B)V", true, random_next_bytes),
-    ne!("Ljava/util/Random;", "setSeed", "(J)V", true, random_set_seed),
+    ne!(
+        "Ljava/util/Random;",
+        "<init>",
+        "(J)V",
+        true,
+        random_init_seed
+    ),
+    ne!(
+        "Ljava/util/Random;",
+        "nextInt",
+        "()I",
+        true,
+        random_next_int
+    ),
+    ne!(
+        "Ljava/util/Random;",
+        "nextInt",
+        "(I)I",
+        true,
+        random_next_int_bound
+    ),
+    ne!(
+        "Ljava/util/Random;",
+        "nextLong",
+        "()J",
+        true,
+        random_next_long
+    ),
+    ne!(
+        "Ljava/util/Random;",
+        "nextDouble",
+        "()D",
+        true,
+        random_next_double
+    ),
+    ne!(
+        "Ljava/util/Random;",
+        "nextFloat",
+        "()F",
+        true,
+        random_next_float
+    ),
+    ne!(
+        "Ljava/util/Random;",
+        "nextBoolean",
+        "()Z",
+        true,
+        random_next_boolean
+    ),
+    ne!(
+        "Ljava/util/Random;",
+        "nextBytes",
+        "([B)V",
+        true,
+        random_next_bytes
+    ),
+    ne!(
+        "Ljava/util/Random;",
+        "setSeed",
+        "(J)V",
+        true,
+        random_set_seed
+    ),
 ];

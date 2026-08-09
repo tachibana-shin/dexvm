@@ -6,6 +6,7 @@ description = "Minimal DEX (Dalvik bytecode) VM runtime in Rust, embeddable as a
 keywords = ["dex", "dalvik", "android", "vm", "mihon"]
 categories = ["embedded", "virtualization", "parser-implementations"]
 readme = "README.md"
+license = "Apache-2.0"
 
 [features]
 default = ["java", "kotlin", "injekt", "jsoup", "android", "okhttp", "tachiyomi"]

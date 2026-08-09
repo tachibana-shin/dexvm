@@ -3,11 +3,11 @@
 //!
 //! Run with: `cargo run --example host_native`
 
+use dexvm::vm::native::NatErr;
 use dexvm::vm::native::{register_global, NativeEntry};
 use dexvm::vm::value::JValue;
 use dexvm::vm::Vm;
 use dexvm::{Context, SandboxOptions};
-use dexvm::vm::native::NatErr;
 
 /// A native that echoes a string back ("host: <input>").
 fn echo(vm: &mut Vm, args: &[JValue]) -> Result<JValue, NatErr> {

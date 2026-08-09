@@ -113,99 +113,311 @@ macro_rules! sdef {
 /// Host-provided classes not present in extension dex files.
 pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!("Ljava/lang/Object;", None, &[], 0),
-    shim!("Ljava/io/Serializable;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/lang/Cloneable;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/lang/Comparable;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/lang/CharSequence;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/lang/Iterable;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Ljava/io/Serializable;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/lang/Cloneable;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/lang/Comparable;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/lang/CharSequence;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/lang/Iterable;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     // mihon extension host API (keiyoushi/Tachiyomi extension entry points)
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/SourceFactory;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Leu/kanade/tachiyomi/source/SourceFactory;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/Source;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Leu/kanade/tachiyomi/source/Source;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/ConfigurableSource;", Some("Leu/kanade/tachiyomi/source/Source;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Leu/kanade/tachiyomi/source/ConfigurableSource;",
+        Some("Leu/kanade/tachiyomi/source/Source;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/online/HttpSource;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/online/HttpSource;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     // mihon extension network API (eu.kanade.tachiyomi.network.*)
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/network/NetworkHelper;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/network/NetworkHelper;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     // mihon source model classes (eu.kanade.tachiyomi.source.model.*)
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/SManga;", Some("Ljava/lang/Object;"), &[], 0, [
-        sdef!("Companion", "Leu/kanade/tachiyomi/source/model/SManga$Companion;", ShimValue::Lazy(native::lazy_smanga_companion)),
-    ]),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/SManga;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "Companion",
+            "Leu/kanade/tachiyomi/source/model/SManga$Companion;",
+            ShimValue::Lazy(native::lazy_smanga_companion)
+        ),]
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/SManga$Companion;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/SManga$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/SChapter;", Some("Ljava/lang/Object;"), &[], 0, [
-        sdef!("Companion", "Leu/kanade/tachiyomi/source/model/SChapter$Companion;", ShimValue::Lazy(native::lazy_schapter_companion)),
-    ]),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/SChapter;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "Companion",
+            "Leu/kanade/tachiyomi/source/model/SChapter$Companion;",
+            ShimValue::Lazy(native::lazy_schapter_companion)
+        ),]
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/SChapter$Companion;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/SChapter$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/Page;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/Page;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/MangasPage;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/MangasPage;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/FilterList;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/FilterList;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/Filter;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/Filter;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/Filter$Header;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/Filter$Header;",
+        Some("Leu/kanade/tachiyomi/source/model/Filter;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/Filter$Separator;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/Filter$Separator;",
+        Some("Leu/kanade/tachiyomi/source/model/Filter;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/Filter$Select;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/Filter$Select;",
+        Some("Leu/kanade/tachiyomi/source/model/Filter;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/Filter$CheckBox;",
+        Some("Leu/kanade/tachiyomi/source/model/Filter;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/Filter$Sort;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/Filter$Sort;",
+        Some("Leu/kanade/tachiyomi/source/model/Filter;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/Filter$Text;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/Filter$Text;",
+        Some("Leu/kanade/tachiyomi/source/model/Filter;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/Filter$TriState;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/Filter$TriState;",
+        Some("Leu/kanade/tachiyomi/source/model/Filter;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/Filter$Group;", Some("Leu/kanade/tachiyomi/source/model/Filter;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/Filter$Group;",
+        Some("Leu/kanade/tachiyomi/source/model/Filter;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "tachiyomi")]
-    shim!("Leu/kanade/tachiyomi/source/model/UpdateStrategy;", Some("Ljava/lang/Enum;"), &[], 0, [
-        sdef!("ONLY_FETCH_ONCE", "Leu/kanade/tachiyomi/source/model/UpdateStrategy;", ShimValue::Lazy(native::lazy_update_strategy_once)),
-    ]),
+    shim!(
+        "Leu/kanade/tachiyomi/source/model/UpdateStrategy;",
+        Some("Ljava/lang/Enum;"),
+        &[],
+        0,
+        [sdef!(
+            "ONLY_FETCH_ONCE",
+            "Leu/kanade/tachiyomi/source/model/UpdateStrategy;",
+            ShimValue::Lazy(native::lazy_update_strategy_once)
+        ),]
+    ),
     // org.jsoup host shims (parsed via dom_query)
     #[cfg(feature = "jsoup")]
-    shim!("Leu/kanade/tachiyomi/util/JsoupExtensionsKt;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/util/JsoupExtensionsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     // Kotlin stdlib host shims (default-arg synthetic methods)
     #[cfg(feature = "kotlin")]
-    shim!("Lkotlin/text/StringsKt;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lkotlin/text/StringsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "jsoup")]
     shim!("Lorg/jsoup/Jsoup;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "jsoup")]
-    shim!("Lorg/jsoup/nodes/Document;", Some("Lorg/jsoup/nodes/Element;"), &[], 0),
+    shim!(
+        "Lorg/jsoup/nodes/Document;",
+        Some("Lorg/jsoup/nodes/Element;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "jsoup")]
-    shim!("Lorg/jsoup/nodes/Element;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lorg/jsoup/nodes/Element;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "jsoup")]
-    shim!("Lorg/jsoup/select/Elements;", Some("Ljava/util/AbstractCollection;"), &[], 0),
+    shim!(
+        "Lorg/jsoup/select/Elements;",
+        Some("Ljava/util/AbstractCollection;"),
+        &[],
+        0
+    ),
     // okhttp host shims
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/Interceptor;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Lokhttp3/Interceptor;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/Interceptor$Chain;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Lokhttp3/Interceptor$Chain;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/OkHttpClient;", Some("Ljava/lang/Object;"), &["Ljava/io/Closeable;", "Ljava/lang/Cloneable;"], 0),
+    shim!(
+        "Lokhttp3/OkHttpClient;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Closeable;", "Ljava/lang/Cloneable;"],
+        0
+    ),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/OkHttpClient$Builder;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lokhttp3/OkHttpClient$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/FormBody;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/FormBody$Builder;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lokhttp3/FormBody$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/HttpUrl;", Some("Ljava/lang/Object;"), &[], 0, [
-        sdef!("Companion", "Lokhttp3/HttpUrl$Companion;", ShimValue::Lazy(native::lazy_http_url_companion)),
-    ]),
+    shim!(
+        "Lokhttp3/HttpUrl;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "Companion",
+            "Lokhttp3/HttpUrl$Companion;",
+            ShimValue::Lazy(native::lazy_http_url_companion)
+        ),]
+    ),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/HttpUrl$Companion;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lokhttp3/HttpUrl$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/HttpUrl$Builder;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lokhttp3/HttpUrl$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Headers;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
@@ -213,7 +425,12 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/CacheControl;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/Request$Builder;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lokhttp3/Request$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Request;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
@@ -223,220 +440,1022 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/ResponseBody;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
-    shim!("Leu/kanade/tachiyomi/network/RequestsKt;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Leu/kanade/tachiyomi/network/RequestsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     // android framework shims
     #[cfg(feature = "android")]
-    shim!("Landroid/content/Context;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Landroid/content/Context;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     #[cfg(feature = "android")]
-    shim!("Landroid/content/ContextWrapper;", Some("Landroid/content/Context;"), &[], 0),
+    shim!(
+        "Landroid/content/ContextWrapper;",
+        Some("Landroid/content/Context;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "android")]
-    shim!("Landroid/app/Activity;", Some("Landroid/content/ContextWrapper;"), &[], 0),
+    shim!(
+        "Landroid/app/Activity;",
+        Some("Landroid/content/ContextWrapper;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "android")]
-    shim!("Landroid/app/Application;", Some("Landroid/content/ContextWrapper;"), &[], 0),
+    shim!(
+        "Landroid/app/Application;",
+        Some("Landroid/content/ContextWrapper;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "android")]
-    shim!("Landroid/content/ActivityNotFoundException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
+    shim!(
+        "Landroid/content/ActivityNotFoundException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "android")]
-    shim!("Landroid/content/Intent;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Landroid/content/Intent;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "android")]
-    shim!("Landroid/content/SharedPreferences;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Landroid/content/SharedPreferences;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     #[cfg(feature = "android")]
     shim!("Landroid/net/Uri;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "android")]
     shim!("Landroid/os/Bundle;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "android")]
-    shim!("Landroid/os/SystemClock;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Landroid/os/SystemClock;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "android")]
     shim!("Landroid/util/Log;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "android")]
-    shim!("Landroid/webkit/CookieManager;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Landroid/webkit/CookieManager;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "android")]
-    shim!("Landroidx/preference/Preference;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Landroidx/preference/Preference;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "android")]
-    shim!("Landroidx/preference/PreferenceScreen;", Some("Landroidx/preference/Preference;"), &[], 0),
+    shim!(
+        "Landroidx/preference/PreferenceScreen;",
+        Some("Landroidx/preference/Preference;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "android")]
-    shim!("Landroidx/preference/SwitchPreferenceCompat;", Some("Landroidx/preference/Preference;"), &[], 0),
-    shim!("Ljava/lang/String;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;", "Ljava/lang/Comparable;", "Ljava/lang/CharSequence;"], 0),
-    shim!("Ljava/lang/StringBuilder;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;", "Ljava/lang/CharSequence;"], 0),
-    shim!("Ljava/lang/Class;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;", "Ljava/lang/reflect/GenericDeclaration;", "Ljava/lang/reflect/Type;", "Ljava/lang/reflect/AnnotatedElement;"], 0),
-    shim!("Ljava/lang/Throwable;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;"], 0),
-    shim!("Ljava/lang/Exception;", Some("Ljava/lang/Throwable;"), &[], 0),
-    shim!("Ljava/lang/RuntimeException;", Some("Ljava/lang/Exception;"), &[], 0),
+    shim!(
+        "Landroidx/preference/SwitchPreferenceCompat;",
+        Some("Landroidx/preference/Preference;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/String;",
+        Some("Ljava/lang/Object;"),
+        &[
+            "Ljava/io/Serializable;",
+            "Ljava/lang/Comparable;",
+            "Ljava/lang/CharSequence;"
+        ],
+        0
+    ),
+    shim!(
+        "Ljava/lang/StringBuilder;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;", "Ljava/lang/CharSequence;"],
+        0
+    ),
+    shim!(
+        "Ljava/lang/Class;",
+        Some("Ljava/lang/Object;"),
+        &[
+            "Ljava/io/Serializable;",
+            "Ljava/lang/reflect/GenericDeclaration;",
+            "Ljava/lang/reflect/Type;",
+            "Ljava/lang/reflect/AnnotatedElement;"
+        ],
+        0
+    ),
+    shim!(
+        "Ljava/lang/Throwable;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;"],
+        0
+    ),
+    shim!(
+        "Ljava/lang/Exception;",
+        Some("Ljava/lang/Throwable;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/RuntimeException;",
+        Some("Ljava/lang/Exception;"),
+        &[],
+        0
+    ),
     shim!("Ljava/lang/Error;", Some("Ljava/lang/Throwable;"), &[], 0),
-    shim!("Ljava/lang/AssertionError;", Some("Ljava/lang/Error;"), &[], 0),
-    shim!("Ljava/lang/StackOverflowError;", Some("Ljava/lang/Error;"), &[], 0),
-    shim!("Ljava/lang/OutOfMemoryError;", Some("Ljava/lang/Error;"), &[], 0),
-    shim!("Ljava/lang/NullPointerException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
-    shim!("Ljava/lang/ArithmeticException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
-    shim!("Ljava/lang/IllegalArgumentException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
-    shim!("Ljava/lang/IllegalStateException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
-    shim!("Ljava/lang/NumberFormatException;", Some("Ljava/lang/IllegalArgumentException;"), &[], 0),
-    shim!("Ljava/lang/UnsupportedOperationException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
-    shim!("Ljava/lang/IndexOutOfBoundsException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
-    shim!("Ljava/lang/ArrayIndexOutOfBoundsException;", Some("Ljava/lang/IndexOutOfBoundsException;"), &[], 0),
-    shim!("Ljava/lang/StringIndexOutOfBoundsException;", Some("Ljava/lang/IndexOutOfBoundsException;"), &[], 0),
-    shim!("Ljava/lang/ClassCastException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
-    shim!("Ljava/lang/NegativeArraySizeException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
-    shim!("Ljava/lang/NoSuchElementException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
-    shim!("Ljava/lang/NoSuchMethodError;", Some("Ljava/lang/Error;"), &[], 0),
-    shim!("Ljava/lang/NoClassDefFoundError;", Some("Ljava/lang/Error;"), &[], 0),
-    shim!("Ljava/lang/ClassNotFoundException;", Some("Ljava/lang/Exception;"), &[], 0),
-    shim!("Ljava/io/IOException;", Some("Ljava/lang/Exception;"), &[], 0),
-    shim!("Ljava/net/MalformedURLException;", Some("Ljava/io/IOException;"), &[], 0),
-    shim!("Ljava/lang/InterruptedException;", Some("Ljava/lang/Exception;"), &[], 0),
-    shim!("Ljava/lang/SecurityException;", Some("Ljava/lang/RuntimeException;"), &[], 0),
-    shim!("Ljava/lang/Enum;", Some("Ljava/lang/Object;"), &["Ljava/lang/Comparable;", "Ljava/io/Serializable;"], 0),
-    shim!("Ljava/lang/System;", Some("Ljava/lang/Object;"), &[], 0, [
-        sdef!("out", "Ljava/io/PrintStream;", ShimValue::Lazy(native::lazy_print_stream)),
-        sdef!("err", "Ljava/io/PrintStream;", ShimValue::Lazy(native::lazy_print_stream)),
-    ]),
-    shim!("Ljava/io/PrintStream;", Some("Ljava/lang/Object;"), &["Ljava/lang/Appendable;", "Ljava/io/Closeable;"], 0),
+    shim!(
+        "Ljava/lang/AssertionError;",
+        Some("Ljava/lang/Error;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/StackOverflowError;",
+        Some("Ljava/lang/Error;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/OutOfMemoryError;",
+        Some("Ljava/lang/Error;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/NullPointerException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/ArithmeticException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/IllegalArgumentException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/IllegalStateException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/NumberFormatException;",
+        Some("Ljava/lang/IllegalArgumentException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/UnsupportedOperationException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/IndexOutOfBoundsException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/ArrayIndexOutOfBoundsException;",
+        Some("Ljava/lang/IndexOutOfBoundsException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/StringIndexOutOfBoundsException;",
+        Some("Ljava/lang/IndexOutOfBoundsException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/ClassCastException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/NegativeArraySizeException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/NoSuchElementException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/NoSuchMethodError;",
+        Some("Ljava/lang/Error;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/NoClassDefFoundError;",
+        Some("Ljava/lang/Error;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/ClassNotFoundException;",
+        Some("Ljava/lang/Exception;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/io/IOException;",
+        Some("Ljava/lang/Exception;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/net/MalformedURLException;",
+        Some("Ljava/io/IOException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/InterruptedException;",
+        Some("Ljava/lang/Exception;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/SecurityException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/Enum;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/lang/Comparable;", "Ljava/io/Serializable;"],
+        0
+    ),
+    shim!(
+        "Ljava/lang/System;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [
+            sdef!(
+                "out",
+                "Ljava/io/PrintStream;",
+                ShimValue::Lazy(native::lazy_print_stream)
+            ),
+            sdef!(
+                "err",
+                "Ljava/io/PrintStream;",
+                ShimValue::Lazy(native::lazy_print_stream)
+            ),
+        ]
+    ),
+    shim!(
+        "Ljava/io/PrintStream;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/lang/Appendable;", "Ljava/io/Closeable;"],
+        0
+    ),
     shim!("Ljava/lang/Math;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Ljava/lang/Integer;", Some("Ljava/lang/Number;"), &["Ljava/lang/Comparable;"], 0, [
-        sdef!("TYPE", "Ljava/lang/Class;", ShimValue::Lazy(native::lazy_int_type)),
-        sdef!("MIN_VALUE", "I", ShimValue::Const(JValue::Int(i32::MIN))),
-        sdef!("MAX_VALUE", "I", ShimValue::Const(JValue::Int(i32::MAX))),
-    ]),
-    shim!("Ljava/lang/Long;", Some("Ljava/lang/Number;"), &["Ljava/lang/Comparable;"], 0, [
-        sdef!("TYPE", "Ljava/lang/Class;", ShimValue::Lazy(native::lazy_long_type)),
-        sdef!("MIN_VALUE", "J", ShimValue::Const(JValue::Long(i64::MIN))),
-        sdef!("MAX_VALUE", "J", ShimValue::Const(JValue::Long(i64::MAX))),
-    ]),
-    shim!("Ljava/lang/Short;", Some("Ljava/lang/Number;"), &["Ljava/lang/Comparable;"], 0, [
-        sdef!("TYPE", "Ljava/lang/Class;", ShimValue::Lazy(native::lazy_short_type)),
-        sdef!("MIN_VALUE", "S", ShimValue::Const(JValue::Int(i16::MIN as i32))),
-        sdef!("MAX_VALUE", "S", ShimValue::Const(JValue::Int(i16::MAX as i32))),
-    ]),
-    shim!("Ljava/lang/Byte;", Some("Ljava/lang/Number;"), &["Ljava/lang/Comparable;"], 0, [
-        sdef!("TYPE", "Ljava/lang/Class;", ShimValue::Lazy(native::lazy_byte_type)),
-        sdef!("MIN_VALUE", "B", ShimValue::Const(JValue::Int(i8::MIN as i32))),
-        sdef!("MAX_VALUE", "B", ShimValue::Const(JValue::Int(i8::MAX as i32))),
-    ]),
-    shim!("Ljava/lang/Character;", Some("Ljava/lang/Object;"), &["Ljava/lang/Comparable;"], 0, [
-        sdef!("TYPE", "Ljava/lang/Class;", ShimValue::Lazy(native::lazy_char_type)),
-        sdef!("MIN_VALUE", "C", ShimValue::Const(JValue::Int(0))),
-        sdef!("MAX_VALUE", "C", ShimValue::Const(JValue::Int(0xFFFF))),
-    ]),
-    shim!("Ljava/lang/Boolean;", Some("Ljava/lang/Object;"), &["Ljava/lang/Comparable;"], 0, [
-        sdef!("TYPE", "Ljava/lang/Class;", ShimValue::Lazy(native::lazy_bool_type)),
-        sdef!("TRUE", "Ljava/lang/Boolean;", ShimValue::Lazy(native::lazy_bool_true)),
-        sdef!("FALSE", "Ljava/lang/Boolean;", ShimValue::Lazy(native::lazy_bool_false)),
-    ]),
-    shim!("Ljava/lang/Float;", Some("Ljava/lang/Number;"), &["Ljava/lang/Comparable;"], 0, [
-        sdef!("TYPE", "Ljava/lang/Class;", ShimValue::Lazy(native::lazy_float_type)),
-        sdef!("MIN_VALUE", "F", ShimValue::Const(JValue::Float(f32::MIN_POSITIVE))),
-        sdef!("MAX_VALUE", "F", ShimValue::Const(JValue::Float(f32::MAX))),
-        sdef!("POSITIVE_INFINITY", "F", ShimValue::Const(JValue::Float(f32::INFINITY))),
-        sdef!("NEGATIVE_INFINITY", "F", ShimValue::Const(JValue::Float(f32::NEG_INFINITY))),
-        sdef!("NaN", "F", ShimValue::Const(JValue::Float(f32::NAN))),
-    ]),
-    shim!("Ljava/lang/Double;", Some("Ljava/lang/Number;"), &["Ljava/lang/Comparable;"], 0, [
-        sdef!("TYPE", "Ljava/lang/Class;", ShimValue::Lazy(native::lazy_double_type)),
-        sdef!("MIN_VALUE", "D", ShimValue::Const(JValue::Double(f64::MIN_POSITIVE))),
-        sdef!("MAX_VALUE", "D", ShimValue::Const(JValue::Double(f64::MAX))),
-        sdef!("POSITIVE_INFINITY", "D", ShimValue::Const(JValue::Double(f64::INFINITY))),
-        sdef!("NEGATIVE_INFINITY", "D", ShimValue::Const(JValue::Double(f64::NEG_INFINITY))),
-        sdef!("NaN", "D", ShimValue::Const(JValue::Double(f64::NAN))),
-    ]),
-    shim!("Ljava/lang/Number;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;"], 0),
-    shim!("Ljava/lang/StackTraceElement;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;"], 0),
+    shim!(
+        "Ljava/lang/Integer;",
+        Some("Ljava/lang/Number;"),
+        &["Ljava/lang/Comparable;"],
+        0,
+        [
+            sdef!(
+                "TYPE",
+                "Ljava/lang/Class;",
+                ShimValue::Lazy(native::lazy_int_type)
+            ),
+            sdef!("MIN_VALUE", "I", ShimValue::Const(JValue::Int(i32::MIN))),
+            sdef!("MAX_VALUE", "I", ShimValue::Const(JValue::Int(i32::MAX))),
+        ]
+    ),
+    shim!(
+        "Ljava/lang/Long;",
+        Some("Ljava/lang/Number;"),
+        &["Ljava/lang/Comparable;"],
+        0,
+        [
+            sdef!(
+                "TYPE",
+                "Ljava/lang/Class;",
+                ShimValue::Lazy(native::lazy_long_type)
+            ),
+            sdef!("MIN_VALUE", "J", ShimValue::Const(JValue::Long(i64::MIN))),
+            sdef!("MAX_VALUE", "J", ShimValue::Const(JValue::Long(i64::MAX))),
+        ]
+    ),
+    shim!(
+        "Ljava/lang/Short;",
+        Some("Ljava/lang/Number;"),
+        &["Ljava/lang/Comparable;"],
+        0,
+        [
+            sdef!(
+                "TYPE",
+                "Ljava/lang/Class;",
+                ShimValue::Lazy(native::lazy_short_type)
+            ),
+            sdef!(
+                "MIN_VALUE",
+                "S",
+                ShimValue::Const(JValue::Int(i16::MIN as i32))
+            ),
+            sdef!(
+                "MAX_VALUE",
+                "S",
+                ShimValue::Const(JValue::Int(i16::MAX as i32))
+            ),
+        ]
+    ),
+    shim!(
+        "Ljava/lang/Byte;",
+        Some("Ljava/lang/Number;"),
+        &["Ljava/lang/Comparable;"],
+        0,
+        [
+            sdef!(
+                "TYPE",
+                "Ljava/lang/Class;",
+                ShimValue::Lazy(native::lazy_byte_type)
+            ),
+            sdef!(
+                "MIN_VALUE",
+                "B",
+                ShimValue::Const(JValue::Int(i8::MIN as i32))
+            ),
+            sdef!(
+                "MAX_VALUE",
+                "B",
+                ShimValue::Const(JValue::Int(i8::MAX as i32))
+            ),
+        ]
+    ),
+    shim!(
+        "Ljava/lang/Character;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/lang/Comparable;"],
+        0,
+        [
+            sdef!(
+                "TYPE",
+                "Ljava/lang/Class;",
+                ShimValue::Lazy(native::lazy_char_type)
+            ),
+            sdef!("MIN_VALUE", "C", ShimValue::Const(JValue::Int(0))),
+            sdef!("MAX_VALUE", "C", ShimValue::Const(JValue::Int(0xFFFF))),
+        ]
+    ),
+    shim!(
+        "Ljava/lang/Boolean;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/lang/Comparable;"],
+        0,
+        [
+            sdef!(
+                "TYPE",
+                "Ljava/lang/Class;",
+                ShimValue::Lazy(native::lazy_bool_type)
+            ),
+            sdef!(
+                "TRUE",
+                "Ljava/lang/Boolean;",
+                ShimValue::Lazy(native::lazy_bool_true)
+            ),
+            sdef!(
+                "FALSE",
+                "Ljava/lang/Boolean;",
+                ShimValue::Lazy(native::lazy_bool_false)
+            ),
+        ]
+    ),
+    shim!(
+        "Ljava/lang/Float;",
+        Some("Ljava/lang/Number;"),
+        &["Ljava/lang/Comparable;"],
+        0,
+        [
+            sdef!(
+                "TYPE",
+                "Ljava/lang/Class;",
+                ShimValue::Lazy(native::lazy_float_type)
+            ),
+            sdef!(
+                "MIN_VALUE",
+                "F",
+                ShimValue::Const(JValue::Float(f32::MIN_POSITIVE))
+            ),
+            sdef!("MAX_VALUE", "F", ShimValue::Const(JValue::Float(f32::MAX))),
+            sdef!(
+                "POSITIVE_INFINITY",
+                "F",
+                ShimValue::Const(JValue::Float(f32::INFINITY))
+            ),
+            sdef!(
+                "NEGATIVE_INFINITY",
+                "F",
+                ShimValue::Const(JValue::Float(f32::NEG_INFINITY))
+            ),
+            sdef!("NaN", "F", ShimValue::Const(JValue::Float(f32::NAN))),
+        ]
+    ),
+    shim!(
+        "Ljava/lang/Double;",
+        Some("Ljava/lang/Number;"),
+        &["Ljava/lang/Comparable;"],
+        0,
+        [
+            sdef!(
+                "TYPE",
+                "Ljava/lang/Class;",
+                ShimValue::Lazy(native::lazy_double_type)
+            ),
+            sdef!(
+                "MIN_VALUE",
+                "D",
+                ShimValue::Const(JValue::Double(f64::MIN_POSITIVE))
+            ),
+            sdef!("MAX_VALUE", "D", ShimValue::Const(JValue::Double(f64::MAX))),
+            sdef!(
+                "POSITIVE_INFINITY",
+                "D",
+                ShimValue::Const(JValue::Double(f64::INFINITY))
+            ),
+            sdef!(
+                "NEGATIVE_INFINITY",
+                "D",
+                ShimValue::Const(JValue::Double(f64::NEG_INFINITY))
+            ),
+            sdef!("NaN", "D", ShimValue::Const(JValue::Double(f64::NAN))),
+        ]
+    ),
+    shim!(
+        "Ljava/lang/Number;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;"],
+        0
+    ),
+    shim!(
+        "Ljava/lang/StackTraceElement;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;"],
+        0
+    ),
     shim!("Ljava/lang/Thread;", Some("Ljava/lang/Object;"), &[], 0),
     shim!("Ljava/lang/Thread$State;", Some("Ljava/lang/Enum;"), &[], 0),
-    shim!("Ljava/util/Collection;", Some("Ljava/lang/Iterable;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/List;", Some("Ljava/util/Collection;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/Set;", Some("Ljava/util/Collection;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/SortedSet;", Some("Ljava/util/Set;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/NavigableSet;", Some("Ljava/util/SortedSet;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/Map;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/SortedMap;", Some("Ljava/util/Map;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/NavigableMap;", Some("Ljava/util/SortedMap;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/Map$Entry;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/Iterator;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/ListIterator;", Some("Ljava/util/Iterator;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/Comparator;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/RandomAccess;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/ArrayList;", Some("Ljava/util/AbstractList;"), &["Ljava/util/List;", "Ljava/util/RandomAccess;", "Ljava/lang/Cloneable;", "Ljava/io/Serializable;"], 0),
-    shim!("Ljava/util/AbstractList;", Some("Ljava/util/AbstractCollection;"), &["Ljava/util/List;"], 0),
-    shim!("Ljava/util/AbstractCollection;", Some("Ljava/util/Collection;"), &[], 0),
+    shim!(
+        "Ljava/util/Collection;",
+        Some("Ljava/lang/Iterable;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/List;",
+        Some("Ljava/util/Collection;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/Set;",
+        Some("Ljava/util/Collection;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/SortedSet;",
+        Some("Ljava/util/Set;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/NavigableSet;",
+        Some("Ljava/util/SortedSet;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/Map;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/SortedMap;",
+        Some("Ljava/util/Map;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/NavigableMap;",
+        Some("Ljava/util/SortedMap;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/Map$Entry;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/Iterator;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/ListIterator;",
+        Some("Ljava/util/Iterator;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/Comparator;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/RandomAccess;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/ArrayList;",
+        Some("Ljava/util/AbstractList;"),
+        &[
+            "Ljava/util/List;",
+            "Ljava/util/RandomAccess;",
+            "Ljava/lang/Cloneable;",
+            "Ljava/io/Serializable;"
+        ],
+        0
+    ),
+    shim!(
+        "Ljava/util/AbstractList;",
+        Some("Ljava/util/AbstractCollection;"),
+        &["Ljava/util/List;"],
+        0
+    ),
+    shim!(
+        "Ljava/util/AbstractCollection;",
+        Some("Ljava/util/Collection;"),
+        &[],
+        0
+    ),
     shim!("Ljava/util/AbstractMap;", Some("Ljava/util/Map;"), &[], 0),
-    shim!("Ljava/util/AbstractSet;", Some("Ljava/util/AbstractCollection;"), &["Ljava/util/Set;"], 0),
-    shim!("Ljava/util/HashMap;", Some("Ljava/util/AbstractMap;"), &["Ljava/util/Map;", "Ljava/lang/Cloneable;", "Ljava/io/Serializable;"], 0),
-    shim!("Ljava/util/LinkedHashMap;", Some("Ljava/util/HashMap;"), &["Ljava/util/Map;"], 0),
-    shim!("Ljava/util/HashSet;", Some("Ljava/util/AbstractSet;"), &["Ljava/util/Set;", "Ljava/lang/Cloneable;", "Ljava/io/Serializable;"], 0),
-    shim!("Ljava/util/LinkedHashSet;", Some("Ljava/util/HashSet;"), &["Ljava/util/Set;", "Ljava/lang/Cloneable;", "Ljava/io/Serializable;"], 0),
-    shim!("Ljava/util/Collections;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Ljava/util/AbstractSet;",
+        Some("Ljava/util/AbstractCollection;"),
+        &["Ljava/util/Set;"],
+        0
+    ),
+    shim!(
+        "Ljava/util/HashMap;",
+        Some("Ljava/util/AbstractMap;"),
+        &[
+            "Ljava/util/Map;",
+            "Ljava/lang/Cloneable;",
+            "Ljava/io/Serializable;"
+        ],
+        0
+    ),
+    shim!(
+        "Ljava/util/LinkedHashMap;",
+        Some("Ljava/util/HashMap;"),
+        &["Ljava/util/Map;"],
+        0
+    ),
+    shim!(
+        "Ljava/util/HashSet;",
+        Some("Ljava/util/AbstractSet;"),
+        &[
+            "Ljava/util/Set;",
+            "Ljava/lang/Cloneable;",
+            "Ljava/io/Serializable;"
+        ],
+        0
+    ),
+    shim!(
+        "Ljava/util/LinkedHashSet;",
+        Some("Ljava/util/HashSet;"),
+        &[
+            "Ljava/util/Set;",
+            "Ljava/lang/Cloneable;",
+            "Ljava/io/Serializable;"
+        ],
+        0
+    ),
+    shim!(
+        "Ljava/util/Collections;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     shim!("Ljava/util/Arrays;", Some("Ljava/lang/Object;"), &[], 0),
     shim!("Ljava/util/Objects;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Ljava/util/Locale;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;", "Ljava/lang/Cloneable;"], 0, [
-        sdef!("ROOT", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_opaque_locale)),
-        sdef!("ENGLISH", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_opaque_locale)),
-        sdef!("US", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_us)),
-        sdef!("UK", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_uk)),
-        sdef!("CANADA", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_canada)),
-        sdef!("JAPAN", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_japan)),
-        sdef!("KOREA", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_korea)),
-        sdef!("CHINA", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_china)),
-        sdef!("FRANCE", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_france)),
-        sdef!("GERMANY", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_germany)),
-        sdef!("ITALY", "Ljava/util/Locale;", ShimValue::Lazy(native::lazy_locale_italy)),
-    ]),
-    shim!("Ljava/util/TimeZone;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;", "Ljava/lang/Cloneable;"], 0),
-    shim!("Ljava/util/ArrayDeque;", Some("Ljava/util/AbstractCollection;"), &["Ljava/util/Deque;", "Ljava/lang/Cloneable;", "Ljava/io/Serializable;"], 0),
-    shim!("Ljava/util/Deque;", Some("Ljava/util/Collection;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Ljava/util/Locale;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;", "Ljava/lang/Cloneable;"],
+        0,
+        [
+            sdef!(
+                "ROOT",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_opaque_locale)
+            ),
+            sdef!(
+                "ENGLISH",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_opaque_locale)
+            ),
+            sdef!(
+                "US",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_locale_us)
+            ),
+            sdef!(
+                "UK",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_locale_uk)
+            ),
+            sdef!(
+                "CANADA",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_locale_canada)
+            ),
+            sdef!(
+                "JAPAN",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_locale_japan)
+            ),
+            sdef!(
+                "KOREA",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_locale_korea)
+            ),
+            sdef!(
+                "CHINA",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_locale_china)
+            ),
+            sdef!(
+                "FRANCE",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_locale_france)
+            ),
+            sdef!(
+                "GERMANY",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_locale_germany)
+            ),
+            sdef!(
+                "ITALY",
+                "Ljava/util/Locale;",
+                ShimValue::Lazy(native::lazy_locale_italy)
+            ),
+        ]
+    ),
+    shim!(
+        "Ljava/util/TimeZone;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;", "Ljava/lang/Cloneable;"],
+        0
+    ),
+    shim!(
+        "Ljava/util/ArrayDeque;",
+        Some("Ljava/util/AbstractCollection;"),
+        &[
+            "Ljava/util/Deque;",
+            "Ljava/lang/Cloneable;",
+            "Ljava/io/Serializable;"
+        ],
+        0
+    ),
+    shim!(
+        "Ljava/util/Deque;",
+        Some("Ljava/util/Collection;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     shim!("Ljava/text/DateFormat;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Ljava/text/SimpleDateFormat;", Some("Ljava/text/DateFormat;"), &[], 0),
-    shim!("Ljava/text/ParsePosition;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Ljava/util/concurrent/locks/Lock;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/util/concurrent/locks/ReentrantLock;", Some("Ljava/lang/Object;"), &["Ljava/util/concurrent/locks/Lock;", "Ljava/io/Serializable;"], 0),
-    shim!("Ljava/util/concurrent/locks/Condition;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/nio/charset/Charset;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;", "Ljava/lang/Comparable;"], 0),
-    shim!("Ljava/nio/charset/StandardCharsets;", Some("Ljava/lang/Object;"), &[], 0, [
-        sdef!("UTF_8", "Ljava/nio/charset/Charset;", ShimValue::Lazy(native::lazy_charset_utf8)),
-        sdef!("ISO_8859_1", "Ljava/nio/charset/Charset;", ShimValue::Lazy(native::lazy_charset_iso)),
-        sdef!("US_ASCII", "Ljava/nio/charset/Charset;", ShimValue::Lazy(native::lazy_charset_ascii)),
-    ]),
-    shim!("Ljava/util/regex/Pattern;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;"], 0),
-    shim!("Ljava/util/regex/Matcher;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Ljava/util/Random;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;"], 0),
-    shim!("Ljava/util/Date;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;", "Ljava/lang/Cloneable;", "Ljava/lang/Comparable;"], 0),
-    shim!("Ljava/lang/reflect/GenericDeclaration;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/lang/reflect/Type;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/lang/reflect/AnnotatedElement;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/lang/Appendable;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/io/Closeable;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Ljava/io/Flushable;", Some("Ljava/lang/Object;"), &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Ljava/text/SimpleDateFormat;",
+        Some("Ljava/text/DateFormat;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/text/ParsePosition;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/concurrent/locks/Lock;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/util/concurrent/locks/ReentrantLock;",
+        Some("Ljava/lang/Object;"),
+        &[
+            "Ljava/util/concurrent/locks/Lock;",
+            "Ljava/io/Serializable;"
+        ],
+        0
+    ),
+    shim!(
+        "Ljava/util/concurrent/locks/Condition;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/nio/charset/Charset;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;", "Ljava/lang/Comparable;"],
+        0
+    ),
+    shim!(
+        "Ljava/nio/charset/StandardCharsets;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [
+            sdef!(
+                "UTF_8",
+                "Ljava/nio/charset/Charset;",
+                ShimValue::Lazy(native::lazy_charset_utf8)
+            ),
+            sdef!(
+                "ISO_8859_1",
+                "Ljava/nio/charset/Charset;",
+                ShimValue::Lazy(native::lazy_charset_iso)
+            ),
+            sdef!(
+                "US_ASCII",
+                "Ljava/nio/charset/Charset;",
+                ShimValue::Lazy(native::lazy_charset_ascii)
+            ),
+        ]
+    ),
+    shim!(
+        "Ljava/util/regex/Pattern;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;"],
+        0
+    ),
+    shim!(
+        "Ljava/util/regex/Matcher;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/Random;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;"],
+        0
+    ),
+    shim!(
+        "Ljava/util/Date;",
+        Some("Ljava/lang/Object;"),
+        &[
+            "Ljava/io/Serializable;",
+            "Ljava/lang/Cloneable;",
+            "Ljava/lang/Comparable;"
+        ],
+        0
+    ),
+    shim!(
+        "Ljava/lang/reflect/GenericDeclaration;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/lang/reflect/Type;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/lang/reflect/AnnotatedElement;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/lang/Appendable;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/io/Closeable;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/io/Flushable;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     // kotlin stdlib host shims
-    shim!("Lkotlin/Lazy;", None, &["Ljava/io/Serializable;"], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Lkotlin/SynchronizedLazyImpl;", Some("Ljava/lang/Object;"), &["Lkotlin/Lazy;", "Ljava/io/Serializable;"], 0),
-    shim!("Lkotlin/jvm/functions/Function0;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Lkotlin/jvm/functions/Function1;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    shim!(
+        "Lkotlin/Lazy;",
+        None,
+        &["Ljava/io/Serializable;"],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Lkotlin/SynchronizedLazyImpl;",
+        Some("Ljava/lang/Object;"),
+        &["Lkotlin/Lazy;", "Ljava/io/Serializable;"],
+        0
+    ),
+    shim!(
+        "Lkotlin/jvm/functions/Function0;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Lkotlin/jvm/functions/Function1;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     shim!("Lkotlin/LazyKt;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Lkotlin/time/Duration;", Some("Ljava/lang/Object;"), &[], 0, [
-        sdef!("Companion", "Lkotlin/time/Duration$Companion;", ShimValue::Lazy(native::lazy_duration_companion)),
-    ]),
-    shim!("Lkotlin/time/Duration$Companion;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Lkotlin/time/DurationUnit;", Some("Ljava/lang/Object;"), &[], 0, [
-        sdef!("SECONDS", "Lkotlin/time/DurationUnit;", ShimValue::Lazy(native::lazy_duration_unit_seconds)),
-        sdef!("MILLISECONDS", "Lkotlin/time/DurationUnit;", ShimValue::Lazy(native::lazy_duration_unit_millis)),
-    ]),
-    shim!("Lkotlin/time/DurationKt;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Lkotlin/text/Regex;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;"], 0),
-    shim!("Lkotlin/collections/CollectionsKt;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Lkotlin/collections/IntIterator;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Lkotlin/ranges/IntRange;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Lkotlin/comparisons/ComparisonsKt;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Lkotlin/jvm/internal/Intrinsics;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Lkotlin/Unit;", Some("Ljava/lang/Object;"), &[], 0, [
-        sdef!("INSTANCE", "Lkotlin/Unit;", ShimValue::Lazy(native::lazy_unit_instance)),
-    ]),
-    shim!("Lkotlin/Pair;", Some("Ljava/lang/Object;"), &["Ljava/io/Serializable;"], 0),
+    shim!(
+        "Lkotlin/time/Duration;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "Companion",
+            "Lkotlin/time/Duration$Companion;",
+            ShimValue::Lazy(native::lazy_duration_companion)
+        ),]
+    ),
+    shim!(
+        "Lkotlin/time/Duration$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Lkotlin/time/DurationUnit;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [
+            sdef!(
+                "SECONDS",
+                "Lkotlin/time/DurationUnit;",
+                ShimValue::Lazy(native::lazy_duration_unit_seconds)
+            ),
+            sdef!(
+                "MILLISECONDS",
+                "Lkotlin/time/DurationUnit;",
+                ShimValue::Lazy(native::lazy_duration_unit_millis)
+            ),
+        ]
+    ),
+    shim!(
+        "Lkotlin/time/DurationKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Lkotlin/text/Regex;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;"],
+        0
+    ),
+    shim!(
+        "Lkotlin/collections/CollectionsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Lkotlin/collections/IntIterator;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Lkotlin/ranges/IntRange;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Lkotlin/comparisons/ComparisonsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Lkotlin/jvm/internal/Intrinsics;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Lkotlin/Unit;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "INSTANCE",
+            "Lkotlin/Unit;",
+            ShimValue::Lazy(native::lazy_unit_instance)
+        ),]
+    ),
+    shim!(
+        "Lkotlin/Pair;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;"],
+        0
+    ),
     shim!("Lkotlin/TuplesKt;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Lkotlin/jvm/internal/DefaultConstructorMarker;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lkotlin/jvm/internal/DefaultConstructorMarker;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     // injekt DI
-    shim!("Luy/kohesive/injekt/InjektKt;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Luy/kohesive/injekt/api/InjektScope;", None, &["Luy/kohesive/injekt/api/InjektFactory;"], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Luy/kohesive/injekt/api/InjektFactory;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Luy/kohesive/injekt/api/InjektRegister;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
-    shim!("Luy/kohesive/injekt/api/FullTypeReference;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Luy/kohesive/injekt/InjektKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Luy/kohesive/injekt/api/InjektScope;",
+        None,
+        &["Luy/kohesive/injekt/api/InjektFactory;"],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Luy/kohesive/injekt/api/InjektFactory;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Luy/kohesive/injekt/api/InjektRegister;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Luy/kohesive/injekt/api/FullTypeReference;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
 ];
 
 #[derive(Debug, Clone, Default)]

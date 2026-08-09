@@ -202,7 +202,11 @@ pub(crate) fn list_last_index_of(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn list_iterator(vm: &mut Vm, args: &[JValue]) -> R {
     let list = args[0].as_obj();
-    alloc(vm, "Ljava/util/Iterator;", Native::Iter(IterKind::List { list, idx: 0 }))
+    alloc(
+        vm,
+        "Ljava/util/Iterator;",
+        Native::Iter(IterKind::List { list, idx: 0 }),
+    )
 }
 
 pub(crate) fn list_to_array(vm: &mut Vm, args: &[JValue]) -> R {
@@ -210,7 +214,9 @@ pub(crate) fn list_to_array(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::List(items)) => items.clone(),
         _ => return Err(npe(vm)),
     };
-    let class = vm.ensure_class_by_desc("[Ljava/lang/Object;").map_err(nat_fatal)?;
+    let class = vm
+        .ensure_class_by_desc("[Ljava/lang/Object;")
+        .map_err(nat_fatal)?;
     Ok(JValue::Obj(vm.arena.alloc(
         class,
         Vec::new(),
@@ -291,7 +297,13 @@ pub(crate) fn list_remove_all(vm: &mut Vm, args: &[JValue]) -> R {
             out.push(it);
         }
     }
-    let changed = out.len() != payload(vm, args[0]).map(|n| match n { Native::List(i) => i.len(), _ => 0 }).unwrap_or(0);
+    let changed = out.len()
+        != payload(vm, args[0])
+            .map(|n| match n {
+                Native::List(i) => i.len(),
+                _ => 0,
+            })
+            .unwrap_or(0);
     let Some(n) = payload_mut(vm, args[0]) else {
         return Err(npe(vm));
     };
@@ -353,7 +365,13 @@ pub(crate) fn list_sort_cmp(vm: &mut Vm, args: &[JValue]) -> R {
     let mut items = items;
     let mut err: Option<NatErr> = None;
     items.sort_by(|a, b| {
-        match inv_virt(vm, cmp, "compare", "(Ljava/lang/Object;Ljava/lang/Object;)I", &[*a, *b]) {
+        match inv_virt(
+            vm,
+            cmp,
+            "compare",
+            "(Ljava/lang/Object;Ljava/lang/Object;)I",
+            &[*a, *b],
+        ) {
             Ok(JValue::Int(i)) => i.cmp(&0),
             Ok(_) => Ordering::Equal,
             Err(e) => {
@@ -375,32 +393,157 @@ pub(crate) fn list_sort_cmp(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
-
 /// Native methods for Ljava/util/ArrayList;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/util/ArrayList;", "<init>", "()V", true, list_init),
     ne!("Ljava/util/ArrayList;", "<init>", "(I)V", true, list_init),
-    ne!("Ljava/util/ArrayList;", "<init>", "(Ljava/util/Collection;)V", true, list_init),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "<init>",
+        "(Ljava/util/Collection;)V",
+        true,
+        list_init
+    ),
     ne!("Ljava/util/ArrayList;", "size", "()I", true, list_size),
-    ne!("Ljava/util/ArrayList;", "isEmpty", "()Z", true, list_is_empty),
-    ne!("Ljava/util/ArrayList;", "get", "(I)Ljava/lang/Object;", true, list_get),
-    ne!("Ljava/util/ArrayList;", "set", "(ILjava/lang/Object;)Ljava/lang/Object;", true, list_set),
-    ne!("Ljava/util/ArrayList;", "add", "(Ljava/lang/Object;)Z", true, list_add),
-    ne!("Ljava/util/ArrayList;", "add", "(ILjava/lang/Object;)V", true, list_add_at),
-    ne!("Ljava/util/ArrayList;", "remove", "(I)Ljava/lang/Object;", true, list_remove_at),
-    ne!("Ljava/util/ArrayList;", "remove", "(Ljava/lang/Object;)Z", true, list_remove_obj),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "isEmpty",
+        "()Z",
+        true,
+        list_is_empty
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "get",
+        "(I)Ljava/lang/Object;",
+        true,
+        list_get
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "set",
+        "(ILjava/lang/Object;)Ljava/lang/Object;",
+        true,
+        list_set
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "add",
+        "(Ljava/lang/Object;)Z",
+        true,
+        list_add
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "add",
+        "(ILjava/lang/Object;)V",
+        true,
+        list_add_at
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "remove",
+        "(I)Ljava/lang/Object;",
+        true,
+        list_remove_at
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "remove",
+        "(Ljava/lang/Object;)Z",
+        true,
+        list_remove_obj
+    ),
     ne!("Ljava/util/ArrayList;", "clear", "()V", true, list_clear),
-    ne!("Ljava/util/ArrayList;", "contains", "(Ljava/lang/Object;)Z", true, list_contains),
-    ne!("Ljava/util/ArrayList;", "indexOf", "(Ljava/lang/Object;)I", true, list_index_of),
-    ne!("Ljava/util/ArrayList;", "lastIndexOf", "(Ljava/lang/Object;)I", true, list_last_index_of),
-    ne!("Ljava/util/ArrayList;", "iterator", "()Ljava/util/Iterator;", true, list_iterator),
-    ne!("Ljava/util/ArrayList;", "listIterator", "()Ljava/util/ListIterator;", true, list_iterator),
-    ne!("Ljava/util/ArrayList;", "toArray", "()[Ljava/lang/Object;", true, list_to_array),
-    ne!("Ljava/util/ArrayList;", "toArray", "([Ljava/lang/Object;)[Ljava/lang/Object;", true, list_to_array_typed),
-    ne!("Ljava/util/ArrayList;", "addAll", "(Ljava/util/Collection;)Z", true, list_add_all),
-    ne!("Ljava/util/ArrayList;", "addAll", "(ILjava/util/Collection;)Z", true, list_add_all),
-    ne!("Ljava/util/ArrayList;", "removeAll", "(Ljava/util/Collection;)Z", true, list_remove_all),
-    ne!("Ljava/util/ArrayList;", "retainAll", "(Ljava/util/Collection;)Z", true, list_retain_all),
-    ne!("Ljava/util/ArrayList;", "toString", "()Ljava/lang/String;", true, list_to_string),
-    ne!("Ljava/util/ArrayList;", "sort", "(Ljava/util/Comparator;)V", true, list_sort_cmp),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "contains",
+        "(Ljava/lang/Object;)Z",
+        true,
+        list_contains
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "indexOf",
+        "(Ljava/lang/Object;)I",
+        true,
+        list_index_of
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "lastIndexOf",
+        "(Ljava/lang/Object;)I",
+        true,
+        list_last_index_of
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "iterator",
+        "()Ljava/util/Iterator;",
+        true,
+        list_iterator
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "listIterator",
+        "()Ljava/util/ListIterator;",
+        true,
+        list_iterator
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "toArray",
+        "()[Ljava/lang/Object;",
+        true,
+        list_to_array
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "toArray",
+        "([Ljava/lang/Object;)[Ljava/lang/Object;",
+        true,
+        list_to_array_typed
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "addAll",
+        "(Ljava/util/Collection;)Z",
+        true,
+        list_add_all
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "addAll",
+        "(ILjava/util/Collection;)Z",
+        true,
+        list_add_all
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "removeAll",
+        "(Ljava/util/Collection;)Z",
+        true,
+        list_remove_all
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "retainAll",
+        "(Ljava/util/Collection;)Z",
+        true,
+        list_retain_all
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        list_to_string
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "sort",
+        "(Ljava/util/Comparator;)V",
+        true,
+        list_sort_cmp
+    ),
 ];

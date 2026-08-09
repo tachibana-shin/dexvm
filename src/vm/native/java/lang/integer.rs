@@ -53,7 +53,9 @@ pub(crate) fn integer_short_value(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn integer_equals(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Int(i32::from(int_of(vm, args[0]) == int_of(vm, args[1]))))
+    Ok(JValue::Int(i32::from(
+        int_of(vm, args[0]) == int_of(vm, args[1]),
+    )))
 }
 
 pub(crate) fn integer_hash_code(vm: &mut Vm, args: &[JValue]) -> R {
@@ -66,7 +68,9 @@ pub(crate) fn integer_to_string(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn integer_compare_to(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Int(int_of(vm, args[0]).cmp(&int_of(vm, args[1])) as i32))
+    Ok(JValue::Int(
+        int_of(vm, args[0]).cmp(&int_of(vm, args[1])) as i32
+    ))
 }
 
 pub(crate) fn integer_to_string_static(vm: &mut Vm, args: &[JValue]) -> R {
@@ -74,7 +78,10 @@ pub(crate) fn integer_to_string_static(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn integer_to_string_radix(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(new_str(vm, &int_to_string(int_of(vm, args[0]), int_of(vm, args[1]) as u32)))
+    Ok(new_str(
+        vm,
+        &int_to_string(int_of(vm, args[0]), int_of(vm, args[1]) as u32),
+    ))
 }
 
 pub(crate) fn integer_parse_int(vm: &mut Vm, args: &[JValue]) -> R {
@@ -100,7 +107,9 @@ pub(crate) fn integer_to_octal(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn integer_compare(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Int(int_of(vm, args[0]).cmp(&int_of(vm, args[1])) as i32))
+    Ok(JValue::Int(
+        int_of(vm, args[0]).cmp(&int_of(vm, args[1])) as i32
+    ))
 }
 
 pub(crate) fn integer_bit_count(vm: &mut Vm, args: &[JValue]) -> R {
@@ -120,31 +129,174 @@ pub(crate) fn integer_signum(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(int_of(vm, args[0]).signum()))
 }
 
-
 /// Native methods for Ljava/lang/Integer;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/lang/Integer;", "valueOf", "(I)Ljava/lang/Integer;", false, integer_value_of),
-    ne!("Ljava/lang/Integer;", "valueOf", "(Ljava/lang/String;)Ljava/lang/Integer;", false, integer_value_of_str),
-    ne!("Ljava/lang/Integer;", "parseInt", "(Ljava/lang/String;)I", false, integer_parse_int),
-    ne!("Ljava/lang/Integer;", "parseInt", "(Ljava/lang/String;I)I", false, integer_parse_int),
-    ne!("Ljava/lang/Integer;", "toString", "(I)Ljava/lang/String;", false, integer_to_string_static),
-    ne!("Ljava/lang/Integer;", "toString", "(II)Ljava/lang/String;", false, integer_to_string_radix),
-    ne!("Ljava/lang/Integer;", "toHexString", "(I)Ljava/lang/String;", false, integer_to_hex),
-    ne!("Ljava/lang/Integer;", "toBinaryString", "(I)Ljava/lang/String;", false, integer_to_binary),
-    ne!("Ljava/lang/Integer;", "toOctalString", "(I)Ljava/lang/String;", false, integer_to_octal),
-    ne!("Ljava/lang/Integer;", "compare", "(II)I", false, integer_compare),
-    ne!("Ljava/lang/Integer;", "bitCount", "(I)I", false, integer_bit_count),
-    ne!("Ljava/lang/Integer;", "highestOneBit", "(I)I", false, integer_highest_one_bit),
-    ne!("Ljava/lang/Integer;", "signum", "(I)I", false, integer_signum),
-    ne!("Ljava/lang/Integer;", "intValue", "()I", true, integer_int_value),
-    ne!("Ljava/lang/Integer;", "longValue", "()J", true, integer_long_value),
-    ne!("Ljava/lang/Integer;", "floatValue", "()F", true, integer_float_value),
-    ne!("Ljava/lang/Integer;", "doubleValue", "()D", true, integer_double_value),
-    ne!("Ljava/lang/Integer;", "byteValue", "()B", true, integer_byte_value),
-    ne!("Ljava/lang/Integer;", "shortValue", "()S", true, integer_short_value),
-    ne!("Ljava/lang/Integer;", "equals", "(Ljava/lang/Object;)Z", true, integer_equals),
-    ne!("Ljava/lang/Integer;", "hashCode", "()I", true, integer_hash_code),
-    ne!("Ljava/lang/Integer;", "toString", "()Ljava/lang/String;", true, integer_to_string),
-    ne!("Ljava/lang/Integer;", "compareTo", "(Ljava/lang/Integer;)I", true, integer_compare_to),
-    ne!("Ljava/lang/Integer;", "compareTo", "(Ljava/lang/Object;)I", true, integer_compare_to),
+    ne!(
+        "Ljava/lang/Integer;",
+        "valueOf",
+        "(I)Ljava/lang/Integer;",
+        false,
+        integer_value_of
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "valueOf",
+        "(Ljava/lang/String;)Ljava/lang/Integer;",
+        false,
+        integer_value_of_str
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "parseInt",
+        "(Ljava/lang/String;)I",
+        false,
+        integer_parse_int
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "parseInt",
+        "(Ljava/lang/String;I)I",
+        false,
+        integer_parse_int
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "toString",
+        "(I)Ljava/lang/String;",
+        false,
+        integer_to_string_static
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "toString",
+        "(II)Ljava/lang/String;",
+        false,
+        integer_to_string_radix
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "toHexString",
+        "(I)Ljava/lang/String;",
+        false,
+        integer_to_hex
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "toBinaryString",
+        "(I)Ljava/lang/String;",
+        false,
+        integer_to_binary
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "toOctalString",
+        "(I)Ljava/lang/String;",
+        false,
+        integer_to_octal
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "compare",
+        "(II)I",
+        false,
+        integer_compare
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "bitCount",
+        "(I)I",
+        false,
+        integer_bit_count
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "highestOneBit",
+        "(I)I",
+        false,
+        integer_highest_one_bit
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "signum",
+        "(I)I",
+        false,
+        integer_signum
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "intValue",
+        "()I",
+        true,
+        integer_int_value
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "longValue",
+        "()J",
+        true,
+        integer_long_value
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "floatValue",
+        "()F",
+        true,
+        integer_float_value
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "doubleValue",
+        "()D",
+        true,
+        integer_double_value
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "byteValue",
+        "()B",
+        true,
+        integer_byte_value
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "shortValue",
+        "()S",
+        true,
+        integer_short_value
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "equals",
+        "(Ljava/lang/Object;)Z",
+        true,
+        integer_equals
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "hashCode",
+        "()I",
+        true,
+        integer_hash_code
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        integer_to_string
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "compareTo",
+        "(Ljava/lang/Integer;)I",
+        true,
+        integer_compare_to
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "compareTo",
+        "(Ljava/lang/Object;)I",
+        true,
+        integer_compare_to
+    ),
 ];

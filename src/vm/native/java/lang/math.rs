@@ -38,19 +38,31 @@ pub(crate) fn math_min_long(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn math_max_float(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Float(fmax32(float_of(vm, args[0]), float_of(vm, args[1]))))
+    Ok(JValue::Float(fmax32(
+        float_of(vm, args[0]),
+        float_of(vm, args[1]),
+    )))
 }
 
 pub(crate) fn math_min_float(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Float(fmin32(float_of(vm, args[0]), float_of(vm, args[1]))))
+    Ok(JValue::Float(fmin32(
+        float_of(vm, args[0]),
+        float_of(vm, args[1]),
+    )))
 }
 
 pub(crate) fn math_max_double(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Double(fmax64(double_of(vm, args[0]), double_of(vm, args[1]))))
+    Ok(JValue::Double(fmax64(
+        double_of(vm, args[0]),
+        double_of(vm, args[1]),
+    )))
 }
 
 pub(crate) fn math_min_double(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Double(fmin64(double_of(vm, args[0]), double_of(vm, args[1]))))
+    Ok(JValue::Double(fmin64(
+        double_of(vm, args[0]),
+        double_of(vm, args[1]),
+    )))
 }
 
 pub(crate) fn math_unop_f64(vm: &mut Vm, args: &[JValue], f: impl Fn(f64) -> f64) -> R {
@@ -66,7 +78,9 @@ pub(crate) fn math_cbrt(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn math_pow(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Double(double_of(vm, args[0]).powf(double_of(vm, args[1]))))
+    Ok(JValue::Double(
+        double_of(vm, args[0]).powf(double_of(vm, args[1])),
+    ))
 }
 
 pub(crate) fn math_exp(vm: &mut Vm, args: &[JValue]) -> R {
@@ -98,19 +112,31 @@ pub(crate) fn math_rint(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn math_floor_div_int(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Int(floor_div_i(int_of(vm, args[0]), int_of(vm, args[1]))))
+    Ok(JValue::Int(floor_div_i(
+        int_of(vm, args[0]),
+        int_of(vm, args[1]),
+    )))
 }
 
 pub(crate) fn math_floor_div_long(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Long(floor_div_l(long_of(vm, args[0]), long_of(vm, args[1]))))
+    Ok(JValue::Long(floor_div_l(
+        long_of(vm, args[0]),
+        long_of(vm, args[1]),
+    )))
 }
 
 pub(crate) fn math_floor_mod_int(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Int(floor_mod_i(int_of(vm, args[0]), int_of(vm, args[1]))))
+    Ok(JValue::Int(floor_mod_i(
+        int_of(vm, args[0]),
+        int_of(vm, args[1]),
+    )))
 }
 
 pub(crate) fn math_floor_mod_long(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Long(floor_mod_l(long_of(vm, args[0]), long_of(vm, args[1]))))
+    Ok(JValue::Long(floor_mod_l(
+        long_of(vm, args[0]),
+        long_of(vm, args[1]),
+    )))
 }
 
 pub(crate) fn math_round_float(vm: &mut Vm, args: &[JValue]) -> R {
@@ -173,7 +199,9 @@ pub(crate) fn math_atan(vm: &mut Vm, args: &[JValue]) -> R {
     math_unop_f64(vm, args, f64::atan)
 }
 pub(crate) fn math_atan2(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Double(double_of(vm, args[0]).atan2(double_of(vm, args[1]))))
+    Ok(JValue::Double(
+        double_of(vm, args[0]).atan2(double_of(vm, args[1])),
+    ))
 }
 pub(crate) fn math_to_radians(vm: &mut Vm, args: &[JValue]) -> R {
     math_unop_f64(vm, args, f64::to_radians)
@@ -182,10 +210,14 @@ pub(crate) fn math_to_degrees(vm: &mut Vm, args: &[JValue]) -> R {
     math_unop_f64(vm, args, f64::to_degrees)
 }
 pub(crate) fn math_copy_sign_float(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Float(float_of(vm, args[0]).copysign(float_of(vm, args[1]))))
+    Ok(JValue::Float(
+        float_of(vm, args[0]).copysign(float_of(vm, args[1])),
+    ))
 }
 pub(crate) fn math_copy_sign_double(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Double(double_of(vm, args[0]).copysign(double_of(vm, args[1]))))
+    Ok(JValue::Double(
+        double_of(vm, args[0]).copysign(double_of(vm, args[1])),
+    ))
 }
 
 // ---------------------------------------------------------------------------
@@ -214,14 +246,56 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/lang/Math;", "floor", "(D)D", false, math_floor),
     ne!("Ljava/lang/Math;", "ceil", "(D)D", false, math_ceil),
     ne!("Ljava/lang/Math;", "rint", "(D)D", false, math_rint),
-    ne!("Ljava/lang/Math;", "floorDiv", "(II)I", false, math_floor_div_int),
-    ne!("Ljava/lang/Math;", "floorDiv", "(JJ)J", false, math_floor_div_long),
-    ne!("Ljava/lang/Math;", "floorMod", "(II)I", false, math_floor_mod_int),
-    ne!("Ljava/lang/Math;", "floorMod", "(JJ)J", false, math_floor_mod_long),
+    ne!(
+        "Ljava/lang/Math;",
+        "floorDiv",
+        "(II)I",
+        false,
+        math_floor_div_int
+    ),
+    ne!(
+        "Ljava/lang/Math;",
+        "floorDiv",
+        "(JJ)J",
+        false,
+        math_floor_div_long
+    ),
+    ne!(
+        "Ljava/lang/Math;",
+        "floorMod",
+        "(II)I",
+        false,
+        math_floor_mod_int
+    ),
+    ne!(
+        "Ljava/lang/Math;",
+        "floorMod",
+        "(JJ)J",
+        false,
+        math_floor_mod_long
+    ),
     ne!("Ljava/lang/Math;", "round", "(F)I", false, math_round_float),
-    ne!("Ljava/lang/Math;", "round", "(D)J", false, math_round_double),
-    ne!("Ljava/lang/Math;", "signum", "(F)F", false, math_signum_float),
-    ne!("Ljava/lang/Math;", "signum", "(D)D", false, math_signum_double),
+    ne!(
+        "Ljava/lang/Math;",
+        "round",
+        "(D)J",
+        false,
+        math_round_double
+    ),
+    ne!(
+        "Ljava/lang/Math;",
+        "signum",
+        "(F)F",
+        false,
+        math_signum_float
+    ),
+    ne!(
+        "Ljava/lang/Math;",
+        "signum",
+        "(D)D",
+        false,
+        math_signum_double
+    ),
     ne!("Ljava/lang/Math;", "random", "()D", false, math_random),
     ne!("Ljava/lang/Math;", "sin", "(D)D", false, math_sin),
     ne!("Ljava/lang/Math;", "cos", "(D)D", false, math_cos),
@@ -230,8 +304,32 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/lang/Math;", "acos", "(D)D", false, math_acos),
     ne!("Ljava/lang/Math;", "atan", "(D)D", false, math_atan),
     ne!("Ljava/lang/Math;", "atan2", "(DD)D", false, math_atan2),
-    ne!("Ljava/lang/Math;", "toRadians", "(D)D", false, math_to_radians),
-    ne!("Ljava/lang/Math;", "toDegrees", "(D)D", false, math_to_degrees),
-    ne!("Ljava/lang/Math;", "copySign", "(FF)F", false, math_copy_sign_float),
-    ne!("Ljava/lang/Math;", "copySign", "(DD)D", false, math_copy_sign_double),
+    ne!(
+        "Ljava/lang/Math;",
+        "toRadians",
+        "(D)D",
+        false,
+        math_to_radians
+    ),
+    ne!(
+        "Ljava/lang/Math;",
+        "toDegrees",
+        "(D)D",
+        false,
+        math_to_degrees
+    ),
+    ne!(
+        "Ljava/lang/Math;",
+        "copySign",
+        "(FF)F",
+        false,
+        math_copy_sign_float
+    ),
+    ne!(
+        "Ljava/lang/Math;",
+        "copySign",
+        "(DD)D",
+        false,
+        math_copy_sign_double
+    ),
 ];

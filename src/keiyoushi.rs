@@ -18,11 +18,11 @@
 use std::rc::Rc;
 
 use crate::context::{Context, ContextError, SandboxOptions};
+use crate::vm::error::JvmError;
+use crate::vm::native::keiyoushi::{FILTER, FILTER_LIST, SCHAPTER, SMANGA};
 use crate::vm::object::Native;
 use crate::vm::value::JValue;
-use crate::vm::error::JvmError;
 use crate::vm::Vm;
-use crate::vm::native::keiyoushi::{SMANGA, SCHAPTER, FILTER_LIST, FILTER};
 
 pub use crate::vm::native::keiyoushi::{HttpData, HttpResp};
 
@@ -144,9 +144,10 @@ impl Keiyoushi {
         }
         let desc = self.vm().find_http_source_subclass()?;
         self.ctx.call(&desc, "<init>", &[])?;
-        let inst = self.ctx.last_instance().ok_or_else(|| {
-            JvmError::Resolution(format!("{desc}: no instance after <init>"))
-        })?;
+        let inst = self
+            .ctx
+            .last_instance()
+            .ok_or_else(|| JvmError::Resolution(format!("{desc}: no instance after <init>")))?;
         Ok(vec![Source { inst }])
     }
 
@@ -159,7 +160,9 @@ impl Keiyoushi {
     }
 
     pub fn supports_latest(&mut self, src: &Source) -> Result<bool, JvmError> {
-        let v = self.ctx.invoke_on(src.inst, "getSupportsLatest", "()Z", &[])?;
+        let v = self
+            .ctx
+            .invoke_on(src.inst, "getSupportsLatest", "()Z", &[])?;
         Ok(!v.is_zero())
     }
 
@@ -239,7 +242,8 @@ impl Keiyoushi {
             "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/SManga;",
             &[resp],
         )?;
-        self.read_manga(out)?.ok_or_else(|| JvmError::Resolution("mangaDetailsParse: not a SManga".into()))
+        self.read_manga(out)?
+            .ok_or_else(|| JvmError::Resolution("mangaDetailsParse: not a SManga".into()))
     }
 
     pub fn chapters(&mut self, src: &Source, manga: &Manga) -> Result<Vec<Chapter>, JvmError> {
@@ -263,7 +267,11 @@ impl Keiyoushi {
     pub fn pages(&mut self, src: &Source, chapter: &Chapter) -> Result<Vec<PageRef>, JvmError> {
         let (url, name) = (chapter.url.clone(), chapter.name.clone());
         let c = match self.ctx.vm().ensure_class_by_desc(SCHAPTER) {
-            Ok(cid) => JValue::Obj(self.ctx.vm().arena.alloc(cid, Vec::new(), Some(empty_chapter(url, name)))),
+            Ok(cid) => JValue::Obj(self.ctx.vm().arena.alloc(
+                cid,
+                Vec::new(),
+                Some(empty_chapter(url, name)),
+            )),
             Err(e) => return Err(e),
         };
         let req = self.ctx.invoke_on(
@@ -283,9 +291,12 @@ impl Keiyoushi {
     }
 
     pub fn filters(&mut self, src: &Source) -> Result<Vec<FilterDef>, JvmError> {
-        let flist = self
-            .ctx
-            .invoke_on(src.inst, "getFilterList", "()Leu/kanade/tachiyomi/source/model/FilterList;", &[])?;
+        let flist = self.ctx.invoke_on(
+            src.inst,
+            "getFilterList",
+            "()Leu/kanade/tachiyomi/source/model/FilterList;",
+            &[],
+        )?;
         self.read_filters(flist)
     }
 }
@@ -306,10 +317,9 @@ impl Keiyoushi {
             vm.intern("__host_execute"),
             vm.intern("(Lokhttp3/Request;)Lokhttp3/Response;"),
         );
-        let f = *vm
-            .natives
-            .get(&key)
-            .ok_or_else(|| JvmError::Resolution("keiyoushi bridge: __host_execute not registered".into()))?;
+        let f = *vm.natives.get(&key).ok_or_else(|| {
+            JvmError::Resolution("keiyoushi bridge: __host_execute not registered".into())
+        })?;
         match f(vm, &[req]) {
             Ok(v) => Ok(v),
             Err(crate::vm::NatErr::Throw(ex)) => Err(JvmError::Uncaught(ex)),
@@ -342,7 +352,13 @@ impl Keiyoushi {
         }
     }
 
-    fn call_str(&mut self, src: &Source, method: &str, sig: &str, args: &[JValue]) -> Result<String, JvmError> {
+    fn call_str(
+        &mut self,
+        src: &Source,
+        method: &str,
+        sig: &str,
+        args: &[JValue],
+    ) -> Result<String, JvmError> {
         let v = self.ctx.invoke_on(src.inst, method, sig, args)?;
         self.ctx
             .vm()
@@ -369,7 +385,17 @@ impl Keiyoushi {
 
     fn read_manga(&mut self, v: JValue) -> Result<Option<Manga>, JvmError> {
         match self.ctx.vm().payload_of(v) {
-            Some(Native::SManga { title, author, artist, description, genre, status, thumbnail_url, url, .. }) => Ok(Some(Manga {
+            Some(Native::SManga {
+                title,
+                author,
+                artist,
+                description,
+                genre,
+                status,
+                thumbnail_url,
+                url,
+                ..
+            }) => Ok(Some(Manga {
                 title,
                 author: author.unwrap_or_default(),
                 artist: artist.unwrap_or_default(),
@@ -391,7 +417,13 @@ impl Keiyoushi {
         let mut out = Vec::with_capacity(items.len());
         for c in items {
             match self.ctx.vm().payload_of(c) {
-                Some(Native::SChapter { name, url, date_upload, scanlator, .. }) => out.push(Chapter {
+                Some(Native::SChapter {
+                    name,
+                    url,
+                    date_upload,
+                    scanlator,
+                    ..
+                }) => out.push(Chapter {
                     name,
                     url,
                     date_upload,
@@ -411,7 +443,9 @@ impl Keiyoushi {
         let mut out = Vec::with_capacity(items.len());
         for p in items {
             match self.ctx.vm().payload_of(p) {
-                Some(Native::SPPage { index, name, url, .. }) => out.push(PageRef { index, name, url }),
+                Some(Native::SPPage {
+                    index, name, url, ..
+                }) => out.push(PageRef { index, name, url }),
                 _ => {}
             }
         }
@@ -428,7 +462,13 @@ impl Keiyoushi {
             let id = f.as_obj();
             let kind = self.filter_kind(id);
             match self.ctx.vm().payload_of(f) {
-                Some(Native::SFilter { name, state, options, children, .. }) => {
+                Some(Native::SFilter {
+                    name,
+                    state,
+                    options,
+                    children,
+                    ..
+                }) => {
                     if kind == FilterKind::Group {
                         out.push(FilterDef {
                             kind,
@@ -439,8 +479,12 @@ impl Keiyoushi {
                         for c in children {
                             let cid = c.as_obj();
                             let k = self.filter_kind(cid);
-                            if let Some(Native::SFilter { name, state, options, .. }) =
-                                self.ctx.vm().payload_of(c)
+                            if let Some(Native::SFilter {
+                                name,
+                                state,
+                                options,
+                                ..
+                            }) = self.ctx.vm().payload_of(c)
                             {
                                 out.push(FilterDef {
                                     kind: k,
@@ -518,7 +562,11 @@ impl Keiyoushi {
             url: m.url.clone(),
             update_strategy: JValue::Null,
         };
-        Ok(JValue::Obj(self.ctx.vm().arena.alloc(cid, Vec::new(), Some(payload))))
+        Ok(JValue::Obj(self.ctx.vm().arena.alloc(
+            cid,
+            Vec::new(),
+            Some(payload),
+        )))
     }
 
     /// Builds a FilterList object carrying the given per-filter states.
@@ -535,9 +583,17 @@ impl Keiyoushi {
                 options: Vec::new(),
                 text_value: String::new(),
             };
-            children.push(JValue::Obj(self.ctx.vm().arena.alloc(fc, Vec::new(), Some(payload))));
+            children.push(JValue::Obj(self.ctx.vm().arena.alloc(
+                fc,
+                Vec::new(),
+                Some(payload),
+            )));
         }
-        Ok(JValue::Obj(self.ctx.vm().arena.alloc(cid, Vec::new(), Some(Native::SFilterList(children)))))
+        Ok(JValue::Obj(self.ctx.vm().arena.alloc(
+            cid,
+            Vec::new(),
+            Some(Native::SFilterList(children)),
+        )))
     }
 }
 

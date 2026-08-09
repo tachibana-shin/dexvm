@@ -6,7 +6,25 @@ use crate::vm::native::*;
 
 /// Native methods for Ljava/util/ListIterator;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/util/ListIterator;", "hasNext", "()Z", true, iter_has_next),
-    ne!("Ljava/util/ListIterator;", "next", "()Ljava/lang/Object;", true, iter_next),
-    ne!("Ljava/util/ListIterator;", "remove", "()V", true, iter_remove),
+    ne!(
+        "Ljava/util/ListIterator;",
+        "hasNext",
+        "()Z",
+        true,
+        iter_has_next
+    ),
+    ne!(
+        "Ljava/util/ListIterator;",
+        "next",
+        "()Ljava/lang/Object;",
+        true,
+        iter_next
+    ),
+    ne!(
+        "Ljava/util/ListIterator;",
+        "remove",
+        "()V",
+        true,
+        iter_remove
+    ),
 ];

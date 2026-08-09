@@ -75,7 +75,9 @@ impl EncodedValue {
                 for i in 0..size {
                     v |= u64::from(c.u8()?) << (8 * i);
                 }
-                Ok(EncodedValue::Float(f32::from_bits((v << (32 - 8 * size)) as u32)))
+                Ok(EncodedValue::Float(f32::from_bits(
+                    (v << (32 - 8 * size)) as u32,
+                )))
             }
             0x11 => {
                 let mut v: u64 = 0;
@@ -112,7 +114,10 @@ impl EncodedValue {
             }
             0x1e => Ok(EncodedValue::Null),
             0x1f => Ok(EncodedValue::Bool(size > 0 && c.u8()? != 0)),
-            other => Err(DexError::new(c.pos - 1, format!("unknown encoded value type {other:#x}"))),
+            other => Err(DexError::new(
+                c.pos - 1,
+                format!("unknown encoded value type {other:#x}"),
+            )),
         }
     }
 }
@@ -226,15 +231,24 @@ impl DexFile {
         let _signature = c.bytes(20)?;
         let file_size = c.u32()? as usize;
         if file_size != data.len() {
-            return Err(DexError::new(12, format!("file_size mismatch: {file_size} != {}", data.len())));
+            return Err(DexError::new(
+                12,
+                format!("file_size mismatch: {file_size} != {}", data.len()),
+            ));
         }
         let header_size = c.u32()?;
         if header_size != 0x70 {
-            return Err(DexError::new(16, format!("unexpected header size {header_size:#x}")));
+            return Err(DexError::new(
+                16,
+                format!("unexpected header size {header_size:#x}"),
+            ));
         }
         let endian = c.u32()?;
         if endian != 0x1234_5678 {
-            return Err(DexError::new(20, "unexpected endian tag (reversed-endian dex not supported)"));
+            return Err(DexError::new(
+                20,
+                "unexpected endian tag (reversed-endian dex not supported)",
+            ));
         }
         let _link_size = c.u32()?;
         let _link_off = c.u32()?;
@@ -261,7 +275,7 @@ impl DexFile {
             let sc = &mut Cursor::new(data);
             sc.seek(off)?;
             sc.uleb128()?; // utf16 length (not needed; we scan for NUL)
-            // find the NUL-terminated MUTF-8 payload
+                           // find the NUL-terminated MUTF-8 payload
             let mut end = sc.pos;
             while end < data.len() && data[end] != 0 {
                 end += 1;
@@ -295,7 +309,11 @@ impl DexFile {
                 }
                 v
             };
-            protos.push(ProtoId { shorty, return_type, params });
+            protos.push(ProtoId {
+                shorty,
+                return_type,
+                params,
+            });
         }
 
         // --- field ids ---
@@ -395,7 +413,10 @@ impl DexFile {
 
     pub fn type_descriptor(&self, type_idx: u32) -> &str {
         let s = self.types.get(type_idx as usize).copied().unwrap_or(0) as usize;
-        self.strings.get(s).map(|s| s.as_ref()).unwrap_or("<invalid-type>")
+        self.strings
+            .get(s)
+            .map(|s| s.as_ref())
+            .unwrap_or("<invalid-type>")
     }
 
     pub fn method_key(&self, method_idx: u32) -> Option<(u32, u32, u32)> {
@@ -425,14 +446,20 @@ fn parse_class_data(data: &[u8], off: usize) -> Result<ClassData, DexError> {
     for _ in 0..static_fields_size {
         idx += c.uleb128()?;
         let access_flags = c.uleb128()?;
-        static_fields.push(EncodedField { field_idx: idx, access_flags });
+        static_fields.push(EncodedField {
+            field_idx: idx,
+            access_flags,
+        });
     }
     let mut instance_fields = Vec::with_capacity(instance_fields_size);
     let mut idx = 0u32;
     for _ in 0..instance_fields_size {
         idx += c.uleb128()?;
         let access_flags = c.uleb128()?;
-        instance_fields.push(EncodedField { field_idx: idx, access_flags });
+        instance_fields.push(EncodedField {
+            field_idx: idx,
+            access_flags,
+        });
     }
     let mut direct_methods = Vec::with_capacity(direct_methods_size);
     let mut idx = 0u32;
@@ -445,7 +472,11 @@ fn parse_class_data(data: &[u8], off: usize) -> Result<ClassData, DexError> {
         } else {
             Some(Arc::new(parse_code_item(data, code_off as usize)?))
         };
-        direct_methods.push(EncodedMethod { method_idx: idx, access_flags, code });
+        direct_methods.push(EncodedMethod {
+            method_idx: idx,
+            access_flags,
+            code,
+        });
     }
     let mut virtual_methods = Vec::with_capacity(virtual_methods_size);
     let mut idx = 0u32;
@@ -458,7 +489,11 @@ fn parse_class_data(data: &[u8], off: usize) -> Result<ClassData, DexError> {
         } else {
             Some(Arc::new(parse_code_item(data, code_off as usize)?))
         };
-        virtual_methods.push(EncodedMethod { method_idx: idx, access_flags, code });
+        virtual_methods.push(EncodedMethod {
+            method_idx: idx,
+            access_flags,
+            code,
+        });
     }
     Ok(ClassData {
         static_fields,
@@ -480,7 +515,10 @@ fn parse_code_item(data: &[u8], off: usize) -> Result<CodeItem, DexError> {
     let insns_bytes = c.bytes(insns_size * 2)?;
     let mut insns = Vec::with_capacity(insns_size);
     for i in 0..insns_size {
-        insns.push(u16::from_le_bytes([insns_bytes[i * 2], insns_bytes[i * 2 + 1]]));
+        insns.push(u16::from_le_bytes([
+            insns_bytes[i * 2],
+            insns_bytes[i * 2 + 1],
+        ]));
     }
     // align to 4 bytes for the try list
     if (tries_size > 0) && (insns_size % 2 == 1) {
@@ -513,7 +551,12 @@ fn parse_code_item(data: &[u8], off: usize) -> Result<CodeItem, DexError> {
             catch_all = Some(c.uleb128()?);
         }
         c.seek(saved)?;
-        tries.push(TryItem { start_addr, insn_count, handlers, catch_all });
+        tries.push(TryItem {
+            start_addr,
+            insn_count,
+            handlers,
+            catch_all,
+        });
     }
     Ok(CodeItem {
         registers_size,
@@ -568,7 +611,7 @@ mod tests {
         d.extend_from_slice(&0u32.to_le_bytes()); // class_defs_off
         d.extend_from_slice(&0u32.to_le_bytes()); // data_size
         d.extend_from_slice(&0u32.to_le_bytes()); // data_off
-        // string_ids[0] = offset of string_data at 0x74
+                                                  // string_ids[0] = offset of string_data at 0x74
         d.extend_from_slice(&0x74u32.to_le_bytes());
         // string_data "hi": uleb utf16_len=2, bytes 'h','i', NUL
         d.push(2);

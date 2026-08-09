@@ -1,7 +1,9 @@
 use crate::vm::native::*;
 
 pub(crate) fn prim_class_obj(vm: &mut Vm, code: u8) -> JValue {
-    let class = vm.ensure_class_by_desc("Ljava/lang/Class;").expect("Class shim");
+    let class = vm
+        .ensure_class_by_desc("Ljava/lang/Class;")
+        .expect("Class shim");
     JValue::Obj(vm.arena.alloc(
         class,
         Vec::new(),
@@ -35,7 +37,6 @@ pub fn lazy_double_type(vm: &mut Vm) -> JValue {
 }
 
 // java.lang.Class host shims.
-
 
 // java.lang.Class
 // ---------------------------------------------------------------------------
@@ -194,7 +195,8 @@ pub(crate) fn class_is_array(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(cop) = class_cop(vm, args[0]) else {
         return Err(npe(vm));
     };
-    let is_arr = matches!(cop, ClassOrPrim::Class(c) if vm.classes[*c as usize].array_elem.is_some());
+    let is_arr =
+        matches!(cop, ClassOrPrim::Class(c) if vm.classes[*c as usize].array_elem.is_some());
     Ok(JValue::Int(i32::from(is_arr)))
 }
 
@@ -202,7 +204,10 @@ pub(crate) fn class_is_primitive(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(cop) = class_cop(vm, args[0]) else {
         return Err(npe(vm));
     };
-    Ok(JValue::Int(i32::from(matches!(cop, ClassOrPrim::Primitive(_)))))
+    Ok(JValue::Int(i32::from(matches!(
+        cop,
+        ClassOrPrim::Primitive(_)
+    ))))
 }
 
 pub(crate) fn class_is_interface(vm: &mut Vm, args: &[JValue]) -> R {
@@ -224,11 +229,15 @@ pub(crate) fn class_get_component_type(vm: &mut Vm, args: &[JValue]) -> R {
             };
             let e_desc = vm.dex.type_descriptor(elem).to_string();
             if e_desc.len() == 1 {
-                let class_class = vm.ensure_class_by_desc("Ljava/lang/Class;").map_err(nat_fatal)?;
+                let class_class = vm
+                    .ensure_class_by_desc("Ljava/lang/Class;")
+                    .map_err(nat_fatal)?;
                 return Ok(JValue::Obj(vm.arena.alloc(
                     class_class,
                     Vec::new(),
-                    Some(Native::ClassObj(ClassOrPrim::Primitive(e_desc.as_bytes()[0]))),
+                    Some(Native::ClassObj(ClassOrPrim::Primitive(
+                        e_desc.as_bytes()[0],
+                    ))),
                 )));
             }
             let ec = vm.ensure_class_by_type(elem).map_err(nat_fatal)?;
@@ -284,7 +293,9 @@ pub(crate) fn class_get_modifiers(_vm: &mut Vm, _args: &[JValue]) -> R {
 
 pub(crate) fn class_for_name(vm: &mut Vm, args: &[JValue]) -> R {
     let name = jstr(vm, args[0])?;
-    let class_class = vm.ensure_class_by_desc("Ljava/lang/Class;").map_err(nat_fatal)?;
+    let class_class = vm
+        .ensure_class_by_desc("Ljava/lang/Class;")
+        .map_err(nat_fatal)?;
     if matches!(
         name.as_str(),
         "byte" | "char" | "double" | "float" | "int" | "long" | "short" | "boolean" | "void"
@@ -292,7 +303,9 @@ pub(crate) fn class_for_name(vm: &mut Vm, args: &[JValue]) -> R {
         return Ok(JValue::Obj(vm.arena.alloc(
             class_class,
             Vec::new(),
-            Some(Native::ClassObj(ClassOrPrim::Primitive(prim_code(&name).as_bytes()[0]))),
+            Some(Native::ClassObj(ClassOrPrim::Primitive(
+                prim_code(&name).as_bytes()[0],
+            ))),
         )));
     }
     let desc = if name.starts_with('[') {
@@ -334,22 +347,124 @@ pub(crate) fn class_get_interfaces(_vm: &mut Vm, _args: &[JValue]) -> R {
 
 /// Native methods for Ljava/lang/Class;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/lang/Class;", "getName", "()Ljava/lang/String;", true, class_get_name),
-    ne!("Ljava/lang/Class;", "getSimpleName", "()Ljava/lang/String;", true, class_get_simple_name),
-    ne!("Ljava/lang/Class;", "getCanonicalName", "()Ljava/lang/String;", true, class_get_canonical_name),
-    ne!("Ljava/lang/Class;", "toString", "()Ljava/lang/String;", true, class_to_string),
-    ne!("Ljava/lang/Class;", "isInstance", "(Ljava/lang/Object;)Z", true, class_is_instance),
+    ne!(
+        "Ljava/lang/Class;",
+        "getName",
+        "()Ljava/lang/String;",
+        true,
+        class_get_name
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "getSimpleName",
+        "()Ljava/lang/String;",
+        true,
+        class_get_simple_name
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "getCanonicalName",
+        "()Ljava/lang/String;",
+        true,
+        class_get_canonical_name
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        class_to_string
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "isInstance",
+        "(Ljava/lang/Object;)Z",
+        true,
+        class_is_instance
+    ),
     ne!("Ljava/lang/Class;", "isArray", "()Z", true, class_is_array),
-    ne!("Ljava/lang/Class;", "isPrimitive", "()Z", true, class_is_primitive),
-    ne!("Ljava/lang/Class;", "isInterface", "()Z", true, class_is_interface),
-    ne!("Ljava/lang/Class;", "getComponentType", "()Ljava/lang/Class;", true, class_get_component_type),
-    ne!("Ljava/lang/Class;", "getSuperclass", "()Ljava/lang/Class;", true, class_get_superclass),
-    ne!("Ljava/lang/Class;", "cast", "(Ljava/lang/Object;)Ljava/lang/Object;", true, class_cast),
-    ne!("Ljava/lang/Class;", "desiredAssertionStatus", "()Z", true, class_desired_assertion_status),
-    ne!("Ljava/lang/Class;", "getClassLoader", "()Ljava/lang/ClassLoader;", true, class_get_class_loader),
-    ne!("Ljava/lang/Class;", "getModifiers", "()I", true, class_get_modifiers),
-    ne!("Ljava/lang/Class;", "isAssignableFrom", "(Ljava/lang/Class;)Z", true, class_is_assignable_from),
-    ne!("Ljava/lang/Class;", "getInterfaces", "()[Ljava/lang/Class;", true, class_get_interfaces),
-    ne!("Ljava/lang/Class;", "forName", "(Ljava/lang/String;)Ljava/lang/Class;", false, class_for_name),
-    ne!("Ljava/lang/Class;", "forName", "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;", false, class_for_name),
+    ne!(
+        "Ljava/lang/Class;",
+        "isPrimitive",
+        "()Z",
+        true,
+        class_is_primitive
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "isInterface",
+        "()Z",
+        true,
+        class_is_interface
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "getComponentType",
+        "()Ljava/lang/Class;",
+        true,
+        class_get_component_type
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "getSuperclass",
+        "()Ljava/lang/Class;",
+        true,
+        class_get_superclass
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "cast",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        class_cast
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "desiredAssertionStatus",
+        "()Z",
+        true,
+        class_desired_assertion_status
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "getClassLoader",
+        "()Ljava/lang/ClassLoader;",
+        true,
+        class_get_class_loader
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "getModifiers",
+        "()I",
+        true,
+        class_get_modifiers
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "isAssignableFrom",
+        "(Ljava/lang/Class;)Z",
+        true,
+        class_is_assignable_from
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "getInterfaces",
+        "()[Ljava/lang/Class;",
+        true,
+        class_get_interfaces
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "forName",
+        "(Ljava/lang/String;)Ljava/lang/Class;",
+        false,
+        class_for_name
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "forName",
+        "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;",
+        false,
+        class_for_name
+    ),
 ];

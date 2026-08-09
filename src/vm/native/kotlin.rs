@@ -82,7 +82,8 @@ pub(crate) fn duration_to_duration_long(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn regex_init(vm: &mut Vm, args: &[JValue]) -> R {
     let src = jstr(vm, args[1])?;
-    let re = ::fancy_regex::Regex::new(&src).map_err(|e| iae(vm, format!("bad regex {src}: {e}")))?;
+    let re =
+        ::fancy_regex::Regex::new(&src).map_err(|e| iae(vm, format!("bad regex {src}: {e}")))?;
     let Some(n) = payload_mut(vm, args[0]) else {
         return Err(npe(vm));
     };
@@ -132,7 +133,11 @@ pub(crate) fn collections_list_of_array(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn collections_list_of_single(vm: &mut Vm, args: &[JValue]) -> R {
-    let items = if args[0].is_null() { Vec::new() } else { vec![args[0]] };
+    let items = if args[0].is_null() {
+        Vec::new()
+    } else {
+        vec![args[0]]
+    };
     list_alloc(vm, items)
 }
 
@@ -144,7 +149,11 @@ pub(crate) fn stringskt_starts_with_default(vm: &mut Vm, args: &[JValue]) -> R {
     let s = charseq_of(vm, args[0])?;
     let prefix = charseq_of(vm, args[1])?;
     let ignore = args[2].as_int() != 0;
-    let ignore_case = if args[3].as_int() & 4 != 0 { false } else { ignore };
+    let ignore_case = if args[3].as_int() & 4 != 0 {
+        false
+    } else {
+        ignore
+    };
     let r = if ignore_case {
         s.to_lowercase().starts_with(&prefix.to_lowercase())
     } else {
@@ -201,13 +210,33 @@ pub(crate) fn collections_size_or_default(vm: &mut Vm, args: &[JValue]) -> R {
 /// transform, mask, marker).
 pub(crate) fn collections_join_to_string_default(vm: &mut Vm, args: &[JValue]) -> R {
     let items = coll_elems(vm, args[0])?;
-    let mask = if args.len() > 7 { int_of(vm, args[7]) } else { 0 };
+    let mask = if args.len() > 7 {
+        int_of(vm, args[7])
+    } else {
+        0
+    };
     let has = |bit: i32| (mask >> bit) & 1 == 0;
-    let separator = if has(0) { charseq_of(vm, args[1])? } else { ", ".to_string() };
-    let prefix = if has(1) { charseq_of(vm, args[2])? } else { String::new() };
-    let postfix = if has(2) { charseq_of(vm, args[3])? } else { String::new() };
+    let separator = if has(0) {
+        charseq_of(vm, args[1])?
+    } else {
+        ", ".to_string()
+    };
+    let prefix = if has(1) {
+        charseq_of(vm, args[2])?
+    } else {
+        String::new()
+    };
+    let postfix = if has(2) {
+        charseq_of(vm, args[3])?
+    } else {
+        String::new()
+    };
     let limit = if has(3) { int_of(vm, args[4]) } else { -1 };
-    let truncated = if has(4) { charseq_of(vm, args[5])? } else { "...".to_string() };
+    let truncated = if has(4) {
+        charseq_of(vm, args[5])?
+    } else {
+        "...".to_string()
+    };
     let transform = if has(5) { args[6] } else { JValue::Null };
     let mut out = String::new();
     out.push_str(&prefix);
@@ -221,7 +250,13 @@ pub(crate) fn collections_join_to_string_default(vm: &mut Vm, args: &[JValue]) -
         let s = if transform.is_null() {
             charseq_of(vm, *v)?
         } else {
-            let r = inv_virt(vm, transform, "invoke", "(Ljava/lang/Object;)Ljava/lang/Object;", &[*v])?;
+            let r = inv_virt(
+                vm,
+                transform,
+                "invoke",
+                "(Ljava/lang/Object;)Ljava/lang/Object;",
+                &[*v],
+            )?;
             charseq_of(vm, r)?
         };
         out.push_str(&s);
@@ -351,7 +386,6 @@ pub(crate) fn comparisons_max_of(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
-
 // ---------------------------------------------------------------------------
 pub(crate) fn strings_append_array(vm: &mut Vm, args: &[JValue]) -> R {
     let items = match payload(vm, args[1]) {
@@ -377,7 +411,6 @@ pub(crate) fn strings_append_array(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
-
 // kotlin.text.StringsKt synthetic default-arg shims (mask bit 2 = ignoreCase default false)
 // ---------------------------------------------------------------------------
 
@@ -386,7 +419,11 @@ fn stringskt_contains_default(vm: &mut Vm, args: &[JValue]) -> R {
     let haystack = charseq_of(vm, args[0])?;
     let needle = charseq_of(vm, args[1])?;
     let ignore = args[2].as_int() != 0;
-    let ignore_case = if args[3].as_int() & 2 != 0 { false } else { ignore };
+    let ignore_case = if args[3].as_int() & 2 != 0 {
+        false
+    } else {
+        ignore
+    };
     let found = if ignore_case {
         haystack.to_lowercase().contains(&needle.to_lowercase())
     } else {
@@ -400,7 +437,11 @@ fn stringskt_replace_default(vm: &mut Vm, args: &[JValue]) -> R {
     let from = charseq_of(vm, args[1])?;
     let to = charseq_of(vm, args[2])?;
     let ignore = args[3].as_int() != 0;
-    let ignore_case = if args[4].as_int() & 4 != 0 { false } else { ignore };
+    let ignore_case = if args[4].as_int() & 4 != 0 {
+        false
+    } else {
+        ignore
+    };
     let r = if ignore_case {
         regex_replace_case_insensitive(&s, &from, &to)
     } else {
@@ -458,7 +499,9 @@ pub(crate) fn keiyoushi_duration_minus(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn keiyoushi_duration_compare(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Int(long_of(vm, args[0]).cmp(&long_of(vm, args[1])) as i32))
+    Ok(JValue::Int(
+        long_of(vm, args[0]).cmp(&long_of(vm, args[1])) as i32
+    ))
 }
 
 pub(crate) fn keiyoushi_duration_equals(vm: &mut Vm, args: &[JValue]) -> R {
@@ -466,7 +509,6 @@ pub(crate) fn keiyoushi_duration_equals(vm: &mut Vm, args: &[JValue]) -> R {
         long_of(vm, args[0]) == long_of(vm, args[1]),
     )))
 }
-
 
 // ---------------------------------------------------------------------------
 // kotlin stdlib native table

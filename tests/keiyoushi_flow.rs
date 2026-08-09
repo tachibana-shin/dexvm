@@ -145,24 +145,41 @@ fn flow_multiapk_metadata() {
         .filter_map(|e| {
             let p = e.unwrap().path();
             let f = p.file_name()?.to_string_lossy().into_owned();
-            (f.starts_with("tachiyomi-") && f.ends_with(".apk") && p.to_string_lossy() != apk_path())
-                .then(|| p.to_string_lossy().into_owned())
+            (f.starts_with("tachiyomi-")
+                && f.ends_with(".apk")
+                && p.to_string_lossy() != apk_path())
+            .then(|| p.to_string_lossy().into_owned())
         })
         .collect();
     apks.sort();
-    assert!(!apks.is_empty(), "expected fixture apks beyond the default one");
+    assert!(
+        !apks.is_empty(),
+        "expected fixture apks beyond the default one"
+    );
     for apk in apks {
         let mut ext = Keiyoushi::open(&apk).unwrap_or_else(|e| panic!("open {apk}: {e}"));
-        let srcs = ext.sources().unwrap_or_else(|e| panic!("sources {apk}: {e}"));
+        let srcs = ext
+            .sources()
+            .unwrap_or_else(|e| panic!("sources {apk}: {e}"));
         assert!(!srcs.is_empty(), "{apk}: no sources");
         for src in &srcs {
-            let name = ext.source_name(src).unwrap_or_else(|e| panic!("{apk}: {e}"));
-            assert!(!name.is_empty() && name.len() < 64, "{apk}: bad name {name:?}");
+            let name = ext
+                .source_name(src)
+                .unwrap_or_else(|e| panic!("{apk}: {e}"));
+            assert!(
+                !name.is_empty() && name.len() < 64,
+                "{apk}: bad name {name:?}"
+            );
             let lang = ext.source_lang(src).unwrap();
-            assert!(!lang.is_empty() && lang.len() <= 6, "{apk}: bad lang {lang:?}");
+            assert!(
+                !lang.is_empty() && lang.len() <= 6,
+                "{apk}: bad lang {lang:?}"
+            );
             let _ = ext.supports_latest(src).unwrap();
         }
-        let fl = ext.filters(&srcs[0]).unwrap_or_else(|e| panic!("filters {apk}: {e}"));
+        let fl = ext
+            .filters(&srcs[0])
+            .unwrap_or_else(|e| panic!("filters {apk}: {e}"));
         assert!(!fl.is_empty(), "{apk}: no filters");
     }
 }
@@ -183,8 +200,15 @@ fn flow_filters() {
         assert!(kinds.contains(&dexvm::keiyoushi::FilterKind::TriState));
     }
     // every Select filter has non-empty options
-    for f in fl.iter().filter(|f| f.kind == dexvm::keiyoushi::FilterKind::Select) {
-        assert!(!f.options.is_empty(), "select filter {:?} has no options", f.name);
+    for f in fl
+        .iter()
+        .filter(|f| f.kind == dexvm::keiyoushi::FilterKind::Select)
+    {
+        assert!(
+            !f.options.is_empty(),
+            "select filter {:?} has no options",
+            f.name
+        );
     }
 }
 
@@ -198,8 +222,14 @@ fn flow_popular() {
     let pages = ext.popular(src, 1).unwrap();
     match state {
         FixtureState::Ready => {
-            assert!(!pages.mangas.is_empty(), "popular: expected mangas from captured html");
-            assert!(!pages.has_next, "page 1 should have no [rel=next] for this source");
+            assert!(
+                !pages.mangas.is_empty(),
+                "popular: expected mangas from captured html"
+            );
+            assert!(
+                !pages.has_next,
+                "page 1 should have no [rel=next] for this source"
+            );
         }
         FixtureState::Blocked => assert!(pages.mangas.is_empty()),
         FixtureState::Missing => unreachable!(),
@@ -219,10 +249,19 @@ fn flow_search_with_filter_states() {
     let src = &ext.sources().unwrap()[0];
     let fl = ext.filters(src).unwrap();
     // default states for every filter — exercises FilterList building + search
-    let states: Vec<FilterState> = fl.iter().map(|f| FilterState { name: f.name.clone(), state: f.state }).collect();
+    let states: Vec<FilterState> = fl
+        .iter()
+        .map(|f| FilterState {
+            name: f.name.clone(),
+            state: f.state,
+        })
+        .collect();
     let pages = ext.search(src, 1, "one piece", &states).unwrap();
     match state {
-        FixtureState::Ready => assert!(!pages.mangas.is_empty(), "search: expected mangas from captured html"),
+        FixtureState::Ready => assert!(
+            !pages.mangas.is_empty(),
+            "search: expected mangas from captured html"
+        ),
         FixtureState::Blocked => assert!(pages.mangas.is_empty()),
         FixtureState::Missing => unreachable!(),
     }
@@ -246,8 +285,14 @@ fn flow_manga_details() {
     let details = ext.manga_details(src, &manga).unwrap();
     match state {
         FixtureState::Ready => {
-            assert_eq!(details.url, manga.url, "details must echo the requested url");
-            assert!(!details.description.is_empty(), "expected a description from captured html");
+            assert_eq!(
+                details.url, manga.url,
+                "details must echo the requested url"
+            );
+            assert!(
+                !details.description.is_empty(),
+                "expected a description from captured html"
+            );
         }
         FixtureState::Blocked => {}
         FixtureState::Missing => unreachable!(),
@@ -317,6 +362,7 @@ fn http_resp_header_is_case_insensitive() {
     assert_eq!(resp.header("CONTENT-TYPE"), Some("text/html"));
     assert_eq!(resp.header("Content-Encoding"), None);
     // last occurrence wins
-    resp.headers.push(("content-type".to_string(), "text/plain".to_string()));
+    resp.headers
+        .push(("content-type".to_string(), "text/plain".to_string()));
     assert_eq!(resp.header("Content-Type"), Some("text/plain"));
 }

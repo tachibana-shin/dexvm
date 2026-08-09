@@ -49,9 +49,39 @@ pub(crate) fn condition_signal_all(_vm: &mut Vm, _args: &[JValue]) -> R {
 
 /// Native methods for Ljava/util/concurrent/locks/ReentrantLock;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/util/concurrent/locks/ReentrantLock;", "<init>", "()V", true, reentrant_lock_init),
-    ne!("Ljava/util/concurrent/locks/ReentrantLock;", "<init>", "(Z)V", true, reentrant_lock_init),
-    ne!("Ljava/util/concurrent/locks/ReentrantLock;", "lock", "()V", true, reentrant_lock_lock),
-    ne!("Ljava/util/concurrent/locks/ReentrantLock;", "unlock", "()V", true, reentrant_lock_unlock),
-    ne!("Ljava/util/concurrent/locks/ReentrantLock;", "newCondition", "()Ljava/util/concurrent/locks/Condition;", true, reentrant_lock_new_condition),
+    ne!(
+        "Ljava/util/concurrent/locks/ReentrantLock;",
+        "<init>",
+        "()V",
+        true,
+        reentrant_lock_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/locks/ReentrantLock;",
+        "<init>",
+        "(Z)V",
+        true,
+        reentrant_lock_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/locks/ReentrantLock;",
+        "lock",
+        "()V",
+        true,
+        reentrant_lock_lock
+    ),
+    ne!(
+        "Ljava/util/concurrent/locks/ReentrantLock;",
+        "unlock",
+        "()V",
+        true,
+        reentrant_lock_unlock
+    ),
+    ne!(
+        "Ljava/util/concurrent/locks/ReentrantLock;",
+        "newCondition",
+        "()Ljava/util/concurrent/locks/Condition;",
+        true,
+        reentrant_lock_new_condition
+    ),
 ];

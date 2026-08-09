@@ -146,14 +146,74 @@ pub(crate) fn throwable_get_stack_trace(vm: &mut Vm, _args: &[JValue]) -> R {
 
 /// Native methods for Ljava/lang/Throwable;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/lang/Throwable;", "getMessage", "()Ljava/lang/String;", true, throwable_get_message),
-    ne!("Ljava/lang/Throwable;", "getLocalizedMessage", "()Ljava/lang/String;", true, throwable_get_localized_message),
-    ne!("Ljava/lang/Throwable;", "getCause", "()Ljava/lang/Throwable;", true, throwable_get_cause),
-    ne!("Ljava/lang/Throwable;", "initCause", "(Ljava/lang/Throwable;)Ljava/lang/Throwable;", true, throwable_init_cause),
-    ne!("Ljava/lang/Throwable;", "toString", "()Ljava/lang/String;", true, throwable_to_string),
-    ne!("Ljava/lang/Throwable;", "printStackTrace", "()V", true, throwable_print_stack_trace),
-    ne!("Ljava/lang/Throwable;", "fillInStackTrace", "()Ljava/lang/Throwable;", true, throwable_fill_in_stack_trace),
-    ne!("Ljava/lang/Throwable;", "addSuppressed", "(Ljava/lang/Throwable;)V", true, throwable_add_suppressed),
-    ne!("Ljava/lang/Throwable;", "getSuppressed", "()[Ljava/lang/Throwable;", true, throwable_get_suppressed),
-    ne!("Ljava/lang/Throwable;", "getStackTrace", "()[Ljava/lang/StackTraceElement;", true, throwable_get_stack_trace),
+    ne!(
+        "Ljava/lang/Throwable;",
+        "getMessage",
+        "()Ljava/lang/String;",
+        true,
+        throwable_get_message
+    ),
+    ne!(
+        "Ljava/lang/Throwable;",
+        "getLocalizedMessage",
+        "()Ljava/lang/String;",
+        true,
+        throwable_get_localized_message
+    ),
+    ne!(
+        "Ljava/lang/Throwable;",
+        "getCause",
+        "()Ljava/lang/Throwable;",
+        true,
+        throwable_get_cause
+    ),
+    ne!(
+        "Ljava/lang/Throwable;",
+        "initCause",
+        "(Ljava/lang/Throwable;)Ljava/lang/Throwable;",
+        true,
+        throwable_init_cause
+    ),
+    ne!(
+        "Ljava/lang/Throwable;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        throwable_to_string
+    ),
+    ne!(
+        "Ljava/lang/Throwable;",
+        "printStackTrace",
+        "()V",
+        true,
+        throwable_print_stack_trace
+    ),
+    ne!(
+        "Ljava/lang/Throwable;",
+        "fillInStackTrace",
+        "()Ljava/lang/Throwable;",
+        true,
+        throwable_fill_in_stack_trace
+    ),
+    ne!(
+        "Ljava/lang/Throwable;",
+        "addSuppressed",
+        "(Ljava/lang/Throwable;)V",
+        true,
+        throwable_add_suppressed
+    ),
+    ne!(
+        "Ljava/lang/Throwable;",
+        "getSuppressed",
+        "()[Ljava/lang/Throwable;",
+        true,
+        throwable_get_suppressed
+    ),
+    ne!(
+        "Ljava/lang/Throwable;",
+        "getStackTrace",
+        "()[Ljava/lang/StackTraceElement;",
+        true,
+        throwable_get_stack_trace
+    ),
 ];

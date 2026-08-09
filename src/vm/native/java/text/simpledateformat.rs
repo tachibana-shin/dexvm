@@ -4,7 +4,6 @@ use crate::vm::native::*;
 
 // TimeZone helpers (moved from java/text timezone.rs section).
 
-
 pub(crate) fn date_format_set_time_zone(vm: &mut Vm, args: &[JValue]) -> R {
     let zone = match payload(vm, args[1]) {
         Some(Native::TimeZone(z)) => z.clone(),
@@ -204,9 +203,39 @@ fn zone_offset_ms(zone: &str) -> i64 {
 
 /// Native methods for Ljava/text/SimpleDateFormat;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/text/SimpleDateFormat;", "<init>", "(Ljava/lang/String;Ljava/util/Locale;)V", true, simple_date_format_init),
-    ne!("Ljava/text/SimpleDateFormat;", "<init>", "(Ljava/lang/String;)V", true, simple_date_format_init),
-    ne!("Ljava/text/SimpleDateFormat;", "parse", "(Ljava/lang/String;Ljava/text/ParsePosition;)Ljava/util/Date;", true, simple_date_format_parse),
-    ne!("Ljava/text/SimpleDateFormat;", "parse", "(Ljava/lang/String;)Ljava/util/Date;", true, simple_date_format_parse),
-    ne!("Ljava/text/SimpleDateFormat;", "toString", "()Ljava/lang/String;", true, simple_date_format_to_string),
+    ne!(
+        "Ljava/text/SimpleDateFormat;",
+        "<init>",
+        "(Ljava/lang/String;Ljava/util/Locale;)V",
+        true,
+        simple_date_format_init
+    ),
+    ne!(
+        "Ljava/text/SimpleDateFormat;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        simple_date_format_init
+    ),
+    ne!(
+        "Ljava/text/SimpleDateFormat;",
+        "parse",
+        "(Ljava/lang/String;Ljava/text/ParsePosition;)Ljava/util/Date;",
+        true,
+        simple_date_format_parse
+    ),
+    ne!(
+        "Ljava/text/SimpleDateFormat;",
+        "parse",
+        "(Ljava/lang/String;)Ljava/util/Date;",
+        true,
+        simple_date_format_parse
+    ),
+    ne!(
+        "Ljava/text/SimpleDateFormat;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        simple_date_format_to_string
+    ),
 ];

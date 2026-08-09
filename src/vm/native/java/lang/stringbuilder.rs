@@ -26,8 +26,6 @@ pub(crate) fn sb_init(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
-
-
 pub(crate) fn sb_to_string(vm: &mut Vm, args: &[JValue]) -> R {
     let s = match payload(vm, args[0]) {
         Some(Native::StringBuilder(s)) => s.clone(),
@@ -89,7 +87,11 @@ pub(crate) fn sb_append_long(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn sb_append_bool(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = if bool_of(vm, args[1]) { "true" } else { "false" };
+    let s = if bool_of(vm, args[1]) {
+        "true"
+    } else {
+        "false"
+    };
     let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
         return Err(npe(vm));
     };
@@ -231,31 +233,153 @@ pub(crate) fn sb_index_of(vm: &mut Vm, args: &[JValue]) -> R {
     } else {
         0
     };
-    Ok(JValue::Int(u16_index_of(&s, &n, from).map_or(-1, |i| i as i32)))
+    Ok(JValue::Int(
+        u16_index_of(&s, &n, from).map_or(-1, |i| i as i32),
+    ))
 }
 
 /// Native methods for Ljava/lang/StringBuilder;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/lang/StringBuilder;", "<init>", "()V", true, sb_init),
     ne!("Ljava/lang/StringBuilder;", "<init>", "(I)V", true, sb_init),
-    ne!("Ljava/lang/StringBuilder;", "<init>", "(Ljava/lang/String;)V", true, sb_init),
-    ne!("Ljava/lang/StringBuilder;", "toString", "()Ljava/lang/String;", true, sb_to_string),
-    ne!("Ljava/lang/StringBuilder;", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", true, sb_append_str),
-    ne!("Ljava/lang/StringBuilder;", "append", "(Ljava/lang/CharSequence;)Ljava/lang/StringBuilder;", true, sb_append_charseq),
-    ne!("Ljava/lang/StringBuilder;", "append", "(Ljava/lang/Object;)Ljava/lang/StringBuilder;", true, sb_append_obj),
-    ne!("Ljava/lang/StringBuilder;", "append", "(I)Ljava/lang/StringBuilder;", true, sb_append_int),
-    ne!("Ljava/lang/StringBuilder;", "append", "(J)Ljava/lang/StringBuilder;", true, sb_append_long),
-    ne!("Ljava/lang/StringBuilder;", "append", "(Z)Ljava/lang/StringBuilder;", true, sb_append_bool),
-    ne!("Ljava/lang/StringBuilder;", "append", "(C)Ljava/lang/StringBuilder;", true, sb_append_char),
-    ne!("Ljava/lang/StringBuilder;", "append", "(F)Ljava/lang/StringBuilder;", true, sb_append_float),
-    ne!("Ljava/lang/StringBuilder;", "append", "(D)Ljava/lang/StringBuilder;", true, sb_append_double),
-    ne!("Ljava/lang/StringBuilder;", "append", "([C)Ljava/lang/StringBuilder;", true, sb_append_chars),
-    ne!("Ljava/lang/StringBuilder;", "length", "()I", true, sb_length),
-    ne!("Ljava/lang/StringBuilder;", "charAt", "(I)C", true, sb_char_at),
-    ne!("Ljava/lang/StringBuilder;", "substring", "(II)Ljava/lang/String;", true, sb_substring),
-    ne!("Ljava/lang/StringBuilder;", "delete", "(II)Ljava/lang/StringBuilder;", true, sb_delete),
-    ne!("Ljava/lang/StringBuilder;", "setLength", "(I)V", true, sb_set_length),
-    ne!("Ljava/lang/StringBuilder;", "capacity", "()I", true, sb_capacity),
-    ne!("Ljava/lang/StringBuilder;", "indexOf", "(Ljava/lang/String;)I", true, sb_index_of),
-    ne!("Ljava/lang/StringBuilder;", "indexOf", "(Ljava/lang/String;I)I", true, sb_index_of),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        sb_init
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        sb_to_string
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_str
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(Ljava/lang/CharSequence;)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_charseq
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(Ljava/lang/Object;)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_obj
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(I)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_int
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(J)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_long
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(Z)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_bool
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(C)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_char
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(F)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_float
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(D)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_double
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "([C)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_chars
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "length",
+        "()I",
+        true,
+        sb_length
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "charAt",
+        "(I)C",
+        true,
+        sb_char_at
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "substring",
+        "(II)Ljava/lang/String;",
+        true,
+        sb_substring
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "delete",
+        "(II)Ljava/lang/StringBuilder;",
+        true,
+        sb_delete
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "setLength",
+        "(I)V",
+        true,
+        sb_set_length
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "capacity",
+        "()I",
+        true,
+        sb_capacity
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "indexOf",
+        "(Ljava/lang/String;)I",
+        true,
+        sb_index_of
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "indexOf",
+        "(Ljava/lang/String;I)I",
+        true,
+        sb_index_of
+    ),
 ];

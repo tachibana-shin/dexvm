@@ -84,18 +84,22 @@ impl ArrayData {
             ArrayData::Short(d) => d[i] = v.as_int() as i16,
             ArrayData::Int(d) => d[i] = v.as_int(),
             ArrayData::Long(d) => d[i] = v.as_long(),
-            ArrayData::Float(d) => d[i] = match v {
-                JValue::Float(f) => f,
-                JValue::Int(i) => i as f32,
-                _ => panic!("float array store of {v:?}"),
-            },
-            ArrayData::Double(d) => d[i] = match v {
-                JValue::Double(f) => f,
-                JValue::Float(f) => f64::from(f),
-                JValue::Long(l) => l as f64,
-                JValue::Int(i) => f64::from(i),
-                _ => panic!("double array store of {v:?}"),
-            },
+            ArrayData::Float(d) => {
+                d[i] = match v {
+                    JValue::Float(f) => f,
+                    JValue::Int(i) => i as f32,
+                    _ => panic!("float array store of {v:?}"),
+                }
+            }
+            ArrayData::Double(d) => {
+                d[i] = match v {
+                    JValue::Double(f) => f,
+                    JValue::Float(f) => f64::from(f),
+                    JValue::Long(l) => l as f64,
+                    JValue::Int(i) => f64::from(i),
+                    _ => panic!("double array store of {v:?}"),
+                }
+            }
             ArrayData::Bool(d) => d[i] = v.truthy(),
             ArrayData::Obj(d) => d[i] = v,
         }
@@ -121,7 +125,10 @@ impl std::fmt::Debug for JsoupDocRef {
 #[cfg(feature = "jsoup")]
 impl JsoupDocRef {
     pub fn new(doc: dom_query::Document) -> Self {
-        JsoupDocRef { doc: std::rc::Rc::new(doc), base: None }
+        JsoupDocRef {
+            doc: std::rc::Rc::new(doc),
+            base: None,
+        }
     }
 }
 
@@ -136,7 +143,10 @@ pub enum Native {
     /// java.lang.Class instance: wraps a class id, or a primitive descriptor.
     ClassObj(ClassOrPrim),
     /// java.lang.Throwable and subclasses.
-    Throwable { message: Option<String>, cause: JValue },
+    Throwable {
+        message: Option<String>,
+        cause: JValue,
+    },
     /// java.lang.StringBuilder.
     StringBuilder(String),
     // boxed primitives
@@ -149,7 +159,10 @@ pub enum Native {
     ShortBox(i16),
     ByteBox(i8),
     /// java.lang.Enum instances.
-    Enum { name: String, ordinal: i32 },
+    Enum {
+        name: String,
+        ordinal: i32,
+    },
     /// java.util.ArrayList / Arrays$ArrayList / Collections wrappers.
     List(Vec<JValue>),
     /// java.util.HashMap / LinkedHashMap.
@@ -159,9 +172,15 @@ pub enum Native {
     /// Iterators.
     Iter(IterKind),
     /// java.util.Map.Entry.
-    MapEntry { map: u32, idx: usize },
+    MapEntry {
+        map: u32,
+        idx: usize,
+    },
     /// java.util.regex.Pattern (source kept for `pattern()`/`toString()`).
-    Pattern { re: fancy_regex::Regex, source: String },
+    Pattern {
+        re: fancy_regex::Regex,
+        source: String,
+    },
     /// java.util.regex.Matcher.
     Matcher(MatcherState),
     /// java.io.PrintStream (writes to the VM output sink).
@@ -175,13 +194,18 @@ pub enum Native {
     /// java.util.TimeZone (zone id string, e.g. "UTC", "GMT+07:00").
     TimeZone(String),
     /// java.text.SimpleDateFormat: pattern + resolved time zone id.
-    DateFormatter { pattern: String, zone: String },
+    DateFormatter {
+        pattern: String,
+        zone: String,
+    },
     /// java.text.ParsePosition (current index).
     ParsePosition(i32),
     /// java.util.ArrayDeque (a FIFO list for our purposes).
     ArrayDeque(Vec<JValue>),
     /// java.util.concurrent.locks.ReentrantLock.
-    ReentrantLock { locked: bool },
+    ReentrantLock {
+        locked: bool,
+    },
     /// okhttp3.OkHttpClient$Builder: accumulated interceptor lists.
     OkHttpBuilder {
         interceptors: Vec<JValue>,
@@ -192,7 +216,12 @@ pub enum Native {
     /// okhttp3.FormBody / FormBody$Builder: name/value pairs.
     FormBody(Vec<(String, String)>),
     /// okhttp3.Request produced by the RequestsKt helpers or Request$Builder.
-    Request { url: String, method: String, headers: Vec<(String, String)>, body: Option<JValue> },
+    Request {
+        url: String,
+        method: String,
+        headers: Vec<(String, String)>,
+        body: Option<JValue>,
+    },
     /// okhttp3.Request$Builder under construction.
     RequestBuilder {
         url: String,
@@ -211,9 +240,14 @@ pub enum Native {
         request: JValue,
     },
     /// okhttp3.Cookie.
-    Cookie { name: String, value: String },
+    Cookie {
+        name: String,
+        value: String,
+    },
     /// eu.kanade.tachiyomi.source.online.HttpSource: name from its ctor.
-    HttpSource { name: String },
+    HttpSource {
+        name: String,
+    },
     /// eu.kanade.tachiyomi.source.model.SManga.
     SManga {
         title: String,
@@ -227,11 +261,25 @@ pub enum Native {
         update_strategy: JValue,
     },
     /// eu.kanade.tachiyomi.source.model.SChapter.
-    SChapter { name: String, url: String, date_upload: i64, scanlator: String, chapter_number: f32 },
+    SChapter {
+        name: String,
+        url: String,
+        date_upload: i64,
+        scanlator: String,
+        chapter_number: f32,
+    },
     /// eu.kanade.tachiyomi.source.model.Page.
-    SPPage { index: i32, name: String, url: String, image_url: String },
+    SPPage {
+        index: i32,
+        name: String,
+        url: String,
+        image_url: String,
+    },
     /// eu.kanade.tachiyomi.source.model.MangasPage.
-    SMangasPage { mangas: Vec<JValue>, has_next: bool },
+    SMangasPage {
+        mangas: Vec<JValue>,
+        has_next: bool,
+    },
     /// eu.kanade.tachiyomi.source.model.Filter and its subtypes.
     SFilter {
         name: String,
@@ -283,11 +331,26 @@ pub enum ClassOrPrim {
 
 #[derive(Debug, Clone)]
 pub enum IterKind {
-    List { list: u32, idx: usize },
-    MapEntries { map: u32, idx: usize },
-    MapKeys { map: u32, idx: usize },
-    MapValues { map: u32, idx: usize },
-    Set { set: u32, idx: usize },
+    List {
+        list: u32,
+        idx: usize,
+    },
+    MapEntries {
+        map: u32,
+        idx: usize,
+    },
+    MapKeys {
+        map: u32,
+        idx: usize,
+    },
+    MapValues {
+        map: u32,
+        idx: usize,
+    },
+    Set {
+        set: u32,
+        idx: usize,
+    },
     #[cfg(feature = "jsoup")]
     Jsoup {
         doc: JsoupDocRef,
@@ -400,7 +463,8 @@ impl Native {
             #[cfg(feature = "jsoup")]
             Native::JsoupElement { .. } | Native::JsoupElements { .. } => {}
             Native::ArrayDesc(ArrayData::Obj(v)) => push_all(v, out),
-            Native::HttpSource { .. } | Native::Str(_)
+            Native::HttpSource { .. }
+            | Native::Str(_)
             | Native::Array(_)
             | Native::ClassObj(_)
             | Native::StringBuilder(_)
@@ -413,7 +477,6 @@ impl Native {
             | Native::ShortBox(_)
             | Native::ByteBox(_)
             | Native::Enum { .. }
-            
             | Native::Pattern { .. }
             | Native::Matcher(_)
             | Native::PrintStream
@@ -450,11 +513,19 @@ pub struct Arena {
 impl Arena {
     pub fn alloc(&mut self, class: u32, fields: Vec<JValue>, native: Option<Native>) -> u32 {
         if let Some(f) = self.free.pop() {
-            self.objects[f as usize] = JObject { class, fields, native };
+            self.objects[f as usize] = JObject {
+                class,
+                fields,
+                native,
+            };
             return f;
         }
         let id = self.objects.len() as u32;
-        self.objects.push(JObject { class, fields, native });
+        self.objects.push(JObject {
+            class,
+            fields,
+            native,
+        });
         id
     }
 

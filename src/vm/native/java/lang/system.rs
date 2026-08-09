@@ -17,7 +17,13 @@ pub(crate) fn sys_nano_time(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Long(n))
 }
 
-pub(crate) fn arrcopy_into(src: &ArrayData, sp: usize, dst: &mut ArrayData, dp: usize, len: usize) -> bool {
+pub(crate) fn arrcopy_into(
+    src: &ArrayData,
+    sp: usize,
+    dst: &mut ArrayData,
+    dp: usize,
+    len: usize,
+) -> bool {
     for i in 0..len {
         let v = src.get(sp + i);
         let ok = match dst {
@@ -155,7 +161,13 @@ pub(crate) fn sys_arraycopy(vm: &mut Vm, args: &[JValue]) -> R {
     };
     match n {
         Native::Array(dst_data) => {
-            let ok = arrcopy_into(&src_data, src_pos as usize, dst_data, dst_pos as usize, len as usize);
+            let ok = arrcopy_into(
+                &src_data,
+                src_pos as usize,
+                dst_data,
+                dst_pos as usize,
+                len as usize,
+            );
             if !ok {
                 return Err(iae(vm, "arraycopy: type mismatch"));
             }
@@ -188,15 +200,50 @@ pub(crate) fn sys_line_separator(vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(new_str(vm, "\n"))
 }
 
-
 /// Native methods for Ljava/lang/System;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/lang/System;", "currentTimeMillis", "()J", false, sys_current_time_millis),
-    ne!("Ljava/lang/System;", "nanoTime", "()J", false, sys_nano_time),
-    ne!("Ljava/lang/System;", "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V", false, sys_arraycopy),
+    ne!(
+        "Ljava/lang/System;",
+        "currentTimeMillis",
+        "()J",
+        false,
+        sys_current_time_millis
+    ),
+    ne!(
+        "Ljava/lang/System;",
+        "nanoTime",
+        "()J",
+        false,
+        sys_nano_time
+    ),
+    ne!(
+        "Ljava/lang/System;",
+        "arraycopy",
+        "(Ljava/lang/Object;ILjava/lang/Object;II)V",
+        false,
+        sys_arraycopy
+    ),
     ne!("Ljava/lang/System;", "exit", "(I)V", false, sys_exit),
     ne!("Ljava/lang/System;", "gc", "()V", false, sys_gc),
-    ne!("Ljava/lang/System;", "identityHashCode", "(Ljava/lang/Object;)I", false, sys_identity_hash_code),
-    ne!("Ljava/lang/System;", "getProperty", "(Ljava/lang/String;)Ljava/lang/String;", false, sys_get_property),
-    ne!("Ljava/lang/System;", "lineSeparator", "()Ljava/lang/String;", false, sys_line_separator),
+    ne!(
+        "Ljava/lang/System;",
+        "identityHashCode",
+        "(Ljava/lang/Object;)I",
+        false,
+        sys_identity_hash_code
+    ),
+    ne!(
+        "Ljava/lang/System;",
+        "getProperty",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        false,
+        sys_get_property
+    ),
+    ne!(
+        "Ljava/lang/System;",
+        "lineSeparator",
+        "()Ljava/lang/String;",
+        false,
+        sys_line_separator
+    ),
 ];

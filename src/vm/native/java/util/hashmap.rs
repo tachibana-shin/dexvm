@@ -37,7 +37,11 @@ pub(crate) fn map_is_empty(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(i32::from(entries.is_empty())))
 }
 
-pub(crate) fn map_find(vm: &mut Vm, entries: &[(JValue, JValue)], key: JValue) -> Result<Option<usize>, NatErr> {
+pub(crate) fn map_find(
+    vm: &mut Vm,
+    entries: &[(JValue, JValue)],
+    key: JValue,
+) -> Result<Option<usize>, NatErr> {
     let kh = java_hash(vm, key);
     for (i, (ek, _)) in entries.iter().enumerate() {
         if java_hash(vm, *ek) == kh && java_equals(vm, *ek, key)? {
@@ -157,7 +161,9 @@ pub(crate) fn map_contains_key(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::Map(entries)) => entries.clone(),
         _ => return Err(npe(vm)),
     };
-    Ok(JValue::Int(i32::from(map_find(vm, &entries, args[1])?.is_some())))
+    Ok(JValue::Int(i32::from(
+        map_find(vm, &entries, args[1])?.is_some(),
+    )))
 }
 
 pub(crate) fn map_contains_value(vm: &mut Vm, args: &[JValue]) -> R {
@@ -249,7 +255,14 @@ pub(crate) fn map_entries(vm: &mut Vm, args: &[JValue]) -> R {
     };
     let mut out = Vec::with_capacity(entries);
     for i in 0..entries {
-        let entry = alloc(vm, "Ljava/util/Map$Entry;", Native::MapEntry { map: map_id, idx: i })?;
+        let entry = alloc(
+            vm,
+            "Ljava/util/Map$Entry;",
+            Native::MapEntry {
+                map: map_id,
+                idx: i,
+            },
+        )?;
         out.push(entry);
     }
     set_alloc(vm, out)
@@ -273,27 +286,110 @@ pub(crate) fn map_to_string(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &s))
 }
 
-
 /// Native methods for Ljava/util/HashMap;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/util/HashMap;", "<init>", "()V", true, map_init),
     ne!("Ljava/util/HashMap;", "<init>", "(I)V", true, map_init),
     ne!("Ljava/util/HashMap;", "<init>", "(IF)V", true, map_init),
-    ne!("Ljava/util/HashMap;", "<init>", "(Ljava/util/Map;)V", true, map_init),
+    ne!(
+        "Ljava/util/HashMap;",
+        "<init>",
+        "(Ljava/util/Map;)V",
+        true,
+        map_init
+    ),
     ne!("Ljava/util/HashMap;", "size", "()I", true, map_size),
     ne!("Ljava/util/HashMap;", "isEmpty", "()Z", true, map_is_empty),
-    ne!("Ljava/util/HashMap;", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true, map_get),
-    ne!("Ljava/util/HashMap;", "getOrDefault", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true, map_get_default),
-    ne!("Ljava/util/HashMap;", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true, map_put),
-    ne!("Ljava/util/HashMap;", "putAll", "(Ljava/util/Map;)V", true, map_put_all),
-    ne!("Ljava/util/HashMap;", "putIfAbsent", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true, map_put_if_absent),
-    ne!("Ljava/util/HashMap;", "containsKey", "(Ljava/lang/Object;)Z", true, map_contains_key),
-    ne!("Ljava/util/HashMap;", "containsValue", "(Ljava/lang/Object;)Z", true, map_contains_value),
-    ne!("Ljava/util/HashMap;", "remove", "(Ljava/lang/Object;)Ljava/lang/Object;", true, map_remove),
-    ne!("Ljava/util/HashMap;", "remove", "(Ljava/lang/Object;Ljava/lang/Object;)Z", true, map_remove),
+    ne!(
+        "Ljava/util/HashMap;",
+        "get",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_get
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "getOrDefault",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_get_default
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "put",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_put
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "putAll",
+        "(Ljava/util/Map;)V",
+        true,
+        map_put_all
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "putIfAbsent",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_put_if_absent
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "containsKey",
+        "(Ljava/lang/Object;)Z",
+        true,
+        map_contains_key
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "containsValue",
+        "(Ljava/lang/Object;)Z",
+        true,
+        map_contains_value
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "remove",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_remove
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "remove",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Z",
+        true,
+        map_remove
+    ),
     ne!("Ljava/util/HashMap;", "clear", "()V", true, map_clear),
-    ne!("Ljava/util/HashMap;", "keySet", "()Ljava/util/Set;", true, map_keys),
-    ne!("Ljava/util/HashMap;", "values", "()Ljava/util/Collection;", true, map_values),
-    ne!("Ljava/util/HashMap;", "entrySet", "()Ljava/util/Set;", true, map_entries),
-    ne!("Ljava/util/HashMap;", "toString", "()Ljava/lang/String;", true, map_to_string),
+    ne!(
+        "Ljava/util/HashMap;",
+        "keySet",
+        "()Ljava/util/Set;",
+        true,
+        map_keys
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "values",
+        "()Ljava/util/Collection;",
+        true,
+        map_values
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "entrySet",
+        "()Ljava/util/Set;",
+        true,
+        map_entries
+    ),
+    ne!(
+        "Ljava/util/HashMap;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        map_to_string
+    ),
 ];

@@ -87,17 +87,52 @@ pub(crate) fn date_compare_to(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(a.cmp(&b) as i32))
 }
 
-
 /// Native methods for Ljava/util/Date;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/util/Date;", "<init>", "()V", true, date_init),
     ne!("Ljava/util/Date;", "<init>", "(J)V", true, date_init_ms),
     ne!("Ljava/util/Date;", "getTime", "()J", true, date_get_time),
     ne!("Ljava/util/Date;", "setTime", "(J)V", true, date_set_time),
-    ne!("Ljava/util/Date;", "toString", "()Ljava/lang/String;", true, date_to_string),
-    ne!("Ljava/util/Date;", "after", "(Ljava/util/Date;)Z", true, date_after),
-    ne!("Ljava/util/Date;", "before", "(Ljava/util/Date;)Z", true, date_before),
-    ne!("Ljava/util/Date;", "equals", "(Ljava/lang/Object;)Z", true, date_equals),
-    ne!("Ljava/util/Date;", "compareTo", "(Ljava/util/Date;)I", true, date_compare_to),
-    ne!("Ljava/util/Date;", "compareTo", "(Ljava/lang/Object;)I", true, date_compare_to),
+    ne!(
+        "Ljava/util/Date;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        date_to_string
+    ),
+    ne!(
+        "Ljava/util/Date;",
+        "after",
+        "(Ljava/util/Date;)Z",
+        true,
+        date_after
+    ),
+    ne!(
+        "Ljava/util/Date;",
+        "before",
+        "(Ljava/util/Date;)Z",
+        true,
+        date_before
+    ),
+    ne!(
+        "Ljava/util/Date;",
+        "equals",
+        "(Ljava/lang/Object;)Z",
+        true,
+        date_equals
+    ),
+    ne!(
+        "Ljava/util/Date;",
+        "compareTo",
+        "(Ljava/util/Date;)I",
+        true,
+        date_compare_to
+    ),
+    ne!(
+        "Ljava/util/Date;",
+        "compareTo",
+        "(Ljava/lang/Object;)I",
+        true,
+        date_compare_to
+    ),
 ];

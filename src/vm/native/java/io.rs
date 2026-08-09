@@ -68,25 +68,73 @@ pub(crate) fn ps_init(vm: &mut Vm, args: &[JValue]) -> R {
 
 /// Native methods for Ljava/io/PrintStream;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/io/PrintStream;", "<init>", "(Ljava/io/OutputStream;)V", true, ps_init),
+    ne!(
+        "Ljava/io/PrintStream;",
+        "<init>",
+        "(Ljava/io/OutputStream;)V",
+        true,
+        ps_init
+    ),
     ne!("Ljava/io/PrintStream;", "println", "()V", true, ps_println),
-    ne!("Ljava/io/PrintStream;", "println", "(Ljava/lang/String;)V", true, ps_println),
+    ne!(
+        "Ljava/io/PrintStream;",
+        "println",
+        "(Ljava/lang/String;)V",
+        true,
+        ps_println
+    ),
     ne!("Ljava/io/PrintStream;", "println", "(I)V", true, ps_println),
     ne!("Ljava/io/PrintStream;", "println", "(J)V", true, ps_println),
     ne!("Ljava/io/PrintStream;", "println", "(Z)V", true, ps_println),
     ne!("Ljava/io/PrintStream;", "println", "(F)V", true, ps_println),
     ne!("Ljava/io/PrintStream;", "println", "(D)V", true, ps_println),
-    ne!("Ljava/io/PrintStream;", "println", "(Ljava/lang/Object;)V", true, ps_println),
-    ne!("Ljava/io/PrintStream;", "println", "(C)V", true, ps_println_char),
-    ne!("Ljava/io/PrintStream;", "println", "([C)V", true, ps_println_chars),
-    ne!("Ljava/io/PrintStream;", "print", "(Ljava/lang/String;)V", true, ps_print),
+    ne!(
+        "Ljava/io/PrintStream;",
+        "println",
+        "(Ljava/lang/Object;)V",
+        true,
+        ps_println
+    ),
+    ne!(
+        "Ljava/io/PrintStream;",
+        "println",
+        "(C)V",
+        true,
+        ps_println_char
+    ),
+    ne!(
+        "Ljava/io/PrintStream;",
+        "println",
+        "([C)V",
+        true,
+        ps_println_chars
+    ),
+    ne!(
+        "Ljava/io/PrintStream;",
+        "print",
+        "(Ljava/lang/String;)V",
+        true,
+        ps_print
+    ),
     ne!("Ljava/io/PrintStream;", "print", "(I)V", true, ps_print),
     ne!("Ljava/io/PrintStream;", "print", "(J)V", true, ps_print),
     ne!("Ljava/io/PrintStream;", "print", "(Z)V", true, ps_print),
     ne!("Ljava/io/PrintStream;", "print", "(F)V", true, ps_print),
     ne!("Ljava/io/PrintStream;", "print", "(D)V", true, ps_print),
-    ne!("Ljava/io/PrintStream;", "print", "(Ljava/lang/Object;)V", true, ps_print),
-    ne!("Ljava/io/PrintStream;", "print", "(C)V", true, ps_print_char),
+    ne!(
+        "Ljava/io/PrintStream;",
+        "print",
+        "(Ljava/lang/Object;)V",
+        true,
+        ps_print
+    ),
+    ne!(
+        "Ljava/io/PrintStream;",
+        "print",
+        "(C)V",
+        true,
+        ps_print_char
+    ),
     ne!("Ljava/io/PrintStream;", "flush", "()V", true, ps_flush),
     ne!("Ljava/io/PrintStream;", "close", "()V", true, ps_close),
 ];

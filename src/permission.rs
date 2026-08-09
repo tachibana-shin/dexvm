@@ -68,7 +68,10 @@ pub enum Permission {
 }
 
 fn path_under(prefix: &str, path: &str) -> bool {
-    path.starts_with(prefix) && (prefix.ends_with('/') || path.len() == prefix.len() || path.as_bytes().get(prefix.len()) == Some(&b'/'))
+    path.starts_with(prefix)
+        && (prefix.ends_with('/')
+            || path.len() == prefix.len()
+            || path.as_bytes().get(prefix.len()) == Some(&b'/'))
 }
 
 fn host_matches(allow: &str, host_port: &str) -> bool {
@@ -76,7 +79,13 @@ fn host_matches(allow: &str, host_port: &str) -> bool {
         Some((h, p)) if p.chars().all(|c| c.is_ascii_digit()) && h.contains('.') => {
             host_port == allow
         }
-        _ => host_port == allow || host_port.starts_with(&format!("{allow}:")) && host_port[allow.len() + 1..].chars().all(|c| c.is_ascii_digit()),
+        _ => {
+            host_port == allow
+                || host_port.starts_with(&format!("{allow}:"))
+                    && host_port[allow.len() + 1..]
+                        .chars()
+                        .all(|c| c.is_ascii_digit())
+        }
     }
 }
 
@@ -86,8 +95,14 @@ impl Permission {
         match (self, other) {
             (Permission::Filesystem(a), Permission::Filesystem(b)) => match a {
                 FilesystemPermission::Any => true,
-                FilesystemPermission::Read => matches!(b, FilesystemPermission::Read | FilesystemPermission::ReadPath(_)),
-                FilesystemPermission::Write => matches!(b, FilesystemPermission::Write | FilesystemPermission::WritePath(_)),
+                FilesystemPermission::Read => matches!(
+                    b,
+                    FilesystemPermission::Read | FilesystemPermission::ReadPath(_)
+                ),
+                FilesystemPermission::Write => matches!(
+                    b,
+                    FilesystemPermission::Write | FilesystemPermission::WritePath(_)
+                ),
                 FilesystemPermission::ReadPath(p) => match b {
                     FilesystemPermission::ReadPath(q) => path_under(p, q),
                     _ => false,
@@ -114,7 +129,9 @@ impl Permission {
             },
             (Permission::Process(a), Permission::Process(b)) => match a {
                 ProcessPermission::Any => true,
-                ProcessPermission::Command(c) => matches!(b, ProcessPermission::Command(t) if t == c),
+                ProcessPermission::Command(c) => {
+                    matches!(b, ProcessPermission::Command(t) if t == c)
+                }
             },
             (Permission::Env, Permission::Env) => true,
             _ => false,
@@ -166,34 +183,74 @@ mod tests {
     fn any_covers_all() {
         let mut perms = Permissions::new();
         perms.grant(Permission::Network(NetworkPermission::Any));
-        assert!(perms.has(&Permission::Network(NetworkPermission::Connect("example.com".into()))));
+        assert!(perms.has(&Permission::Network(NetworkPermission::Connect(
+            "example.com".into()
+        ))));
         perms.grant(Permission::Filesystem(FilesystemPermission::Any));
-        assert!(perms.has(&Permission::Filesystem(FilesystemPermission::ReadPath("/".into()))));
+        assert!(
+            perms.has(&Permission::Filesystem(FilesystemPermission::ReadPath(
+                "/".into()
+            )))
+        );
         assert!(perms.has(&Permission::Filesystem(FilesystemPermission::Write)));
     }
 
     #[test]
     fn connect_host_matching() {
         let mut perms = Permissions::new();
-        perms.grant(Permission::Network(NetworkPermission::Connect("api.manga.example:443".into())));
-        assert!(perms.has(&Permission::Network(NetworkPermission::Connect("api.manga.example:443".into()))));
-        assert!(!perms.has(&Permission::Network(NetworkPermission::Connect("api.manga.example:8443".into()))));
-        assert!(!perms.has(&Permission::Network(NetworkPermission::Connect("evil.example:443".into()))));
+        perms.grant(Permission::Network(NetworkPermission::Connect(
+            "api.manga.example:443".into(),
+        )));
+        assert!(perms.has(&Permission::Network(NetworkPermission::Connect(
+            "api.manga.example:443".into()
+        ))));
+        assert!(!perms.has(&Permission::Network(NetworkPermission::Connect(
+            "api.manga.example:8443".into()
+        ))));
+        assert!(!perms.has(&Permission::Network(NetworkPermission::Connect(
+            "evil.example:443".into()
+        ))));
 
         let mut perms = Permissions::new();
-        perms.grant(Permission::Network(NetworkPermission::Connect("api.manga.example".into())));
-        assert!(perms.has(&Permission::Network(NetworkPermission::Connect("api.manga.example:443".into()))));
-        assert!(!perms.has(&Permission::Network(NetworkPermission::Connect("api.manga.example.com:443".into()))));
+        perms.grant(Permission::Network(NetworkPermission::Connect(
+            "api.manga.example".into(),
+        )));
+        assert!(perms.has(&Permission::Network(NetworkPermission::Connect(
+            "api.manga.example:443".into()
+        ))));
+        assert!(!perms.has(&Permission::Network(NetworkPermission::Connect(
+            "api.manga.example.com:443".into()
+        ))));
     }
 
     #[test]
     fn path_matching() {
         let mut perms = Permissions::new();
-        perms.grant(Permission::Filesystem(FilesystemPermission::ReadPath("/data".into())));
-        assert!(perms.has(&Permission::Filesystem(FilesystemPermission::ReadPath("/data/cache".into()))));
-        assert!(!perms.has(&Permission::Filesystem(FilesystemPermission::ReadPath("/etc/passwd".into()))));
-        assert!(!perms.has(&Permission::Filesystem(FilesystemPermission::WritePath("/data/cache".into()))));
-        perms.grant(Permission::Filesystem(FilesystemPermission::Path("/data".into())));
-        assert!(perms.has(&Permission::Filesystem(FilesystemPermission::WritePath("/data/cache".into()))));
+        perms.grant(Permission::Filesystem(FilesystemPermission::ReadPath(
+            "/data".into(),
+        )));
+        assert!(
+            perms.has(&Permission::Filesystem(FilesystemPermission::ReadPath(
+                "/data/cache".into()
+            )))
+        );
+        assert!(
+            !perms.has(&Permission::Filesystem(FilesystemPermission::ReadPath(
+                "/etc/passwd".into()
+            )))
+        );
+        assert!(
+            !perms.has(&Permission::Filesystem(FilesystemPermission::WritePath(
+                "/data/cache".into()
+            )))
+        );
+        perms.grant(Permission::Filesystem(FilesystemPermission::Path(
+            "/data".into(),
+        )));
+        assert!(
+            perms.has(&Permission::Filesystem(FilesystemPermission::WritePath(
+                "/data/cache".into()
+            )))
+        );
     }
 }

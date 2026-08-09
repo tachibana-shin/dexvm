@@ -2,7 +2,6 @@
 
 use crate::vm::native::*;
 
-
 // java.util.regex.Pattern / Matcher
 // ---------------------------------------------------------------------------
 
@@ -57,7 +56,11 @@ pub(crate) fn pattern_matches_static(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn pattern_compile(vm: &mut Vm, args: &[JValue]) -> R {
     let src = jstr(vm, args[0])?;
     let re = Regex::new(&src).map_err(|e| iae(vm, format!("PatternSyntaxException: {e}")))?;
-    alloc(vm, "Ljava/util/regex/Pattern;", Native::Pattern { re, source: src })
+    alloc(
+        vm,
+        "Ljava/util/regex/Pattern;",
+        Native::Pattern { re, source: src },
+    )
 }
 
 pub(crate) fn pattern_compile_flags(vm: &mut Vm, args: &[JValue]) -> R {
@@ -100,19 +103,90 @@ pub(crate) fn pattern_quote(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &fancy_regex::escape(&s)))
 }
 
-
 /// Native methods for Ljava/util/regex/Pattern;
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/util/regex/Pattern;", "<init>", "(Ljava/lang/String;)V", true, pattern_init),
-    ne!("Ljava/util/regex/Pattern;", "<init>", "(Ljava/lang/String;I)V", true, pattern_init_flags),
-    ne!("Ljava/util/regex/Pattern;", "matcher", "(Ljava/lang/CharSequence;)Ljava/util/regex/Matcher;", true, pattern_matcher),
-    ne!("Ljava/util/regex/Pattern;", "matches", "(Ljava/lang/String;Ljava/lang/CharSequence;)Z", false, pattern_matches_static),
-    ne!("Ljava/util/regex/Pattern;", "compile", "(Ljava/lang/String;)Ljava/util/regex/Pattern;", false, pattern_compile),
-    ne!("Ljava/util/regex/Pattern;", "compile", "(Ljava/lang/String;I)Ljava/util/regex/Pattern;", false, pattern_compile_flags),
-    ne!("Ljava/util/regex/Pattern;", "pattern", "()Ljava/lang/String;", true, pattern_source),
-    ne!("Ljava/util/regex/Pattern;", "toString", "()Ljava/lang/String;", true, pattern_source),
-    ne!("Ljava/util/regex/Pattern;", "flags", "()I", true, pattern_flags),
-    ne!("Ljava/util/regex/Pattern;", "split", "(Ljava/lang/CharSequence;)[Ljava/lang/String;", true, pattern_split_seq),
-    ne!("Ljava/util/regex/Pattern;", "split", "(Ljava/lang/CharSequence;I)[Ljava/lang/String;", true, pattern_split_seq_limit),
-    ne!("Ljava/util/regex/Pattern;", "quote", "(Ljava/lang/String;)Ljava/lang/String;", false, pattern_quote),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        pattern_init
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "<init>",
+        "(Ljava/lang/String;I)V",
+        true,
+        pattern_init_flags
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "matcher",
+        "(Ljava/lang/CharSequence;)Ljava/util/regex/Matcher;",
+        true,
+        pattern_matcher
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "matches",
+        "(Ljava/lang/String;Ljava/lang/CharSequence;)Z",
+        false,
+        pattern_matches_static
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "compile",
+        "(Ljava/lang/String;)Ljava/util/regex/Pattern;",
+        false,
+        pattern_compile
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "compile",
+        "(Ljava/lang/String;I)Ljava/util/regex/Pattern;",
+        false,
+        pattern_compile_flags
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "pattern",
+        "()Ljava/lang/String;",
+        true,
+        pattern_source
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        pattern_source
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "flags",
+        "()I",
+        true,
+        pattern_flags
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "split",
+        "(Ljava/lang/CharSequence;)[Ljava/lang/String;",
+        true,
+        pattern_split_seq
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "split",
+        "(Ljava/lang/CharSequence;I)[Ljava/lang/String;",
+        true,
+        pattern_split_seq_limit
+    ),
+    ne!(
+        "Ljava/util/regex/Pattern;",
+        "quote",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        false,
+        pattern_quote
+    ),
 ];

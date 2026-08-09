@@ -55,13 +55,42 @@ pub(crate) fn object_noop(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
-
 /// Native methods for Ljava/lang/Object;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/lang/Object;", "<init>", "()V", true, object_init),
-    ne!("Ljava/lang/Object;", "getClass", "()Ljava/lang/Class;", true, object_get_class),
-    ne!("Ljava/lang/Object;", "hashCode", "()I", true, object_hash_code),
-    ne!("Ljava/lang/Object;", "equals", "(Ljava/lang/Object;)Z", true, object_equals),
-    ne!("Ljava/lang/Object;", "toString", "()Ljava/lang/String;", true, object_to_string),
-    ne!("Ljava/lang/Object;", "clone", "()Ljava/lang/Object;", true, object_clone),
+    ne!(
+        "Ljava/lang/Object;",
+        "getClass",
+        "()Ljava/lang/Class;",
+        true,
+        object_get_class
+    ),
+    ne!(
+        "Ljava/lang/Object;",
+        "hashCode",
+        "()I",
+        true,
+        object_hash_code
+    ),
+    ne!(
+        "Ljava/lang/Object;",
+        "equals",
+        "(Ljava/lang/Object;)Z",
+        true,
+        object_equals
+    ),
+    ne!(
+        "Ljava/lang/Object;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        object_to_string
+    ),
+    ne!(
+        "Ljava/lang/Object;",
+        "clone",
+        "()Ljava/lang/Object;",
+        true,
+        object_clone
+    ),
 ];

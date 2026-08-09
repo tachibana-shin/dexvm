@@ -10,7 +10,10 @@ pub struct DexError {
 
 impl DexError {
     pub fn new(off: usize, msg: impl Into<String>) -> Self {
-        DexError { msg: msg.into(), off }
+        DexError {
+            msg: msg.into(),
+            off,
+        }
     }
 }
 
