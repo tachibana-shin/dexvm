@@ -177,6 +177,44 @@ pub(crate) fn collections_size_or_default(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(if n < 10 { n } else { def }))
 }
 
+/// kotlin.collections.joinToString with the compiler-generated `$default`
+/// marker: (iterable, separator, prefix, postfix, limit, truncated,
+/// transform, mask, marker).
+pub(crate) fn collections_join_to_string_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = coll_elems(vm, args[0])?;
+    let mask = if args.len() > 7 { int_of(vm, args[7]) } else { 0 };
+    let has = |bit: i32| (mask >> bit) & 1 == 0;
+    let separator = if has(0) { charseq_of(vm, args[1])? } else { ", ".to_string() };
+    let prefix = if has(1) { charseq_of(vm, args[2])? } else { String::new() };
+    let postfix = if has(2) { charseq_of(vm, args[3])? } else { String::new() };
+    let limit = if has(3) { int_of(vm, args[4]) } else { -1 };
+    let truncated = if has(4) { charseq_of(vm, args[5])? } else { "...".to_string() };
+    let transform = if has(5) { args[6] } else { JValue::Null };
+    let mut out = String::new();
+    out.push_str(&prefix);
+    let n = items.len();
+    let cut = limit >= 0 && (n as i32) > limit;
+    let shown = if cut { limit as usize } else { n };
+    for (i, v) in items.iter().take(shown).enumerate() {
+        if i > 0 {
+            out.push_str(&separator);
+        }
+        let s = if transform.is_null() {
+            charseq_of(vm, *v)?
+        } else {
+            let r = inv_virt(vm, transform, "invoke", "(Ljava/lang/Object;)Ljava/lang/Object;", &[*v])?;
+            charseq_of(vm, r)?
+        };
+        out.push_str(&s);
+    }
+    if cut {
+        out.push_str(&separator);
+        out.push_str(&truncated);
+    }
+    out.push_str(&postfix);
+    Ok(new_str(vm, &out))
+}
+
 // kotlin.jvm.internal.Intrinsics
 // ---------------------------------------------------------------------------
 

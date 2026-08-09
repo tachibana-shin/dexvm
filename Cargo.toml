@@ -19,6 +19,14 @@ name = "dexvm"
 name = "dexcli"
 path = "src/bin/dexcli.rs"
 
+[[test]]
+name = "keiyoushi_e2e"
+required-features = ["keiyoushi"]
+
+[[test]]
+name = "api_smoke"
+required-features = ["keiyoushi"]
+
 [dependencies]
 regex = "1"
 zip = "2"

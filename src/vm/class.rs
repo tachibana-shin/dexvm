@@ -211,6 +211,8 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/CacheControl;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
+    shim!("Lokhttp3/Request$Builder;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Request;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Response;", Some("Ljava/lang/Object;"), &[], 0),

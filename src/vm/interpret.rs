@@ -166,6 +166,11 @@ impl Vm {
                                     Err(NatErr::Throw(ex)) => {
                                         f.pc = ret_pc;
                                         f.pending_exc = Some(JValue::Obj(ex));
+                                        self.frames.push(f);
+                                        match self.unwind()? {
+                                            true => f = self.frames.pop().unwrap(),
+                                            false => return Err(JvmError::Uncaught(ex)),
+                                        }
                                     }
                                     Err(NatErr::Fatal(e)) => return Err(e),
                                 }

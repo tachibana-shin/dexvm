@@ -133,6 +133,10 @@ pub const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/HttpUrl$Companion;", "parse", "(Ljava/lang/String;)Lokhttp3/HttpUrl;", true, okhttp_http_url_parse),
     ne!("Lokhttp3/HttpUrl;", "newBuilder", "()Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_new_builder),
     ne!("Lokhttp3/HttpUrl$Builder;", "addQueryParameter", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_add_query),
+    ne!("Lokhttp3/HttpUrl$Builder;", "setQueryParameter", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_set_query),
+    ne!("Lokhttp3/HttpUrl$Builder;", "build", "()Lokhttp3/HttpUrl;", true, okhttp_http_url_builder_build),
+    ne!("Lokhttp3/Request$Builder;", "url", "(Lokhttp3/HttpUrl;)Lokhttp3/Request$Builder;", true, okhttp_request_builder_url),
+    ne!("Lokhttp3/Request$Builder;", "build", "()Lokhttp3/Request;", true, okhttp_request_builder_build),
     ne!("Lokhttp3/HttpUrl$Builder;", "toString", "()Ljava/lang/String;", true, okhttp_http_url_builder_to_string),
     // ---- eu.kanade.tachiyomi.network.RequestsKt ----
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "POST$default", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/RequestBody;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_post_default),
@@ -270,6 +274,14 @@ fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
         "Ljava/lang/Float;" => Some(Native::FloatBox(0.0)),
         "Ljava/lang/Double;" => Some(Native::DoubleBox(0.0)),
         "Ljava/util/ArrayList;" => Some(Native::List(Vec::new())),
+        "Ljava/util/ArrayDeque;" => Some(Native::ArrayDeque(Vec::new())),
+        "Lokhttp3/FormBody$Builder;" => Some(Native::FormBody(Vec::new())),
+        "Lokhttp3/Request$Builder;" => Some(Native::RequestBuilder {
+            url: String::new(),
+            method: String::new(),
+            headers: Vec::new(),
+            body: None,
+        }),
         "Ljava/util/HashMap;" | "Ljava/util/LinkedHashMap;" => Some(Native::Map(Vec::new())),
         "Ljava/util/HashSet;" | "Ljava/util/LinkedHashSet;" => Some(Native::Set(Vec::new())),
         "Ljava/util/regex/Pattern;" => Some(Native::Pattern {
@@ -288,10 +300,16 @@ fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
         })),
         "Ljava/util/Random;" => Some(Native::Random(0)),
         "Ljava/util/Date;" => Some(Native::Date(0)),
+        "Ljava/text/SimpleDateFormat;" => Some(Native::DateFormatter {
+            pattern: String::new(),
+            zone: String::new(),
+        }),
+        "Ljava/text/ParsePosition;" => Some(Native::ParsePosition(0)),
         "Ljava/util/Locale;" => Some(Native::Opaque),
         "Ljava/io/PrintStream;" => Some(Native::PrintStream),
         "Ljava/lang/Thread;" => Some(Native::Opaque),
         "Ljava/util/Map$Entry;" => Some(Native::MapEntry { map: 0, idx: 0 }),
+        "Ljava/util/concurrent/locks/ReentrantLock;" => Some(Native::ReentrantLock { locked: false }),
         #[cfg(feature = "keiyoushi")]
         "Leu/kanade/tachiyomi/source/model/SManga;" => Some(keiyoushi::empty_smanga()),
         #[cfg(feature = "keiyoushi")]
@@ -1581,6 +1599,7 @@ pub const NATIVE_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/Regex;", "replace", "(Ljava/lang/CharSequence;Ljava/lang/String;)Ljava/lang/String;", true, regex_replace),
     ne!("Lkotlin/text/Regex;", "matches", "(Ljava/lang/CharSequence;)Z", true, regex_matches),
     ne!("Lkotlin/text/Regex;", "toString", "()Ljava/lang/String;", true, regex_to_string),
+    ne!("Lkotlin/text/StringsKt;", "append", "(Ljava/lang/StringBuilder;[Ljava/lang/String;)Ljava/lang/StringBuilder;", false, strings_append_array),
     ne!("Lkotlin/collections/CollectionsKt;", "listOf", "([Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_array),
     ne!("Lkotlin/collections/CollectionsKt;", "listOf", "(Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_single),
     ne!("Lkotlin/collections/CollectionsKt;", "mutableListOf", "([Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_array),
@@ -1590,6 +1609,7 @@ pub const NATIVE_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "contains", "(Ljava/lang/Iterable;Ljava/lang/Object;)Z", false, collections_contains),
     ne!("Lkotlin/collections/CollectionsKt;", "first", "(Ljava/lang/Iterable;)Ljava/lang/Object;", false, collections_first),
     ne!("Lkotlin/collections/CollectionsKt;", "collectionSizeOrDefault", "(Ljava/lang/Iterable;I)I", false, collections_size_or_default),
+    ne!("Lkotlin/collections/CollectionsKt;", "joinToString$default", "(Ljava/lang/Iterable;Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;ILjava/lang/CharSequence;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/String;", false, collections_join_to_string_default),
     ne!("Lkotlin/jvm/internal/Intrinsics;", "areEqual", "(Ljava/lang/Object;Ljava/lang/Object;)Z", false, intrinsics_are_equal),
     ne!("Lkotlin/Pair;", "getFirst", "()Ljava/lang/Object;", true, pair_get_first),
     ne!("Lkotlin/Pair;", "getSecond", "()Ljava/lang/Object;", true, pair_get_second),

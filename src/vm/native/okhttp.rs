@@ -123,6 +123,61 @@ pub(crate) fn okhttp_http_url_builder_add_query(vm: &mut Vm, args: &[JValue]) ->
     Ok(args[0])
 }
 
+pub(crate) fn okhttp_request_builder_url(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(url) = payload(vm, args[1]).and_then(|n| match n {
+        Native::HttpUrl(u) => Some(u.clone()),
+        _ => None,
+    }) else {
+        return Err(npe(vm));
+    };
+    let Some(Native::RequestBuilder { url: dst, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *dst = url.clone();
+    Ok(args[0])
+}
+
+pub(crate) fn okhttp_request_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::RequestBuilder { url, headers, body, .. }) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    alloc(
+        vm,
+        "Lokhttp3/Request;",
+        Native::Request {
+            url: url.clone(),
+            method: "GET".into(),
+            headers: headers.clone(),
+            body: body.clone(),
+        },
+    )
+}
+
+pub(crate) fn okhttp_http_url_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::HttpUrl(url)) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    alloc(vm, "Lokhttp3/HttpUrl;", Native::HttpUrl(url.clone()))
+}
+
+pub(crate) fn okhttp_http_url_builder_set_query(vm: &mut Vm, args: &[JValue]) -> R {
+    let (Some(name), Some(value)) = (jstr(vm, args[1]).ok(), jstr(vm, args[2]).ok()) else {
+        return Err(npe(vm));
+    };
+    let Some(Native::HttpUrl(url)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    if url.contains('?') {
+        url.push('&');
+    } else {
+        url.push('?');
+    }
+    url.push_str(&name);
+    url.push('=');
+    url.push_str(&value);
+    Ok(args[0])
+}
+
 pub(crate) fn okhttp_http_url_builder_to_string(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::HttpUrl(url)) = payload(vm, args[0]) else {
         return Err(npe(vm));

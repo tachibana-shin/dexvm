@@ -577,69 +577,47 @@ pub(crate) fn http_source_set_url_no_domain_chapter(vm: &mut Vm, args: &[JValue]
     Ok(JValue::Null)
 }
 
+/// Extracts the URL of an SManga or SChapter object, or a plain string.
+fn obj_url(vm: &mut Vm, v: JValue) -> Option<String> {
+    match payload(vm, v) {
+        Some(Native::SManga { url, .. }) | Some(Native::SChapter { url, .. }) => Some(url.clone()),
+        _ => jstr(vm, v).ok(),
+    }
+}
+
+fn http_source_get_request(vm: &mut Vm, obj: JValue) -> R {
+    let Some(url) = obj_url(vm, obj) else {
+        return Err(npe(vm));
+    };
+    let full = if url.starts_with("http") {
+        url
+    } else {
+        format!("https://api.akuma.moe{url}")
+    };
+    alloc(
+        vm,
+        REQUEST,
+        Native::Request {
+            url: full,
+            method: "GET".into(),
+            headers: Vec::new(),
+            body: None,
+        },
+    )
+}
+
 /// Host default for `mangaDetailsRequest` when the extension does not
 /// override it: `GET baseUrl + manga.url`.
 pub(crate) fn http_source_manga_details_request(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(url) = jstr(vm, args[1]).ok() else {
-        return Err(npe(vm));
-    };
-    let full = if url.starts_with("http") {
-        url
-    } else {
-        format!("https://api.akuma.moe{url}")
-    };
-    alloc(
-        vm,
-        REQUEST,
-        Native::Request {
-            url: full,
-            method: "GET".into(),
-            headers: Vec::new(),
-            body: None,
-        },
-    )
+    http_source_get_request(vm, args[1])
 }
 
 pub(crate) fn http_source_chapter_list_request(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(url) = jstr(vm, args[1]).ok() else {
-        return Err(npe(vm));
-    };
-    let full = if url.starts_with("http") {
-        url
-    } else {
-        format!("https://api.akuma.moe{url}")
-    };
-    alloc(
-        vm,
-        REQUEST,
-        Native::Request {
-            url: full,
-            method: "GET".into(),
-            headers: Vec::new(),
-            body: None,
-        },
-    )
+    http_source_get_request(vm, args[1])
 }
 
 pub(crate) fn http_source_page_list_request(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(url) = jstr(vm, args[1]).ok() else {
-        return Err(npe(vm));
-    };
-    let full = if url.starts_with("http") {
-        url
-    } else {
-        format!("https://api.akuma.moe{url}")
-    };
-    alloc(
-        vm,
-        REQUEST,
-        Native::Request {
-            url: full,
-            method: "GET".into(),
-            headers: Vec::new(),
-            body: None,
-        },
-    )
+    http_source_get_request(vm, args[1])
 }
 
 // ---------------------------------------------------------------------------
@@ -968,6 +946,15 @@ pub(crate) fn filter_list_get_filters(vm: &mut Vm, args: &[JValue]) -> R {
         _ => return Err(npe(vm)),
     };
     collections::list_alloc(vm, items)
+}
+
+pub(crate) fn filter_list_iterator(vm: &mut Vm, args: &[JValue]) -> R {
+    let list = args[0].as_obj();
+    alloc(
+        vm,
+        "Ljava/util/Iterator;",
+        Native::Iter(IterKind::List { list, idx: 0 }),
+    )
 }
 
 // ---- Filter hierarchy ----
@@ -1353,6 +1340,7 @@ pub(crate) fn doc_of_payload(n: &Native) -> Option<JsoupDocRef> {
 pub(crate) fn element_id_of(n: &Native) -> Option<NodeId> {
     match n {
         Native::JsoupElement { id, .. } => Some(*id),
+        Native::JsoupDoc(doc) => Some(doc.doc.root().id),
         _ => None,
     }
 }
@@ -1599,6 +1587,21 @@ pub(crate) fn elements_text(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(vm.alloc_string(&s))
 }
 
+pub(crate) fn elements_last(vm: &mut Vm, args: &[JValue]) -> R {
+    let (doc, ids) = match payload(vm, args[0]) {
+        Some(Native::JsoupElements { doc, ids }) => (doc.clone(), ids.clone()),
+        _ => return Err(npe(vm)),
+    };
+    match ids.last() {
+        Some(id) => alloc(
+            vm,
+            "Lorg/jsoup/nodes/Element;",
+            Native::JsoupElement { doc, id: *id },
+        ),
+        None => Ok(JValue::Null),
+    }
+}
+
 pub(crate) fn elements_each_text(vm: &mut Vm, args: &[JValue]) -> R {
     let (doc, ids) = match payload(vm, args[0]) {
         Some(Native::JsoupElements { doc, ids }) => (doc.clone(), ids.clone()),
@@ -1785,7 +1788,9 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "<init>", "(Ljava/util/List;Z)V", true, mangas_page_init),
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "getMangas", "()Ljava/util/List;", true, mangas_page_get_mangas),
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "hasNextPage", "()Z", true, mangas_page_has_next),
-    ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "<init>", "([Leu/kanade/tachiyomi/source/model/Filter;)V", true, filter_list_init),    ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "getFilters", "()Ljava/util/List;", true, filter_list_get_filters),
+    ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "<init>", "([Leu/kanade/tachiyomi/source/model/Filter;)V", true, filter_list_init),
+    ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "getFilters", "()Ljava/util/List;", true, filter_list_get_filters),
+    ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "iterator", "()Ljava/util/Iterator;", true, filter_list_iterator),
     ne!("Leu/kanade/tachiyomi/source/model/Filter;", "<init>", "(Ljava/lang/String;)V", true, filter_init_name),
     ne!("Leu/kanade/tachiyomi/source/model/Filter;", "<init>", "(Ljava/lang/String;Z)V", true, filter_init_checked),
     ne!("Leu/kanade/tachiyomi/source/model/Filter;", "getName", "()Ljava/lang/String;", true, filter_get_name),
@@ -1885,6 +1890,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Lorg/jsoup/select/Elements;", "size", "()I", true, elements_size),
     ne!("Lorg/jsoup/select/Elements;", "isEmpty", "()Z", true, elements_is_empty),
     ne!("Lorg/jsoup/select/Elements;", "text", "()Ljava/lang/String;", true, elements_text),
+    ne!("Lorg/jsoup/select/Elements;", "last", "()Lorg/jsoup/nodes/Element;", true, elements_last),
     ne!("Lorg/jsoup/select/Elements;", "eachText", "()Ljava/util/List;", true, elements_each_text),
     ne!("Lorg/jsoup/select/Elements;", "attr", "(Ljava/lang/String;)Ljava/lang/String;", true, elements_attr),
     ne!("Lorg/jsoup/select/Elements;", "eachAttr", "(Ljava/lang/String;)Ljava/util/List;", true, elements_each_attr),

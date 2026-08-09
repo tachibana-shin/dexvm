@@ -2,14 +2,16 @@
 //! loaded extension dex (from a raw `.dex` or an `.apk`/`.zip` container)
 //! plus its sandbox permissions and host API registrations.
 //!
-//! ```
+//! (This example needs the `keiyoushi` feature for the Lk shim classes, so it
+//! is marked `ignore`.)
+//!
+//! ```ignore
 //! use dexvm::Context;
 //! use dexvm::permission::{NetworkPermission, Permission};
 //!
 //! let apk = std::fs::read("fixtures/tachiyomi-all.akuma-v1.4.10.apk").unwrap();
 //! let mut ctx = Context::new(&apk).unwrap();
 //! ctx.grant(Permission::Network(NetworkPermission::Any));
-//! let _ = ctx.call("Lk", "<init>", &[dexvm::JValue::Int(1)]).unwrap();
 //! let lang = ctx.call("Lk", "getLang", &[]).unwrap();
 //! assert!(matches!(lang, dexvm::JValue::Obj(_))); // a String object in the vm arena
 //! ```
@@ -317,6 +319,7 @@ impl Context {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "keiyoushi")]
     use crate::vm::object::Native;
     use crate::vm::NatErr;
 
@@ -327,6 +330,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "keiyoushi")]
     fn load_apk_and_call() {
         let data = fixture();
         let mut ctx = Context::new_with(&data, SandboxOptions::allow_all()).unwrap();
@@ -351,6 +355,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "keiyoushi")]
     fn load_raw_dex() {
         let data = std::fs::read("fixtures/classes.dex").unwrap();
         let mut ctx = Context::new_with(&data, SandboxOptions::allow_all()).unwrap();

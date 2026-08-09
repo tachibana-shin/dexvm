@@ -9,6 +9,20 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
             Some(Native::List(items)) => Ok(items.clone()),
             Some(Native::Set(items)) => Ok(items.clone()),
             Some(Native::Array(ArrayData::Obj(items))) => Ok(items.clone()),
+            #[cfg(feature = "keiyoushi")]
+            Some(Native::JsoupElements { doc, ids }) => {
+                let doc = doc.clone();
+                let ids = ids.clone();
+                ids.into_iter()
+                    .map(|id| {
+                        alloc(
+                            vm,
+                            "Lorg/jsoup/nodes/Element;",
+                            Native::JsoupElement { doc: doc.clone(), id },
+                        )
+                    })
+                    .collect()
+            }
             _ => Err(iae(vm, "not a collection")),
         },
         JValue::Null => Err(npe(vm)),
@@ -25,8 +39,12 @@ pub(crate) fn set_alloc(vm: &mut Vm, items: Vec<JValue>) -> Result<JValue, NatEr
 }
 
 pub(crate) fn list_init(vm: &mut Vm, args: &[JValue]) -> R {
-    let items = if args.len() > 1 && !args[1].is_null() {
-        coll_elems(vm, args[1])?
+    let items = if args.len() > 1 {
+        match args[1] {
+            JValue::Null => Vec::new(),
+            JValue::Obj(_) => coll_elems(vm, args[1])?,
+            _ => Vec::new(),
+        }
     } else {
         Vec::new()
     };
@@ -667,8 +685,12 @@ pub(crate) fn map_to_string(vm: &mut Vm, args: &[JValue]) -> R {
 // ---- java.util.HashSet ----
 
 pub(crate) fn set_init(vm: &mut Vm, args: &[JValue]) -> R {
-    let items = if args.len() > 1 && !args[1].is_null() {
-        coll_elems(vm, args[1])?
+    let items = if args.len() > 1 {
+        match args[1] {
+            JValue::Null => Vec::new(),
+            JValue::Obj(_) => coll_elems(vm, args[1])?,
+            _ => Vec::new(),
+        }
     } else {
         Vec::new()
     };
@@ -885,6 +907,8 @@ pub(crate) fn iter_has_next(vm: &mut Vm, args: &[JValue]) -> R {
     let len = match payload(vm, coll) {
         Some(Native::List(items)) => items.len(),
         Some(Native::Set(items)) => items.len(),
+        #[cfg(feature = "keiyoushi")]
+        Some(Native::SFilterList(items)) => items.len(),
         Some(Native::Map(entries)) => entries.len(),
         _ => return Err(npe(vm)),
     };
@@ -906,6 +930,11 @@ pub(crate) fn iter_next(vm: &mut Vm, args: &[JValue]) -> R {
     let item = match &k {
         IterKind::List { .. } => match payload(vm, coll) {
             Some(Native::List(items)) => items
+                .get(idx)
+                .copied()
+                .ok_or_else(|| no_such_elem(vm)),
+            #[cfg(feature = "keiyoushi")]
+            Some(Native::SFilterList(items)) => items
                 .get(idx)
                 .copied()
                 .ok_or_else(|| no_such_elem(vm)),

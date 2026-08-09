@@ -676,6 +676,32 @@ pub(crate) fn sb_append_chars(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
+/// kotlin.text.StringsKt.append(StringBuilder, String[]): appends each
+/// element in order (no separator).
+pub(crate) fn strings_append_array(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = match payload(vm, args[1]) {
+        Some(Native::Array(data)) => {
+            let mut v = Vec::new();
+            for i in 0..data.len() {
+                v.push(data.get(i));
+            }
+            v
+        }
+        _ => return Err(npe(vm)),
+    };
+    let mut s = String::new();
+    for item in items {
+        if let Ok(t) = jstr(vm, item) {
+            s.push_str(&t);
+        }
+    }
+    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    dst.push_str(&s);
+    Ok(args[0])
+}
+
 pub(crate) fn sb_length(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::StringBuilder(s)) = payload(vm, args[0]) else {
         return Err(npe(vm));
