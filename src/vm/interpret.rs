@@ -57,7 +57,15 @@ impl Frame {
 /// Runs a method with a fresh frame. Used for `<clinit>` and for calls made
 /// from native code. Native-backing methods (host APIs) run directly.
 pub fn run(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<JValue, JvmError> {
-    let native_key = vm.classes[class as usize].methods[slot as usize].native_key;
+    let m = &vm.classes[class as usize].methods[slot as usize];
+    if m.native_decl {
+        return Err(JvmError::Resolution(format!(
+            "native method {} {} has no JNI bridge (JNI unsupported)",
+            vm.str_of(m.name),
+            vm.str_of(m.sig)
+        )));
+    }
+    let native_key = m.native_key;
     if let Some(key) = native_key {
         let f = *vm
             .natives

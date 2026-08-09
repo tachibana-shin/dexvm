@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::sync::{Arc, OnceLock};
 
-use class::{Class, Method, ShimValue, ACC_STATIC, SHIM_CLASSES};
+use class::{Class, Method, ShimValue, ACC_NATIVE, ACC_STATIC, SHIM_CLASSES};
 use error::JvmError;
 use object::{Arena, ClassOrPrim, Native};
 use value::{default_of, JValue};
@@ -417,6 +417,7 @@ impl Vm {
                         .collect();
                     let args: Vec<u32> = arg_descs.iter().map(|d| vm.intern(d)).collect();
                     let static_method = em.access_flags & ACC_STATIC != 0;
+                    let native_decl = em.access_flags & ACC_NATIVE != 0;
                     let slot = methods.len() as u32;
                     dispatch.insert((name, sig), slot);
                     methods.push(Method {
@@ -430,6 +431,7 @@ impl Vm {
                         static_method,
                         dex_idx,
                         native_key: None,
+                        native_decl,
                         code: em.code.clone(),
                         insns: OnceLock::new(),
                     });
@@ -542,6 +544,7 @@ impl Vm {
                 static_method,
                 dex_idx: 0,
                 native_key: Some((desc_id, name, sig)),
+                native_decl: false,
                 code: None,
                 insns: OnceLock::new(),
             });
@@ -1075,6 +1078,13 @@ impl Vm {
         })?;
         let (native_key, code, decoded, ins_size, registers, ret, args, static_method) = {
             let m = &self.classes[found_class as usize].methods[slot as usize];
+            if m.native_decl {
+                return Err(JvmError::Resolution(format!(
+                    "native method {} {} has no JNI bridge (JNI unsupported)",
+                    self.str_of(m.name),
+                    self.str_of(m.sig)
+                )));
+            }
             let native_key = m.native_key;
             let code = m.code.clone();
             let decoded = if native_key.is_some() {
@@ -1388,6 +1398,7 @@ impl Vm {
                 static_method,
                 dex_idx: 0,
                 native_key: Some((class, name, sig)),
+                native_decl: false,
                 code: None,
                 insns: OnceLock::new(),
             });
@@ -1660,5 +1671,140 @@ mod tests {
             .expect("method g") as u32;
         let r = interpret::run(&mut vm, cid, g_slot, vec![]).expect("run g");
         assert_eq!(r, JValue::Int(3));
+    }
+
+    // Hand-assembled dex containing just class LHello; whose only method
+    // `static int g()` is declared `native` (access_flags 0x100 | 0x8) with
+    // no code item.
+    fn native_dex() -> Vec<u8> {
+        let mut d = Vec::new();
+        let push4 = |d: &mut Vec<u8>, v: u32| d.extend_from_slice(&v.to_le_bytes());
+        d.extend_from_slice(b"dex\n035\0");
+        d.extend_from_slice(&[0u8; 4]);
+        d.extend_from_slice(&[0u8; 20]);
+        let mut hdr = Vec::new();
+        for _ in 0..20 {
+            hdr.push(d.len());
+            push4(&mut d, 0);
+        }
+        assert_eq!(d.len(), 0x70);
+
+        let strings: [&[u8]; 4] = [b"LHello;", b"Ljava/lang/Object;", b"g", b"I"];
+        let mut str_off = [0u32; 4];
+        for (i, s) in strings.iter().enumerate() {
+            str_off[i] = d.len() as u32;
+            uleb(&mut d, s.len() as u32);
+            d.extend_from_slice(s);
+            d.push(0);
+        }
+        let string_data_off = str_off[0];
+
+        pad4(&mut d);
+        let string_ids_off = d.len() as u32;
+        for o in str_off {
+            push4(&mut d, o);
+        }
+
+        let type_ids_off = d.len() as u32;
+        push4(&mut d, 0); // "LHello;"
+        push4(&mut d, 1); // "Ljava/lang/Object;"
+        push4(&mut d, 3); // "I"
+
+        let proto_ids_off = d.len() as u32;
+        push4(&mut d, 3); // shorty "I"
+        push4(&mut d, 2); // return "I"
+        push4(&mut d, 0); // no params
+
+        let method_ids_off = d.len() as u32;
+        push4(&mut d, 0); // class 0, proto 0
+        push4(&mut d, 2); // name "g"
+
+        let class_defs_off = d.len() as u32;
+        push4(&mut d, 0); // class_idx
+        push4(&mut d, 0x1); // access_flags: public
+        push4(&mut d, 1); // superclass_idx
+        push4(&mut d, 0); // interfaces_off
+        push4(&mut d, u32::MAX); // source_file_idx
+        push4(&mut d, 0); // annotations_off
+        let class_data_off_pos = d.len();
+        push4(&mut d, 0); // class_data_off (patched)
+        push4(&mut d, 0); // static_values_off
+
+        // class_data: 1 direct (static) native method, no code
+        pad4(&mut d);
+        let class_data_off = d.len() as u32;
+        uleb(&mut d, 0); // static_fields
+        uleb(&mut d, 0); // instance_fields
+        uleb(&mut d, 1); // direct_methods
+        uleb(&mut d, 0); // virtual_methods
+        uleb(&mut d, 0); // m0 idx diff
+        uleb(&mut d, 0x108); // access_flags: static | native
+        uleb(&mut d, 0); // code_off = 0 (native: no code item)
+
+        pad4(&mut d);
+        let map_off = d.len() as u32;
+        let map_entries: [(u16, u32, u32); 8] = [
+            (0x0000, 1, 0), // header
+            (0x0001, 4, string_ids_off),
+            (0x0002, 3, type_ids_off),
+            (0x0003, 1, proto_ids_off),
+            (0x0005, 1, method_ids_off),
+            (0x0006, 1, class_defs_off),
+            (0x1000, 1, map_off),
+            (0x2002, 4, string_data_off),
+        ];
+        push4(&mut d, map_entries.len() as u32);
+        for (ty, size, off) in map_entries {
+            push4(&mut d, u32::from(ty));
+            push4(&mut d, size);
+            push4(&mut d, off);
+        }
+
+        let file_size = d.len() as u32;
+        let patch = |d: &mut Vec<u8>, off: usize, v: u32| {
+            d[off..off + 4].copy_from_slice(&v.to_le_bytes());
+        };
+        let mut it = hdr.into_iter();
+        let mut f = |d: &mut Vec<u8>, v: u32| patch(d, it.next().unwrap(), v);
+        f(&mut d, file_size); // file_size
+        f(&mut d, 0x70); // header_size
+        f(&mut d, 0x1234_5678); // endian
+        f(&mut d, 0); // link_size
+        f(&mut d, 0); // link_off
+        f(&mut d, map_off);
+        f(&mut d, 4); // string_ids_size
+        f(&mut d, string_ids_off);
+        f(&mut d, 3); // type_ids_size
+        f(&mut d, type_ids_off);
+        f(&mut d, 1); // proto_ids_size
+        f(&mut d, proto_ids_off);
+        f(&mut d, 0); // field_ids_size
+        f(&mut d, 0); // field_ids_off
+        f(&mut d, 1); // method_ids_size
+        f(&mut d, method_ids_off);
+        f(&mut d, 1); // class_defs_size
+        f(&mut d, class_defs_off);
+        f(&mut d, 0); // data_size
+        f(&mut d, 0); // data_off
+        patch(&mut d, class_data_off_pos, class_data_off);
+        d
+    }
+
+    #[test]
+    fn native_method_reports_missing_jni_bridge() {
+        let dex = DexFile::parse(&native_dex()).expect("parse dex");
+        let mut vm = Vm::new(vec![dex], Box::new(Vec::new())).expect("vm");
+        let cid = vm.ensure_class_by_desc("LHello;").expect("load LHello;");
+        let g_slot = vm.classes[cid as usize]
+            .methods
+            .iter()
+            .position(|m| vm.str_of(m.name) == "g")
+            .expect("method g") as u32;
+        assert!(vm.classes[cid as usize].methods[g_slot as usize].native_decl);
+        let err = interpret::run(&mut vm, cid, g_slot, vec![]).unwrap_err();
+        assert!(
+            format!("{err}").contains("has no JNI bridge"),
+            "unexpected error: {err}"
+        );
     }
 }

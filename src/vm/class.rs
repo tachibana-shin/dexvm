@@ -20,6 +20,7 @@ pub const ACC_FINAL: u32 = 0x0010;
 pub const ACC_SYNCHRONIZED: u32 = 0x0020;
 pub const ACC_VOLATILE: u32 = 0x0040;
 pub const ACC_TRANSIENT: u32 = 0x0080;
+pub const ACC_NATIVE: u32 = 0x0100;
 pub const ACC_INTERFACE: u32 = 0x0200;
 pub const ACC_ABSTRACT: u32 = 0x0400;
 pub const ACC_SYNTHETIC: u32 = 0x1000;
@@ -45,6 +46,11 @@ pub struct Method {
     pub dex_idx: u32,
     /// Present when this method is implemented natively.
     pub native_key: Option<(u32, u32, u32)>,
+    /// Declared `native` in the dex (no code item, no JNI bridge).
+    ///
+    /// JNI is unsupported; invoking such a method raises a resolution error
+    /// unless the host registered a shim for it first.
+    pub native_decl: bool,
     pub code: Option<Arc<CodeItem>>,
     /// Decoded instructions (bytecode methods only).
     pub insns: OnceLock<Arc<Decoded>>,
