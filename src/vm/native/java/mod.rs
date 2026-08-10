@@ -3,6 +3,7 @@ use crate::vm::native::*;
 mod io;
 mod lang;
 mod nio;
+mod security;
 mod text;
 mod util;
 
@@ -17,6 +18,7 @@ pub(crate) fn java_tables(out: &mut Vec<&'static [NativeEntry]>) {
     out.extend(lang::LANG_TABLE.iter().copied());
     out.push(io::TABLE);
     out.push(nio::TABLE);
+    out.push(security::SECURITY_TABLE);
     out.extend(text::TEXT_TABLE.iter().copied());
     out.extend(util::UTIL_TABLE.iter().copied());
 }

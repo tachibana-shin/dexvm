@@ -287,9 +287,10 @@ impl Vm {
                 };
                 return self.array_class(di as u32, type_id as u32);
             }
-            return Err(JvmError::Resolution(format!(
-                "array descriptor not in dex: {desc}"
-            )));
+            // No dex defines the descriptor (test fixtures): synthesize a
+            // plain array class. Real dexes always carry array descriptors,
+            // so this path only fires for synthetic/programmatic arrays.
+            return self.synth_array_class(desc_id);
         }
         if let Some((dx, def_idx)) = self.class_location(&desc) {
             return self.load_dex_class(dx, def_idx);
@@ -600,6 +601,26 @@ impl Vm {
         });
         self.class_by_desc.insert(desc_id, id);
         self.array_classes.insert((dex_idx, elem_type), id);
+        Ok(id)
+    }
+
+    fn synth_array_class(&mut self, desc_id: u32) -> Result<u32, JvmError> {
+        if let Some(&c) = self.class_by_desc.get(&desc_id) {
+            return Ok(c);
+        }
+        let object = self.ensure_class_by_desc_id(self.hot.object)?;
+        let cloneable = self.ensure_class_by_desc("Ljava/lang/Cloneable;")?;
+        let serializable = self.ensure_class_by_desc("Ljava/io/Serializable;")?;
+        let id = self.classes.len() as u32;
+        self.classes.push(Class {
+            id,
+            descriptor: desc_id,
+            superclass: Some(object),
+            interfaces: vec![cloneable, serializable],
+            array_elem: None,
+            ..Default::default()
+        });
+        self.class_by_desc.insert(desc_id, id);
         Ok(id)
     }
 

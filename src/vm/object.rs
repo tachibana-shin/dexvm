@@ -183,6 +183,15 @@ pub enum Native {
     },
     /// java.util.regex.Matcher.
     Matcher(MatcherState),
+    /// java.security.MessageDigest: algorithm code + accumulated input.
+    ///
+    /// 0 = SHA-256, 1 = SHA-1, 2 = MD5, 3 = SHA-384, 4 = SHA-512.
+    MessageDigest {
+        algo: u8,
+        buf: Vec<u8>,
+    },
+    /// java.security.SecureRandom: xorshift64* state.
+    SecureRandom(u64),
     /// java.io.PrintStream (writes to the VM output sink).
     PrintStream,
     /// java.util.Random (xorshift64*).
@@ -479,6 +488,8 @@ impl Native {
             | Native::Enum { .. }
             | Native::Pattern { .. }
             | Native::Matcher(_)
+            | Native::MessageDigest { .. }
+            | Native::SecureRandom(_)
             | Native::PrintStream
             | Native::Random(_)
             | Native::Date(_)

@@ -943,6 +943,18 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!("Ljava/lang/Thread;", Some("Ljava/lang/Object;"), &[], 0),
     shim!("Ljava/lang/Thread$State;", Some("Ljava/lang/Enum;"), &[], 0),
     shim!(
+        "Ljava/security/MessageDigest;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/SecureRandom;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
         "Ljava/util/Collection;",
         Some("Ljava/lang/Iterable;"),
         &[],
