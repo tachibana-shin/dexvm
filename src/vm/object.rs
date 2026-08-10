@@ -183,6 +183,18 @@ pub enum Native {
     },
     /// java.util.regex.Matcher.
     Matcher(MatcherState),
+    /// okhttp3.ResponseBody with a binary payload (image bytes etc.).
+    RespBody(Vec<u8>),
+    /// java.io.ByteArrayInputStream: cursor over in-memory bytes.
+    ByteArrayInputStream {
+        bytes: Vec<u8>,
+        pos: usize,
+    },
+    /// okio.BufferedSource / okio.Buffer sharing a byte cursor.
+    OkioBuf {
+        bytes: Vec<u8>,
+        pos: usize,
+    },
     /// java.security.MessageDigest: algorithm code + accumulated input.
     ///
     /// 0 = SHA-256, 1 = SHA-1, 2 = MD5, 3 = SHA-384, 4 = SHA-512.
@@ -246,6 +258,8 @@ pub enum Native {
         message: String,
         headers: Vec<(String, String)>,
         body: String,
+        /// Raw bytes when the host returned a binary payload.
+        body_bytes: Option<Vec<u8>>,
         request: JValue,
     },
     /// okhttp3.Cookie.
@@ -506,7 +520,10 @@ impl Native {
             | Native::SPPage { .. }
             | Native::Duration(_)
             | Native::IntRange(..)
-            | Native::ArrayDesc(_) => {}
+            | Native::ArrayDesc(_)
+            | Native::RespBody(_)
+            | Native::ByteArrayInputStream { .. }
+            | Native::OkioBuf { .. } => {}
         }
     }
 }

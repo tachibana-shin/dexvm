@@ -33,6 +33,8 @@ pub struct HttpResp {
     pub message: String,
     pub headers: Vec<(String, String)>,
     pub body: String,
+    /// Raw payload when the host response was binary (images etc.).
+    pub body_bytes: Option<Vec<u8>>,
 }
 
 impl HttpResp {
@@ -42,6 +44,16 @@ impl HttpResp {
             message: "OK".into(),
             headers: Vec::new(),
             body: body.into(),
+            body_bytes: None,
+        }
+    }
+    pub fn ok_bytes(bytes: Vec<u8>) -> Self {
+        HttpResp {
+            code: 200,
+            message: "OK".into(),
+            headers: Vec::new(),
+            body: String::new(),
+            body_bytes: Some(bytes),
         }
     }
     pub fn header(&self, name: &str) -> Option<&str> {
@@ -101,6 +113,7 @@ pub(crate) fn keiyoushi_execute(vm: &mut Vm, args: &[JValue]) -> R {
             message: resp.message,
             headers: resp.headers,
             body: resp.body,
+            body_bytes: resp.body_bytes,
             request: args[0],
         },
     )

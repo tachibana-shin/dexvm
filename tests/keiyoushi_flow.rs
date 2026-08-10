@@ -30,6 +30,7 @@ fn env_overridden() -> bool {
 struct Capture {
     code: i32,
     body: String,
+    bytes: Option<Vec<u8>>,
 }
 
 fn captures() -> &'static Option<HashMap<String, Capture>> {
@@ -46,11 +47,18 @@ fn captures() -> &'static Option<HashMap<String, Capture>> {
             else {
                 continue;
             };
-            let Ok(body) = std::fs::read_to_string(format!("fixtures/live/{file}")) else {
+            let Ok(raw) = std::fs::read(format!("fixtures/live/{file}")) else {
                 continue;
             };
             let Ok(code) = code.parse() else { continue };
-            map.insert(url.to_string(), Capture { code, body });
+            map.insert(
+                url.to_string(),
+                Capture {
+                    code,
+                    body: String::from_utf8_lossy(&raw).into_owned(),
+                    bytes: Some(raw),
+                },
+            );
         }
         Some(map)
     })
@@ -106,6 +114,7 @@ fn replay_ext() -> Option<(Keiyoushi, FixtureState)> {
             message: "OK".into(),
             headers: Vec::new(),
             body: c.body.clone(),
+            body_bytes: c.bytes.clone(),
         },
         None => HttpResp::ok("<html></html>"),
     }));

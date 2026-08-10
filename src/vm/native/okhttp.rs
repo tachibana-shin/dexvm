@@ -298,10 +298,44 @@ pub(crate) fn response_header_default(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn response_body(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::Response { body, .. }) = payload(vm, args[0]) else {
+    let Some(Native::Response {
+        body, body_bytes, ..
+    }) = payload(vm, args[0])
+    else {
         return Err(npe(vm));
     };
-    alloc(vm, "Lokhttp3/ResponseBody;", Native::Str(body.clone()))
+    match body_bytes {
+        Some(bytes) => alloc(
+            vm,
+            "Lokhttp3/ResponseBody;",
+            Native::RespBody(bytes.clone()),
+        ),
+        None => alloc(vm, "Lokhttp3/ResponseBody;", Native::Str(body.clone())),
+    }
+}
+
+pub(crate) fn response_body_bytes_stream(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = resp_body_bytes(vm, args[0])?;
+    alloc(
+        vm,
+        "Ljava/io/ByteArrayInputStream;",
+        Native::ByteArrayInputStream { bytes, pos: 0 },
+    )
+}
+
+pub(crate) fn response_body_bytes_arr(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = resp_body_bytes(vm, args[0])?;
+    let data = bytes.into_iter().map(|b| b as i8).collect::<Vec<_>>();
+    let len = data.len();
+    alloc_arr(vm, "B", len, move || ArrayData::Byte(data))
+}
+
+pub(crate) fn resp_body_bytes(vm: &mut Vm, v: JValue) -> Result<Vec<u8>, NatErr> {
+    match payload(vm, v) {
+        Some(Native::RespBody(b)) => Ok(b.clone()),
+        Some(Native::Str(s)) => Ok(s.as_bytes().to_vec()),
+        _ => Err(npe(vm)),
+    }
 }
 
 pub(crate) fn response_request(vm: &mut Vm, args: &[JValue]) -> R {
@@ -315,10 +349,22 @@ pub(crate) fn response_close(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+pub(crate) fn response_body_len(vm: &mut Vm, args: &[JValue]) -> R {
+    let len = match payload(vm, args[0]) {
+        Some(Native::RespBody(b)) => b.len(),
+        Some(Native::Str(s)) => s.len(),
+        _ => return Err(npe(vm)),
+    };
+    Ok(JValue::Long(len as i64))
+}
+
 pub(crate) fn response_body_string(vm: &mut Vm, args: &[JValue]) -> R {
-    let s = match jstr(vm, args[0]) {
-        Ok(s) => s,
-        Err(_) => return Err(npe(vm)),
+    let s = match payload(vm, args[0]) {
+        Some(Native::RespBody(b)) => String::from_utf8_lossy(b).into_owned(),
+        _ => match jstr(vm, args[0]) {
+            Ok(s) => s,
+            Err(_) => return Err(npe(vm)),
+        },
     };
     Ok(vm.alloc_string(&s))
 }
@@ -623,6 +669,7 @@ pub(crate) fn okhttp_call_execute(vm: &mut Vm, args: &[JValue]) -> R {
             message: resp.message,
             headers: resp.headers,
             body: resp.body,
+            body_bytes: resp.body_bytes,
             request: args[0],
         },
     )
@@ -662,6 +709,11 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Response;", "request", "()Lokhttp3/Request;", true, response_request),
     ne!("Lokhttp3/Response;", "close", "()V", true, response_close),
     ne!("Lokhttp3/ResponseBody;", "string", "()Ljava/lang/String;", true, response_body_string),
+    ne!("Lokhttp3/ResponseBody;", "byteStream", "()Ljava/io/InputStream;", true, response_body_bytes_stream),
+    ne!("Lokhttp3/ResponseBody;", "bytes", "()[B", true, response_body_bytes_arr),
+    ne!("Lokhttp3/ResponseBody;", "contentLength", "()J", true, response_body_len),
+    ne!("Lokhttp3/ResponseBody;", "close", "()V", true, response_close),
+    ne!("Lokhttp3/ResponseBody;", "source", "()Lokio/BufferedSource;", true, okio_source_response_body),
     ne!("Lokhttp3/HttpUrl;", "host", "()Ljava/lang/String;", true, http_url_host),
     ne!("Lokhttp3/HttpUrl;", "scheme", "()Ljava/lang/String;", true, http_url_scheme),
     ne!("Lokhttp3/HttpUrl;", "queryParameter", "(Ljava/lang/String;)Ljava/lang/String;", true, http_url_query_parameter),

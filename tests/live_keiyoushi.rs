@@ -49,6 +49,7 @@ fn real_http(req: &HttpData) -> HttpResp {
                 message: e.to_string(),
                 headers: Vec::new(),
                 body: String::new(),
+                body_bytes: None,
             },
         }
     } else {
@@ -63,6 +64,7 @@ fn real_http(req: &HttpData) -> HttpResp {
                 message: e.to_string(),
                 headers: Vec::new(),
                 body: String::new(),
+                body_bytes: None,
             },
         }
     }
@@ -74,6 +76,7 @@ fn to_resp(r: ureq::http::Response<ureq::Body>) -> HttpResp {
         message: "OK".into(),
         headers: Vec::new(),
         body: r.into_body().read_to_string().unwrap_or_default(),
+        body_bytes: None,
     }
 }
 

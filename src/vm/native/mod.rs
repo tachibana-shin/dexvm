@@ -101,11 +101,15 @@ pub mod keiyoushi;
 mod kotlin;
 #[cfg(feature = "okhttp")]
 mod okhttp;
+#[cfg(feature = "okhttp")]
+mod okio;
 
 #[cfg(feature = "tachiyomi")]
 pub(crate) use self::keiyoushi::*;
 #[cfg(feature = "okhttp")]
 pub(crate) use self::okhttp::*;
+#[cfg(feature = "okhttp")]
+pub(crate) use self::okio::*;
 pub(crate) use self::{java::*, kotlin::*};
 
 // ---------------------------------------------------------------------------
@@ -206,6 +210,8 @@ pub(crate) fn native_tables() -> Vec<&'static [NativeEntry]> {
     out.push(injekt::INJEKT_TABLE);
     #[cfg(feature = "okhttp")]
     out.push(okhttp::OKHTTP_TABLE);
+    #[cfg(feature = "okhttp")]
+    out.push(okio::OKIO_TABLE);
     #[cfg(feature = "jsoup")]
     out.push(jsoup::JSOUP_TABLE);
     #[cfg(feature = "android")]
@@ -279,6 +285,60 @@ pub(crate) fn payload_mut(vm: &mut Vm, v: JValue) -> Option<&mut Native> {
         }
     }
     vm.arena.get_mut(id)?.native.as_mut()
+}
+
+/// Simultaneous mutable payloads for two objects (mirrors `payload_mut`
+/// including its lazy default-payload install).
+pub(crate) fn payload_mut_two(
+    vm: &mut Vm,
+    a: JValue,
+    b: JValue,
+) -> (Option<&mut Native>, Option<&mut Native>) {
+    let mut ensure = |v: JValue| {
+        let JValue::Obj(id) = v else { return };
+        if !vm.arena.get(id).is_some_and(|o| o.native.is_some()) {
+            if let Some(make) = default_native_for(vm, id) {
+                if let Some(o) = vm.arena.get_mut(id) {
+                    o.native = Some(make);
+                }
+            }
+        }
+    };
+    ensure(a);
+    ensure(b);
+    let objs = &mut vm.arena.objects;
+    let (ai, bi) = match (a, b) {
+        (JValue::Obj(x), JValue::Obj(y)) => (Some(x as usize), Some(y as usize)),
+        (JValue::Obj(x), _) => (Some(x as usize), None),
+        (_, JValue::Obj(y)) => (None, Some(y as usize)),
+        _ => (None, None),
+    };
+    match (ai, bi) {
+        (Some(x), Some(y)) if x == y => {
+            let o = &mut objs[x];
+            (o.native.as_mut(), None)
+        }
+        (Some(x), Some(y)) => {
+            let (lo, hi) = if x < y { (x, y) } else { (y, x) };
+            let (l, r) = objs.split_at_mut(hi);
+            let first = &mut l[lo].native;
+            let second = &mut r[0].native;
+            if x < y {
+                (first.as_mut(), second.as_mut())
+            } else {
+                (second.as_mut(), first.as_mut())
+            }
+        }
+        (Some(x), None) => {
+            let (l, _) = objs.split_at_mut(x + 1);
+            (l[x].native.as_mut(), None)
+        }
+        (None, Some(y)) => {
+            let (l, _) = objs.split_at_mut(y + 1);
+            (None, l[y].native.as_mut())
+        }
+        (None, None) => (None, None),
+    }
 }
 
 /// Default payload for a freshly allocated object of a shim class.
@@ -418,6 +478,14 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
 
 pub(crate) fn obj_class(vm: &Vm, id: u32) -> u32 {
     vm.arena.objects[id as usize].class
+}
+
+/// Owned bytes of a `[B`-array JValue payload.
+pub(crate) fn bytes_of(vm: &Vm, v: JValue) -> Option<Vec<u8>> {
+    match payload(vm, v) {
+        Some(Native::Array(ArrayData::Byte(bs))) => Some(bs.iter().map(|&b| b as u8).collect()),
+        _ => None,
+    }
 }
 
 /// Owned copy of a java.lang.String payload.

@@ -394,6 +394,35 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/FormBody;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
+    shim!("Lokio/Okio;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokio/Source;",
+        None,
+        &["Ljava/io/Closeable;"],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokio/BufferedSource;",
+        None,
+        &["Lokio/Source;", "Ljava/io/Closeable;"],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokio/Buffer;",
+        Some("Ljava/lang/Object;"),
+        &["Lokio/BufferedSource;", "Ljava/io/Closeable;"],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokio/ByteString;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokio/ByteStreams;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokio/ByteStreamsKt;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
     shim!(
         "Lokhttp3/FormBody$Builder;",
         Some("Ljava/lang/Object;"),
@@ -714,6 +743,18 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!(
         "Ljava/lang/InterruptedException;",
         Some("Ljava/lang/Exception;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/io/InputStream;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Closeable;"],
+        0
+    ),
+    shim!(
+        "Ljava/io/ByteArrayInputStream;",
+        Some("Ljava/io/InputStream;"),
         &[],
         0
     ),

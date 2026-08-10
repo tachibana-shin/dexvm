@@ -153,6 +153,7 @@ fn response_accessors() {
                 message: "OK".into(),
                 headers: vec![("Content-Type".into(), "text/html".into())],
                 body: "<html>hi</html>".into(),
+                body_bytes: None,
                 request: req,
             },
         )
@@ -201,6 +202,7 @@ fn response_error_code_not_successful() {
                 message: "Not Found".into(),
                 headers: Vec::new(),
                 body: String::new(),
+                body_bytes: None,
                 request: req,
             },
         )
@@ -266,5 +268,89 @@ fn okhttp_builder_interceptor_lists() {
         assert_eq!(strs, ["net-1"]);
 
         let _client = okhttp_builder_build(vm, &[b]).unwrap();
+    });
+}
+
+#[test]
+fn binary_body_plumbing() {
+    with_vm(|vm| {
+        // response with raw bytes
+        let req = alloc(
+            vm,
+            "Lokhttp3/Request;",
+            Native::Request {
+                url: "https://x/img".into(),
+                method: "GET".into(),
+                headers: Vec::new(),
+                body: None,
+            },
+        )
+        .unwrap();
+        let resp = alloc(
+            vm,
+            "Lokhttp3/Response;",
+            Native::Response {
+                code: 200,
+                message: "OK".into(),
+                headers: Vec::new(),
+                body: String::new(),
+                body_bytes: Some(vec![
+                    0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4, 5, 6,
+                ]),
+                request: req,
+            },
+        )
+        .unwrap();
+
+        // Response.body() -> ResponseBody with RespBody payload
+        let body = response_body(vm, &[resp]).unwrap();
+        assert!(matches!(payload(vm, body), Some(Native::RespBody(_))));
+
+        // byteStream -> ByteArrayInputStream; BufferedReader-ish read back
+        let stream = response_body_bytes_stream(vm, &[body]).unwrap();
+        let first = bais_read(vm, &[stream]).unwrap();
+        assert_eq!(first, JValue::Int(0x89));
+        let b1 = alloc_arr(vm, "B", 4, || ArrayData::Byte(vec![0; 4])).unwrap();
+        // read([BII) into a byte array (fills via payload)
+        let arr = {
+            let cnt = bais_read_buf(vm, &[stream, b1, JValue::Int(0), JValue::Int(3)]).unwrap();
+            let bytes = match payload(vm, b1) {
+                Some(Native::Array(ArrayData::Byte(bs))) => {
+                    bs.iter().map(|&b| b as u8).collect::<Vec<_>>()
+                }
+                _ => Vec::new(),
+            };
+            (cnt, bytes)
+        };
+        assert_eq!(arr.0, JValue::Int(3));
+        assert_eq!(arr.1[..3], *b"PNG");
+
+        // okio: source(InputStream) -> BufferedSource over the REMAINING cursor
+        let source = okio_source_input_stream(vm, &[JValue::Null, stream]).unwrap();
+        assert_eq!(
+            okio_request(vm, &[source, JValue::Long(4)]).unwrap(),
+            JValue::Int(1)
+        );
+        assert_eq!(
+            okio_request(vm, &[source, JValue::Long(99)]).unwrap(),
+            JValue::Int(0)
+        );
+        let buf = okio_get_buffer(vm, &[source]).unwrap();
+        assert_eq!(
+            okio_buffer_get(vm, &[buf, JValue::Long(0)]).unwrap(),
+            JValue::Int(0x0d)
+        );
+        assert_eq!(
+            okio_buffer_get(vm, &[buf, JValue::Long(2)]).unwrap(),
+            JValue::Int(0x1a)
+        );
+        assert_eq!(
+            okio_buffer_get(vm, &[buf, JValue::Long(9)]).unwrap(),
+            JValue::Int(0x06)
+        );
+        assert!(okio_buffer_get(vm, &[buf, JValue::Long(10)]).is_err());
+        let rest = okio_read_byte_array(vm, &[source]).unwrap();
+        let bytes = bytes_of(vm, rest).unwrap();
+        assert_eq!(bytes, vec![0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4, 5, 6]);
     });
 }
