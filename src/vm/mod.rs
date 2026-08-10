@@ -826,6 +826,31 @@ impl Vm {
         self.call_target(target, args)
     }
 
+    pub fn invoke_virtual_args(
+        &mut self,
+        receiver: JValue,
+        name: &str,
+        sig: &str,
+        args: Vec<JValue>,
+    ) -> Result<JValue, JvmError> {
+        let mref = MethodRef {
+            name: self.intern(name),
+            sig: self.intern(sig),
+            ret: 0,
+            args: Vec::new(),
+            class_desc: 0,
+        };
+        if receiver.is_null() {
+            return Err(JvmError::Fatal("invoke_virtual on null".into()));
+        }
+        let recv = receiver.as_obj();
+        let target = self.resolve_target(InvokeKind::Virtual, &mref, Some(recv))?;
+        let mut all = Vec::with_capacity(1 + args.len());
+        all.push(receiver);
+        all.extend(args);
+        self.call_target(target, all)
+    }
+
     pub fn invoke_static(
         &mut self,
         class_desc: &str,

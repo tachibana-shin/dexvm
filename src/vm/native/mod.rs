@@ -142,6 +142,10 @@ pub(crate) type RequestParts = (String, String, Vec<(String, String)>, Option<JV
 #[cfg(any(feature = "okhttp", feature = "tachiyomi"))]
 #[cfg_attr(not(feature = "tachiyomi"), allow(dead_code))]
 pub(crate) fn request_parts(vm: &mut Vm, v: JValue) -> Result<RequestParts, NatErr> {
+    let v = match payload(vm, v) {
+        Some(Native::Call { request, .. }) => *request,
+        _ => v,
+    };
     let Some(Native::Request {
         url,
         method,

@@ -195,6 +195,31 @@ pub enum Native {
         bytes: Vec<u8>,
         pos: usize,
     },
+    /// okhttp3.OkHttpClient built from a builder: keeps interceptor lists.
+    OkHttpClient {
+        interceptors: Vec<JValue>,
+        network_interceptors: Vec<JValue>,
+    },
+    /// okhttp3.Call: request plus the originating client (chain execution).
+    Call {
+        request: JValue,
+        client: JValue,
+    },
+    /// okhttp3.Interceptor$Chain under execution.
+    Chain {
+        interceptors: Vec<JValue>,
+        pos: usize,
+        request: JValue,
+        call: JValue,
+    },
+    /// okhttp3.Response$Builder for interceptor rewrites.
+    ResponseBuilder {
+        code: i32,
+        message: String,
+        headers: Vec<(String, String)>,
+        body: Option<JValue>,
+        request: Option<JValue>,
+    },
     /// java.security.MessageDigest: algorithm code + accumulated input.
     ///
     /// 0 = SHA-256, 1 = SHA-1, 2 = MD5, 3 = SHA-384, 4 = SHA-512.
@@ -468,9 +493,31 @@ impl Native {
             Native::OkHttpBuilder {
                 interceptors,
                 network_interceptors,
+            }
+            | Native::OkHttpClient {
+                interceptors,
+                network_interceptors,
             } => {
                 push_all(interceptors, out);
                 push_all(network_interceptors, out);
+            }
+            Native::Call { request, client } => {
+                push(Some(request), out);
+                push(Some(client), out);
+            }
+            Native::Chain {
+                interceptors,
+                request,
+                call,
+                ..
+            } => {
+                push_all(interceptors, out);
+                push(Some(request), out);
+                push(Some(call), out);
+            }
+            Native::ResponseBuilder { body, request, .. } => {
+                push(body.as_ref(), out);
+                push(request.as_ref(), out);
             }
             Native::Request { body, .. } => push(body.as_ref(), out),
             Native::RequestBuilder { body, .. } => push(body.as_ref(), out),

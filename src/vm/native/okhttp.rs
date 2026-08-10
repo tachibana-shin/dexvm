@@ -499,8 +499,22 @@ pub(crate) fn okhttp_builder_network_interceptors(vm: &mut Vm, args: &[JValue]) 
     list_alloc(vm, items)
 }
 
-pub(crate) fn okhttp_builder_build(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(vm, "Lokhttp3/OkHttpClient;", Native::Opaque)
+pub(crate) fn okhttp_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
+    let (interceptors, network_interceptors) = match payload(vm, args[0]) {
+        Some(Native::OkHttpBuilder {
+            interceptors,
+            network_interceptors,
+        }) => (interceptors.clone(), network_interceptors.clone()),
+        _ => return Err(npe(vm)),
+    };
+    alloc(
+        vm,
+        "Lokhttp3/OkHttpClient;",
+        Native::OkHttpClient {
+            interceptors,
+            network_interceptors,
+        },
+    )
 }
 
 // ---- request building (FormBody / HttpUrl / RequestsKt) ----
@@ -624,33 +638,71 @@ pub(crate) fn okhttp_http_url_builder_to_string(vm: &mut Vm, args: &[JValue]) ->
 
 #[cfg(feature = "okhttp")]
 pub(crate) fn okhttp_client_new_call(vm: &mut Vm, args: &[JValue]) -> R {
-    let req = match payload(vm, args[1]) {
-        Some(Native::Request {
-            url,
-            method,
-            headers,
-            body,
-        }) => (url.clone(), method.clone(), headers.clone(), *body),
+    match payload(vm, args[0]) {
+        Some(Native::OkHttpClient { .. }) | Some(Native::Opaque) => {}
         _ => return Err(npe(vm)),
-    };
-    let Some(Native::Opaque) = payload(vm, args[0]) else {
-        return Err(npe(vm));
     };
     alloc(
         vm,
         "Lokhttp3/Call;",
-        Native::Request {
-            url: req.0,
-            method: req.1,
-            headers: req.2,
-            body: req.3,
+        Native::Call {
+            request: args[1],
+            client: args[0],
         },
     )
 }
 
 #[cfg(feature = "tachiyomi")]
 pub(crate) fn okhttp_call_execute(vm: &mut Vm, args: &[JValue]) -> R {
-    let (url, method, headers, body) = request_parts(vm, args[0])?;
+    let call = args[0];
+    let (request, client) = match payload(vm, call) {
+        Some(Native::Call { request, client }) => (*request, *client),
+        // legacy: Call payload was a bare Request
+        Some(Native::Request { .. }) => (call, JValue::Null),
+        _ => return Err(npe(vm)),
+    };
+    let interceptors = match payload(vm, client) {
+        Some(Native::OkHttpClient {
+            interceptors,
+            network_interceptors,
+        }) => {
+            let mut v = interceptors.clone();
+            v.extend(network_interceptors.clone());
+            v
+        }
+        _ => Vec::new(),
+    };
+    if interceptors.is_empty() {
+        return host_execute(vm, request);
+    }
+    let chain = alloc(
+        vm,
+        "Lokhttp3/Interceptor$Chain;",
+        Native::Chain {
+            interceptors,
+            pos: 0,
+            request,
+            call,
+        },
+    )?;
+    let first = match payload(vm, chain) {
+        Some(Native::Chain { interceptors, .. }) => interceptors[0],
+        _ => unreachable!(),
+    };
+    let resp = vm
+        .invoke_virtual_args(
+            first,
+            "intercept",
+            "(Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;",
+            vec![chain],
+        )
+        .map_err(nat_fatal)?;
+    Ok(resp)
+}
+
+/// Runs the real host HTTP request for `request` and wraps it as a Response.
+fn host_execute(vm: &mut Vm, request: JValue) -> R {
+    let (url, method, headers, body) = request_parts(vm, request)?;
     let body_str = form_body_to_string(vm, &body);
     let Some(http) = vm.http.clone() else {
         return Err(uoe(vm, "no HTTP client registered for this SourceEngine"));
@@ -670,7 +722,124 @@ pub(crate) fn okhttp_call_execute(vm: &mut Vm, args: &[JValue]) -> R {
             headers: resp.headers,
             body: resp.body,
             body_bytes: resp.body_bytes,
-            request: args[0],
+            request,
+        },
+    )
+}
+
+// ---------------------------------------------------------------------------
+// interceptor chains
+// ---------------------------------------------------------------------------
+
+const INTERCEPT_SIG: &str = "(Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;";
+
+pub(crate) fn chain_request(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Chain { request, .. }) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    Ok(*request)
+}
+
+pub(crate) fn chain_call(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Chain { call, .. }) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    Ok(*call)
+}
+
+pub(crate) fn chain_connection(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
+pub(crate) fn chain_proceed(vm: &mut Vm, args: &[JValue]) -> R {
+    let request = args[1];
+    let mut next = None;
+    {
+        let Some(Native::Chain {
+            interceptors,
+            pos,
+            request: rq,
+            ..
+        }) = payload_mut(vm, args[0])
+        else {
+            return Err(npe(vm));
+        };
+        *rq = request;
+        if *pos < interceptors.len() {
+            next = Some(interceptors[*pos]);
+            *pos += 1;
+        }
+    }
+    match next {
+        Some(interceptor) => vm
+            .invoke_virtual_args(interceptor, "intercept", INTERCEPT_SIG, vec![args[0]])
+            .map_err(nat_fatal),
+        None => host_execute(vm, request),
+    }
+}
+
+pub(crate) fn response_new_builder(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Response {
+        code,
+        message,
+        headers,
+        request,
+        ..
+    }) = payload(vm, args[0])
+    else {
+        return Err(npe(vm));
+    };
+    let (code, message, headers, request) = (*code, message.clone(), headers.clone(), *request);
+    alloc(
+        vm,
+        "Lokhttp3/Response$Builder;",
+        Native::ResponseBuilder {
+            code,
+            message,
+            headers,
+            body: None,
+            request: Some(request),
+        },
+    )
+}
+
+pub(crate) fn response_builder_body(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::ResponseBuilder { body, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *body = Some(args[1]);
+    Ok(args[0])
+}
+
+pub(crate) fn response_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
+    let (code, message, headers, body, request) = match payload(vm, args[0]) {
+        Some(Native::ResponseBuilder {
+            code,
+            message,
+            headers,
+            body,
+            request,
+        }) => (*code, message.clone(), headers.clone(), *body, *request),
+        _ => return Err(npe(vm)),
+    };
+    let (text, bytes) = match body {
+        Some(b) => match payload(vm, b) {
+            Some(Native::RespBody(bs)) => (String::new(), Some(bs.clone())),
+            Some(Native::Str(s)) => (s.clone(), None),
+            _ => (String::new(), None),
+        },
+        None => (String::new(), None),
+    };
+    alloc(
+        vm,
+        RESPONSE,
+        Native::Response {
+            code,
+            message,
+            headers,
+            body: text,
+            body_bytes: bytes,
+            request: request.unwrap_or(JValue::Null),
         },
     )
 }
@@ -714,6 +883,13 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/ResponseBody;", "contentLength", "()J", true, response_body_len),
     ne!("Lokhttp3/ResponseBody;", "close", "()V", true, response_close),
     ne!("Lokhttp3/ResponseBody;", "source", "()Lokio/BufferedSource;", true, okio_source_response_body),
+    ne!("Lokhttp3/Interceptor$Chain;", "request", "()Lokhttp3/Request;", true, chain_request),
+    ne!("Lokhttp3/Interceptor$Chain;", "proceed", "(Lokhttp3/Request;)Lokhttp3/Response;", true, chain_proceed),
+    ne!("Lokhttp3/Interceptor$Chain;", "call", "()Lokhttp3/Call;", true, chain_call),
+    ne!("Lokhttp3/Interceptor$Chain;", "connection", "()Lokhttp3/Connection;", true, chain_connection),
+    ne!("Lokhttp3/Response;", "newBuilder", "()Lokhttp3/Response$Builder;", true, response_new_builder),
+    ne!("Lokhttp3/Response$Builder;", "body", "(Lokhttp3/ResponseBody;)Lokhttp3/Response$Builder;", true, response_builder_body),
+    ne!("Lokhttp3/Response$Builder;", "build", "()Lokhttp3/Response;", true, response_builder_build),
     ne!("Lokhttp3/HttpUrl;", "host", "()Ljava/lang/String;", true, http_url_host),
     ne!("Lokhttp3/HttpUrl;", "scheme", "()Ljava/lang/String;", true, http_url_scheme),
     ne!("Lokhttp3/HttpUrl;", "queryParameter", "(Ljava/lang/String;)Ljava/lang/String;", true, http_url_query_parameter),

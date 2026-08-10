@@ -354,3 +354,108 @@ fn binary_body_plumbing() {
         assert_eq!(bytes, vec![0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4, 5, 6]);
     });
 }
+
+#[cfg(feature = "tachiyomi")]
+mod chain_tests {
+    use super::*;
+    use crate::vm::native::keiyoushi::HttpData;
+    use crate::vm::native::register_global;
+    use std::rc::Rc;
+
+    static FAKE_TABLE: &[NativeEntry] = &[ne!(
+        "Ltest/FakeInterceptor;",
+        "intercept",
+        "(Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;",
+        true,
+        fake_intercept
+    )];
+
+    fn fake_intercept(vm: &mut Vm, args: &[JValue]) -> R {
+        let chain = args[1];
+        let req = chain_request(vm, &[chain])?;
+        chain_proceed(vm, &[chain, req])
+    }
+
+    #[test]
+    fn interceptor_chain_runs_before_host() {
+        register_global(FAKE_TABLE);
+        with_vm(|vm| {
+            vm.http = Some(Rc::new(|_r: &HttpData| HttpResp::ok_bytes(vec![9, 8, 7])));
+            let b = alloc(
+                vm,
+                "Lokhttp3/OkHttpClient$Builder;",
+                Native::OkHttpBuilder {
+                    interceptors: Vec::new(),
+                    network_interceptors: Vec::new(),
+                },
+            )
+            .unwrap();
+            let fake = alloc(vm, "Ltest/FakeInterceptor;", Native::Opaque).unwrap();
+            let b = okhttp_builder_add_interceptor(vm, &[b, fake]).unwrap();
+            let client = okhttp_builder_build(vm, &[b]).unwrap();
+            let rb = alloc(
+                vm,
+                "Lokhttp3/Request$Builder;",
+                Native::RequestBuilder {
+                    url: String::new(),
+                    method: String::new(),
+                    headers: Vec::new(),
+                    body: None,
+                },
+            )
+            .unwrap();
+            let url = s(vm, "https://img.example/a");
+            let rb = request_builder_url(vm, &[rb, url]).unwrap();
+            let req = request_builder_build(vm, &[rb]).unwrap();
+            let call = okhttp_client_new_call(vm, &[client, req]).unwrap();
+            let resp = okhttp_call_execute(vm, &[call]).unwrap();
+            let bytes = match payload(vm, resp) {
+                Some(Native::Response { body_bytes, .. }) => body_bytes.clone().unwrap(),
+                _ => panic!("expected byte body"),
+            };
+            assert_eq!(bytes, vec![9, 8, 7]);
+            let rq = response_request(vm, &[resp]).unwrap();
+            let u = request_url(vm, &[rq]).unwrap();
+            let us = http_url_to_string(vm, &[u]).unwrap();
+            let us = jstr(vm, us).unwrap();
+            assert_eq!(us, "https://img.example/a");
+        });
+    }
+
+    #[test]
+    fn empty_chain_skips_interceptors() {
+        with_vm(|vm| {
+            vm.http = Some(Rc::new(|_r: &HttpData| HttpResp::ok_bytes(vec![1])));
+            let b = alloc(
+                vm,
+                "Lokhttp3/OkHttpClient$Builder;",
+                Native::OkHttpBuilder {
+                    interceptors: Vec::new(),
+                    network_interceptors: Vec::new(),
+                },
+            )
+            .unwrap();
+            let client = okhttp_builder_build(vm, &[b]).unwrap();
+            let rb = alloc(
+                vm,
+                "Lokhttp3/Request$Builder;",
+                Native::RequestBuilder {
+                    url: String::new(),
+                    method: String::new(),
+                    headers: Vec::new(),
+                    body: None,
+                },
+            )
+            .unwrap();
+            let url = s(vm, "https://x/f");
+            let rb = request_builder_url(vm, &[rb, url]).unwrap();
+            let req = request_builder_build(vm, &[rb]).unwrap();
+            let call = okhttp_client_new_call(vm, &[client, req]).unwrap();
+            let resp = okhttp_call_execute(vm, &[call]).unwrap();
+            assert!(matches!(
+                payload(vm, resp),
+                Some(Native::Response { code: 200, body_bytes: Some(b), .. }) if b == &vec![1]
+            ));
+        });
+    }
+}
