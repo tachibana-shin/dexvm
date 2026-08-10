@@ -169,6 +169,7 @@ pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
         okio_exhausted
     ),
     ne!("Lokio/Buffer;", "get", "(J)B", true, okio_buffer_get),
+    ne!("Lokio/Buffer;", "getByte", "(J)B", true, okio_buffer_get),
     ne!(
         "Lokio/Buffer;",
         "readByteArray",

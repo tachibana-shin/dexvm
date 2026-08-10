@@ -1,6 +1,7 @@
 //! The VM: class loading/resolution, the object arena, strings, exceptions.
 
 pub mod class;
+pub mod crypto;
 pub mod error;
 pub mod interpret;
 pub mod native;
@@ -1194,6 +1195,81 @@ impl Vm {
     }
 
     // ---- objects ----
+
+    /// Allocates a host-backed object of a shim class (resolved on demand)
+    /// with the given native payload. Useful to feed interceptor chains and
+    /// other host objects from tests and embedders.
+    pub fn alloc_native(&mut self, desc: &str, native: object::Native) -> Result<JValue, JvmError> {
+        let class = self.ensure_class_by_desc(desc)?;
+        Ok(JValue::Obj(self.arena.alloc(class, Vec::new(), Some(native))))
+    }
+
+    /// Reads the instance field `name` of an in-dex object (host shim
+    /// objects carry no dex fields and return `None`).
+    pub fn instance_field(&self, obj: u32, name: &str) -> Option<JValue> {
+        let o = self.arena.get(obj)?;
+        let c = self.classes.get(o.class as usize)?;
+        for (off, f) in c.instance_fields.iter().enumerate() {
+            if self.str_of(f.0) == name {
+                return o.fields.get(off).copied();
+            }
+        }
+        None
+    }
+
+    /// Overwrites the instance field `name` of an in-dex object.
+    pub fn instance_field_set(&mut self, obj: u32, name: &str, v: JValue) -> bool {
+        let Some(o) = self.arena.get_mut(obj) else {
+            return false;
+        };
+        let class = o.class;
+        let Some(c) = self.classes.get(class as usize) else {
+            return false;
+        };
+        let Some(idx) = c
+            .instance_fields
+            .iter()
+            .position(|f| self.str_of(f.0) == name)
+        else {
+            return false;
+        };
+        let Some(o) = self.arena.get_mut(obj) else {
+            return false;
+        };
+        let Some(slot) = o.fields.get_mut(idx) else {
+            return false;
+        };
+        *slot = v;
+        true
+    }
+
+    /// Depth-first search for the `[B` byte array held somewhere inside an
+    /// in-dex object graph (e.g. an okhttp `ResponseBody` subclass wrapping
+    /// a byte container like MoeTruyen's `Lc`).
+    pub fn object_bytes(&self, v: JValue) -> Option<Vec<u8>> {
+        fn walk(vm: &Vm, v: JValue, depth: usize) -> Option<Vec<u8>> {
+            if depth > 4 {
+                return None;
+            }
+            if let Some(n) = crate::vm::native::payload(vm, v) {
+                if let object::Native::Array(object::ArrayData::Byte(bs)) = n {
+                    return Some(bs.iter().map(|&b| b as u8).collect());
+                }
+                return None;
+            }
+            let JValue::Obj(id) = v else {
+                return None;
+            };
+            let o = vm.arena.get(id)?;
+            for f in &o.fields {
+                if let Some(bytes) = walk(vm, *f, depth + 1) {
+                    return Some(bytes);
+                }
+            }
+            None
+        }
+        walk(self, v, 0)
+    }
 
     pub fn alloc_instance(&mut self, class_id: u32) -> Result<u32, JvmError> {
         let fields: Vec<JValue> = {

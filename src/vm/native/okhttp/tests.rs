@@ -152,8 +152,7 @@ fn response_accessors() {
                 code: 200,
                 message: "OK".into(),
                 headers: vec![("Content-Type".into(), "text/html".into())],
-                body: "<html>hi</html>".into(),
-                body_bytes: None,
+                body: Some("<html>hi</html>".as_bytes().to_vec()),
                 request: req,
             },
         )
@@ -201,8 +200,7 @@ fn response_error_code_not_successful() {
                 code: 404,
                 message: "Not Found".into(),
                 headers: Vec::new(),
-                body: String::new(),
-                body_bytes: None,
+                body: Some(Vec::new()),
                 request: req,
             },
         )
@@ -293,8 +291,7 @@ fn binary_body_plumbing() {
                 code: 200,
                 message: "OK".into(),
                 headers: Vec::new(),
-                body: String::new(),
-                body_bytes: Some(vec![
+                body: Some(vec![
                     0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4, 5, 6,
                 ]),
                 request: req,
@@ -410,7 +407,7 @@ mod chain_tests {
             let call = okhttp_client_new_call(vm, &[client, req]).unwrap();
             let resp = okhttp_call_execute(vm, &[call]).unwrap();
             let bytes = match payload(vm, resp) {
-                Some(Native::Response { body_bytes, .. }) => body_bytes.clone().unwrap(),
+                Some(Native::Response { body: Some(b), .. }) => b.clone(),
                 _ => panic!("expected byte body"),
             };
             assert_eq!(bytes, vec![9, 8, 7]);
@@ -454,7 +451,7 @@ mod chain_tests {
             let resp = okhttp_call_execute(vm, &[call]).unwrap();
             assert!(matches!(
                 payload(vm, resp),
-                Some(Native::Response { code: 200, body_bytes: Some(b), .. }) if b == &vec![1]
+                Some(Native::Response { code: 200, body: Some(b), .. }) if b == &vec![1]
             ));
         });
     }

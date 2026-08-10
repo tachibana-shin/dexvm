@@ -134,7 +134,8 @@ fn live_full_pipeline() {
                 req.method.clone(),
                 req.url.clone(),
                 resp.code,
-                resp.body.clone(),
+                String::from_utf8_lossy(resp.body.as_deref().unwrap_or(b""))
+                    .into_owned(),
             ));
             resp
         }));

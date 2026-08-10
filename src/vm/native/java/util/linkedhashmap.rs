@@ -24,6 +24,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
         "Ljava/util/LinkedHashMap;",
         "<init>",
+        "(IFZ)V",
+        true,
+        map_init
+    ),
+    ne!(
+        "Ljava/util/LinkedHashMap;",
+        "<init>",
         "(Ljava/util/Map;)V",
         true,
         map_init

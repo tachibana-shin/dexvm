@@ -278,8 +278,7 @@ fn parse_from_response_seam() {
                 code: 200,
                 message: "OK".into(),
                 headers: Vec::new(),
-                body: r#"<div class="x"><a href="/img/1">pix</a></div>"#.into(),
-                body_bytes: None,
+                body: Some(r#"<div class="x"><a href="/img/1">pix</a></div>"#.as_bytes().to_vec()),
                 request: req,
             },
         )

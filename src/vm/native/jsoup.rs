@@ -122,7 +122,8 @@ pub(crate) fn jsoup_parse(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::Response { body, request, .. }) = payload(vm, args[0]) else {
         return Err(uoe(vm, "asJsoup: response body missing"));
     };
-    let doc = Document::from(body.as_str());
+    let text = String::from_utf8_lossy(body.as_deref().unwrap_or(b"")).into_owned();
+    let doc = Document::from(text);
     let base = match payload(vm, *request) {
         Some(Native::Request { url, .. }) => Some(url.clone()),
         _ => None,

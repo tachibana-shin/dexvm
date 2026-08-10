@@ -1,5 +1,8 @@
 //! android / androidx framework host shims (keiyoushi feature).
 
+use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
+use base64::Engine as _;
+
 use super::*;
 
 // ---------------------------------------------------------------------------
@@ -27,6 +30,25 @@ pub(crate) fn prefs_ctx(vm: &mut Vm, _args: &[JValue]) -> R {
 }
 pub(crate) fn prefs_set(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
+}
+
+/// `android.util.Base64.decode(String, int) -> [B`. Standard alphabet (flag 0)
+/// or URL-safe (flag 4); padding-tolerant like the Android implementation.
+fn base64_decode(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    let flags = int_of(vm, args[1]);
+    let t = s.trim();
+    let bytes = if flags & 4 != 0 {
+        URL_SAFE_NO_PAD
+            .decode(t.trim_end_matches('='))
+            .map_err(|_| iae(vm, "Base64 decode failed"))?
+    } else {
+        STANDARD
+            .decode(t)
+            .map_err(|_| iae(vm, "Base64 decode failed"))?
+    };
+    let data = bytes.into_iter().map(|b| b as i8).collect::<Vec<_>>();
+    alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))
 }
 
 // ---------------------------------------------------------------------------
@@ -138,6 +160,13 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "(Ljava/lang/Object;)V",
         true,
         prefs_set
+    ),
+    ne!(
+        "Landroid/util/Base64;",
+        "decode",
+        "(Ljava/lang/String;I)[B",
+        true,
+        base64_decode
     ),
 ];
 

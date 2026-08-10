@@ -523,7 +523,14 @@ impl Vm {
                     return Ok(StepOutcome::Throw(JValue::Obj(self.err_neg_arr_size())));
                 }
                 let arr_class = self.array_class(f.dex, *type_idx)?;
-                let elem_desc = self.dex_at(f.dex).type_descriptor(*type_idx).to_string();
+                let elem_desc = self
+                    .dex_at(f.dex)
+                    .type_descriptor(*type_idx)
+                    .strip_prefix('[')
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| {
+                        self.dex_at(f.dex).type_descriptor(*type_idx).to_string()
+                    });
                 let data = ArrayData::new(&elem_desc, n as usize);
                 f.regs[*d as usize] = JValue::Obj(self.arena.alloc(
                     arr_class,

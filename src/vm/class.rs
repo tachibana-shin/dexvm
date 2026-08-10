@@ -339,6 +339,30 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         &[],
         0
     ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/Charsets;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [
+            sdef!(
+                "UTF_8",
+                "Ljava/nio/charset/Charset;",
+                ShimValue::Lazy(native::lazy_charset_utf8)
+            ),
+            sdef!(
+                "ISO_8859_1",
+                "Ljava/nio/charset/Charset;",
+                ShimValue::Lazy(native::lazy_charset_iso)
+            ),
+            sdef!(
+                "US_ASCII",
+                "Ljava/nio/charset/Charset;",
+                ShimValue::Lazy(native::lazy_charset_ascii)
+            ),
+        ]
+    ),
     #[cfg(feature = "jsoup")]
     shim!("Lorg/jsoup/Jsoup;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "jsoup")]
@@ -451,6 +475,25 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "okhttp")]
     shim!(
         "Lokhttp3/HttpUrl$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/MediaType;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "Companion",
+            "Lokhttp3/MediaType$Companion;",
+            ShimValue::Lazy(native::lazy_media_type_companion)
+        ),]
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/MediaType$Companion;",
         Some("Ljava/lang/Object;"),
         &[],
         0
@@ -993,6 +1036,36 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         "Ljava/security/SecureRandom;",
         Some("Ljava/lang/Object;"),
         &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/Key;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/security/spec/AlgorithmParameterSpec;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljavax/crypto/Cipher;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljavax/crypto/spec/SecretKeySpec;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/security/Key;", "Ljava/security/spec/AlgorithmParameterSpec;"],
+        0
+    ),
+    shim!(
+        "Ljavax/crypto/spec/GCMParameterSpec;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/security/spec/AlgorithmParameterSpec;"],
         0
     ),
     shim!(

@@ -298,19 +298,16 @@ pub(crate) fn response_header_default(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn response_body(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::Response {
-        body, body_bytes, ..
-    }) = payload(vm, args[0])
-    else {
+    let Some(Native::Response { body, .. }) = payload(vm, args[0]) else {
         return Err(npe(vm));
     };
-    match body_bytes {
+    match body {
         Some(bytes) => alloc(
             vm,
             "Lokhttp3/ResponseBody;",
             Native::RespBody(bytes.clone()),
         ),
-        None => alloc(vm, "Lokhttp3/ResponseBody;", Native::Str(body.clone())),
+        None => alloc(vm, "Lokhttp3/ResponseBody;", Native::Str(String::new())),
     }
 }
 
@@ -523,6 +520,10 @@ pub(crate) fn lazy_http_url_companion(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lokhttp3/HttpUrl$Companion;")
 }
 
+pub(crate) fn lazy_media_type_companion(vm: &mut Vm) -> JValue {
+    opaque_inst(vm, "Lokhttp3/MediaType$Companion;")
+}
+
 pub(crate) fn okhttp_form_builder_init(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(
         vm,
@@ -547,6 +548,11 @@ pub(crate) fn okhttp_form_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
         return Err(npe(vm));
     };
     alloc(vm, "Lokhttp3/FormBody;", Native::FormBody(fields.clone()))
+}
+
+pub(crate) fn media_type_get(vm: &mut Vm, args: &[JValue]) -> R {
+    let mt = jstr(vm, args[1])?;
+    alloc(vm, "Lokhttp3/MediaType;", Native::Str(mt))
 }
 
 pub(crate) fn okhttp_http_url_parse(vm: &mut Vm, args: &[JValue]) -> R {
@@ -721,7 +727,6 @@ fn host_execute(vm: &mut Vm, request: JValue) -> R {
             message: resp.message,
             headers: resp.headers,
             body: resp.body,
-            body_bytes: resp.body_bytes,
             request,
         },
     )
@@ -822,13 +827,13 @@ pub(crate) fn response_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
         }) => (*code, message.clone(), headers.clone(), *body, *request),
         _ => return Err(npe(vm)),
     };
-    let (text, bytes) = match body {
+    let body = match body {
         Some(b) => match payload(vm, b) {
-            Some(Native::RespBody(bs)) => (String::new(), Some(bs.clone())),
-            Some(Native::Str(s)) => (s.clone(), None),
-            _ => (String::new(), None),
+            Some(Native::RespBody(bs)) => Some(bs.clone()),
+            Some(Native::Str(s)) => Some(s.clone().into_bytes()),
+            _ => vm.object_bytes(b),
         },
-        None => (String::new(), None),
+        None => None,
     };
     alloc(
         vm,
@@ -837,8 +842,7 @@ pub(crate) fn response_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
             code,
             message,
             headers,
-            body: text,
-            body_bytes: bytes,
+            body,
             request: request.unwrap_or(JValue::Null),
         },
     )
@@ -896,6 +900,7 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/HttpUrl;", "pathSegments", "()Ljava/util/List;", true, http_url_path_segments),
     ne!("Lokhttp3/HttpUrl;", "toString", "()Ljava/lang/String;", true, http_url_to_string),
     ne!("Lokhttp3/HttpUrl$Companion;", "get", "(Ljava/lang/String;)Lokhttp3/HttpUrl;", true, okhttp_http_url_parse),
+    ne!("Lokhttp3/MediaType$Companion;", "get", "(Ljava/lang/String;)Lokhttp3/MediaType;", true, media_type_get),
     ne!("Lokhttp3/OkHttpClient;", "newBuilder", "()Lokhttp3/OkHttpClient$Builder;", true, okhttp_client_new_builder),
     ne!("Lokhttp3/OkHttpClient$Builder;", "addInterceptor", "(Lokhttp3/Interceptor;)Lokhttp3/OkHttpClient$Builder;", true, okhttp_builder_add_interceptor),
     ne!("Lokhttp3/OkHttpClient$Builder;", "addNetworkInterceptor", "(Lokhttp3/Interceptor;)Lokhttp3/OkHttpClient$Builder;", true, okhttp_builder_add_network_interceptor),

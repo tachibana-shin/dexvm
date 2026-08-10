@@ -455,6 +455,58 @@ fn stringskt_replace_default(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Ljava/lang/String;", Native::Str(r))
 }
 
+// Char/Char variant: String.replace(oldChar, newChar, ignoreCase) — the
+// compiler emits the `$default` synthetic for the trailing `ignoreCase`.
+fn stringskt_replace_char_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    let old = char::from_u32(int_of(vm, args[1]) as u32).unwrap_or('\u{FFFD}');
+    let new = char::from_u32(int_of(vm, args[2]) as u32).unwrap_or('\u{FFFD}');
+    let r = s.replace(old, &new.to_string());
+    alloc(vm, "Ljava/lang/String;", Native::Str(r))
+}
+
+// kotlin.text.StringsKt.trimStart(String, charArray) — strips every leading
+// char present in the (sparse) trim character array.
+fn stringskt_trim_start(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    let trim = match payload(vm, args[1]) {
+        Some(Native::Array(ArrayData::Char(chars))) => chars.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let r = s.trim_start_matches(|c: char| trim.contains(&(c as u16)));
+    alloc(vm, "Ljava/lang/String;", Native::Str(r.to_string()))
+}
+
+// kotlin.collections.ArraysKt.copyOfRange(byte[], from, to)
+fn arrayskt_copy_of_range(vm: &mut Vm, args: &[JValue]) -> R {
+    let from = int_of(vm, args[1]).max(0) as usize;
+    let to = int_of(vm, args[2]).max(0) as usize;
+    let data = match payload(vm, args[0]) {
+        Some(Native::Array(ArrayData::Byte(bs))) => bs.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let end = to.min(data.len());
+    let start = from.min(end);
+    let slice = data[start..end].to_vec();
+    alloc_arr(vm, "B", slice.len(), move || ArrayData::Byte(slice))
+}
+
+// kotlin.UInt / UByte `constructor-impl`: identity (already raw ints).
+// Static: the value arrives as the only argument.
+fn uint_constructor_impl(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+
+fn ubyte_constructor_impl(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+
+// kotlin.io.CloseableKt.closeFinally(source, cause) — no-op; the VM closes
+// nothing on the host side.
+fn closeablekt_close_finally(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
 fn stringskt_trim(vm: &mut Vm, args: &[JValue]) -> R {
     let s = charseq_of(vm, args[0])?;
     alloc(vm, "Ljava/lang/String;", Native::Str(s.trim().to_string()))
@@ -557,6 +609,12 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/jvm/internal/DefaultConstructorMarker;", "<init>", "()V", true, object_noop),
     ne!("Lkotlin/text/StringsKt;", "contains$default", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;ZILjava/lang/Object;)Z", true, stringskt_contains_default),
     ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;", true, stringskt_replace_default),
+    ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;CCZILjava/lang/Object;)Ljava/lang/String;", true, stringskt_replace_char_default),
+    ne!("Lkotlin/text/StringsKt;", "trimStart", "(Ljava/lang/String;[C)Ljava/lang/String;", true, stringskt_trim_start),
+    ne!("Lkotlin/collections/ArraysKt;", "copyOfRange", "([BII)[B", true, arrayskt_copy_of_range),
+    ne!("Lkotlin/UInt;", "constructor-impl", "(I)I", false, uint_constructor_impl),
+    ne!("Lkotlin/UByte;", "constructor-impl", "(B)B", false, ubyte_constructor_impl),
+    ne!("Lkotlin/io/CloseableKt;", "closeFinally", "(Ljava/io/Closeable;Ljava/lang/Throwable;)V", false, closeablekt_close_finally),
     ne!("Lkotlin/text/StringsKt;", "substringAfter$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", true, stringskt_substring_after_default),
     ne!("Lkotlin/text/StringsKt;", "trim", "(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;", true, stringskt_trim),
     ne!("Lkotlin/time/Duration;", "minus-LRDsOJo", "(JJ)J", false, keiyoushi_duration_minus),

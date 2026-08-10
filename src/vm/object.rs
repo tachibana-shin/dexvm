@@ -229,6 +229,23 @@ pub enum Native {
     },
     /// java.security.SecureRandom: xorshift64* state.
     SecureRandom(u64),
+    /// javax.crypto.Cipher: AES-256-GCM state machine.
+    ///
+    /// `mode` mirrors the JCE constants: 1 = ENCRYPT, 2 = DECRYPT, 0 = unset.
+    AesGcm {
+        mode: u8,
+        secret: [u8; 32],
+        iv: Vec<u8>,
+        tag_bits: usize,
+        aad: Vec<u8>,
+    },
+    /// javax.crypto.spec.SecretKeySpec key bytes.
+    Key(Vec<u8>),
+    /// javax.crypto.spec.GCMParameterSpec: tag bits + IV.
+    GcmSpec {
+        tag_bits: i32,
+        iv: Vec<u8>,
+    },
     /// java.io.PrintStream (writes to the VM output sink).
     PrintStream,
     /// java.util.Random (xorshift64*).
@@ -277,14 +294,13 @@ pub enum Native {
     },
     /// okhttp3.Headers / Headers$Builder: name/value pairs.
     Headers(Vec<(String, String)>),
-    /// okhttp3.Response produced by the host HTTP bridge.
+    /// okhttp3.Response produced by the host HTTP bridge. `body` is the raw
+    /// payload (lossy UTF-8 for text responses); `None` means an empty body.
     Response {
         code: i32,
         message: String,
         headers: Vec<(String, String)>,
-        body: String,
-        /// Raw bytes when the host returned a binary payload.
-        body_bytes: Option<Vec<u8>>,
+        body: Option<Vec<u8>>,
         request: JValue,
     },
     /// okhttp3.Cookie.
@@ -551,6 +567,9 @@ impl Native {
             | Native::Matcher(_)
             | Native::MessageDigest { .. }
             | Native::SecureRandom(_)
+            | Native::AesGcm { .. }
+            | Native::Key(_)
+            | Native::GcmSpec { .. }
             | Native::PrintStream
             | Native::Random(_)
             | Native::Date(_)
