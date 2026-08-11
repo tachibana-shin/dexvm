@@ -182,13 +182,25 @@ mod tests {
         let mine = g.seal(&iv, aad, plain);
         let reference = Aes256Gcm::new_from_slice(&secret).unwrap();
         let theirs = reference
-            .encrypt(Nonce::from_slice(&iv), Payload { msg: plain, aad: aad.as_ref() })
+            .encrypt(
+                Nonce::from_slice(&iv),
+                Payload {
+                    msg: plain,
+                    aad: aad.as_ref(),
+                },
+            )
             .unwrap();
         assert_eq!(mine, theirs);
         assert_eq!(g.open(&iv, aad, &theirs).unwrap(), plain);
         assert_eq!(
             reference
-                .decrypt(Nonce::from_slice(&iv), Payload { msg: &mine, aad: aad.as_ref() })
+                .decrypt(
+                    Nonce::from_slice(&iv),
+                    Payload {
+                        msg: &mine,
+                        aad: aad.as_ref()
+                    }
+                )
                 .unwrap(),
             plain
         );

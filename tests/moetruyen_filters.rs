@@ -71,10 +71,7 @@ fn get_filter_list_decodes_seeded_cache() {
     };
     assert_eq!(filters.len(), 2, "status Select + genre Group");
 
-    let Native::SFilter {
-        name, options, ..
-    } = ctx.vm().payload_of(filters[0]).unwrap()
-    else {
+    let Native::SFilter { name, options, .. } = ctx.vm().payload_of(filters[0]).unwrap() else {
         panic!("status filter payload");
     };
     assert_eq!(name, "Trạng thái");
@@ -87,12 +84,7 @@ fn get_filter_list_decodes_seeded_cache() {
         .collect();
     assert_eq!(opts, ["Tất cả", "Còn tiếp", "Hoàn thành", "Tạm dừng"]);
 
-    let Native::SFilter {
-        name,
-        children,
-        ..
-    } = ctx.vm().payload_of(filters[1]).unwrap()
-    else {
+    let Native::SFilter { name, children, .. } = ctx.vm().payload_of(filters[1]).unwrap() else {
         panic!("genre group payload");
     };
     assert_eq!(name, "Thể loại");

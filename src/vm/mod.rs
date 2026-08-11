@@ -241,7 +241,9 @@ impl Vm {
     pub fn generic_signature(&self, class: u32) -> Option<String> {
         let desc = self.str_of(self.classes[class as usize].descriptor);
         let (dex_idx, def_idx) = self.class_location(desc)?;
-        self.dex_at(dex_idx).classes[def_idx].generic_signature.clone()
+        self.dex_at(dex_idx).classes[def_idx]
+            .generic_signature
+            .clone()
     }
 
     /// Concrete type of an injekt `FullTypeReference` subclass, derived from
@@ -313,12 +315,8 @@ impl Vm {
                                 .unwrap_or("");
                             let owner = dex
                                 .strings
-                                .get(
-                                    dex.types
-                                        .get(mref.class as usize)
-                                        .copied()
-                                        .unwrap_or(0) as usize,
-                                )
+                                .get(dex.types.get(mref.class as usize).copied().unwrap_or(0)
+                                    as usize)
                                 .map(|s| s.as_ref())
                                 .unwrap_or("");
                             match name {
@@ -1355,7 +1353,11 @@ impl Vm {
     /// other host objects from tests and embedders.
     pub fn alloc_native(&mut self, desc: &str, native: object::Native) -> Result<JValue, JvmError> {
         let class = self.ensure_class_by_desc(desc)?;
-        Ok(JValue::Obj(self.arena.alloc(class, Vec::new(), Some(native))))
+        Ok(JValue::Obj(self.arena.alloc(
+            class,
+            Vec::new(),
+            Some(native),
+        )))
     }
 
     /// Reads the instance field `name` of an in-dex object (host shim
@@ -1516,10 +1518,7 @@ impl Vm {
         static SEQ: AtomicUsize = AtomicUsize::new(0);
         if self.cache_root.is_none() {
             let n = SEQ.fetch_add(1, Ordering::Relaxed);
-            let dir = std::env::temp_dir().join(format!(
-                "dexvm-cache-{}-{n}",
-                std::process::id()
-            ));
+            let dir = std::env::temp_dir().join(format!("dexvm-cache-{}-{n}", std::process::id()));
             self.cache_root = Some(dir.to_string_lossy().into_owned());
         }
         self.cache_root.as_deref().unwrap()

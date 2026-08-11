@@ -58,15 +58,15 @@ fn file_path(vm: &mut Vm, arg: JValue) -> Result<String, NatErr> {
 /// `File.mkdirs() -> boolean`: really creates the directory tree.
 pub(crate) fn file_mkdirs(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
-    Ok(JValue::Int(i32::from(std::fs::create_dir_all(&path).is_ok())))
+    Ok(JValue::Int(i32::from(
+        std::fs::create_dir_all(&path).is_ok(),
+    )))
 }
 
 /// `File.exists() -> boolean`: real filesystem check.
 pub(crate) fn file_exists(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
-    Ok(JValue::Int(i32::from(
-        std::fs::metadata(&path).is_ok(),
-    )))
+    Ok(JValue::Int(i32::from(std::fs::metadata(&path).is_ok())))
 }
 
 /// `File.lastModified() -> long`: real mtime in epoch millis (0 when the
@@ -88,9 +88,7 @@ pub(crate) fn file_last_modified(vm: &mut Vm, args: &[JValue]) -> R {
 /// `File.length() -> long`: real size in bytes (0 when missing).
 pub(crate) fn file_length(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
-    let len = std::fs::metadata(&path)
-        .map(|m| m.len())
-        .unwrap_or(0);
+    let len = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
     Ok(JValue::Long(len as i64))
 }
 
@@ -98,7 +96,9 @@ pub(crate) fn file_length(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn file_is_directory(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
     Ok(JValue::Int(i32::from(
-        std::fs::metadata(&path).map(|m| m.is_dir()).unwrap_or(false),
+        std::fs::metadata(&path)
+            .map(|m| m.is_dir())
+            .unwrap_or(false),
     )))
 }
 
@@ -135,9 +135,7 @@ pub(crate) fn file_create_temp_file(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn file_rename_to(vm: &mut Vm, args: &[JValue]) -> R {
     let from = file_path(vm, args[0])?;
     let to = file_path(vm, args[1])?;
-    Ok(JValue::Int(i32::from(
-        std::fs::rename(&from, &to).is_ok(),
-    )))
+    Ok(JValue::Int(i32::from(std::fs::rename(&from, &to).is_ok())))
 }
 
 fn tempfile_in(dir: &str, prefix: &str, suffix: &str) -> std::io::Result<String> {
@@ -146,12 +144,7 @@ fn tempfile_in(dir: &str, prefix: &str, suffix: &str) -> std::io::Result<String>
     std::fs::create_dir_all(dir)?;
     let n = SEQ.fetch_add(1, Ordering::Relaxed);
     let base = dir.trim_end_matches('/');
-    let path = format!(
-        "{base}/{prefix}dexvm{}-{}{}",
-        std::process::id(),
-        n,
-        suffix
-    );
+    let path = format!("{base}/{prefix}dexvm{}-{}{}", std::process::id(), n, suffix);
     std::fs::write(&path, [])?;
     Ok(path)
 }
@@ -220,20 +213,8 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         true,
         context_get_cache_dir
     ),
-    ne!(
-        "Ljava/io/File;",
-        "mkdirs",
-        "()Z",
-        true,
-        file_mkdirs
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "exists",
-        "()Z",
-        true,
-        file_exists
-    ),
+    ne!("Ljava/io/File;", "mkdirs", "()Z", true, file_mkdirs),
+    ne!("Ljava/io/File;", "exists", "()Z", true, file_exists),
     ne!(
         "Ljava/io/File;",
         "lastModified",
@@ -241,13 +222,7 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         true,
         file_last_modified
     ),
-    ne!(
-        "Ljava/io/File;",
-        "length",
-        "()J",
-        true,
-        file_length
-    ),
+    ne!("Ljava/io/File;", "length", "()J", true, file_length),
     ne!(
         "Ljava/io/File;",
         "isDirectory",
@@ -255,13 +230,7 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         true,
         file_is_directory
     ),
-    ne!(
-        "Ljava/io/File;",
-        "delete",
-        "()Z",
-        true,
-        file_delete
-    ),
+    ne!("Ljava/io/File;", "delete", "()Z", true, file_delete),
     ne!(
         "Ljava/io/File;",
         "getAbsolutePath",

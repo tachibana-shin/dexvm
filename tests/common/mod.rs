@@ -29,10 +29,7 @@ pub const IMG_ID: &str = "chapter-42/page-01";
 pub fn init_logger() {
     static ONCE: Once = Once::new();
     ONCE.call_once(|| {
-        env_logger::Builder::from_env(
-            env_logger::Env::default().default_filter_or("off"),
-        )
-        .init();
+        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("off")).init();
     });
 }
 
@@ -82,8 +79,7 @@ pub fn grant_string(key_str: &str) -> String {
 }
 
 pub fn b64(data: &[u8]) -> String {
-    const ABC: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const ABC: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::new();
     for chunk in data.chunks(3) {
         let b = [

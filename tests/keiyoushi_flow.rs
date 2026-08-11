@@ -120,15 +120,10 @@ fn replay_ext() -> Option<(Keiyoushi, FixtureState)> {
     Some((ext, state))
 }
 
-
-
 fn init_logger() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
-        env_logger::Builder::from_env(
-            env_logger::Env::default().default_filter_or("off"),
-        )
-        .init();
+        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("off")).init();
     });
 }
 

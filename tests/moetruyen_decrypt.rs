@@ -67,8 +67,7 @@ fn grant_string(key_str: &str) -> String {
 }
 
 fn b64(data: &[u8]) -> String {
-    const ABC: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const ABC: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::new();
     for chunk in data.chunks(3) {
         let b = [
@@ -256,11 +255,7 @@ fn throwable_message(ctx: &mut Context, id: u32) -> String {
     }
 }
 
-fn run_intercept(
-    ctx: &mut Context,
-    la0: JValue,
-    url: &str,
-) -> Result<JValue, String> {
+fn run_intercept(ctx: &mut Context, la0: JValue, url: &str) -> Result<JValue, String> {
     let req = alloc_request(ctx, url);
     let chain = ctx
         .vm()
@@ -295,10 +290,7 @@ fn run_intercept(
 fn init_logger() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
-        env_logger::Builder::from_env(
-            env_logger::Env::default().default_filter_or("off"),
-        )
-        .init();
+        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("off")).init();
     });
 }
 
@@ -314,10 +306,13 @@ fn imgx_gcm_decrypt_end_to_end() {
 
     match ctx.vm().payload_of(resp) {
         Some(Native::Response {
-            body: Some(bytes),
-            ..
+            body: Some(bytes), ..
         }) => {
-            assert_eq!(bytes, &[0x10, 0x20, 0x30], "decrypted bytes must round-trip");
+            assert_eq!(
+                bytes,
+                &[0x10, 0x20, 0x30],
+                "decrypted bytes must round-trip"
+            );
         }
         _ => panic!("expected Response with body_bytes, got a different payload"),
     }
@@ -332,8 +327,8 @@ fn imgx_unsupported_version_throws() {
     ctx.set_http(move |_req| dexvm::keiyoushi::HttpResp::ok_bytes(bad.clone()));
 
     let la0 = wired_ctx(&mut ctx, IMG_URL);
-    let err = run_intercept(&mut ctx, la0, IMG_URL)
-        .expect_err("unsupported IMGX version must throw");
+    let err =
+        run_intercept(&mut ctx, la0, IMG_URL).expect_err("unsupported IMGX version must throw");
     let msg = format!("{err}");
     assert!(msg.contains("Unsupported IMGX version"), "got: {msg}");
 }
@@ -425,7 +420,8 @@ fn cipher_native_roundtrip() {
     }
     {
         let aad = bytes_arg(&mut ctx, b"IMGX-v3.test");
-        ctx.invoke_on(c.as_obj(), "updateAAD", "([B)V", &[aad]).unwrap();
+        ctx.invoke_on(c.as_obj(), "updateAAD", "([B)V", &[aad])
+            .unwrap();
     }
     let ct = {
         let input = bytes_arg(&mut ctx, b"hello imgx");
@@ -453,7 +449,8 @@ fn cipher_native_roundtrip() {
     }
     {
         let aad = bytes_arg(&mut ctx, b"IMGX-v3.test");
-        ctx.invoke_on(c2.as_obj(), "updateAAD", "([B)V", &[aad]).unwrap();
+        ctx.invoke_on(c2.as_obj(), "updateAAD", "([B)V", &[aad])
+            .unwrap();
     }
     let pt = {
         let input = ct;
@@ -467,9 +464,7 @@ fn cipher_native_roundtrip() {
         .expect("native decrypt")
     };
     let bytes = match ctx.vm().payload_of(pt) {
-        Some(Native::Array(ArrayData::Byte(bs))) => {
-            bs.iter().map(|&b| b as u8).collect::<Vec<_>>()
-        }
+        Some(Native::Array(ArrayData::Byte(bs))) => bs.iter().map(|&b| b as u8).collect::<Vec<_>>(),
         _ => panic!("expected byte array result"),
     };
     assert_eq!(bytes, b"hello imgx");

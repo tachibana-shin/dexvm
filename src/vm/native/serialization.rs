@@ -251,12 +251,7 @@ fn object_members(vm: &Vm, element: JValue) -> Vec<(String, JsonVal)> {
     }
 }
 
-fn member_by_index(
-    vm: &Vm,
-    element: JValue,
-    descriptor: JValue,
-    index: i32,
-) -> Option<JsonVal> {
+fn member_by_index(vm: &Vm, element: JValue, descriptor: JValue, index: i32) -> Option<JsonVal> {
     let names = match payload(vm, descriptor) {
         Some(Native::SerialDescriptor { elements, .. }) => elements.clone(),
         _ => return None,
@@ -282,9 +277,7 @@ fn invoke_deserialize(vm: &mut Vm, serializer: JValue, decoder: JValue) -> R {
     };
     let mref = MethodRef {
         name: vm.intern("deserialize"),
-        sig: vm.intern(
-            "(Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;",
-        ),
+        sig: vm.intern("(Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;"),
         ret: 0,
         args: Vec::new(),
         class_desc: 0,
@@ -292,7 +285,8 @@ fn invoke_deserialize(vm: &mut Vm, serializer: JValue, decoder: JValue) -> R {
     let target = vm
         .resolve_target(InvokeKind::Interface, &mref, Some(o), 0)
         .map_err(nat_fatal)?;
-    vm.call_target(target, vec![serializer, decoder]).map_err(nat_fatal)
+    vm.call_target(target, vec![serializer, decoder])
+        .map_err(nat_fatal)
 }
 
 fn json_decoder(vm: &mut Vm, element: JValue) -> R {
@@ -349,8 +343,8 @@ pub(crate) fn json_decode_from_json_element(vm: &mut Vm, args: &[JValue]) -> R {
 /// `Json.decodeFromString(strategy, text)`.
 pub(crate) fn json_decode_from_string(vm: &mut Vm, args: &[JValue]) -> R {
     let text = jstr(vm, args[2])?;
-    let val = parse_json(&text)
-        .map_err(|e| nat_fatal(JvmError::Resolution(format!("json: {e}"))))?;
+    let val =
+        parse_json(&text).map_err(|e| nat_fatal(JvmError::Resolution(format!("json: {e}"))))?;
     let node = alloc_json_node(vm, &val)?;
     run_serializer(vm, args[1], node)
 }
@@ -363,8 +357,8 @@ pub(crate) fn okio_decode_from_buffered_source(vm: &mut Vm, args: &[JValue]) -> 
         _ => return Err(npe(vm)),
     };
     let text = String::from_utf8_lossy(&bytes[pos..]);
-    let val = parse_json(&text)
-        .map_err(|e| nat_fatal(JvmError::Resolution(format!("json: {e}"))))?;
+    let val =
+        parse_json(&text).map_err(|e| nat_fatal(JvmError::Resolution(format!("json: {e}"))))?;
     let node = alloc_json_node(vm, &val)?;
     run_serializer(vm, args[1], node)
 }
@@ -620,10 +614,9 @@ pub(crate) fn descriptor_add_element(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn descriptor_get_element_name(vm: &mut Vm, args: &[JValue]) -> R {
     let index = int_of(vm, args[1]);
     let name = match payload(vm, args[0]) {
-        Some(Native::SerialDescriptor { elements, .. }) => elements
-            .get(index as usize)
-            .cloned()
-            .unwrap_or_default(),
+        Some(Native::SerialDescriptor { elements, .. }) => {
+            elements.get(index as usize).cloned().unwrap_or_default()
+        }
         _ => String::new(),
     };
     Ok(new_str(vm, &name))

@@ -456,7 +456,12 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         0
     ),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/CompressionInterceptor$DecompressionAlgorithm;", None, &[], 0),
+    shim!(
+        "Lokhttp3/CompressionInterceptor$DecompressionAlgorithm;",
+        None,
+        &[],
+        0
+    ),
     #[cfg(feature = "okhttp")]
     shim!(
         "Lokhttp3/brotli/BrotliInterceptor;",
@@ -482,7 +487,11 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         Some("Ljava/lang/Object;"),
         &[],
         0,
-        [sdef!("INSTANCE", "Lokhttp3/Gzip;", ShimValue::Lazy(native::lazy_gzip_inst))]
+        [sdef!(
+            "INSTANCE",
+            "Lokhttp3/Gzip;",
+            ShimValue::Lazy(native::lazy_gzip_inst)
+        )]
     ),
     #[cfg(feature = "okhttp")]
     shim!(
@@ -490,7 +499,11 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         Some("Ljava/lang/Object;"),
         &[],
         0,
-        [sdef!("INSTANCE", "Lokhttp3/zstd/Zstd;", ShimValue::Lazy(native::lazy_zstd_inst))]
+        [sdef!(
+            "INSTANCE",
+            "Lokhttp3/zstd/Zstd;",
+            ShimValue::Lazy(native::lazy_zstd_inst)
+        )]
     ),
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/FormBody;", Some("Ljava/lang/Object;"), &[], 0),
@@ -1127,16 +1140,14 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         &[],
         ACC_INTERFACE | ACC_ABSTRACT
     ),
-    shim!(
-        "Ljavax/crypto/Cipher;",
-        Some("Ljava/lang/Object;"),
-        &[],
-        0
-    ),
+    shim!("Ljavax/crypto/Cipher;", Some("Ljava/lang/Object;"), &[], 0),
     shim!(
         "Ljavax/crypto/spec/SecretKeySpec;",
         Some("Ljava/lang/Object;"),
-        &["Ljava/security/Key;", "Ljava/security/spec/AlgorithmParameterSpec;"],
+        &[
+            "Ljava/security/Key;",
+            "Ljava/security/spec/AlgorithmParameterSpec;"
+        ],
         0
     ),
     shim!(
@@ -1693,7 +1704,12 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         &["Ljava/io/Serializable;"],
         0
     ),
-    shim!("Lkotlin/Result$Failure;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lkotlin/Result$Failure;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     shim!(
         "Lkotlin/Result;",
         Some("Ljava/lang/Object;"),
@@ -1705,7 +1721,12 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
             ShimValue::Lazy(native::lazy_result_companion)
         ),]
     ),
-    shim!("Lkotlin/Result$Companion;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lkotlin/Result$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     shim!(
         "Lkotlin/text/MatchResult;",
         None,
@@ -1713,7 +1734,12 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         ACC_INTERFACE | ACC_ABSTRACT
     ),
     shim!("Lkotlin/TuplesKt;", Some("Ljava/lang/Object;"), &[], 0),
-    shim!("Lkotlin/ranges/RangesKt;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lkotlin/ranges/RangesKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     shim!(
         "Lkotlin/jvm/internal/DefaultConstructorMarker;",
         Some("Ljava/lang/Object;"),

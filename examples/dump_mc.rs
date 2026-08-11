@@ -35,10 +35,7 @@ fn main() {
                         );
                     }
                     dexvm::dex::insn::Insn::ConstString(dr, si) => {
-                        println!(
-                            "CONST-STRING r{dr} {:?}",
-                            (*dex.strings)[*si as usize]
-                        );
+                        println!("CONST-STRING r{dr} {:?}", (*dex.strings)[*si as usize]);
                     }
                     dexvm::dex::insn::Insn::Const16(dr, v) => println!("Const16 r{dr} {v}"),
                     dexvm::dex::insn::Insn::Const4(dr, v) => println!("Const4 r{dr} {v}"),

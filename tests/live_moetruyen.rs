@@ -26,7 +26,10 @@ fn source_api_smoke() {
     init_logger();
     let mut ext = Keiyoushi::open(APK).expect("open apk");
     let srcs = ext.sources().expect("sources");
-    assert!(!srcs.is_empty(), "moetruyen apk must yield at least one source");
+    assert!(
+        !srcs.is_empty(),
+        "moetruyen apk must yield at least one source"
+    );
 
     let name = ext.source_name(&srcs[0]).expect("source_name");
     let lang = ext.source_lang(&srcs[0]).expect("source_lang");
@@ -43,9 +46,7 @@ fn image_pipeline_with_mock_http() {
     init_logger();
     let mock = imgx_gcm_payload(&[7u8; 32], &[9u8; 12], &pic_plain());
     let mut ctx = open();
-    ctx.set_http(move |_req| {
-        dexvm::keiyoushi::HttpResp::ok_bytes(mock.clone())
-    });
+    ctx.set_http(move |_req| dexvm::keiyoushi::HttpResp::ok_bytes(mock.clone()));
 
     // The extension boot: EG.<init>() -> lazy client with the La0
     // interceptor registered (Lu.getValue builds it).
@@ -67,7 +68,12 @@ fn image_pipeline_with_mock_http() {
 
     let req = alloc_request(&mut ctx, IMG_URL);
     let call = ctx
-        .invoke_on(client.as_obj(), "newCall", "(Lokhttp3/Request;)Lokhttp3/Call;", &[req])
+        .invoke_on(
+            client.as_obj(),
+            "newCall",
+            "(Lokhttp3/Request;)Lokhttp3/Call;",
+            &[req],
+        )
         .expect("newCall");
     let resp = match ctx.invoke_on(call.as_obj(), "execute", "()Lokhttp3/Response;", &[]) {
         Ok(r) => r,
@@ -100,9 +106,7 @@ fn image_pipeline_rejects_bad_version() {
     bad.extend_from_slice(&600u32.to_be_bytes());
     bad.extend_from_slice(&[0u8; 800]); // payload so the header is readable
     let mut ctx = open();
-    ctx.set_http(move |_req| {
-        dexvm::keiyoushi::HttpResp::ok_bytes(bad.clone())
-    });
+    ctx.set_http(move |_req| dexvm::keiyoushi::HttpResp::ok_bytes(bad.clone()));
 
     let eg = init(&mut ctx, EG);
     ctx.invoke_on(eg.as_obj(), "<init>", "()V", &[])
@@ -115,16 +119,18 @@ fn image_pipeline_rejects_bad_version() {
 
     let req = alloc_request(&mut ctx, IMG_URL);
     let call = ctx
-        .invoke_on(client.as_obj(), "newCall", "(Lokhttp3/Request;)Lokhttp3/Call;", &[req])
+        .invoke_on(
+            client.as_obj(),
+            "newCall",
+            "(Lokhttp3/Request;)Lokhttp3/Call;",
+            &[req],
+        )
         .expect("newCall");
     let err = ctx
         .invoke_on(call.as_obj(), "execute", "()Lokhttp3/Response;", &[])
         .map_err(|e| err_str(&mut ctx, e))
         .expect_err("bad version must be rejected");
-    assert!(
-        err.contains("Unsupported IMGX version"),
-        "got: {err}"
-    );
+    assert!(err.contains("Unsupported IMGX version"), "got: {err}");
 }
 
 /// Sanity: the client returned by the extension really carries the La0
@@ -156,7 +162,6 @@ fn extension_client_ships_interceptor() {
         other => panic!("client payload wrong: {:?}", std::mem::discriminant(&other)),
     }
 }
-
 
 #[test]
 fn probe_chm() {

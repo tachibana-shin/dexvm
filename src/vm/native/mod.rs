@@ -14,7 +14,9 @@ pub(crate) use ::fancy_regex::Regex;
 
 pub(crate) use crate::dex::insn::InvokeKind;
 pub(crate) use crate::vm::error::JvmError;
-pub(crate) use crate::vm::object::{ArrayData, ClassOrPrim, IterKind, JsonVal, MatcherState, Native};
+pub(crate) use crate::vm::object::{
+    ArrayData, ClassOrPrim, IterKind, JsonVal, MatcherState, Native,
+};
 pub(crate) use crate::vm::value::JValue;
 pub use crate::vm::{MethodRef, NatErr, NativeEntry, NativeFn, Target, Vm};
 
@@ -108,12 +110,12 @@ mod serialization;
 
 #[cfg(feature = "tachiyomi")]
 pub(crate) use self::keiyoushi::*;
-#[cfg(feature = "tachiyomi")]
-pub(crate) use self::serialization::*;
 #[cfg(feature = "okhttp")]
 pub(crate) use self::okhttp::*;
 #[cfg(feature = "okhttp")]
 pub(crate) use self::okio::*;
+#[cfg(feature = "tachiyomi")]
+pub(crate) use self::serialization::*;
 pub(crate) use self::{java::*, kotlin::*};
 
 // ---------------------------------------------------------------------------
@@ -408,116 +410,119 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
         c = cl.superclass;
     }
     fn default_payload_desc(desc: &str) -> Option<Native> {
-    match desc {
-        "Ljava/lang/String;" => Some(Native::Str(String::new())),
-        "Ljava/lang/StringBuilder;" => Some(Native::StringBuilder(String::new())),
-        "Ljava/lang/Integer;" => Some(Native::IntBox(0)),
-        "Ljava/lang/Long;" => Some(Native::LongBox(0)),
-        "Ljava/lang/Short;" => Some(Native::ShortBox(0)),
-        "Ljava/lang/Byte;" => Some(Native::ByteBox(0)),
-        "Ljava/lang/Character;" => Some(Native::CharBox(0)),
-        "Ljava/lang/Boolean;" => Some(Native::BoolBox(false)),
-        "Ljava/lang/Float;" => Some(Native::FloatBox(0.0)),
-        "Ljava/lang/Double;" => Some(Native::DoubleBox(0.0)),
-        "Ljava/util/ArrayList;" => Some(Native::List(Vec::new())),
-        "Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;" => {
-            Some(Native::SerialDescriptor {
+        match desc {
+            "Ljava/lang/String;" => Some(Native::Str(String::new())),
+            "Ljava/lang/StringBuilder;" => Some(Native::StringBuilder(String::new())),
+            "Ljava/lang/Integer;" => Some(Native::IntBox(0)),
+            "Ljava/lang/Long;" => Some(Native::LongBox(0)),
+            "Ljava/lang/Short;" => Some(Native::ShortBox(0)),
+            "Ljava/lang/Byte;" => Some(Native::ByteBox(0)),
+            "Ljava/lang/Character;" => Some(Native::CharBox(0)),
+            "Ljava/lang/Boolean;" => Some(Native::BoolBox(false)),
+            "Ljava/lang/Float;" => Some(Native::FloatBox(0.0)),
+            "Ljava/lang/Double;" => Some(Native::DoubleBox(0.0)),
+            "Ljava/util/ArrayList;" => Some(Native::List(Vec::new())),
+            "Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;" => {
+                Some(Native::SerialDescriptor {
+                    name: String::new(),
+                    elements: Vec::new(),
+                })
+            }
+            "Lkotlinx/serialization/internal/ArrayListSerializer;" => {
+                Some(Native::ArrayListSerializer {
+                    child: JValue::Null,
+                })
+            }
+            "Ljava/util/ArrayDeque;" => Some(Native::ArrayDeque(Vec::new())),
+            "Lokhttp3/FormBody$Builder;" => Some(Native::FormBody(Vec::new())),
+            "Lokhttp3/CacheControl$Builder;" => Some(Native::CacheControlBuilder { max_age: 0 }),
+            "Lokhttp3/Request$Builder;" => Some(Native::RequestBuilder {
+                url: String::new(),
+                method: String::new(),
+                headers: Vec::new(),
+                body: None,
+            }),
+            "Ljava/util/HashMap;" | "Ljava/util/LinkedHashMap;" => Some(Native::Map(Vec::new())),
+            "Ljava/util/concurrent/ConcurrentHashMap;" => Some(Native::Map(Vec::new())),
+            "Ljava/util/HashSet;" | "Ljava/util/LinkedHashSet;" => Some(Native::Set(Vec::new())),
+            "Ljava/util/regex/Pattern;" => Some(Native::Pattern {
+                re: Regex::new("").expect("empty regex"),
+                source: String::new(),
+            }),
+            "Lkotlin/text/Regex;" => Some(Native::Pattern {
+                re: Regex::new("").expect("empty regex"),
+                source: String::new(),
+            }),
+            "Ljava/util/regex/Matcher;" => Some(Native::Matcher(MatcherState {
+                pattern: Regex::new("").expect("empty regex"),
+                text: String::new(),
+                pos: 0,
+                last: None,
+            })),
+            "Ljava/util/Random;" => Some(Native::Random(0)),
+            "Ljava/util/Date;" => Some(Native::Date(0)),
+            "Ljava/text/SimpleDateFormat;" => Some(Native::DateFormatter {
+                pattern: String::new(),
+                zone: String::new(),
+            }),
+            "Ljava/text/ParsePosition;" => Some(Native::ParsePosition(0)),
+            "Ljava/util/Locale;" => Some(Native::Opaque),
+            "Ljava/io/PrintStream;" => Some(Native::PrintStream),
+            "Ljava/lang/Thread;" => Some(Native::Opaque),
+            "Ljava/util/Map$Entry;" => Some(Native::MapEntry { map: 0, idx: 0 }),
+            "Ljava/util/concurrent/locks/ReentrantLock;" => {
+                Some(Native::ReentrantLock { locked: false })
+            }
+            "Ljava/util/concurrent/atomic/AtomicBoolean;" => Some(Native::AtomicBool(false)),
+            "Ljava/util/concurrent/atomic/AtomicInteger;" => Some(Native::AtomicInt(0)),
+            "Ljava/time/LocalDate;" => Some(Native::LocalDay(0)),
+            "Ljava/time/ZonedDateTime;" | "Ljava/time/Instant;" => Some(Native::EpochMillis(0)),
+            "Ljava/time/ZoneId;" => Some(Native::Opaque),
+            "Ljava/time/format/DateTimeFormatter;" => Some(Native::DateFormatter {
+                pattern: String::new(),
+                zone: String::new(),
+            }),
+            #[cfg(feature = "tachiyomi")]
+            "Leu/kanade/tachiyomi/source/model/SManga;" => Some(keiyoushi::empty_smanga()),
+            #[cfg(feature = "tachiyomi")]
+            "Leu/kanade/tachiyomi/source/model/SChapter;" => Some(keiyoushi::empty_schapter()),
+            #[cfg(feature = "tachiyomi")]
+            "Leu/kanade/tachiyomi/source/model/Page;" => Some(Native::SPPage {
+                index: 0,
                 name: String::new(),
-                elements: Vec::new(),
-            })
+                url: String::new(),
+                image_url: String::new(),
+            }),
+            #[cfg(feature = "tachiyomi")]
+            "Leu/kanade/tachiyomi/source/model/MangasPage;" => Some(Native::SMangasPage {
+                mangas: Vec::new(),
+                has_next: false,
+            }),
+            #[cfg(feature = "tachiyomi")]
+            "Leu/kanade/tachiyomi/source/model/FilterList;" => {
+                Some(Native::SFilterList(Vec::new()))
+            }
+            #[cfg(feature = "tachiyomi")]
+            "Leu/kanade/tachiyomi/source/model/Filter;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Header;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Separator;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Select;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Sort;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Text;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$TriState;"
+            | "Leu/kanade/tachiyomi/source/model/Filter$Group;" => Some(Native::SFilter {
+                name: String::new(),
+                state: 0,
+                is_checked: false,
+                children: Vec::new(),
+                options: Vec::new(),
+                text_value: String::new(),
+            }),
+            _ => None,
         }
-        "Lkotlinx/serialization/internal/ArrayListSerializer;" => Some(Native::ArrayListSerializer {
-            child: JValue::Null,
-        }),
-        "Ljava/util/ArrayDeque;" => Some(Native::ArrayDeque(Vec::new())),
-        "Lokhttp3/FormBody$Builder;" => Some(Native::FormBody(Vec::new())),
-        "Lokhttp3/CacheControl$Builder;" => Some(Native::CacheControlBuilder { max_age: 0 }),
-        "Lokhttp3/Request$Builder;" => Some(Native::RequestBuilder {
-            url: String::new(),
-            method: String::new(),
-            headers: Vec::new(),
-            body: None,
-        }),
-        "Ljava/util/HashMap;" | "Ljava/util/LinkedHashMap;" => Some(Native::Map(Vec::new())),
-        "Ljava/util/concurrent/ConcurrentHashMap;" => Some(Native::Map(Vec::new())),
-        "Ljava/util/HashSet;" | "Ljava/util/LinkedHashSet;" => Some(Native::Set(Vec::new())),
-        "Ljava/util/regex/Pattern;" => Some(Native::Pattern {
-            re: Regex::new("").expect("empty regex"),
-            source: String::new(),
-        }),
-        "Lkotlin/text/Regex;" => Some(Native::Pattern {
-            re: Regex::new("").expect("empty regex"),
-            source: String::new(),
-        }),
-        "Ljava/util/regex/Matcher;" => Some(Native::Matcher(MatcherState {
-            pattern: Regex::new("").expect("empty regex"),
-            text: String::new(),
-            pos: 0,
-            last: None,
-        })),
-        "Ljava/util/Random;" => Some(Native::Random(0)),
-        "Ljava/util/Date;" => Some(Native::Date(0)),
-        "Ljava/text/SimpleDateFormat;" => Some(Native::DateFormatter {
-            pattern: String::new(),
-            zone: String::new(),
-        }),
-        "Ljava/text/ParsePosition;" => Some(Native::ParsePosition(0)),
-        "Ljava/util/Locale;" => Some(Native::Opaque),
-        "Ljava/io/PrintStream;" => Some(Native::PrintStream),
-        "Ljava/lang/Thread;" => Some(Native::Opaque),
-        "Ljava/util/Map$Entry;" => Some(Native::MapEntry { map: 0, idx: 0 }),
-        "Ljava/util/concurrent/locks/ReentrantLock;" => {
-            Some(Native::ReentrantLock { locked: false })
-        }
-        "Ljava/util/concurrent/atomic/AtomicBoolean;" => Some(Native::AtomicBool(false)),
-        "Ljava/util/concurrent/atomic/AtomicInteger;" => Some(Native::AtomicInt(0)),
-        "Ljava/time/LocalDate;" => Some(Native::LocalDay(0)),
-        "Ljava/time/ZonedDateTime;" | "Ljava/time/Instant;" => Some(Native::EpochMillis(0)),
-        "Ljava/time/ZoneId;" => Some(Native::Opaque),
-        "Ljava/time/format/DateTimeFormatter;" => Some(Native::DateFormatter {
-            pattern: String::new(),
-            zone: String::new(),
-        }),
-        #[cfg(feature = "tachiyomi")]
-        "Leu/kanade/tachiyomi/source/model/SManga;" => Some(keiyoushi::empty_smanga()),
-        #[cfg(feature = "tachiyomi")]
-        "Leu/kanade/tachiyomi/source/model/SChapter;" => Some(keiyoushi::empty_schapter()),
-        #[cfg(feature = "tachiyomi")]
-        "Leu/kanade/tachiyomi/source/model/Page;" => Some(Native::SPPage {
-            index: 0,
-            name: String::new(),
-            url: String::new(),
-            image_url: String::new(),
-        }),
-        #[cfg(feature = "tachiyomi")]
-        "Leu/kanade/tachiyomi/source/model/MangasPage;" => Some(Native::SMangasPage {
-            mangas: Vec::new(),
-            has_next: false,
-        }),
-        #[cfg(feature = "tachiyomi")]
-        "Leu/kanade/tachiyomi/source/model/FilterList;" => Some(Native::SFilterList(Vec::new())),
-        #[cfg(feature = "tachiyomi")]
-        "Leu/kanade/tachiyomi/source/model/Filter;"
-        | "Leu/kanade/tachiyomi/source/model/Filter$Header;"
-        | "Leu/kanade/tachiyomi/source/model/Filter$Separator;"
-        | "Leu/kanade/tachiyomi/source/model/Filter$Select;"
-        | "Leu/kanade/tachiyomi/source/model/Filter$Sort;"
-        | "Leu/kanade/tachiyomi/source/model/Filter$Text;"
-        | "Leu/kanade/tachiyomi/source/model/Filter$TriState;"
-        | "Leu/kanade/tachiyomi/source/model/Filter$Group;" => Some(Native::SFilter {
-            name: String::new(),
-            state: 0,
-            is_checked: false,
-            children: Vec::new(),
-            options: Vec::new(),
-            text_value: String::new(),
-        }),
-        _ => None,
-   }
-}
+    }
 
     None
-
 }
 
 pub(crate) fn obj_class(vm: &Vm, id: u32) -> u32 {

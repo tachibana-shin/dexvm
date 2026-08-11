@@ -31,7 +31,14 @@ fn injekt_instance_falls_back_to_application() {
             "android.app.Application"
         );
         // With a typed Type argument, the instance takes the concrete class.
-        let t = alloc(vm, "Ljava/lang/reflect/Type;", Native::Type { desc: "Lokhttp3/OkHttpClient;".into() }).unwrap();
+        let t = alloc(
+            vm,
+            "Ljava/lang/reflect/Type;",
+            Native::Type {
+                desc: "Lokhttp3/OkHttpClient;".into(),
+            },
+        )
+        .unwrap();
         let inst = injekt_get_instance(vm, &[JValue::Null, t]).unwrap();
         assert_eq!(
             vm.class_desc_str(obj_class(vm, inst.as_obj())),

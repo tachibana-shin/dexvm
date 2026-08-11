@@ -39,160 +39,160 @@ fn disassemble(dex: &DexFile, class: &str, method: &str) {
         panic!("no method {method} in {class}");
     }
     for (owner, em) in matches {
-    let _owner = &owner;
-    let mid = &dex.methods[em.method_idx as usize];
-    println!("-- {owner} {}{} :", proto_sig(dex, mid.proto), method);
-    let code = em.code.as_ref().expect("no code");
-    let dec = decode_all(&code.insns).expect("decode");
-    for (i, pc) in dec.units.iter().enumerate() {
-        let insn = &dec.insns[i];
-        let mut line = format!("  {pc:04x}: ");
-        for w in code.insns[*pc as usize..].iter().take(5) {
-            line.push_str(&format!("{w:04x} "));
+        let _owner = &owner;
+        let mid = &dex.methods[em.method_idx as usize];
+        println!("-- {owner} {}{} :", proto_sig(dex, mid.proto), method);
+        let code = em.code.as_ref().expect("no code");
+        let dec = decode_all(&code.insns).expect("decode");
+        for (i, pc) in dec.units.iter().enumerate() {
+            let insn = &dec.insns[i];
+            let mut line = format!("  {pc:04x}: ");
+            for w in code.insns[*pc as usize..].iter().take(5) {
+                line.push_str(&format!("{w:04x} "));
+            }
+            line.push_str("| ");
+            eprintln!("{line}");
+            match insn {
+                Insn::Invoke(kind, idx, args) => {
+                    let m = &dex.methods[*idx as usize];
+                    let klass = dex.type_descriptor(m.class).to_string();
+                    let name = dex.strings[m.name as usize].to_string();
+                    let sig = proto_sig(dex, m.proto);
+                    let regs: Vec<String> = (0..args.count)
+                        .map(|a| format!("v{}", args.reg_at(a)))
+                        .collect();
+                    line.push_str(&format!(
+                        "invoke-{kind:?}/{{{}}} {klass}->{name}{sig}",
+                        regs.join(", ")
+                    ));
+                }
+                Insn::ConstString(r, s) => {
+                    line.push_str(&format!(
+                        "const-string v{r}, \"{}\"",
+                        dex.strings[*s as usize]
+                    ));
+                }
+                Insn::ConstStringJumbo(r, s) => {
+                    line.push_str(&format!(
+                        "const-string/jumbo v{r}, \"{}\"",
+                        dex.strings[*s as usize]
+                    ));
+                }
+                Insn::ConstClass(r, t) => {
+                    line.push_str(&format!("const-class v{r}, {}", dex.type_descriptor(*t)));
+                }
+                Insn::NewInstance(r, t) => {
+                    line.push_str(&format!("new-instance v{r}, {}", dex.type_descriptor(*t)));
+                }
+                Insn::NewArray(a, b, t) => {
+                    line.push_str(&format!(
+                        "new-array v{a}, v{b}, {}",
+                        dex.type_descriptor(*t)
+                    ));
+                }
+                Insn::FilledNewArray(args, t) => {
+                    let regs: Vec<String> = (0..args.count)
+                        .map(|a| format!("v{}", args.reg_at(a)))
+                        .collect();
+                    line.push_str(&format!(
+                        "filled-new-array {{{}}}, {}",
+                        regs.join(", "),
+                        dex.type_descriptor(*t)
+                    ));
+                }
+                Insn::CheckCast(r, t) => {
+                    line.push_str(&format!("check-cast v{r}, {}", dex.type_descriptor(*t)));
+                }
+                Insn::InstanceOf(a, b, t) => {
+                    line.push_str(&format!(
+                        "instance-of v{a}, v{b}, {}",
+                        dex.type_descriptor(*t)
+                    ));
+                }
+                Insn::IGet(a, b, f) | Insn::IGetWide(a, b, f) | Insn::IGetObj(a, b, f) => {
+                    let fd = &dex.fields[*f as usize];
+                    let op = match insn {
+                        Insn::IGet(..) => "iget",
+                        Insn::IGetWide(..) => "iget-wide",
+                        _ => "iget-object",
+                    };
+                    line.push_str(&format!(
+                        "{op} v{a}, v{b}, {}->{}.{}",
+                        dex.type_descriptor(fd.class),
+                        dex.type_descriptor(fd.ty),
+                        dex.strings[fd.name as usize]
+                    ));
+                }
+                Insn::IPut(a, b, f) | Insn::IPutWide(a, b, f) | Insn::IPutObj(a, b, f) => {
+                    let fd = &dex.fields[*f as usize];
+                    let op = match insn {
+                        Insn::IPut(..) => "iput",
+                        Insn::IPutWide(..) => "iput-wide",
+                        _ => "iput-object",
+                    };
+                    line.push_str(&format!(
+                        "{op} v{a}, v{b}, {}->{}.{}",
+                        dex.type_descriptor(fd.class),
+                        dex.type_descriptor(fd.ty),
+                        dex.strings[fd.name as usize]
+                    ));
+                }
+                Insn::SGet(r, f) | Insn::SGetWide(r, f) | Insn::SGetObj(r, f) => {
+                    let fd = &dex.fields[*f as usize];
+                    let op = match insn {
+                        Insn::SGet(..) => "sget",
+                        Insn::SGetWide(..) => "sget-wide",
+                        _ => "sget-object",
+                    };
+                    line.push_str(&format!(
+                        "{op} v{r}, {}->{}.{}",
+                        dex.type_descriptor(fd.class),
+                        dex.type_descriptor(fd.ty),
+                        dex.strings[fd.name as usize]
+                    ));
+                }
+                Insn::SPut(r, f) | Insn::SPutWide(r, f) | Insn::SPutObj(r, f) => {
+                    let fd = &dex.fields[*f as usize];
+                    let op = match insn {
+                        Insn::SPut(..) => "sput",
+                        Insn::SPutWide(..) => "sput-wide",
+                        _ => "sput-object",
+                    };
+                    line.push_str(&format!(
+                        "{op} v{r}, {}->{}.{}",
+                        dex.type_descriptor(fd.class),
+                        dex.type_descriptor(fd.ty),
+                        dex.strings[fd.name as usize]
+                    ));
+                }
+                Insn::Goto(t) => line.push_str(&format!("goto ->{t:04x}")),
+                Insn::If(op, a, b, t) => line.push_str(&format!("if-{op:?} v{a}, v{b} ->{t:04x}")),
+                Insn::IfZ(op, r, t) => line.push_str(&format!("if-{op:?}z v{r} ->{t:04x}")),
+                Insn::PackedSwitch(r, _, base, targets) => {
+                    line.push_str(&format!(
+                        "packed-switch v{r} ({}..{}): {}",
+                        base,
+                        base + targets.len() as i32 - 1,
+                        targets
+                            .iter()
+                            .map(|t| format!("{t:04x}"))
+                            .collect::<Vec<_>>()
+                            .join(",")
+                    ));
+                }
+                Insn::SparseSwitch(r, _, _keys, targets) => {
+                    line.push_str(&format!(
+                        "sparse-switch v{r}: {:?}",
+                        targets
+                            .iter()
+                            .map(|t| format!("{t:04x}"))
+                            .collect::<Vec<_>>()
+                    ));
+                }
+                other => line.push_str(&format!("{other:?}")),
+            }
+            println!("{line}");
         }
-        line.push_str("| ");
-        eprintln!("{line}");
-        match insn {
-            Insn::Invoke(kind, idx, args) => {
-                let m = &dex.methods[*idx as usize];
-                let klass = dex.type_descriptor(m.class).to_string();
-                let name = dex.strings[m.name as usize].to_string();
-                let sig = proto_sig(dex, m.proto);
-                let regs: Vec<String> = (0..args.count)
-                    .map(|a| format!("v{}", args.reg_at(a)))
-                    .collect();
-                line.push_str(&format!(
-                    "invoke-{kind:?}/{{{}}} {klass}->{name}{sig}",
-                    regs.join(", ")
-                ));
-            }
-            Insn::ConstString(r, s) => {
-                line.push_str(&format!(
-                    "const-string v{r}, \"{}\"",
-                    dex.strings[*s as usize]
-                ));
-            }
-            Insn::ConstStringJumbo(r, s) => {
-                line.push_str(&format!(
-                    "const-string/jumbo v{r}, \"{}\"",
-                    dex.strings[*s as usize]
-                ));
-            }
-            Insn::ConstClass(r, t) => {
-                line.push_str(&format!("const-class v{r}, {}", dex.type_descriptor(*t)));
-            }
-            Insn::NewInstance(r, t) => {
-                line.push_str(&format!("new-instance v{r}, {}", dex.type_descriptor(*t)));
-            }
-            Insn::NewArray(a, b, t) => {
-                line.push_str(&format!(
-                    "new-array v{a}, v{b}, {}",
-                    dex.type_descriptor(*t)
-                ));
-            }
-            Insn::FilledNewArray(args, t) => {
-                let regs: Vec<String> = (0..args.count)
-                    .map(|a| format!("v{}", args.reg_at(a)))
-                    .collect();
-                line.push_str(&format!(
-                    "filled-new-array {{{}}}, {}",
-                    regs.join(", "),
-                    dex.type_descriptor(*t)
-                ));
-            }
-            Insn::CheckCast(r, t) => {
-                line.push_str(&format!("check-cast v{r}, {}", dex.type_descriptor(*t)));
-            }
-            Insn::InstanceOf(a, b, t) => {
-                line.push_str(&format!(
-                    "instance-of v{a}, v{b}, {}",
-                    dex.type_descriptor(*t)
-                ));
-            }
-            Insn::IGet(a, b, f) | Insn::IGetWide(a, b, f) | Insn::IGetObj(a, b, f) => {
-                let fd = &dex.fields[*f as usize];
-                let op = match insn {
-                    Insn::IGet(..) => "iget",
-                    Insn::IGetWide(..) => "iget-wide",
-                    _ => "iget-object",
-                };
-                line.push_str(&format!(
-                    "{op} v{a}, v{b}, {}->{}.{}",
-                    dex.type_descriptor(fd.class),
-                    dex.type_descriptor(fd.ty),
-                    dex.strings[fd.name as usize]
-                ));
-            }
-            Insn::IPut(a, b, f) | Insn::IPutWide(a, b, f) | Insn::IPutObj(a, b, f) => {
-                let fd = &dex.fields[*f as usize];
-                let op = match insn {
-                    Insn::IPut(..) => "iput",
-                    Insn::IPutWide(..) => "iput-wide",
-                    _ => "iput-object",
-                };
-                line.push_str(&format!(
-                    "{op} v{a}, v{b}, {}->{}.{}",
-                    dex.type_descriptor(fd.class),
-                    dex.type_descriptor(fd.ty),
-                    dex.strings[fd.name as usize]
-                ));
-            }
-            Insn::SGet(r, f) | Insn::SGetWide(r, f) | Insn::SGetObj(r, f) => {
-                let fd = &dex.fields[*f as usize];
-                let op = match insn {
-                    Insn::SGet(..) => "sget",
-                    Insn::SGetWide(..) => "sget-wide",
-                    _ => "sget-object",
-                };
-                line.push_str(&format!(
-                    "{op} v{r}, {}->{}.{}",
-                    dex.type_descriptor(fd.class),
-                    dex.type_descriptor(fd.ty),
-                    dex.strings[fd.name as usize]
-                ));
-            }
-            Insn::SPut(r, f) | Insn::SPutWide(r, f) | Insn::SPutObj(r, f) => {
-                let fd = &dex.fields[*f as usize];
-                let op = match insn {
-                    Insn::SPut(..) => "sput",
-                    Insn::SPutWide(..) => "sput-wide",
-                    _ => "sput-object",
-                };
-                line.push_str(&format!(
-                    "{op} v{r}, {}->{}.{}",
-                    dex.type_descriptor(fd.class),
-                    dex.type_descriptor(fd.ty),
-                    dex.strings[fd.name as usize]
-                ));
-            }
-            Insn::Goto(t) => line.push_str(&format!("goto ->{t:04x}")),
-            Insn::If(op, a, b, t) => line.push_str(&format!("if-{op:?} v{a}, v{b} ->{t:04x}")),
-            Insn::IfZ(op, r, t) => line.push_str(&format!("if-{op:?}z v{r} ->{t:04x}")),
-            Insn::PackedSwitch(r, _, base, targets) => {
-                line.push_str(&format!(
-                    "packed-switch v{r} ({}..{}): {}",
-                    base,
-                    base + targets.len() as i32 - 1,
-                    targets
-                        .iter()
-                        .map(|t| format!("{t:04x}"))
-                        .collect::<Vec<_>>()
-                        .join(",")
-                ));
-            }
-            Insn::SparseSwitch(r, _, _keys, targets) => {
-                line.push_str(&format!(
-                    "sparse-switch v{r}: {:?}",
-                    targets
-                        .iter()
-                        .map(|t| format!("{t:04x}"))
-                        .collect::<Vec<_>>()
-                ));
-            }
-            other => line.push_str(&format!("{other:?}")),
-        }
-        println!("{line}");
-    }
     }
 }
 

@@ -282,10 +282,14 @@ pub enum Native {
     Opaque,
     /// java.io.File: real host path. Every `File` method operates on the
     /// actual filesystem (mkdirs/exists/lastModified/resolve/...).
-    File { path: String },
+    File {
+        path: String,
+    },
     /// java.lang.reflect.Type produced by `FullTypeReference.getType()`:
     /// carries the concrete descriptor from the receiver's generic signature.
-    Type { desc: String },
+    Type {
+        desc: String,
+    },
     /// java.util.TimeZone (zone id string, e.g. "UTC", "GMT+07:00").
     TimeZone(String),
     /// java.text.SimpleDateFormat: pattern + resolved time zone id.
@@ -452,7 +456,9 @@ pub enum Native {
     /// kotlinx.serialization JsonElement serializer marker.
     JsonElementSerializer,
     /// kotlinx.serialization ArrayListSerializer(elementSerializer).
-    ArrayListSerializer { child: JValue },
+    ArrayListSerializer {
+        child: JValue,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -588,9 +594,7 @@ impl Native {
                 push_all(network_interceptors, out);
             }
             Native::Call {
-                request,
-                client,
-                ..
+                request, client, ..
             } => {
                 push(Some(request), out);
                 push(Some(client), out);
@@ -620,9 +624,7 @@ impl Native {
             Native::SFilterList(v) => push_all(v, out),
             Native::Json(_) | Native::SerialDescriptor { .. } | Native::JsonElementSerializer => {}
             Native::JsonDecoder {
-                element,
-                members,
-                ..
+                element, members, ..
             } => {
                 push(Some(element), out);
                 if let Some(m) = members {
@@ -682,7 +684,7 @@ impl Native {
             | Native::IntRange(..)
             | Native::ArrayDesc(_)
             | Native::RespBody(_)
-| Native::ByteArrayInputStream { .. }
+            | Native::ByteArrayInputStream { .. }
             | Native::CacheControl { .. }
             | Native::CacheControlBuilder { .. }
             | Native::URI(_)

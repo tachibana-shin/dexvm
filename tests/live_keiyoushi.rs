@@ -115,15 +115,10 @@ fn save_fixtures(caps: &[(String, String, i32, String)], blocked: bool) {
     eprintln!("live: captured {n} responses into {LIVE_DIR}/ (blocked={blocked})");
 }
 
-
-
 fn init_logger() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
-        env_logger::Builder::from_env(
-            env_logger::Env::default().default_filter_or("off"),
-        )
-        .init();
+        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("off")).init();
     });
 }
 
@@ -146,8 +141,7 @@ fn live_full_pipeline() {
                 req.method.clone(),
                 req.url.clone(),
                 resp.code,
-                String::from_utf8_lossy(resp.body.as_deref().unwrap_or(b""))
-                    .into_owned(),
+                String::from_utf8_lossy(resp.body.as_deref().unwrap_or(b"")).into_owned(),
             ));
             resp
         }));

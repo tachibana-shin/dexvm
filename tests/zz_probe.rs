@@ -24,11 +24,15 @@ fn probe_coro_popular() {
     let srcs = ext.sources().expect("sources");
     let src = &srcs[0];
     let data = std::fs::read("fixtures/tachiyomi-vi.moetruyen-v1.6.8.apk").unwrap();
-    let mut ctx = dexvm::context::Context::new_with(&data, dexvm::context::SandboxOptions::default()).unwrap();
+    let mut ctx =
+        dexvm::context::Context::new_with(&data, dexvm::context::SandboxOptions::default())
+            .unwrap();
     {
         let vm = ctx.vm();
         let m0id = vm.ensure_class_by_desc("Lm0;").unwrap();
-        let lhm = vm.ensure_class_by_desc("Ljava/util/LinkedHashMap;").unwrap();
+        let lhm = vm
+            .ensure_class_by_desc("Ljava/util/LinkedHashMap;")
+            .unwrap();
         let c = &vm.classes[m0id as usize];
         eprintln!(
             "PROBE m0 super={:?} is-lhm={}",
@@ -51,7 +55,11 @@ fn probe_coro_popular() {
         );
     }
     match ext.popular_coro(src, 1) {
-        Ok(mp) => eprintln!("PROBE popular ok: {} mangas has_next={}", mp.mangas.len(), mp.has_next),
+        Ok(mp) => eprintln!(
+            "PROBE popular ok: {} mangas has_next={}",
+            mp.mangas.len(),
+            mp.has_next
+        ),
         Err(e) => eprintln!("PROBE popular err: {}", ext.describe_error(&e)),
     }
     let _ = RefCell::new(0);

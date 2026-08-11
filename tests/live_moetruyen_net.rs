@@ -146,7 +146,10 @@ fn live_tachiyomi_source_api() {
 
     // 1. source metadata (getBaseUrl/getName/getLang/getSupportsLatest)
     let srcs = ext.sources().expect("sources");
-    assert!(!srcs.is_empty(), "moetruyen apk must yield at least one source");
+    assert!(
+        !srcs.is_empty(),
+        "moetruyen apk must yield at least one source"
+    );
     let src = &srcs[0];
     let name = ext.source_name(src).expect("source_name");
     assert_eq!(name, "MoeTruyen");
@@ -218,11 +221,14 @@ fn live_tachiyomi_source_api() {
             "{label}: unexpected error: {msg}"
         );
     }
-    let pages = ext.pages_coro(src, &Chapter {
-        url: m0.url.clone(),
-        name: m0.title.clone(),
-        ..Default::default()
-    });
+    let pages = ext.pages_coro(
+        src,
+        &Chapter {
+            url: m0.url.clone(),
+            name: m0.title.clone(),
+            ..Default::default()
+        },
+    );
     let e = pages.expect_err("getPageList must fail on the stub");
     let msg = ext.describe_error(&e);
     assert!(

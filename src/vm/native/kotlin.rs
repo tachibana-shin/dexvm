@@ -342,7 +342,11 @@ pub(crate) fn result_is_failure_impl(vm: &mut Vm, args: &[JValue]) -> R {
 /// `ResultKt.createFailure(Throwable)` — wraps a throwable in a distinct
 /// marker object (the real runtime uses an alias bit on the payload).
 pub(crate) fn resultkt_create_failure(vm: &mut Vm, args: &[JValue]) -> R {
-    alloc(vm, "Lkotlin/Result$Failure;", Native::ResultFailure(args[0]))
+    alloc(
+        vm,
+        "Lkotlin/Result$Failure;",
+        Native::ResultFailure(args[0]),
+    )
 }
 
 // kotlin.text
@@ -710,11 +714,7 @@ pub(crate) fn keiyoushi_duration_equals(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn duration_box(vm: &mut Vm, args: &[JValue]) -> R {
     let raw = long_of(vm, args[0]);
-    alloc(
-        vm,
-        "Lkotlin/time/Duration;",
-        Native::Duration(raw),
-    )
+    alloc(vm, "Lkotlin/time/Duration;", Native::Duration(raw))
 }
 
 pub(crate) fn duration_unbox(vm: &mut Vm, args: &[JValue]) -> R {

@@ -266,10 +266,7 @@ fn okhttp_builder_interceptor_lists() {
             let cls = vm.class_desc_str(vm.object_class(*v).unwrap());
             assert_eq!(cls, want);
         }
-        let strs: Vec<String> = items[3..]
-            .iter()
-            .map(|v| jstr(vm, *v).unwrap())
-            .collect();
+        let strs: Vec<String> = items[3..].iter().map(|v| jstr(vm, *v).unwrap()).collect();
         assert_eq!(strs, ["interceptor-1", "interceptor-2"]);
 
         let netlist = okhttp_builder_network_interceptors(vm, &[b]).unwrap();

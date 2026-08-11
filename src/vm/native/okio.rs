@@ -20,8 +20,8 @@ pub(crate) fn okio_source_file(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::File { path }) => path.clone(),
         _ => return Err(npe(vm)),
     };
-    let bytes = std::fs::read(&path)
-        .map_err(|_| fnf(vm, format!("{path} (No such file or directory)")))?;
+    let bytes =
+        std::fs::read(&path).map_err(|_| fnf(vm, format!("{path} (No such file or directory)")))?;
     alloc(
         vm,
         "Lokio/BufferedSource;",

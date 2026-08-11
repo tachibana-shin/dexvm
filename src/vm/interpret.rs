@@ -188,7 +188,9 @@ impl Vm {
                                     let (kc, _, ks) = *key;
                                     info!(
                                         "INV native <init> sig={} class={} args={}",
-                                        self.str_of(ks), self.str_of(kc), args.count
+                                        self.str_of(ks),
+                                        self.str_of(kc),
+                                        args.count
                                     );
                                 }
                                 let nf = *self.natives.get(key).ok_or_else(|| {
@@ -322,11 +324,9 @@ impl Vm {
                             }
                             let r6 = f.regs.get(6).copied().unwrap_or(JValue::Null);
                             let r6cls = match r6 {
-                                JValue::Obj(o) => Some(
-                                    self.class_desc_str(
-                                        self.object_class(JValue::Obj(o)).unwrap_or(0),
-                                    ),
-                                ),
+                                JValue::Obj(o) => Some(self.class_desc_str(
+                                    self.object_class(JValue::Obj(o)).unwrap_or(0),
+                                )),
                                 _ => None,
                             };
                             info!(
@@ -352,9 +352,8 @@ impl Vm {
                                     let Some(JValue::Obj(lo)) = field_value else {
                                         continue;
                                     };
-                                    if let Native::List(l) = self
-                                        .payload_of(JValue::Obj(lo))
-                                        .unwrap_or(Native::Opaque)
+                                    if let Native::List(l) =
+                                        self.payload_of(JValue::Obj(lo)).unwrap_or(Native::Opaque)
                                     {
                                         info!("DBG {fcls}#{name} list len={}", l.len());
                                         for (i, it) in l.iter().enumerate() {
@@ -367,15 +366,12 @@ impl Vm {
                                             info!("DBG rules[{i}] = {c}");
                                             if let JValue::Obj(ro) = *it {
                                                 for (n, _) in [("a", ""), ("b", ""), ("c", "")] {
-                                                    let (idx, val) =
-                                                        match self.instance_field_id(ro, n) {
-                                                            Some((i, val)) => {
-                                                                (i, format!("{val:?}"))
-                                                            }
-                                                            None => {
-                                                                (usize::MAX, "none".into())
-                                                            }
-                                                        };
+                                                    let (idx, val) = match self
+                                                        .instance_field_id(ro, n)
+                                                    {
+                                                        Some((i, val)) => (i, format!("{val:?}")),
+                                                        None => (usize::MAX, "none".into()),
+                                                    };
                                                     info!("DBG   c1.{n}[{idx}] = {val}");
                                                 }
                                                 let o = self.arena.objects.get(ro as usize);
@@ -386,9 +382,7 @@ impl Vm {
                                                             o.class,
                                                             o.fields.len()
                                                         );
-                                                        for (i, fv) in
-                                                            o.fields.iter().enumerate()
-                                                        {
+                                                        for (i, fv) in o.fields.iter().enumerate() {
                                                             info!("DBG   c1.F[{i}] = {fv:?}");
                                                         }
                                                         let ccls = self
@@ -538,7 +532,10 @@ impl Vm {
             .unwrap_or_else(|i| i.saturating_sub(1));
         let next_pc = pc + decoded.sizes[idx] as usize;
         let insn = &insns[idx];
-        if matches!(self.class_desc_str(f.class).as_str(), "e1" | "a0" | "f1" | "m") {
+        if matches!(
+            self.class_desc_str(f.class).as_str(),
+            "e1" | "a0" | "f1" | "m"
+        ) {
             let mut rs = String::new();
             if self.class_desc_str(f.class) == "m" && pc == 0 {
                 for (_i, r) in f.regs.iter().enumerate().take(6) {
@@ -693,9 +690,7 @@ impl Vm {
                     .type_descriptor(*type_idx)
                     .strip_prefix('[')
                     .map(|s| s.to_string())
-                    .unwrap_or_else(|| {
-                        self.dex_at(f.dex).type_descriptor(*type_idx).to_string()
-                    });
+                    .unwrap_or_else(|| self.dex_at(f.dex).type_descriptor(*type_idx).to_string());
                 let data = ArrayData::new(&elem_desc, n as usize);
                 f.regs[*d as usize] = JValue::Obj(self.arena.alloc(
                     arr_class,
@@ -893,8 +888,19 @@ impl Vm {
                 let fv = self.arena.objects[o as usize].fields[off as usize];
                 let fcls = self.class_desc_str(oc);
                 if fcls == "g1" || fcls == "c1" {
-                    let ob_cls = match fv { JValue::Obj(oo) => self.class_desc_str(self.object_class(JValue::Obj(oo)).unwrap_or(0)), _ => format!("{fv:?}") };
-                    info!("DBG IGet {} {} -> d{} = {}", fcls, self.str_of(fr.name), f.regs.len().saturating_sub(2), ob_cls);
+                    let ob_cls = match fv {
+                        JValue::Obj(oo) => {
+                            self.class_desc_str(self.object_class(JValue::Obj(oo)).unwrap_or(0))
+                        }
+                        _ => format!("{fv:?}"),
+                    };
+                    info!(
+                        "DBG IGet {} {} -> d{} = {}",
+                        fcls,
+                        self.str_of(fr.name),
+                        f.regs.len().saturating_sub(2),
+                        ob_cls
+                    );
                 }
                 f.regs[*d as usize] = fv;
                 Flow::Next(0)
@@ -918,8 +924,20 @@ impl Vm {
                 let v = f.regs[*src as usize];
                 let fcls = self.class_desc_str(oc);
                 if fcls == "g1" || fcls == "c1" {
-                    let s = match v { JValue::Obj(oo) => self.class_desc_str(self.object_class(JValue::Obj(oo)).unwrap_or(0)), _ => format!("{v:?}") };
-                    info!("DBG IPut {} {} <- src{}({}) = {}", fcls, self.str_of(fr.name), *src, f.regs.len(), s);
+                    let s = match v {
+                        JValue::Obj(oo) => {
+                            self.class_desc_str(self.object_class(JValue::Obj(oo)).unwrap_or(0))
+                        }
+                        _ => format!("{v:?}"),
+                    };
+                    info!(
+                        "DBG IPut {} {} <- src{}({}) = {}",
+                        fcls,
+                        self.str_of(fr.name),
+                        *src,
+                        f.regs.len(),
+                        s
+                    );
                 }
                 let stored = match insn {
                     Insn::IPutObj(..) if v.is_null_ref() => JValue::Null,
@@ -940,20 +958,31 @@ impl Vm {
                     Some(r.as_obj())
                 };
                 let target = self.resolve_target(*kind, &mref, receiver, f.class)?;
-                let tcls = match &target { Target::Bytecode { class, .. } => Some(self.class_desc_str(*class)), _ => None };
+                let tcls = match &target {
+                    Target::Bytecode { class, .. } => Some(self.class_desc_str(*class)),
+                    _ => None,
+                };
                 if matches!(tcls.as_deref(), Some("m" | "a0" | "c" | "b" | "y2")) {
                     info!("DBG inv {tcls:?} {}", self.str_of(mref.name));
                 }
                 if *kind == InvokeKind::Direct && self.str_of(mref.name) == "<init>" {
                     let a0 = f.regs[args.reg_at(0) as usize];
                     if let JValue::Obj(a0) = a0 {
-                        let cdesc = self.class_desc_str(self.object_class(JValue::Obj(a0)).unwrap_or(0));
+                        let cdesc =
+                            self.class_desc_str(self.object_class(JValue::Obj(a0)).unwrap_or(0));
                         info!("DBG CTOR {cdesc} argc={}", args.count);
                         if cdesc == "c1" || cdesc == "g1" || cdesc == "f1" {
                             for ai in 1..7 {
-                                if ai >= args.count as usize { break; }
+                                if ai >= args.count as usize {
+                                    break;
+                                }
                                 let av = f.regs[args.reg_at(ai as u8) as usize];
-                                let s = match av { JValue::Obj(o) => self.class_desc_str(self.object_class(JValue::Obj(o)).unwrap_or(0)), _ => format!("{av:?}") };
+                                let s = match av {
+                                    JValue::Obj(o) => self.class_desc_str(
+                                        self.object_class(JValue::Obj(o)).unwrap_or(0),
+                                    ),
+                                    _ => format!("{av:?}"),
+                                };
                                 info!("DBG   {cdesc} arg{ai}: {s}");
                             }
                         }

@@ -550,9 +550,7 @@ pub(crate) fn request_cache_control(vm: &mut Vm, args: &[JValue]) -> R {
         if k.eq_ignore_ascii_case("Cache-Control") {
             for part in v.split(',') {
                 let part = part.trim();
-                if part.eq_ignore_ascii_case("no-cache")
-                    || part.eq_ignore_ascii_case("no-store")
-                {
+                if part.eq_ignore_ascii_case("no-cache") || part.eq_ignore_ascii_case("no-store") {
                     no_cache = true;
                 }
                 if let Some(rest) = part.strip_prefix("max-age=") {
@@ -875,9 +873,6 @@ pub fn lazy_gzip_inst(vm: &mut Vm) -> JValue {
 pub fn lazy_zstd_inst(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lokhttp3/zstd/Zstd;")
 }
-
-
-
 
 #[cfg(feature = "okhttp")]
 pub(crate) fn okhttp_client_new_call(vm: &mut Vm, args: &[JValue]) -> R {

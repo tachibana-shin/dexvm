@@ -651,7 +651,11 @@ impl Keiyoushi {
     }
 
     /// `getPageList` (suspend) against a synthetic chapter ref.
-    pub fn pages_coro(&mut self, src: &Source, chapter: &Chapter) -> Result<Vec<PageRef>, JvmError> {
+    pub fn pages_coro(
+        &mut self,
+        src: &Source,
+        chapter: &Chapter,
+    ) -> Result<Vec<PageRef>, JvmError> {
         let (url, name) = (chapter.url.clone(), chapter.name.clone());
         let cid = self.ctx.vm().ensure_class_by_desc(SCHAPTER)?;
         let c = JValue::Obj(self.ctx.vm().arena.alloc(

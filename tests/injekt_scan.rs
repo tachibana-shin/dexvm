@@ -37,5 +37,9 @@ fn scan_injekt_registry() {
     assert_eq!(vm.injekt_type_of(q), Some(json), "expected Lq; -> Json");
     let a = vm.intern("La;");
     let app = vm.intern("Landroid/app/Application;");
-    assert_eq!(vm.injekt_type_of(a), Some(app), "expected La; -> Application");
+    assert_eq!(
+        vm.injekt_type_of(a),
+        Some(app),
+        "expected La; -> Application"
+    );
 }

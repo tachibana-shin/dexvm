@@ -120,10 +120,46 @@ pub(crate) fn cipher_do_final(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) const JAVAX_CRYPTO_TABLE: &[NativeEntry] = &[
-    ne!("Ljavax/crypto/Cipher;", "getInstance", "(Ljava/lang/String;)Ljavax/crypto/Cipher;", true, cipher_get_instance),
-    ne!("Ljavax/crypto/Cipher;", "init", "(ILjava/security/Key;Ljava/security/spec/AlgorithmParameterSpec;)V", true, cipher_init),
-    ne!("Ljavax/crypto/Cipher;", "updateAAD", "([B)V", true, cipher_update_aad),
-    ne!("Ljavax/crypto/Cipher;", "doFinal", "([BII)[B", true, cipher_do_final),
-    ne!("Ljavax/crypto/spec/SecretKeySpec;", "<init>", "([BLjava/lang/String;)V", true, secret_key_spec_init),
-    ne!("Ljavax/crypto/spec/GCMParameterSpec;", "<init>", "(I[B)V", true, gcm_parameter_spec_init),
+    ne!(
+        "Ljavax/crypto/Cipher;",
+        "getInstance",
+        "(Ljava/lang/String;)Ljavax/crypto/Cipher;",
+        true,
+        cipher_get_instance
+    ),
+    ne!(
+        "Ljavax/crypto/Cipher;",
+        "init",
+        "(ILjava/security/Key;Ljava/security/spec/AlgorithmParameterSpec;)V",
+        true,
+        cipher_init
+    ),
+    ne!(
+        "Ljavax/crypto/Cipher;",
+        "updateAAD",
+        "([B)V",
+        true,
+        cipher_update_aad
+    ),
+    ne!(
+        "Ljavax/crypto/Cipher;",
+        "doFinal",
+        "([BII)[B",
+        true,
+        cipher_do_final
+    ),
+    ne!(
+        "Ljavax/crypto/spec/SecretKeySpec;",
+        "<init>",
+        "([BLjava/lang/String;)V",
+        true,
+        secret_key_spec_init
+    ),
+    ne!(
+        "Ljavax/crypto/spec/GCMParameterSpec;",
+        "<init>",
+        "(I[B)V",
+        true,
+        gcm_parameter_spec_init
+    ),
 ];

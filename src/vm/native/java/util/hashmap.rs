@@ -22,7 +22,10 @@ pub(crate) fn map_init(vm: &mut Vm, args: &[JValue]) -> R {
     match n {
         Native::Map(dst) => *dst = entries,
         other => {
-            info!("MAP_INIT: wrong payload variant {:?}", std::mem::discriminant(other));
+            info!(
+                "MAP_INIT: wrong payload variant {:?}",
+                std::mem::discriminant(other)
+            );
             return Err(npe(vm));
         }
     }

@@ -18,15 +18,10 @@ const POPULAR_HTML: &str = r#"<html><body>
 </div>
 </body></html>"#;
 
-
-
 fn init_logger() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
-        env_logger::Builder::from_env(
-            env_logger::Env::default().default_filter_or("off"),
-        )
-        .init();
+        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("off")).init();
     });
 }
 
