@@ -951,6 +951,7 @@ pub(crate) fn okhttp_call_execute(vm: &mut Vm, args: &[JValue]) -> R {
 /// Runs the real host HTTP request for `request` and wraps it as a Response.
 fn host_execute(vm: &mut Vm, request: JValue) -> R {
     let (url, method, headers, body) = request_parts(vm, request)?;
+    crate::vm::native::keiyoushi::check_network_url(vm, &url)?;
     info!("DBG HOST fetch {method} {url} hdrs={}", headers.len());
     let body_str = form_body_to_string(vm, &body);
     let Some(http) = vm.http.clone() else {

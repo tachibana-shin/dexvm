@@ -244,6 +244,49 @@ fn jsonval_to_string(v: &JsonVal) -> String {
     }
 }
 
+fn jsonval_to_json(v: &JsonVal) -> String {
+    fn quoted(value: &str) -> String {
+        let mut out = String::with_capacity(value.len() + 2);
+        out.push('"');
+        for c in value.chars() {
+            match c {
+                '"' => out.push_str("\\\""),
+                '\\' => out.push_str("\\\\"),
+                '\n' => out.push_str("\\n"),
+                '\r' => out.push_str("\\r"),
+                '\t' => out.push_str("\\t"),
+                c if c < ' ' => out.push_str(&format!("\\u{:04x}", c as u32)),
+                c => out.push(c),
+            }
+        }
+        out.push('"');
+        out
+    }
+    match v {
+        JsonVal::Object(entries) => format!(
+            "{{{}}}",
+            entries
+                .iter()
+                .map(|(key, value)| format!("{}:{}", quoted(key), jsonval_to_json(value)))
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
+        JsonVal::Array(values) => format!(
+            "[{}]",
+            values
+                .iter()
+                .map(jsonval_to_json)
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
+        JsonVal::Str(value) => quoted(value),
+        JsonVal::Int(value) => value.to_string(),
+        JsonVal::Double(value) => value.to_string(),
+        JsonVal::Bool(value) => value.to_string(),
+        JsonVal::Null => "null".into(),
+    }
+}
+
 fn object_members(vm: &Vm, element: JValue) -> Vec<(String, JsonVal)> {
     match payload(vm, element) {
         Some(Native::Json(JsonVal::Object(m))) => m.clone(),
@@ -361,6 +404,22 @@ pub(crate) fn okio_decode_from_buffered_source(vm: &mut Vm, args: &[JValue]) -> 
         parse_json(&text).map_err(|e| nat_fatal(JvmError::Resolution(format!("json: {e}"))))?;
     let node = alloc_json_node(vm, &val)?;
     run_serializer(vm, args[1], node)
+}
+
+/// `OkioStreamsKt.encodeToBufferedSink(json, strategy, value, sink)`.
+pub(crate) fn okio_encode_to_buffered_sink(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = match payload(vm, args[2]) {
+        Some(Native::Json(value)) => jsonval_to_json(value),
+        _ => return Err(iae(vm, "encodeToBufferedSink expects JsonElement")),
+    };
+    let Some(Native::OkioSink { bytes, closed, .. }) = payload_mut(vm, args[3]) else {
+        return Err(npe(vm));
+    };
+    if *closed {
+        return Err(ioe(vm, "closed"));
+    }
+    bytes.extend_from_slice(text.as_bytes());
+    Ok(JValue::Null)
 }
 
 /// `JsonElement$Companion.serializer()` — the JsonElement serializer marker.
@@ -696,6 +755,13 @@ pub(crate) const SERIALIZATION_TABLE: &[NativeEntry] = &[
         "(Lkotlinx/serialization/json/Json;Lkotlinx/serialization/DeserializationStrategy;Lokio/BufferedSource;)Ljava/lang/Object;",
         false,
         okio_decode_from_buffered_source
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/okio/OkioStreamsKt;",
+        "encodeToBufferedSink",
+        "(Lkotlinx/serialization/json/Json;Lkotlinx/serialization/SerializationStrategy;Ljava/lang/Object;Lokio/BufferedSink;)V",
+        false,
+        okio_encode_to_buffered_sink
     ),
     ne!(
         "Lcom/squareup/zstd/okio/OkioZstd;",

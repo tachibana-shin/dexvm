@@ -85,7 +85,7 @@ fn b64(data: &[u8]) -> String {
             out.push(ABC[n as usize & 63] as char);
         }
     }
-    while out.len() % 4 != 0 {
+    while !out.len().is_multiple_of(4) {
         out.push('=');
     }
     out
@@ -138,7 +138,8 @@ fn imgx_gcm_payload(key: &[u8; 32], iv: &[u8; 12], plain: &[u8]) -> Vec<u8> {
 // ---------------------------------------------------------------------------
 
 fn open() -> Context {
-    Context::open(APK).unwrap()
+    let data = std::fs::read(APK).unwrap();
+    Context::new_with(&data, SandboxOptions::allow_all()).unwrap()
 }
 
 fn ensure(ctx: &mut Context, desc: &str) -> u32 {
@@ -329,7 +330,7 @@ fn imgx_unsupported_version_throws() {
     let la0 = wired_ctx(&mut ctx, IMG_URL);
     let err =
         run_intercept(&mut ctx, la0, IMG_URL).expect_err("unsupported IMGX version must throw");
-    let msg = format!("{err}");
+    let msg = err.to_string();
     assert!(msg.contains("Unsupported IMGX version"), "got: {msg}");
 }
 
@@ -344,7 +345,7 @@ fn imgx_wrong_key_fails() {
     let la0 = wired_ctx(&mut ctx, IMG_URL);
     // wired_ctx wraps with key = 7s every time; encrypt with 8s -> mismatch.
     let err = run_intercept(&mut ctx, la0, IMG_URL).expect_err("GCM tag mismatch must throw");
-    let msg = format!("{err}");
+    let msg = err.to_string();
     assert!(msg.contains("GCM"), "got: {msg}");
 }
 
@@ -353,7 +354,6 @@ fn imgx_wrong_key_fails() {
 fn cipher_native_roundtrip() {
     init_logger();
     let mut ctx = open();
-    let _ = SandboxOptions::allow_all();
 
     fn cipher(vm: &mut dexvm::vm::Vm) -> JValue {
         vm.alloc_native(

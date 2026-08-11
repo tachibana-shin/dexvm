@@ -2,7 +2,7 @@
 //!
 //! Parses `classes.dex` (and multi-dex parts) into table-oriented structures
 //! that the VM can resolve lazily. Follows the DEX format specification
-//! (https://source.android.com/docs/core/runtime/dex-format).
+//! (<https://source.android.com/docs/core/runtime/dex-format>).
 
 pub mod insn;
 pub mod read;

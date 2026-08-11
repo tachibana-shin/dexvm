@@ -4,6 +4,7 @@ use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
 use base64::Engine as _;
 
 use super::*;
+use crate::permission::{FilesystemPermission, Permission};
 
 // ---------------------------------------------------------------------------
 // android framework
@@ -13,16 +14,190 @@ use super::*;
 // android framework
 // ---------------------------------------------------------------------------
 
-pub(crate) fn context_get_shared_prefs(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(vm, "Landroid/content/SharedPreferences;", Native::Opaque)
+pub(crate) fn context_get_shared_prefs(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[1])?;
+    vm.shared_preferences.entry(name.clone()).or_default();
+    alloc(
+        vm,
+        "Landroid/content/SharedPreferences;",
+        Native::SharedPreferences(name),
+    )
 }
 
-pub(crate) fn shared_prefs_get_boolean(_vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(args[2])
+fn shared_prefs_name(vm: &mut Vm, value: JValue) -> Result<String, NatErr> {
+    match payload(vm, value) {
+        Some(Native::SharedPreferences(name)) => Ok(name.clone()),
+        _ => Err(npe(vm)),
+    }
 }
 
-pub(crate) fn shared_prefs_get_string(_vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(args[2])
+pub(crate) fn shared_prefs_get_boolean(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = shared_prefs_name(vm, args[0])?;
+    let key = jstr(vm, args[1])?;
+    let value = vm.shared_preferences.get(&name).and_then(|p| p.get(&key));
+    Ok(match value {
+        Some(PreferenceValue::Bool(v)) => JValue::Int(i32::from(*v)),
+        _ => args[2],
+    })
+}
+
+pub(crate) fn shared_prefs_get_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = shared_prefs_name(vm, args[0])?;
+    let key = jstr(vm, args[1])?;
+    let value = vm
+        .shared_preferences
+        .get(&name)
+        .and_then(|p| p.get(&key))
+        .and_then(|v| match v {
+            PreferenceValue::String(s) => Some(s.clone()),
+            _ => None,
+        });
+    match value {
+        Some(v) => Ok(new_str(vm, &v)),
+        None => Ok(args[2]),
+    }
+}
+
+pub(crate) fn shared_prefs_get_int(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = shared_prefs_name(vm, args[0])?;
+    let key = jstr(vm, args[1])?;
+    Ok(
+        match vm.shared_preferences.get(&name).and_then(|p| p.get(&key)) {
+            Some(PreferenceValue::Int(v)) => JValue::Int(*v),
+            _ => args[2],
+        },
+    )
+}
+
+pub(crate) fn shared_prefs_get_long(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = shared_prefs_name(vm, args[0])?;
+    let key = jstr(vm, args[1])?;
+    Ok(
+        match vm.shared_preferences.get(&name).and_then(|p| p.get(&key)) {
+            Some(PreferenceValue::Long(v)) => JValue::Long(*v),
+            _ => args[2],
+        },
+    )
+}
+
+pub(crate) fn shared_prefs_get_float(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = shared_prefs_name(vm, args[0])?;
+    let key = jstr(vm, args[1])?;
+    Ok(
+        match vm.shared_preferences.get(&name).and_then(|p| p.get(&key)) {
+            Some(PreferenceValue::Float(v)) => JValue::Float(*v),
+            _ => args[2],
+        },
+    )
+}
+
+pub(crate) fn shared_prefs_contains(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = shared_prefs_name(vm, args[0])?;
+    let key = jstr(vm, args[1])?;
+    Ok(JValue::Int(i32::from(
+        vm.shared_preferences
+            .get(&name)
+            .is_some_and(|p| p.contains_key(&key)),
+    )))
+}
+
+pub(crate) fn shared_prefs_edit(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = shared_prefs_name(vm, args[0])?;
+    alloc(
+        vm,
+        "Landroid/content/SharedPreferences$Editor;",
+        Native::SharedPreferencesEditor {
+            name,
+            edits: Vec::new(),
+            clear: false,
+        },
+    )
+}
+
+fn editor_put(vm: &mut Vm, args: &[JValue], value: PreferenceValue) -> R {
+    let key = jstr(vm, args[1])?;
+    let Some(Native::SharedPreferencesEditor { edits, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    edits.push(PreferenceEdit::Put(key, value));
+    Ok(args[0])
+}
+
+pub(crate) fn editor_put_boolean(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = int_of(vm, args[2]) != 0;
+    editor_put(vm, args, PreferenceValue::Bool(value))
+}
+
+pub(crate) fn editor_put_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[2])?;
+    editor_put(vm, args, PreferenceValue::String(value))
+}
+
+pub(crate) fn editor_put_int(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = int_of(vm, args[2]);
+    editor_put(vm, args, PreferenceValue::Int(value))
+}
+
+pub(crate) fn editor_put_long(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = long_of(vm, args[2]);
+    editor_put(vm, args, PreferenceValue::Long(value))
+}
+
+pub(crate) fn editor_put_float(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = match args[2] {
+        JValue::Float(value) => value,
+        _ => return Err(iae(vm, "expected float")),
+    };
+    editor_put(vm, args, PreferenceValue::Float(value))
+}
+
+pub(crate) fn editor_remove(vm: &mut Vm, args: &[JValue]) -> R {
+    let key = jstr(vm, args[1])?;
+    let Some(Native::SharedPreferencesEditor { edits, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    edits.push(PreferenceEdit::Remove(key));
+    Ok(args[0])
+}
+
+pub(crate) fn editor_clear(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::SharedPreferencesEditor { clear, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *clear = true;
+    Ok(args[0])
+}
+
+fn editor_apply_inner(vm: &mut Vm, editor: JValue) -> Result<(), NatErr> {
+    let Some(Native::SharedPreferencesEditor { name, edits, clear }) = payload(vm, editor) else {
+        return Err(npe(vm));
+    };
+    let (name, edits, clear) = (name.clone(), edits.clone(), *clear);
+    let values = vm.shared_preferences.entry(name).or_default();
+    if clear {
+        values.clear();
+    }
+    for edit in edits {
+        match edit {
+            PreferenceEdit::Put(key, value) => {
+                values.insert(key, value);
+            }
+            PreferenceEdit::Remove(key) => {
+                values.remove(&key);
+            }
+        }
+    }
+    Ok(())
+}
+
+pub(crate) fn editor_apply(vm: &mut Vm, args: &[JValue]) -> R {
+    editor_apply_inner(vm, args[0])?;
+    Ok(JValue::Null)
+}
+
+pub(crate) fn editor_commit(vm: &mut Vm, args: &[JValue]) -> R {
+    editor_apply_inner(vm, args[0])?;
+    Ok(JValue::Int(1))
 }
 
 pub(crate) fn prefs_obj(_vm: &mut Vm, _args: &[JValue]) -> R {
@@ -55,9 +230,61 @@ fn file_path(vm: &mut Vm, arg: JValue) -> Result<String, NatErr> {
     }
 }
 
+pub(crate) fn file_init_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = jstr(vm, args[1])?;
+    let Some(Native::File { path: dst }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *dst = path;
+    Ok(JValue::Null)
+}
+
+pub(crate) fn file_init_parent_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let parent = file_path(vm, args[1])?;
+    let child = jstr(vm, args[2])?;
+    let path = std::path::PathBuf::from(parent)
+        .join(child)
+        .to_string_lossy()
+        .into_owned();
+    let Some(Native::File { path: dst }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *dst = path;
+    Ok(JValue::Null)
+}
+
+pub(crate) fn file_init_parent_strings(vm: &mut Vm, args: &[JValue]) -> R {
+    let parent = jstr(vm, args[1])?;
+    let child = jstr(vm, args[2])?;
+    let path = std::path::PathBuf::from(parent)
+        .join(child)
+        .to_string_lossy()
+        .into_owned();
+    let Some(Native::File { path: dst }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *dst = path;
+    Ok(JValue::Null)
+}
+
+fn check_file_read(vm: &mut Vm, path: &str) -> Result<(), NatErr> {
+    check_native_permission(
+        vm,
+        &Permission::Filesystem(FilesystemPermission::ReadPath(path.to_owned())),
+    )
+}
+
+fn check_file_write(vm: &mut Vm, path: &str) -> Result<(), NatErr> {
+    check_native_permission(
+        vm,
+        &Permission::Filesystem(FilesystemPermission::WritePath(path.to_owned())),
+    )
+}
+
 /// `File.mkdirs() -> boolean`: really creates the directory tree.
 pub(crate) fn file_mkdirs(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
+    check_file_write(vm, &path)?;
     Ok(JValue::Int(i32::from(
         std::fs::create_dir_all(&path).is_ok(),
     )))
@@ -66,6 +293,7 @@ pub(crate) fn file_mkdirs(vm: &mut Vm, args: &[JValue]) -> R {
 /// `File.exists() -> boolean`: real filesystem check.
 pub(crate) fn file_exists(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
+    check_file_read(vm, &path)?;
     Ok(JValue::Int(i32::from(std::fs::metadata(&path).is_ok())))
 }
 
@@ -73,6 +301,7 @@ pub(crate) fn file_exists(vm: &mut Vm, args: &[JValue]) -> R {
 /// file is missing, exactly like the JVM).
 pub(crate) fn file_last_modified(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
+    check_file_read(vm, &path)?;
     let millis = std::fs::metadata(&path)
         .ok()
         .and_then(|m| m.modified().ok())
@@ -88,6 +317,7 @@ pub(crate) fn file_last_modified(vm: &mut Vm, args: &[JValue]) -> R {
 /// `File.length() -> long`: real size in bytes (0 when missing).
 pub(crate) fn file_length(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
+    check_file_read(vm, &path)?;
     let len = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
     Ok(JValue::Long(len as i64))
 }
@@ -95,6 +325,7 @@ pub(crate) fn file_length(vm: &mut Vm, args: &[JValue]) -> R {
 /// `File.isDirectory() -> boolean`: real check.
 pub(crate) fn file_is_directory(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
+    check_file_read(vm, &path)?;
     Ok(JValue::Int(i32::from(
         std::fs::metadata(&path)
             .map(|m| m.is_dir())
@@ -102,9 +333,32 @@ pub(crate) fn file_is_directory(vm: &mut Vm, args: &[JValue]) -> R {
     )))
 }
 
+pub(crate) fn file_is_file(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    check_file_read(vm, &path)?;
+    Ok(JValue::Int(i32::from(
+        std::fs::metadata(path).is_ok_and(|m| m.is_file()),
+    )))
+}
+
+pub(crate) fn file_create_new_file(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    check_file_write(vm, &path)?;
+    match std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+    {
+        Ok(_) => Ok(JValue::Int(1)),
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => Ok(JValue::Int(0)),
+        Err(e) => Err(fnf(vm, e.to_string())),
+    }
+}
+
 /// `File.delete() -> boolean`: really removes the file or empty directory.
 pub(crate) fn file_delete(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
+    check_file_write(vm, &path)?;
     Ok(JValue::Int(i32::from(
         std::fs::remove_file(&path)
             .or_else(|_| std::fs::remove_dir(&path))
@@ -118,12 +372,63 @@ pub(crate) fn file_get_path(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &path))
 }
 
+pub(crate) fn file_get_absolute_path(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = std::path::PathBuf::from(file_path(vm, args[0])?);
+    let absolute = if path.is_absolute() {
+        path
+    } else {
+        std::env::current_dir()
+            .unwrap_or_else(|_| std::path::PathBuf::from("/"))
+            .join(path)
+    };
+    Ok(new_str(vm, &absolute.to_string_lossy()))
+}
+
+pub(crate) fn file_get_canonical_path(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    check_file_read(vm, &path)?;
+    let canonical = std::fs::canonicalize(&path).map_err(|e| ioe(vm, e.to_string()))?;
+    Ok(new_str(vm, &canonical.to_string_lossy()))
+}
+
+pub(crate) fn file_get_name(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    let name = std::path::Path::new(&path)
+        .file_name()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    Ok(new_str(vm, &name))
+}
+
+pub(crate) fn file_get_parent(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    let Some(parent) = std::path::Path::new(&path).parent() else {
+        return Ok(JValue::Null);
+    };
+    Ok(new_str(vm, &parent.to_string_lossy()))
+}
+
+pub(crate) fn file_get_parent_file(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    let Some(parent) = std::path::Path::new(&path).parent() else {
+        return Ok(JValue::Null);
+    };
+    alloc(
+        vm,
+        "Ljava/io/File;",
+        Native::File {
+            path: parent.to_string_lossy().into_owned(),
+        },
+    )
+}
+
 /// `File.createTempFile(prefix, suffix, directory) -> File`: creates a
 /// unique real file next to the given directory.
 pub(crate) fn file_create_temp_file(vm: &mut Vm, args: &[JValue]) -> R {
     let prefix = jstr(vm, args[0]).unwrap_or_default();
     let suffix = jstr(vm, args[1]).unwrap_or_default();
     let dir = file_path(vm, args[2])?;
+    check_file_write(vm, &dir)?;
     let path = match tempfile_in(&dir, &prefix, &suffix) {
         Ok(p) => p,
         Err(_) => return Err(fnf(vm, "createTempFile failed")),
@@ -135,6 +440,8 @@ pub(crate) fn file_create_temp_file(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn file_rename_to(vm: &mut Vm, args: &[JValue]) -> R {
     let from = file_path(vm, args[0])?;
     let to = file_path(vm, args[1])?;
+    check_file_write(vm, &from)?;
+    check_file_write(vm, &to)?;
     Ok(JValue::Int(i32::from(std::fs::rename(&from, &to).is_ok())))
 }
 
@@ -213,6 +520,27 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         true,
         context_get_cache_dir
     ),
+    ne!(
+        "Ljava/io/File;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        file_init_string
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "<init>",
+        "(Ljava/io/File;Ljava/lang/String;)V",
+        true,
+        file_init_parent_string
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "<init>",
+        "(Ljava/lang/String;Ljava/lang/String;)V",
+        true,
+        file_init_parent_strings
+    ),
     ne!("Ljava/io/File;", "mkdirs", "()Z", true, file_mkdirs),
     ne!("Ljava/io/File;", "exists", "()Z", true, file_exists),
     ne!(
@@ -230,13 +558,28 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         true,
         file_is_directory
     ),
+    ne!("Ljava/io/File;", "isFile", "()Z", true, file_is_file),
+    ne!(
+        "Ljava/io/File;",
+        "createNewFile",
+        "()Z",
+        true,
+        file_create_new_file
+    ),
     ne!("Ljava/io/File;", "delete", "()Z", true, file_delete),
     ne!(
         "Ljava/io/File;",
         "getAbsolutePath",
         "()Ljava/lang/String;",
         true,
-        file_get_path
+        file_get_absolute_path
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "getCanonicalPath",
+        "()Ljava/lang/String;",
+        true,
+        file_get_canonical_path
     ),
     ne!(
         "Ljava/io/File;",
@@ -247,9 +590,30 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
     ),
     ne!(
         "Ljava/io/File;",
+        "getName",
+        "()Ljava/lang/String;",
+        true,
+        file_get_name
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "getParent",
+        "()Ljava/lang/String;",
+        true,
+        file_get_parent
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "getParentFile",
+        "()Ljava/io/File;",
+        true,
+        file_get_parent_file
+    ),
+    ne!(
+        "Ljava/io/File;",
         "createTempFile",
         "(Ljava/lang/String;Ljava/lang/String;Ljava/io/File;)Ljava/io/File;",
-        true,
+        false,
         file_create_temp_file
     ),
     ne!(
@@ -263,7 +627,7 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "Lkotlin/io/FilesKt;",
         "resolve",
         "(Ljava/io/File;Ljava/lang/String;)Ljava/io/File;",
-        true,
+        false,
         fileskt_resolve
     ),
     ne!(
@@ -279,6 +643,104 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
         true,
         shared_prefs_get_string
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences;",
+        "contains",
+        "(Ljava/lang/String;)Z",
+        true,
+        shared_prefs_contains
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences;",
+        "getInt",
+        "(Ljava/lang/String;I)I",
+        true,
+        shared_prefs_get_int
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences;",
+        "getLong",
+        "(Ljava/lang/String;J)J",
+        true,
+        shared_prefs_get_long
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences;",
+        "getFloat",
+        "(Ljava/lang/String;F)F",
+        true,
+        shared_prefs_get_float
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences;",
+        "edit",
+        "()Landroid/content/SharedPreferences$Editor;",
+        true,
+        shared_prefs_edit
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences$Editor;",
+        "putBoolean",
+        "(Ljava/lang/String;Z)Landroid/content/SharedPreferences$Editor;",
+        true,
+        editor_put_boolean
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences$Editor;",
+        "putString",
+        "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/SharedPreferences$Editor;",
+        true,
+        editor_put_string
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences$Editor;",
+        "remove",
+        "(Ljava/lang/String;)Landroid/content/SharedPreferences$Editor;",
+        true,
+        editor_remove
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences$Editor;",
+        "putInt",
+        "(Ljava/lang/String;I)Landroid/content/SharedPreferences$Editor;",
+        true,
+        editor_put_int
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences$Editor;",
+        "putLong",
+        "(Ljava/lang/String;J)Landroid/content/SharedPreferences$Editor;",
+        true,
+        editor_put_long
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences$Editor;",
+        "putFloat",
+        "(Ljava/lang/String;F)Landroid/content/SharedPreferences$Editor;",
+        true,
+        editor_put_float
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences$Editor;",
+        "clear",
+        "()Landroid/content/SharedPreferences$Editor;",
+        true,
+        editor_clear
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences$Editor;",
+        "apply",
+        "()V",
+        true,
+        editor_apply
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences$Editor;",
+        "commit",
+        "()Z",
+        true,
+        editor_commit
     ),
     ne!(
         "Landroidx/preference/Preference;",

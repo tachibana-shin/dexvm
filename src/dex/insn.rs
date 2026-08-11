@@ -5,7 +5,7 @@
 //! payloads resolved to absolute code-unit positions. The interpreter then
 //! only has to match on `Insn`, which keeps the hot loop small.
 //!
-//! Format reference: https://source.android.com/docs/core/runtime/dalvik-bytecode
+//! Format reference: <https://source.android.com/docs/core/runtime/dalvik-bytecode>
 //! Register field sizes: 4-bit A (12x, 11n, 22s, 22b, 22c, 22t, 35c, 10t)
 //! vs 8-bit A (11x, 10t?, 21c, 21s, 21h, 21t, 31i, 31c, 31t, 22x, 23x, 32x, 3rc, 51l).
 

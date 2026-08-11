@@ -3,11 +3,12 @@
 use crate::vm::native::*;
 
 pub(crate) fn reentrant_lock_init(vm: &mut Vm, args: &[JValue]) -> R {
-    let fair = int_of(vm, args[1]);
     let Some(Native::ReentrantLock { locked }) = payload_mut(vm, args[0]) else {
         return Err(npe(vm));
     };
-    *locked = fair != 0;
+    // Fairness controls waiter ordering; it must not make a new lock held.
+    // This VM executes synchronously, so both constructors start unlocked.
+    *locked = false;
     Ok(JValue::Null)
 }
 
@@ -85,3 +86,32 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         reentrant_lock_new_condition
     ),
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Context, SandboxOptions};
+
+    #[test]
+    fn both_constructors_start_unlocked() {
+        let data = std::fs::read("fixtures/classes.dex").unwrap();
+        let mut ctx = Context::new_with(&data, SandboxOptions::allow_all()).unwrap();
+        let vm = ctx.vm();
+        let lock = alloc(
+            vm,
+            "Ljava/util/concurrent/locks/ReentrantLock;",
+            Native::ReentrantLock { locked: true },
+        )
+        .unwrap();
+        reentrant_lock_init(vm, &[lock]).unwrap();
+        assert!(matches!(
+            payload(vm, lock),
+            Some(Native::ReentrantLock { locked: false })
+        ));
+        reentrant_lock_init(vm, &[lock, JValue::Int(1)]).unwrap();
+        assert!(matches!(
+            payload(vm, lock),
+            Some(Native::ReentrantLock { locked: false })
+        ));
+    }
+}

@@ -1,5 +1,6 @@
 //! java.lang.System host shims.
 
+use crate::permission::Permission;
 use crate::vm::native::*;
 
 // java.lang.System / java.io.PrintStream
@@ -192,8 +193,42 @@ pub(crate) fn sys_identity_hash_code(_vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
-pub(crate) fn sys_get_property(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
+pub(crate) fn sys_get_property(vm: &mut Vm, args: &[JValue]) -> R {
+    let key = jstr(vm, args[0])?;
+    let value = match key.as_str() {
+        "java.version" => Some("17"),
+        "java.vm.name" => Some("dexvm"),
+        "java.vendor" => Some("dexvm"),
+        "line.separator" => Some("\n"),
+        "file.separator" => Some(if cfg!(windows) { "\\" } else { "/" }),
+        "path.separator" => Some(if cfg!(windows) { ";" } else { ":" }),
+        "os.name" => Some(std::env::consts::OS),
+        "os.arch" => Some(std::env::consts::ARCH),
+        _ => None,
+    };
+    match value {
+        Some(value) => Ok(new_str(vm, value)),
+        None => Ok(args.get(1).copied().unwrap_or(JValue::Null)),
+    }
+}
+
+pub(crate) fn sys_getenv(vm: &mut Vm, args: &[JValue]) -> R {
+    check_native_permission(vm, &Permission::Env)?;
+    let key = jstr(vm, args[0])?;
+    match std::env::var(key) {
+        Ok(value) => Ok(new_str(vm, &value)),
+        Err(_) => Ok(JValue::Null),
+    }
+}
+
+pub(crate) fn sys_getenv_all(vm: &mut Vm, _args: &[JValue]) -> R {
+    check_native_permission(vm, &Permission::Env)?;
+    let vars = std::env::vars().collect::<Vec<_>>();
+    let mut entries = Vec::with_capacity(vars.len());
+    for (key, value) in vars {
+        entries.push((new_str(vm, &key), new_str(vm, &value)));
+    }
+    alloc(vm, "Ljava/util/HashMap;", Native::Map(entries))
 }
 
 pub(crate) fn sys_line_separator(vm: &mut Vm, _args: &[JValue]) -> R {
@@ -241,9 +276,61 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ),
     ne!(
         "Ljava/lang/System;",
+        "getProperty",
+        "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        false,
+        sys_get_property
+    ),
+    ne!(
+        "Ljava/lang/System;",
+        "getenv",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        false,
+        sys_getenv
+    ),
+    ne!(
+        "Ljava/lang/System;",
+        "getenv",
+        "()Ljava/util/Map;",
+        false,
+        sys_getenv_all
+    ),
+    ne!(
+        "Ljava/lang/System;",
         "lineSeparator",
         "()Ljava/lang/String;",
         false,
         sys_line_separator
     ),
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Context, SandboxOptions};
+
+    #[test]
+    fn properties_are_virtual_and_environment_is_permissioned() {
+        let data = std::fs::read("fixtures/classes.dex").unwrap();
+        let mut denied = Context::new(&data).unwrap();
+        let vm = denied.vm();
+        let key = vm.alloc_string("java.vm.name");
+        let value = sys_get_property(vm, &[key]).unwrap();
+        assert_eq!(jstr(vm, value).unwrap(), "dexvm");
+
+        let key = vm.alloc_string("PATH");
+        assert!(matches!(sys_getenv(vm, &[key]), Err(NatErr::Throw(_))));
+
+        let mut allowed = Context::new_with(
+            &data,
+            SandboxOptions {
+                env: true,
+                ..SandboxOptions::default()
+            },
+        )
+        .unwrap();
+        let vm = allowed.vm();
+        let key = vm.alloc_string("DEXVM_VARIABLE_THAT_SHOULD_NOT_EXIST");
+        assert!(sys_getenv(vm, &[key]).unwrap().is_null());
+    }
+}

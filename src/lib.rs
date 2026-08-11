@@ -8,7 +8,7 @@
 //! The VM is special-cased (and extensively tested) for **one workload**:
 //! **mihon / Tachiyomi manga extensions** (the `keiyoushi` collection). With
 //! the default features the extension API (`eu.kanade.tachiyomi.*`) is shimmed
-//! and the [`keiyoushi`](crate::keiyoushi) module offers a typed bridge;
+//! and the [`keiyoushi`] module offers a typed bridge;
 //! without them this is still a general-purpose DEX runtime ([`Context`]).
 //!
 //! # Quick start

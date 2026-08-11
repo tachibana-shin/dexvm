@@ -1,10 +1,12 @@
 //! okio host shims: in-memory `BufferedSource`/`Buffer` over a byte cursor.
 
 use super::*;
+use crate::permission::{FilesystemPermission, Permission};
 use crate::vm::native::okhttp::resp_body_bytes;
+use std::io::Write as _;
 
 pub(crate) fn okio_source_input_stream(vm: &mut Vm, args: &[JValue]) -> R {
-    let (bytes, pos) = match payload(vm, args[1]) {
+    let (bytes, pos) = match payload(vm, args[0]) {
         Some(Native::ByteArrayInputStream { bytes, pos }) => (bytes.clone(), *pos),
         Some(Native::Str(s)) => (s.as_bytes().to_vec(), 0),
         _ => return Err(npe(vm)),
@@ -20,6 +22,10 @@ pub(crate) fn okio_source_file(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::File { path }) => path.clone(),
         _ => return Err(npe(vm)),
     };
+    check_native_permission(
+        vm,
+        &Permission::Filesystem(FilesystemPermission::ReadPath(path.clone())),
+    )?;
     let bytes =
         std::fs::read(&path).map_err(|_| fnf(vm, format!("{path} (No such file or directory)")))?;
     alloc(
@@ -38,14 +44,121 @@ pub(crate) fn okio_source_response_body(vm: &mut Vm, args: &[JValue]) -> R {
     )
 }
 
+fn file_arg_path(vm: &mut Vm, arg: JValue) -> Result<String, NatErr> {
+    match payload(vm, arg) {
+        Some(Native::File { path }) => Ok(path.clone()),
+        _ => Err(npe(vm)),
+    }
+}
+
+pub(crate) fn okio_sink_file(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_arg_path(vm, args[0])?;
+    check_native_permission(
+        vm,
+        &Permission::Filesystem(FilesystemPermission::WritePath(path.clone())),
+    )?;
+    let append = args.get(1).is_some_and(|v| int_of(vm, *v) != 0);
+    std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(!append)
+        .append(append)
+        .open(&path)
+        .map_err(|e| fnf(vm, e.to_string()))?;
+    alloc(
+        vm,
+        "Lokio/BufferedSink;",
+        Native::OkioSink {
+            path,
+            bytes: Vec::new(),
+            flushed: 0,
+            closed: false,
+        },
+    )
+}
+
 /// `source()` is already a BufferedSource for our in-memory payloads.
 pub(crate) fn okio_identity(vm: &mut Vm, args: &[JValue]) -> R {
     let _ = vm;
     Ok(args[0])
 }
 
-pub(crate) fn okio_close(_vm: &mut Vm, _args: &[JValue]) -> R {
+fn flush_sink(vm: &mut Vm, sink: JValue) -> Result<(), NatErr> {
+    let Some(Native::OkioSink {
+        path,
+        bytes,
+        flushed,
+        closed,
+    }) = payload(vm, sink)
+    else {
+        return Ok(());
+    };
+    let (path, pending, start, closed) = (path.clone(), bytes.clone(), *flushed, *closed);
+    if closed || start >= pending.len() {
+        return Ok(());
+    }
+    check_native_permission(
+        vm,
+        &Permission::Filesystem(FilesystemPermission::WritePath(path.clone())),
+    )?;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .map_err(|e| fnf(vm, e.to_string()))?;
+    file.write_all(&pending[start..])
+        .map_err(|e| ioe(vm, e.to_string()))?;
+    if let Some(Native::OkioSink { flushed, .. }) = payload_mut(vm, sink) {
+        *flushed = pending.len();
+    }
+    Ok(())
+}
+
+pub(crate) fn okio_flush(vm: &mut Vm, args: &[JValue]) -> R {
+    flush_sink(vm, args[0])?;
     Ok(JValue::Null)
+}
+
+pub(crate) fn okio_close(vm: &mut Vm, args: &[JValue]) -> R {
+    flush_sink(vm, args[0])?;
+    if let Some(Native::OkioSink { closed, .. }) = payload_mut(vm, args[0]) {
+        *closed = true;
+    }
+    Ok(JValue::Null)
+}
+
+pub(crate) fn okio_sink_write_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let data = bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
+    let (offset, length) = if args.len() >= 4 {
+        let offset = usize::try_from(int_of(vm, args[2])).unwrap_or(usize::MAX);
+        let length = usize::try_from(int_of(vm, args[3])).unwrap_or(usize::MAX);
+        (offset, length)
+    } else {
+        (0, data.len())
+    };
+    let Some(end) = offset.checked_add(length).filter(|end| *end <= data.len()) else {
+        return Err(iae(vm, "byte range out of bounds"));
+    };
+    let Some(Native::OkioSink { bytes, closed, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    if *closed {
+        return Err(ioe(vm, "closed"));
+    }
+    bytes.extend_from_slice(&data[offset..end]);
+    Ok(args[0])
+}
+
+pub(crate) fn okio_sink_write_utf8(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[1])?;
+    let Some(Native::OkioSink { bytes, closed, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    if *closed {
+        return Err(ioe(vm, "closed"));
+    }
+    bytes.extend_from_slice(value.as_bytes());
+    Ok(args[0])
 }
 
 pub(crate) fn okio_get_buffer(vm: &mut Vm, args: &[JValue]) -> R {
@@ -124,8 +237,36 @@ pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
     ),
     ne!(
         "Lokio/Okio;",
+        "sink",
+        "(Ljava/io/File;)Lokio/Sink;",
+        false,
+        okio_sink_file
+    ),
+    ne!(
+        "Lokio/Okio;",
+        "sink",
+        "(Ljava/io/File;Z)Lokio/Sink;",
+        false,
+        okio_sink_file
+    ),
+    ne!(
+        "Lokio/Okio;",
+        "sink$default",
+        "(Ljava/io/File;ZILjava/lang/Object;)Lokio/Sink;",
+        false,
+        okio_sink_file
+    ),
+    ne!(
+        "Lokio/Okio;",
         "buffer",
         "(Lokio/Source;)Lokio/BufferedSource;",
+        false,
+        okio_identity
+    ),
+    ne!(
+        "Lokio/Okio;",
+        "buffer",
+        "(Lokio/Sink;)Lokio/BufferedSink;",
         false,
         okio_identity
     ),
@@ -203,4 +344,59 @@ pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
     ),
     ne!("Lokio/Buffer;", "close", "()V", true, okio_close),
     ne!("Lokio/Source;", "close", "()V", true, okio_close),
+    ne!("Lokio/Sink;", "close", "()V", true, okio_close),
+    ne!("Lokio/BufferedSink;", "close", "()V", true, okio_close),
+    ne!("Lokio/BufferedSink;", "flush", "()V", true, okio_flush),
+    ne!(
+        "Lokio/BufferedSink;",
+        "write",
+        "([B)Lokio/BufferedSink;",
+        true,
+        okio_sink_write_bytes
+    ),
+    ne!(
+        "Lokio/BufferedSink;",
+        "write",
+        "([BII)Lokio/BufferedSink;",
+        true,
+        okio_sink_write_bytes
+    ),
+    ne!(
+        "Lokio/BufferedSink;",
+        "writeUtf8",
+        "(Ljava/lang/String;)Lokio/BufferedSink;",
+        true,
+        okio_sink_write_utf8
+    ),
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Context;
+
+    #[test]
+    fn file_sink_writes_and_enforces_permission() {
+        let data = std::fs::read("fixtures/classes.dex").unwrap();
+        let mut ctx = Context::new(&data).unwrap();
+        let vm = ctx.vm();
+        let root = vm.cache_root_path().to_owned();
+        let path = format!("{root}/out.bin");
+        let file = alloc(vm, "Ljava/io/File;", Native::File { path: path.clone() }).unwrap();
+        assert!(matches!(okio_sink_file(vm, &[file]), Err(NatErr::Throw(_))));
+
+        vm.perms
+            .grant(Permission::Filesystem(FilesystemPermission::Path(
+                root.clone(),
+            )));
+        std::fs::create_dir_all(&root).unwrap();
+        let sink = okio_sink_file(vm, &[file]).unwrap();
+        let bytes = vec![1_i8, 2, -1];
+        let input = alloc_arr(vm, "B", bytes.len(), move || ArrayData::Byte(bytes)).unwrap();
+        okio_sink_write_bytes(vm, &[sink, input]).unwrap();
+        okio_close(vm, &[sink]).unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), vec![1, 2, 255]);
+        std::fs::remove_file(path).unwrap();
+        std::fs::remove_dir(root).unwrap();
+    }
+}

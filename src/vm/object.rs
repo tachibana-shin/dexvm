@@ -144,6 +144,21 @@ pub enum JsonVal {
     Null,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum PreferenceValue {
+    Bool(bool),
+    String(String),
+    Int(i32),
+    Long(i64),
+    Float(f32),
+}
+
+#[derive(Debug, Clone)]
+pub enum PreferenceEdit {
+    Put(String, PreferenceValue),
+    Remove(String),
+}
+
 /// Native (Rust-backed) objects. Objects of shim classes carry one of these
 /// instead of interpreted fields.
 #[derive(Clone)]
@@ -219,6 +234,13 @@ pub enum Native {
         bytes: Vec<u8>,
         pos: usize,
     },
+    /// okio Sink / BufferedSink backed by a permission-checked host file.
+    OkioSink {
+        path: String,
+        bytes: Vec<u8>,
+        flushed: usize,
+        closed: bool,
+    },
     /// okhttp3.OkHttpClient built from a builder: keeps interceptor lists.
     OkHttpClient {
         interceptors: Vec<JValue>,
@@ -280,6 +302,23 @@ pub enum Native {
     Date(i64),
     /// java.util.Locale and other inert Java objects.
     Opaque,
+    /// java.lang.Thread. Execution is synchronous, but observable thread
+    /// properties and interruption state follow the Java API.
+    Thread {
+        name: String,
+        daemon: bool,
+        alive: bool,
+        interrupted: bool,
+        started: bool,
+        runnable: JValue,
+    },
+    /// Android SharedPreferences handle and a transactional editor.
+    SharedPreferences(String),
+    SharedPreferencesEditor {
+        name: String,
+        edits: Vec<PreferenceEdit>,
+        clear: bool,
+    },
     /// java.io.File: real host path. Every `File` method operates on the
     /// actual filesystem (mkdirs/exists/lastModified/resolve/...).
     File {
@@ -578,6 +617,7 @@ impl Native {
             },
             Native::MapEntry { map, .. } => out.push(*map),
             Native::Lazy(v) => push(Some(v), out),
+            Native::Thread { runnable, .. } => push(Some(runnable), out),
             Native::Pair(a, b) => {
                 push(Some(a), out);
                 push(Some(b), out);
@@ -664,6 +704,8 @@ impl Native {
             | Native::Random(_)
             | Native::Date(_)
             | Native::Opaque
+            | Native::SharedPreferences(_)
+            | Native::SharedPreferencesEditor { .. }
             | Native::File { .. }
             | Native::TimeZone(_)
             | Native::DateFormatter { .. }
@@ -690,6 +732,7 @@ impl Native {
             | Native::URI(_)
             | Native::Timeout { .. }
             | Native::OkioBuf { .. }
+            | Native::OkioSink { .. }
             | Native::Type { .. } => {}
         }
     }

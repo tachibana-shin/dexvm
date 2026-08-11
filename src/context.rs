@@ -181,8 +181,9 @@ impl Context {
         self.vm.perms.grant(p);
     }
 
-    /// Withdraws exactly this permission. A broader grant (`Any`) keeps
-    /// covering the capability afterwards.
+    /// Withdraws every grant that covers this permission. This includes a
+    /// broader grant such as `Any`, so the revoked capability is actually
+    /// denied afterwards.
     pub fn revoke(&mut self, p: &Permission) {
         self.vm.perms.revoke(p);
     }
@@ -342,7 +343,8 @@ impl Context {
 
     /// Registers the HTTP client the keiyoushi bridge executes requests
     /// through (`RequestsKt.__host_execute`). Without one, request
-    /// execution throws an IllegalStateException.
+    /// execution throws an IllegalStateException. Executing a request also
+    /// requires a matching [`NetworkPermission::Connect`] grant.
     #[cfg(feature = "tachiyomi")]
     pub fn set_http<F>(&mut self, f: F)
     where

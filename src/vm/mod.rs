@@ -14,7 +14,7 @@ use std::sync::{Arc, OnceLock};
 
 use class::{Class, Method, ShimValue, ACC_NATIVE, ACC_STATIC, SHIM_CLASSES};
 use error::JvmError;
-use object::{Arena, ClassOrPrim, Native};
+use object::{Arena, ClassOrPrim, Native, PreferenceValue};
 use value::{default_of, JValue};
 
 use crate::dex::insn::InvokeKind;
@@ -37,7 +37,7 @@ pub struct NativeEntry {
     pub class: &'static str,
     pub name: &'static str,
     pub sig: &'static str,
-    /// true = instance method (receiver in args[0]).
+    /// true = instance method (receiver in `args[0]`).
     pub instance: bool,
     pub f: NativeFn,
 }
@@ -134,6 +134,8 @@ pub struct Vm {
     /// Real host directory backing `Context.getCacheDir()` (created on first
     /// use so extension cache logic runs against a genuine filesystem).
     pub cache_root: Option<String>,
+    /// Per-context Android SharedPreferences store.
+    pub shared_preferences: HashMap<String, HashMap<String, PreferenceValue>>,
     /// FullTypeReference subclass descriptor -> concrete type descriptor,
     /// derived from dex bytecode (`getInstance` result check-casts).
     injekt_type_by_subclass: HashMap<u32, u32>,
@@ -186,6 +188,7 @@ impl Vm {
             injekt_type_by_subclass: HashMap::new(),
             injekt_scanned_classes: 0,
             cache_root: None,
+            shared_preferences: HashMap::new(),
             #[cfg(feature = "tachiyomi")]
             http: None,
             host_natives: Vec::new(),

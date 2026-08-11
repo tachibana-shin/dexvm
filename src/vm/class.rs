@@ -1647,13 +1647,37 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!(
         "Lkotlinx/coroutines/GlobalScope;",
         Some("Ljava/lang/Object;"),
-        &[],
+        &["Lkotlinx/coroutines/CoroutineScope;"],
         0,
         [sdef!(
             "INSTANCE",
             "Lkotlinx/coroutines/GlobalScope;",
             ShimValue::Lazy(native::lazy_global_scope)
         ),]
+    ),
+    shim!(
+        "Lkotlinx/coroutines/CoroutineScope;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Lkotlin/coroutines/CoroutineContext;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Lkotlinx/coroutines/CoroutineDispatcher;",
+        Some("Ljava/lang/Object;"),
+        &["Lkotlin/coroutines/CoroutineContext;"],
+        ACC_ABSTRACT
+    ),
+    shim!(
+        "Lkotlinx/coroutines/Job;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
     ),
     shim!(
         "Lkotlin/coroutines/jvm/internal/SuspendLambda;",

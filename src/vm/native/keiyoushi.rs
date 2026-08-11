@@ -6,6 +6,7 @@
 //! live in sibling modules (okhttp.rs, jsoup.rs, android.rs, kotlin.rs).
 
 use super::*;
+use crate::permission::{NetworkPermission, Permission};
 use std::rc::Rc;
 
 pub(crate) const SMANGA: &str = "Leu/kanade/tachiyomi/source/model/SManga;";
@@ -92,6 +93,7 @@ pub(crate) fn lazy_update_strategy_once(vm: &mut Vm) -> JValue {
 
 pub(crate) fn keiyoushi_execute(vm: &mut Vm, args: &[JValue]) -> R {
     let (url, method, headers, body) = request_parts(vm, args[0])?;
+    check_network_url(vm, &url)?;
     let body_str = form_body_to_string(vm, &body);
     let Some(http) = vm.http.clone() else {
         return Err(uoe(vm, "no HTTP client registered for this SourceEngine"));
@@ -114,6 +116,43 @@ pub(crate) fn keiyoushi_execute(vm: &mut Vm, args: &[JValue]) -> R {
             prior: JValue::Null,
         },
     )
+}
+
+pub(crate) fn check_network_url(vm: &mut Vm, url: &str) -> Result<(), NatErr> {
+    let (scheme, rest) = url
+        .split_once("://")
+        .ok_or_else(|| nat_fatal(JvmError::Resolution(format!("invalid URL: {url}"))))?;
+    let authority = rest
+        .split(['/', '?', '#'])
+        .next()
+        .unwrap_or_default()
+        .rsplit('@')
+        .next()
+        .unwrap_or_default();
+    if authority.is_empty() {
+        return Err(nat_fatal(JvmError::Resolution(format!(
+            "invalid URL: {url}"
+        ))));
+    }
+    let has_port = if authority.starts_with('[') {
+        authority
+            .find(']')
+            .is_some_and(|end| authority.as_bytes().get(end + 1) == Some(&b':'))
+    } else {
+        authority
+            .rsplit_once(':')
+            .is_some_and(|(_, port)| port.chars().all(|c| c.is_ascii_digit()))
+    };
+    let target = if has_port {
+        authority.to_owned()
+    } else {
+        match scheme.to_ascii_lowercase().as_str() {
+            "http" => format!("{authority}:80"),
+            "https" => format!("{authority}:443"),
+            _ => authority.to_owned(),
+        }
+    };
+    check_native_permission(vm, &Permission::Network(NetworkPermission::Connect(target)))
 }
 
 /// Host callback that returns the stored `lazy_http`? (unused, kept for docs)
@@ -1061,3 +1100,27 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/network/NetworkHelper;", "getClient", "()Lokhttp3/OkHttpClient;", true, network_helper_get_client),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "POST$default", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/RequestBody;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_post_default),
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Context;
+
+    #[test]
+    fn network_bridge_enforces_host_and_port_permissions() {
+        let data = std::fs::read("fixtures/classes.dex").unwrap();
+        let mut ctx = Context::new(&data).unwrap();
+        let vm = ctx.vm();
+        assert!(matches!(
+            check_network_url(vm, "https://api.example/path"),
+            Err(NatErr::Throw(_))
+        ));
+        vm.perms
+            .grant(Permission::Network(NetworkPermission::Connect(
+                "api.example:443".into(),
+            )));
+        check_network_url(vm, "https://api.example/path").unwrap();
+        assert!(check_network_url(vm, "https://api.example:8443/path").is_err());
+        assert!(check_network_url(vm, "https://evil.example/path").is_err());
+    }
+}

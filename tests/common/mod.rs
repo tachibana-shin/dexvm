@@ -2,10 +2,13 @@
 //! (the exact inverse of the on-device `Lm.c` decryptor) and VM wiring
 //! utilities that both `moetruyen_decrypt.rs` and `live_moetruyen.rs` use.
 
+#![allow(dead_code)] // Each integration-test crate uses a different subset.
+
 use std::sync::Once;
 
 use aes_gcm::aead::{Aead, Payload};
 use aes_gcm::{Aes256Gcm, KeyInit, Nonce};
+use dexvm::permission::{FilesystemPermission, NetworkPermission, Permission};
 use dexvm::vm::object::{ArrayData, Native};
 use dexvm::vm::value::JValue;
 use dexvm::Context;
@@ -97,7 +100,7 @@ pub fn b64(data: &[u8]) -> String {
             out.push(ABC[n as usize & 63] as char);
         }
     }
-    while out.len() % 4 != 0 {
+    while !out.len().is_multiple_of(4) {
         out.push('=');
     }
     out
@@ -154,7 +157,12 @@ pub fn imgx_gcm_payload(key: &[u8; 32], iv: &[u8; 12], plain: &[u8]) -> Vec<u8> 
 // ---------------------------------------------------------------------------
 
 pub fn open() -> Context {
-    Context::open(APK).unwrap()
+    let mut ctx = Context::open(APK).unwrap();
+    // These are extension-flow tests, not sandbox tests: their fixture HTTP
+    // callback and cache directory are intentionally in scope.
+    ctx.grant(Permission::Filesystem(FilesystemPermission::Any));
+    ctx.grant(Permission::Network(NetworkPermission::Any));
+    ctx
 }
 
 pub fn ensure(ctx: &mut Context, desc: &str) -> u32 {

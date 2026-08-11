@@ -583,21 +583,40 @@ fn stringskt_trim_start(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Ljava/lang/String;", Native::Str(r.to_string()))
 }
 
-// kotlinx.coroutines stubs: the extension fires an async cache-writer via
-// GlobalScope.launch(Dispatchers.IO) and ignores the returned Job; none of
-// it must run in the VM.
+// kotlinx.coroutines compatibility: the VM is single-threaded, so launched
+// work runs to completion synchronously while preserving the observable API.
 fn coroutines_global_scope(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(vm, "Lkotlinx/coroutines/GlobalScope;", Native::Opaque)
 }
-fn coroutines_dispatchers_io(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
+fn coroutines_dispatchers_io(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Lkotlinx/coroutines/CoroutineDispatcher;",
+        Native::Opaque,
+    )
 }
-fn coroutines_launch_default(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
+fn coroutines_launch_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let scope = args[0];
+    let block = args[3];
+    let _ = vm.invoke_virtual_args(
+        block,
+        "invoke",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        vec![scope, JValue::Null],
+    );
+    // A launched coroutine reports failure to its Job/exception handler; it
+    // never throws synchronously into the caller of launch().
+    alloc(vm, "Lkotlinx/coroutines/Job;", Native::Opaque)
 }
 
 fn suspend_lambda_init(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
+}
+
+fn null_out_spilled_variable(_vm: &mut Vm, args: &[JValue]) -> R {
+    // Debug-only coroutine spilling marker; release builds may retain the
+    // value, which is semantically invisible to dex code.
+    Ok(args[0])
 }
 
 /// `IntrinsicsKt.getCOROUTINE_SUSPENDED()` — the sentinel that marks a
@@ -646,10 +665,23 @@ fn ubyte_constructor_impl(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
-// kotlin.io.CloseableKt.closeFinally(source, cause) — no-op; the VM closes
-// nothing on the host side.
-fn closeablekt_close_finally(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
+// kotlin.io.CloseableKt.closeFinally(source, cause). With a primary failure,
+// a close failure is suppressed; otherwise it propagates.
+fn closeablekt_close_finally(vm: &mut Vm, args: &[JValue]) -> R {
+    let source = args[0];
+    if source.is_null() {
+        return Ok(JValue::Null);
+    }
+    let result = vm
+        .invoke_virtual_args(source, "close", "()V", vec![])
+        .map_err(nat_fatal);
+    if args[1].is_null() {
+        result
+    } else {
+        // Throwable.addSuppressed is not observable in the current throwable
+        // model, but the primary exception must remain the one that wins.
+        Ok(JValue::Null)
+    }
 }
 
 fn stringskt_trim(vm: &mut Vm, args: &[JValue]) -> R {
@@ -775,7 +807,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "mutableListOf", "([Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_array),
     ne!("Lkotlin/collections/CollectionsKt;", "emptyList", "()Ljava/util/List;", false, kotlin_empty_list),
     ne!("Lkotlin/collections/CollectionsKt;", "createListBuilder", "()Ljava/util/List;", false, kotlin_empty_list),
-    ne!("Lkotlin/collections/CollectionsKt;", "build", "(Ljava/util/List;)Ljava/util/List;", true, kotlin_list_identity),
+    ne!("Lkotlin/collections/CollectionsKt;", "build", "(Ljava/util/List;)Ljava/util/List;", false, kotlin_list_identity),
     ne!("Lkotlin/collections/CollectionsKt;", "plus", "(Ljava/util/Collection;Ljava/lang/Iterable;)Ljava/util/List;", false, collections_plus_iterable),
     ne!("Lkotlin/collections/CollectionsKt;", "plus", "(Ljava/util/Collection;Ljava/lang/Object;)Ljava/util/List;", false, collections_plus_obj),
     ne!("Lkotlin/collections/CollectionsKt;", "contains", "(Ljava/lang/Iterable;Ljava/lang/Object;)Z", false, collections_contains),
@@ -794,8 +826,8 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/Result;", "constructor-impl", "(Ljava/lang/Object;)Ljava/lang/Object;", false, result_constructor_impl),
     ne!("Lkotlin/Result;", "isFailure-impl", "(Ljava/lang/Object;)Z", false, result_is_failure_impl),
     ne!("Lkotlin/ResultKt;", "createFailure", "(Ljava/lang/Throwable;)Ljava/lang/Object;", false, resultkt_create_failure),
-    ne!("Lkotlin/text/StringsKt;", "isBlank", "(Ljava/lang/CharSequence;)Z", true, stringskt_is_blank),
-    ne!("Lkotlin/text/StringsKt;", "toIntOrNull", "(Ljava/lang/String;)Ljava/lang/Integer;", true, stringskt_to_int_or_null),
+    ne!("Lkotlin/text/StringsKt;", "isBlank", "(Ljava/lang/CharSequence;)Z", false, stringskt_is_blank),
+    ne!("Lkotlin/text/StringsKt;", "toIntOrNull", "(Ljava/lang/String;)Ljava/lang/Integer;", false, stringskt_to_int_or_null),
     ne!("Lkotlin/ranges/RangesKt;", "coerceIn", "(III)I", false, rangeskt_coerce_in),
     ne!("Lkotlin/text/MatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
     ne!("Ljava/net/URI;", "<init>", "(Ljava/lang/String;)V", true, uri_init),
@@ -808,23 +840,24 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/IntIterator;", "hasNext", "()Z", true, int_iterator_has_next),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of),
     ne!("Lkotlin/jvm/internal/DefaultConstructorMarker;", "<init>", "()V", true, object_noop),
-    ne!("Lkotlin/text/StringsKt;", "contains$default", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;ZILjava/lang/Object;)Z", true, stringskt_contains_default),
-    ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;", true, stringskt_replace_default),
-    ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;CCZILjava/lang/Object;)Ljava/lang/String;", true, stringskt_replace_char_default),
-    ne!("Lkotlin/text/StringsKt;", "trimStart", "(Ljava/lang/String;[C)Ljava/lang/String;", true, stringskt_trim_start),
-    ne!("Lkotlin/collections/ArraysKt;", "copyOfRange", "([BII)[B", true, arrayskt_copy_of_range),
-    ne!("Lkotlinx/coroutines/GlobalScope;", "getInstance", "()Lkotlinx/coroutines/GlobalScope;", true, coroutines_global_scope),
-    ne!("Lkotlinx/coroutines/Dispatchers;", "getIO", "()Lkotlinx/coroutines/CoroutineDispatcher;", true, coroutines_dispatchers_io),
+    ne!("Lkotlin/text/StringsKt;", "contains$default", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;ZILjava/lang/Object;)Z", false, stringskt_contains_default),
+    ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;", false, stringskt_replace_default),
+    ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;CCZILjava/lang/Object;)Ljava/lang/String;", false, stringskt_replace_char_default),
+    ne!("Lkotlin/text/StringsKt;", "trimStart", "(Ljava/lang/String;[C)Ljava/lang/String;", false, stringskt_trim_start),
+    ne!("Lkotlin/collections/ArraysKt;", "copyOfRange", "([BII)[B", false, arrayskt_copy_of_range),
+    ne!("Lkotlinx/coroutines/GlobalScope;", "getInstance", "()Lkotlinx/coroutines/GlobalScope;", false, coroutines_global_scope),
+    ne!("Lkotlinx/coroutines/Dispatchers;", "getIO", "()Lkotlinx/coroutines/CoroutineDispatcher;", false, coroutines_dispatchers_io),
     ne!("Lkotlinx/coroutines/BuildersKt;", "launch$default", "(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;", false, coroutines_launch_default),
     ne!("Lkotlin/coroutines/jvm/internal/SuspendLambda;", "<init>", "(ILkotlin/coroutines/Continuation;)V", true, suspend_lambda_init),
     ne!("Lkotlin/coroutines/jvm/internal/ContinuationImpl;", "<init>", "(Lkotlin/coroutines/Continuation;)V", true, continuation_impl_init),
+    ne!("Lkotlin/coroutines/jvm/internal/SpillingKt;", "nullOutSpilledVariable", "(Ljava/lang/Object;)Ljava/lang/Object;", false, null_out_spilled_variable),
     ne!("Lkotlin/coroutines/intrinsics/IntrinsicsKt;", "getCOROUTINE_SUSPENDED", "()Ljava/lang/Object;", false, coroutines_suspended),
     ne!("Lkotlin/ResultKt;", "throwOnFailure", "(Ljava/lang/Object;)V", false, resultkt_throw_on_failure),
     ne!("Lkotlin/UInt;", "constructor-impl", "(I)I", false, uint_constructor_impl),
     ne!("Lkotlin/UByte;", "constructor-impl", "(B)B", false, ubyte_constructor_impl),
     ne!("Lkotlin/io/CloseableKt;", "closeFinally", "(Ljava/io/Closeable;Ljava/lang/Throwable;)V", false, closeablekt_close_finally),
-    ne!("Lkotlin/text/StringsKt;", "substringAfter$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", true, stringskt_substring_after_default),
-    ne!("Lkotlin/text/StringsKt;", "trim", "(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;", true, stringskt_trim),
+    ne!("Lkotlin/text/StringsKt;", "substringAfter$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_after_default),
+    ne!("Lkotlin/text/StringsKt;", "trim", "(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;", false, stringskt_trim),
     ne!("Lkotlin/time/Duration;", "minus-LRDsOJo", "(JJ)J", false, keiyoushi_duration_minus),
     ne!("Lkotlin/time/Duration;", "compareTo-LRDsOJo", "(JJ)I", false, keiyoushi_duration_compare),
     ne!("Lkotlin/time/Duration;", "equals-impl0", "(JJ)Z", false, keiyoushi_duration_equals),

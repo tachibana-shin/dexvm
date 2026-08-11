@@ -14,9 +14,11 @@ pub(crate) use ::fancy_regex::Regex;
 
 pub(crate) use crate::dex::insn::InvokeKind;
 pub(crate) use crate::vm::error::JvmError;
-pub(crate) use crate::vm::object::{
-    ArrayData, ClassOrPrim, IterKind, JsonVal, MatcherState, Native,
-};
+#[cfg(feature = "tachiyomi")]
+pub(crate) use crate::vm::object::JsonVal;
+pub(crate) use crate::vm::object::{ArrayData, ClassOrPrim, IterKind, MatcherState, Native};
+#[cfg(feature = "android")]
+pub(crate) use crate::vm::object::{PreferenceEdit, PreferenceValue};
 pub(crate) use crate::vm::value::JValue;
 pub use crate::vm::{MethodRef, NatErr, NativeEntry, NativeFn, Target, Vm};
 
@@ -244,6 +246,23 @@ pub(crate) fn nat_fatal(e: JvmError) -> NatErr {
     }
 }
 
+/// Enforces a sandbox capability for a Java-facing native. Public host
+/// natives use `Vm::check_permission` and receive a VM resolution error;
+/// guest Java APIs must observe the JVM-compatible SecurityException.
+pub(crate) fn check_native_permission(
+    vm: &mut Vm,
+    permission: &crate::permission::Permission,
+) -> Result<(), NatErr> {
+    if vm.has_permission(permission) {
+        Ok(())
+    } else {
+        Err(NatErr::Throw(vm.throwable_of(
+            "Ljava/lang/SecurityException;",
+            format!("permission denied: {permission:?}"),
+        )))
+    }
+}
+
 pub(crate) fn npe(vm: &mut Vm) -> NatErr {
     NatErr::Throw(vm.err_npe())
 }
@@ -256,9 +275,11 @@ pub(crate) fn uoe(vm: &mut Vm, m: impl Into<String>) -> NatErr {
 pub(crate) fn nfe(vm: &mut Vm, m: impl Into<String>) -> NatErr {
     NatErr::Throw(vm.err_nfe(m))
 }
+#[cfg(any(feature = "android", feature = "okhttp"))]
 pub(crate) fn fnf(vm: &mut Vm, m: impl Into<String>) -> NatErr {
     NatErr::Throw(vm.err_fnf(m))
 }
+#[cfg(any(feature = "android", feature = "okhttp", feature = "tachiyomi"))]
 pub(crate) fn ioe(vm: &mut Vm, m: impl Into<String>) -> NatErr {
     NatErr::Throw(vm.err_ioe(m))
 }
@@ -468,7 +489,17 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             "Ljava/text/ParsePosition;" => Some(Native::ParsePosition(0)),
             "Ljava/util/Locale;" => Some(Native::Opaque),
             "Ljava/io/PrintStream;" => Some(Native::PrintStream),
-            "Ljava/lang/Thread;" => Some(Native::Opaque),
+            "Ljava/io/File;" => Some(Native::File {
+                path: String::new(),
+            }),
+            "Ljava/lang/Thread;" => Some(Native::Thread {
+                name: "Thread-0".into(),
+                daemon: false,
+                alive: false,
+                interrupted: false,
+                started: false,
+                runnable: JValue::Null,
+            }),
             "Ljava/util/Map$Entry;" => Some(Native::MapEntry { map: 0, idx: 0 }),
             "Ljava/util/concurrent/locks/ReentrantLock;" => {
                 Some(Native::ReentrantLock { locked: false })

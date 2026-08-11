@@ -58,6 +58,22 @@ required-features = ["keiyoushi"]
 name = "moetruyen_decrypt"
 required-features = ["keiyoushi"]
 
+[[test]]
+name = "live_moetruyen_net"
+required-features = ["keiyoushi"]
+
+[[test]]
+name = "moetruyen_filters"
+required-features = ["keiyoushi"]
+
+[[test]]
+name = "zz_probe"
+required-features = ["keiyoushi"]
+
+[[test]]
+name = "injekt_scan"
+required-features = ["injekt"]
+
 [dependencies]
 fancy-regex = "0.19.0"
 zip = "8.6.0"

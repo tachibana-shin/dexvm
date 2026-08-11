@@ -336,7 +336,7 @@ fn binary_body_plumbing() {
         assert_eq!(arr.1[..3], *b"PNG");
 
         // okio: source(InputStream) -> BufferedSource over the REMAINING cursor
-        let source = okio_source_input_stream(vm, &[JValue::Null, stream]).unwrap();
+        let source = okio_source_input_stream(vm, &[stream]).unwrap();
         assert_eq!(
             okio_request(vm, &[source, JValue::Long(4)]).unwrap(),
             JValue::Int(1)

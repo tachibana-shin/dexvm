@@ -10,6 +10,8 @@
 //! [`Context::register_native`](crate::Context::register_native)) consult
 //! the store with [`Vm::check_permission`](crate::Vm::check_permission)
 //! before performing host side effects such as network I/O.
+//! Built-in Java/Android/Okio shims enforce the same store and throw a Java
+//! `SecurityException` on denial, so dex `try`/`catch` works as expected.
 //!
 //! Matching rules (mirroring `d4rt_rs`):
 //! - `FilesystemPermission::Any` allows everything; `Read` allows any read
@@ -67,25 +69,84 @@ pub enum Permission {
     Env,
 }
 
+fn normalized_path(path: &str) -> std::path::PathBuf {
+    use std::path::{Component, Path, PathBuf};
+
+    let mut out = PathBuf::new();
+    for component in Path::new(path).components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                // Never let a relative `..` disappear past its logical root.
+                // Keeping it makes a scoped grant fail closed.
+                if out
+                    .file_name()
+                    .is_some_and(|name| name != std::ffi::OsStr::new(".."))
+                {
+                    out.pop();
+                } else {
+                    out.push(component.as_os_str());
+                }
+            }
+            _ => out.push(component.as_os_str()),
+        }
+    }
+    out
+}
+
+fn resolved_path(path: &str) -> std::path::PathBuf {
+    let path = normalized_path(path);
+    let absolute = if path.is_absolute() {
+        path
+    } else {
+        std::env::current_dir()
+            .unwrap_or_else(|_| std::path::PathBuf::from("/"))
+            .join(path)
+    };
+    let mut existing = absolute.clone();
+    let mut missing = Vec::new();
+    loop {
+        if let Ok(real) = std::fs::canonicalize(&existing) {
+            let mut result = real;
+            for component in missing.into_iter().rev() {
+                result.push(component);
+            }
+            return normalized_path(&result.to_string_lossy());
+        }
+        let Some(name) = existing.file_name().map(|v| v.to_owned()) else {
+            return normalized_path(&absolute.to_string_lossy());
+        };
+        missing.push(name);
+        if !existing.pop() {
+            return normalized_path(&absolute.to_string_lossy());
+        }
+    }
+}
+
 fn path_under(prefix: &str, path: &str) -> bool {
-    path.starts_with(prefix)
-        && (prefix.ends_with('/')
-            || path.len() == prefix.len()
-            || path.as_bytes().get(prefix.len()) == Some(&b'/'))
+    resolved_path(path).starts_with(resolved_path(prefix))
 }
 
 fn host_matches(allow: &str, host_port: &str) -> bool {
-    match allow.rsplit_once(':') {
-        Some((h, p)) if p.chars().all(|c| c.is_ascii_digit()) && h.contains('.') => {
-            host_port == allow
-        }
-        _ => {
-            host_port == allow
-                || host_port.starts_with(&format!("{allow}:"))
-                    && host_port[allow.len() + 1..]
-                        .chars()
-                        .all(|c| c.is_ascii_digit())
-        }
+    fn explicit_port(value: &str) -> bool {
+        let Some((host, port)) = value.rsplit_once(':') else {
+            return false;
+        };
+        !host.is_empty()
+            && port.chars().all(|c| c.is_ascii_digit())
+            && (host.starts_with('[') || !host.contains(':'))
+    }
+    let allow = allow.to_ascii_lowercase();
+    let host_port = host_port.to_ascii_lowercase();
+    if explicit_port(&allow) {
+        host_port == allow
+    } else if host_port == allow {
+        true
+    } else {
+        host_port
+            .strip_prefix(&allow)
+            .and_then(|rest| rest.strip_prefix(':'))
+            .is_some_and(|port| port.chars().all(|c| c.is_ascii_digit()))
     }
 }
 
@@ -112,12 +173,13 @@ impl Permission {
                     _ => false,
                 },
                 FilesystemPermission::Path(p) => match b {
-                    FilesystemPermission::Read | FilesystemPermission::Write => true,
                     FilesystemPermission::ReadPath(q) | FilesystemPermission::WritePath(q) => {
                         path_under(p, q)
                     }
                     FilesystemPermission::Path(q) => path_under(p, q),
-                    FilesystemPermission::Any => false,
+                    FilesystemPermission::Any
+                    | FilesystemPermission::Read
+                    | FilesystemPermission::Write => false,
                 },
             },
             (Permission::Network(a), Permission::Network(b)) => match a {
@@ -252,5 +314,39 @@ mod tests {
                 "/data/cache".into()
             )))
         );
+        assert!(!perms.has(&Permission::Filesystem(FilesystemPermission::Read)));
+        assert!(!perms.has(&Permission::Filesystem(FilesystemPermission::Write)));
+        assert!(
+            !perms.has(&Permission::Filesystem(FilesystemPermission::ReadPath(
+                "/data/../etc/passwd".into()
+            )))
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn scoped_path_does_not_follow_symlink_outside_grant() {
+        use std::os::unix::fs::symlink;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        static NEXT: AtomicUsize = AtomicUsize::new(0);
+        let id = NEXT.fetch_add(1, Ordering::Relaxed);
+        let base =
+            std::env::temp_dir().join(format!("dexvm-permission-test-{}-{id}", std::process::id()));
+        let allowed = base.join("allowed");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(&allowed).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+        symlink(&outside, allowed.join("escape")).unwrap();
+
+        let grant = Permission::Filesystem(FilesystemPermission::ReadPath(
+            allowed.to_string_lossy().into_owned(),
+        ));
+        let escaped = Permission::Filesystem(FilesystemPermission::ReadPath(
+            allowed.join("escape/secret").to_string_lossy().into_owned(),
+        ));
+        assert!(!grant.covers(&escaped));
+        std::fs::remove_file(allowed.join("escape")).unwrap();
+        std::fs::remove_dir_all(base).unwrap();
     }
 }

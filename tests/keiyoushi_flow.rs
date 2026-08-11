@@ -29,7 +29,6 @@ fn env_overridden() -> bool {
 #[derive(Clone)]
 struct Capture {
     code: i32,
-    body: String,
     bytes: Option<Vec<u8>>,
 }
 
@@ -55,7 +54,6 @@ fn captures() -> &'static Option<HashMap<String, Capture>> {
                 url.to_string(),
                 Capture {
                     code,
-                    body: String::from_utf8_lossy(&raw).into_owned(),
                     bytes: Some(raw),
                 },
             );
