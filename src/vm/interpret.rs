@@ -221,11 +221,18 @@ impl Vm {
                                         match self.unwind()? {
                                             true => f = self.frames.pop().unwrap(),
                                             false => {
+                                                let exc_cls = self
+                                                    .arena
+                                                    .objects
+                                                    .get(ex as usize)
+                                                    .map(|o| self.class_desc_str(o.class))
+                                                    .unwrap_or_default();
                                                 info!(
-                                                    "DBG uncaught native-throw at {}::{} from native {}",
+                                                    "DBG uncaught native-throw at {}::{} from native {} exc-class={}",
                                                     self.class_desc_str(dbg_c),
                                                     self.str_of(self.classes[dbg_c as usize].methods[dbg_s as usize].name),
                                                     self.native_label(nf),
+                                                    exc_cls,
                                                 );
                                                 return Err(JvmError::Uncaught(ex));
                                             }
@@ -932,7 +939,7 @@ impl Vm {
                     }
                     Some(r.as_obj())
                 };
-                let target = self.resolve_target(*kind, &mref, receiver)?;
+                let target = self.resolve_target(*kind, &mref, receiver, f.class)?;
                 let tcls = match &target { Target::Bytecode { class, .. } => Some(self.class_desc_str(*class)), _ => None };
                 if matches!(tcls.as_deref(), Some("m" | "a0" | "c" | "b" | "y2")) {
                     info!("DBG inv {tcls:?} {}", self.str_of(mref.name));

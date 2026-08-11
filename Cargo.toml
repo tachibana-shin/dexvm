@@ -54,6 +54,10 @@ required-features = ["keiyoushi"]
 name = "keiyoushi_flow"
 required-features = ["keiyoushi"]
 
+[[test]]
+name = "moetruyen_decrypt"
+required-features = ["keiyoushi"]
+
 [dependencies]
 fancy-regex = "0.19.0"
 zip = "8.6.0"

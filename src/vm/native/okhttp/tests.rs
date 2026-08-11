@@ -154,6 +154,7 @@ fn response_accessors() {
                 headers: vec![("Content-Type".into(), "text/html".into())],
                 body: Some("<html>hi</html>".as_bytes().to_vec()),
                 request: req,
+                prior: JValue::Null,
             },
         )
         .unwrap();
@@ -202,6 +203,7 @@ fn response_error_code_not_successful() {
                 headers: Vec::new(),
                 body: Some(Vec::new()),
                 request: req,
+                prior: JValue::Null,
             },
         )
         .unwrap();
@@ -308,6 +310,7 @@ fn binary_body_plumbing() {
                     0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4, 5, 6,
                 ]),
                 request: req,
+                prior: JValue::Null,
             },
         )
         .unwrap();

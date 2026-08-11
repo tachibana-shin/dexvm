@@ -12,10 +12,21 @@ pub(crate) fn okio_source_input_stream(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Lokio/BufferedSource;", Native::OkioBuf { bytes, pos })
 }
 
-/// `Okio.source(File)` — the filter cache never exists in the VM; throwing
-/// lets the caller's try/catch fall through to the network path.
-pub(crate) fn okio_source_file(vm: &mut Vm, _args: &[JValue]) -> R {
-    Err(iae(vm, "cache file unavailable"))
+/// `Okio.source(File)` — reads the file's real bytes; throws
+/// `java.io.FileNotFoundException` when the file does not exist, exactly
+/// like okio. Callers rely on the exception to fall back to the network.
+pub(crate) fn okio_source_file(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = match payload(vm, args[0]) {
+        Some(Native::File { path }) => path.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let bytes = std::fs::read(&path)
+        .map_err(|_| fnf(vm, format!("{path} (No such file or directory)")))?;
+    alloc(
+        vm,
+        "Lokio/BufferedSource;",
+        Native::OkioBuf { bytes, pos: 0 },
+    )
 }
 
 pub(crate) fn okio_source_response_body(vm: &mut Vm, args: &[JValue]) -> R {
@@ -30,7 +41,7 @@ pub(crate) fn okio_source_response_body(vm: &mut Vm, args: &[JValue]) -> R {
 /// `source()` is already a BufferedSource for our in-memory payloads.
 pub(crate) fn okio_identity(vm: &mut Vm, args: &[JValue]) -> R {
     let _ = vm;
-    Ok(args[1])
+    Ok(args[0])
 }
 
 pub(crate) fn okio_close(_vm: &mut Vm, _args: &[JValue]) -> R {

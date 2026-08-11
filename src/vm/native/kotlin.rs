@@ -36,6 +36,10 @@ pub(crate) fn lazy_global_scope(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lkotlinx/coroutines/GlobalScope;")
 }
 
+pub(crate) fn lazy_result_companion(vm: &mut Vm) -> JValue {
+    opaque_inst(vm, "Lkotlin/Result$Companion;")
+}
+
 // Lazy / LazyKt
 // ---------------------------------------------------------------------------
 
@@ -321,6 +325,91 @@ pub(crate) fn pair_init(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+// kotlin.Result (inline class) and ResultKt
+// ---------------------------------------------------------------------------
+
+/// `Result.constructor-impl` — identity packaging of a non-failure value.
+pub(crate) fn result_constructor_impl(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+
+/// `Result.isFailure-impl` — true only for `createFailure` markers.
+pub(crate) fn result_is_failure_impl(vm: &mut Vm, args: &[JValue]) -> R {
+    let failure = matches!(payload(vm, args[0]), Some(Native::ResultFailure(_)));
+    Ok(JValue::Int(i32::from(failure)))
+}
+
+/// `ResultKt.createFailure(Throwable)` — wraps a throwable in a distinct
+/// marker object (the real runtime uses an alias bit on the payload).
+pub(crate) fn resultkt_create_failure(vm: &mut Vm, args: &[JValue]) -> R {
+    alloc(vm, "Lkotlin/Result$Failure;", Native::ResultFailure(args[0]))
+}
+
+// kotlin.text
+// ---------------------------------------------------------------------------
+
+/// `StringsKt.isBlank(CharSequence)`.
+pub(crate) fn stringskt_is_blank(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = charseq_of(vm, args[0])?;
+    Ok(JValue::Int(i32::from(s.trim().is_empty())))
+}
+
+/// `StringsKt.toIntOrNull(String)` — boxed Integer or null.
+pub(crate) fn stringskt_to_int_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = charseq_of(vm, args[0])?;
+    match s.trim().parse::<i32>() {
+        Ok(n) => boxed(vm, "Ljava/lang/Integer;", Native::IntBox(n)),
+        Err(_) => Ok(JValue::Null),
+    }
+}
+
+/// `RangesKt.coerceIn(Int, Int, Int)`.
+pub(crate) fn rangeskt_coerce_in(vm: &mut Vm, args: &[JValue]) -> R {
+    let v = int_of(vm, args[0]);
+    let lo = int_of(vm, args[1]);
+    let hi = int_of(vm, args[2]);
+    Ok(JValue::Int(v.max(lo).min(hi)))
+}
+
+/// `MatchResult.getValue` — the whole matched text of the last match on a
+/// regex-backed value.
+pub(crate) fn match_result_get_value(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = match payload(vm, args[0]) {
+        Some(Native::Matcher(ms)) => {
+            let Some((start, end)) = ms.last else {
+                return Ok(new_str(vm, ""));
+            };
+            ms.text.get(start..end).unwrap_or("").to_string()
+        }
+        _ => return Ok(new_str(vm, "")),
+    };
+    Ok(new_str(vm, &s))
+}
+
+// java.net.URI
+// ---------------------------------------------------------------------------
+
+fn uri_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[1])?;
+    let obj = args[0].as_obj();
+    vm.arena.objects[obj as usize].native = Some(Native::URI(s));
+    Ok(JValue::Null)
+}
+
+fn uri_get_host(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = match payload(vm, args[0]) {
+        Some(Native::URI(s)) => s.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let authority = s
+        .split("://")
+        .last()
+        .and_then(|a| a.strip_prefix("//").or(Some(a)))
+        .unwrap_or(&s);
+    let host = authority.split(['/', ':']).next().unwrap_or("").to_string();
+    Ok(new_str(vm, &host))
+}
+
 // kotlin.ranges.IntRange
 // ---------------------------------------------------------------------------
 
@@ -507,6 +596,28 @@ fn suspend_lambda_init(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+/// `IntrinsicsKt.getCOROUTINE_SUSPENDED()` — the sentinel that marks a
+/// suspension point. Everything in this runtime runs synchronously, so the
+/// value is only ever compared against; a fresh opaque instance suffices.
+fn coroutines_suspended(vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(opaque_inst(vm, "Ljava/lang/Object;"))
+}
+
+/// `ResultKt.throwOnFailure(Object)` — raises the exception when the value
+/// is a `createFailure` marker; otherwise a no-op.
+fn resultkt_throw_on_failure(vm: &mut Vm, args: &[JValue]) -> R {
+    if let Some(Native::ResultFailure(t)) = payload(vm, args[0]) {
+        return Err(NatErr::Throw(t.as_obj()));
+    }
+    Ok(JValue::Null)
+}
+
+/// `ContinuationImpl.<init>(Continuation)` — base ctor of every state
+/// machine frame; the VM keeps no dispatch state of its own.
+fn continuation_impl_init(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
 // kotlin.collections.ArraysKt.copyOfRange(byte[], from, to)
 fn arrayskt_copy_of_range(vm: &mut Vm, args: &[JValue]) -> R {
     let from = int_of(vm, args[1]).max(0) as usize;
@@ -676,8 +787,19 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/jvm/internal/Intrinsics;", "areEqual", "(Ljava/lang/Object;Ljava/lang/Object;)Z", false, intrinsics_are_equal),
     ne!("Lkotlin/Pair;", "getFirst", "()Ljava/lang/Object;", true, pair_get_first),
     ne!("Lkotlin/Pair;", "getSecond", "()Ljava/lang/Object;", true, pair_get_second),
+    ne!("Lkotlin/Pair;", "component1", "()Ljava/lang/Object;", true, pair_get_first),
+    ne!("Lkotlin/Pair;", "component2", "()Ljava/lang/Object;", true, pair_get_second),
     ne!("Lkotlin/Pair;", "<init>", "(Ljava/lang/Object;Ljava/lang/Object;)V", true, pair_init),
     ne!("Lkotlin/TuplesKt;", "to", "(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;", false, tupled_to),
+    ne!("Lkotlin/Result;", "constructor-impl", "(Ljava/lang/Object;)Ljava/lang/Object;", false, result_constructor_impl),
+    ne!("Lkotlin/Result;", "isFailure-impl", "(Ljava/lang/Object;)Z", false, result_is_failure_impl),
+    ne!("Lkotlin/ResultKt;", "createFailure", "(Ljava/lang/Throwable;)Ljava/lang/Object;", false, resultkt_create_failure),
+    ne!("Lkotlin/text/StringsKt;", "isBlank", "(Ljava/lang/CharSequence;)Z", true, stringskt_is_blank),
+    ne!("Lkotlin/text/StringsKt;", "toIntOrNull", "(Ljava/lang/String;)Ljava/lang/Integer;", true, stringskt_to_int_or_null),
+    ne!("Lkotlin/ranges/RangesKt;", "coerceIn", "(III)I", false, rangeskt_coerce_in),
+    ne!("Lkotlin/text/MatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
+    ne!("Ljava/net/URI;", "<init>", "(Ljava/lang/String;)V", true, uri_init),
+    ne!("Ljava/net/URI;", "getHost", "()Ljava/lang/String;", true, uri_get_host),
     ne!("Lkotlin/ranges/IntRange;", "<init>", "(II)V", true, int_range_init),
     ne!("Lkotlin/ranges/IntRange;", "getFirst", "()I", true, int_range_get_first),
     ne!("Lkotlin/ranges/IntRange;", "getLast", "()I", true, int_range_get_last),
@@ -695,6 +817,9 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlinx/coroutines/Dispatchers;", "getIO", "()Lkotlinx/coroutines/CoroutineDispatcher;", true, coroutines_dispatchers_io),
     ne!("Lkotlinx/coroutines/BuildersKt;", "launch$default", "(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;", false, coroutines_launch_default),
     ne!("Lkotlin/coroutines/jvm/internal/SuspendLambda;", "<init>", "(ILkotlin/coroutines/Continuation;)V", true, suspend_lambda_init),
+    ne!("Lkotlin/coroutines/jvm/internal/ContinuationImpl;", "<init>", "(Lkotlin/coroutines/Continuation;)V", true, continuation_impl_init),
+    ne!("Lkotlin/coroutines/intrinsics/IntrinsicsKt;", "getCOROUTINE_SUSPENDED", "()Ljava/lang/Object;", false, coroutines_suspended),
+    ne!("Lkotlin/ResultKt;", "throwOnFailure", "(Ljava/lang/Object;)V", false, resultkt_throw_on_failure),
     ne!("Lkotlin/UInt;", "constructor-impl", "(I)I", false, uint_constructor_impl),
     ne!("Lkotlin/UByte;", "constructor-impl", "(B)B", false, ubyte_constructor_impl),
     ne!("Lkotlin/io/CloseableKt;", "closeFinally", "(Ljava/io/Closeable;Ljava/lang/Throwable;)V", false, closeablekt_close_finally),

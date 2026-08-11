@@ -21,6 +21,10 @@ pub(crate) fn shared_prefs_get_boolean(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[2])
 }
 
+pub(crate) fn shared_prefs_get_string(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[2])
+}
+
 pub(crate) fn prefs_obj(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
@@ -28,36 +32,140 @@ pub(crate) fn prefs_obj(_vm: &mut Vm, _args: &[JValue]) -> R {
 pub(crate) fn prefs_ctx(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(vm, "Landroid/content/Context;", Native::Opaque)
 }
+
+/// `Log.e(tag, msg, throwable)` — android log; swallowed on the host.
+pub(crate) fn log_error(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(0))
+}
 pub(crate) fn prefs_set(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
-/// `Context.getCacheDir() -> File`. The multiapk (L s) path only checks it for
-/// null; an opaque File satisfies that.
+/// `Context.getCacheDir() -> File` backed by a real per-VM host directory
+/// (created lazily; the extension mkdirs its own subdirectories on top).
 pub(crate) fn context_get_cache_dir(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(vm, "Ljava/io/File;", Native::Opaque)
+    let path = vm.cache_root_path().to_string();
+    alloc(vm, "Ljava/io/File;", Native::File { path })
 }
 
-/// `File.mkdirs() -> boolean`; the multiapk path ignores the result.
-pub(crate) fn file_mkdirs(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Int(1))
+fn file_path(vm: &mut Vm, arg: JValue) -> Result<String, NatErr> {
+    match payload(vm, arg) {
+        Some(Native::File { path }) => Ok(path.clone()),
+        _ => Err(npe(vm)),
+    }
 }
 
-/// `File.exists() -> boolean`; report true so cache dirs are accepted.
-pub(crate) fn file_exists(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Int(1))
+/// `File.mkdirs() -> boolean`: really creates the directory tree.
+pub(crate) fn file_mkdirs(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    Ok(JValue::Int(i32::from(std::fs::create_dir_all(&path).is_ok())))
 }
 
-/// `File.lastModified() -> long`; 0 makes filter caches permanently stale,
-/// forcing recomputation from the network each time.
-pub(crate) fn file_last_modified(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Long(0))
+/// `File.exists() -> boolean`: real filesystem check.
+pub(crate) fn file_exists(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    Ok(JValue::Int(i32::from(
+        std::fs::metadata(&path).is_ok(),
+    )))
 }
 
-/// `kotlin.io.FilesKt.resolve(File, String) -> File`; returns the same
-/// opaque file (path ignored, only the return value is used).
-pub(crate) fn fileskt_resolve(_vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(_vm, "Ljava/io/File;", Native::Opaque)
+/// `File.lastModified() -> long`: real mtime in epoch millis (0 when the
+/// file is missing, exactly like the JVM).
+pub(crate) fn file_last_modified(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    let millis = std::fs::metadata(&path)
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|t| {
+            t.duration_since(std::time::UNIX_EPOCH)
+                .ok()
+                .map(|d| i64::try_from(d.as_millis()).unwrap_or(0))
+        })
+        .unwrap_or(0);
+    Ok(JValue::Long(millis))
+}
+
+/// `File.length() -> long`: real size in bytes (0 when missing).
+pub(crate) fn file_length(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    let len = std::fs::metadata(&path)
+        .map(|m| m.len())
+        .unwrap_or(0);
+    Ok(JValue::Long(len as i64))
+}
+
+/// `File.isDirectory() -> boolean`: real check.
+pub(crate) fn file_is_directory(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    Ok(JValue::Int(i32::from(
+        std::fs::metadata(&path).map(|m| m.is_dir()).unwrap_or(false),
+    )))
+}
+
+/// `File.delete() -> boolean`: really removes the file or empty directory.
+pub(crate) fn file_delete(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    Ok(JValue::Int(i32::from(
+        std::fs::remove_file(&path)
+            .or_else(|_| std::fs::remove_dir(&path))
+            .is_ok(),
+    )))
+}
+
+/// `File.getAbsolutePath() -> String` / `File.getPath()`: the real path.
+pub(crate) fn file_get_path(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    Ok(new_str(vm, &path))
+}
+
+/// `File.createTempFile(prefix, suffix, directory) -> File`: creates a
+/// unique real file next to the given directory.
+pub(crate) fn file_create_temp_file(vm: &mut Vm, args: &[JValue]) -> R {
+    let prefix = jstr(vm, args[0]).unwrap_or_default();
+    let suffix = jstr(vm, args[1]).unwrap_or_default();
+    let dir = file_path(vm, args[2])?;
+    let path = match tempfile_in(&dir, &prefix, &suffix) {
+        Ok(p) => p,
+        Err(_) => return Err(fnf(vm, "createTempFile failed")),
+    };
+    alloc(vm, "Ljava/io/File;", Native::File { path })
+}
+
+/// `File.renameTo(File) -> boolean`: real rename across the same filesystem.
+pub(crate) fn file_rename_to(vm: &mut Vm, args: &[JValue]) -> R {
+    let from = file_path(vm, args[0])?;
+    let to = file_path(vm, args[1])?;
+    Ok(JValue::Int(i32::from(
+        std::fs::rename(&from, &to).is_ok(),
+    )))
+}
+
+fn tempfile_in(dir: &str, prefix: &str, suffix: &str) -> std::io::Result<String> {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static SEQ: AtomicUsize = AtomicUsize::new(0);
+    std::fs::create_dir_all(dir)?;
+    let n = SEQ.fetch_add(1, Ordering::Relaxed);
+    let base = dir.trim_end_matches('/');
+    let path = format!(
+        "{base}/{prefix}dexvm{}-{}{}",
+        std::process::id(),
+        n,
+        suffix
+    );
+    std::fs::write(&path, [])?;
+    Ok(path)
+}
+
+/// `kotlin.io.FilesKt.resolve(File, String) -> File`: real path join.
+pub(crate) fn fileskt_resolve(vm: &mut Vm, args: &[JValue]) -> R {
+    let base = file_path(vm, args[0])?;
+    let child = jstr(vm, args[1]).unwrap_or_default();
+    let joined = {
+        let mut p = std::path::PathBuf::from(&base);
+        p.push(child);
+        p.to_string_lossy().into_owned()
+    };
+    alloc(vm, "Ljava/io/File;", Native::File { path: joined })
 }
 
 /// `android.util.Base64.decode(String, int) -> [B`. Standard alphabet (flag 0)
@@ -84,6 +192,13 @@ fn base64_decode(vm: &mut Vm, args: &[JValue]) -> R {
 // ---------------------------------------------------------------------------
 
 pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
+    ne!(
+        "Landroid/util/Log;",
+        "e",
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I",
+        false,
+        log_error
+    ),
     ne!(
         "Landroid/content/Context;",
         "getSharedPreferences",
@@ -127,6 +242,55 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         file_last_modified
     ),
     ne!(
+        "Ljava/io/File;",
+        "length",
+        "()J",
+        true,
+        file_length
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "isDirectory",
+        "()Z",
+        true,
+        file_is_directory
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "delete",
+        "()Z",
+        true,
+        file_delete
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "getAbsolutePath",
+        "()Ljava/lang/String;",
+        true,
+        file_get_path
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "getPath",
+        "()Ljava/lang/String;",
+        true,
+        file_get_path
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "createTempFile",
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/io/File;)Ljava/io/File;",
+        true,
+        file_create_temp_file
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "renameTo",
+        "(Ljava/io/File;)Z",
+        true,
+        file_rename_to
+    ),
+    ne!(
         "Lkotlin/io/FilesKt;",
         "resolve",
         "(Ljava/io/File;Ljava/lang/String;)Ljava/io/File;",
@@ -139,6 +303,13 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "(Ljava/lang/String;Z)Z",
         true,
         shared_prefs_get_boolean
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences;",
+        "getString",
+        "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        true,
+        shared_prefs_get_string
     ),
     ne!(
         "Landroidx/preference/Preference;",

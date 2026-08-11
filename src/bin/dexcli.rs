@@ -21,7 +21,7 @@ fn disassemble(dex: &DexFile, class: &str, method: &str) {
         .class_by_descriptor(class)
         .unwrap_or_else(|| panic!("class not found: {class}"));
     let c = &dex.classes[def_idx];
-    let mut em: Option<(String, &dexvm::dex::EncodedMethod)> = None;
+    let mut matches: Vec<(String, &dexvm::dex::EncodedMethod)> = Vec::new();
     if let Some(cd) = &c.class_data {
         for (owner, list) in [
             ("direct", &cd.direct_methods),
@@ -30,12 +30,16 @@ fn disassemble(dex: &DexFile, class: &str, method: &str) {
             for m in list {
                 if dex.strings[dex.methods[m.method_idx as usize].name as usize].as_ref() == method
                 {
-                    em = Some((owner.to_string(), m));
+                    matches.push((owner.to_string(), m));
                 }
             }
         }
     }
-    let (owner, em) = em.unwrap_or_else(|| panic!("no method {method} in {class}"));
+    if matches.is_empty() {
+        panic!("no method {method} in {class}");
+    }
+    for (owner, em) in matches {
+    let _owner = &owner;
     let mid = &dex.methods[em.method_idx as usize];
     println!("-- {owner} {}{} :", proto_sig(dex, mid.proto), method);
     let code = em.code.as_ref().expect("no code");
@@ -188,6 +192,7 @@ fn disassemble(dex: &DexFile, class: &str, method: &str) {
             other => line.push_str(&format!("{other:?}")),
         }
         println!("{line}");
+    }
     }
 }
 

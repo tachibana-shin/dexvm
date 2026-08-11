@@ -111,6 +111,7 @@ pub(crate) fn keiyoushi_execute(vm: &mut Vm, args: &[JValue]) -> R {
             headers: resp.headers,
             body: resp.body,
             request: args[0],
+            prior: JValue::Null,
         },
     )
 }
@@ -121,6 +122,23 @@ pub(crate) type HttpCall = Rc<dyn Fn(&HttpData) -> HttpResp>;
 
 pub(crate) fn _http_client(vm: &mut Vm) -> Option<HttpCall> {
     vm.http.clone()
+}
+
+/// `OkHttpExtensionsKt.awaitSuccess(Call, Continuation)` — the suspend
+/// bridge used by every keiyoushi coroutine source. The VM is fully
+/// synchronous: run the call's interceptor chain immediately and fail the
+/// frame on non-2xx instead of ever suspending.
+pub(crate) fn okhttp_await_success(vm: &mut Vm, args: &[JValue]) -> R {
+    let resp = okhttp_call_execute(vm, &args[..1])?;
+    let code = match payload(vm, resp) {
+        Some(Native::Response { code, .. }) => *code,
+        _ => return Err(npe(vm)),
+    };
+    if (200..300).contains(&code) {
+        Ok(resp)
+    } else {
+        Err(ioe(vm, format!("HTTP {code}")))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -278,7 +296,7 @@ fn source_base_url(vm: &mut Vm, src: JValue) -> Result<String, NatErr> {
         class_desc: 0,
     };
     let target = vm
-        .resolve_target(InvokeKind::Virtual, &mref, Some(o))
+        .resolve_target(InvokeKind::Virtual, &mref, Some(o), 0)
         .map_err(nat_fatal)?;
     match vm.call_target(target, vec![src]) {
         Ok(JValue::Obj(s)) => Ok(jstr(vm, JValue::Obj(s)).unwrap_or_default()),
@@ -691,6 +709,12 @@ pub(crate) fn filter_init_checked(vm: &mut Vm, args: &[JValue]) -> R {
     set_filter_payload(vm, args[0], filter_new(name, checked, 0))
 }
 
+/// `Filter$CheckBox.<init>(String, Z, I, DefaultConstructorMarker)` — the
+/// default-args synthetic constructor; forwards to the `(String, Z)` form.
+pub(crate) fn filter_checkbox_init_synth(vm: &mut Vm, args: &[JValue]) -> R {
+    filter_init_checked(vm, args)
+}
+
 pub(crate) fn filter_header_init(vm: &mut Vm, args: &[JValue]) -> R {
     let name = jstr(vm, args[1]).unwrap_or_default();
     set_filter_payload(vm, args[0], filter_new(name, false, 0))
@@ -1012,6 +1036,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "<init>", "(Ljava/lang/String;[Ljava/lang/Object;IILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_select_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "getState", "()Ljava/lang/Object;", true, filter_select_state_obj),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "<init>", "(Ljava/lang/String;Z)V", true, filter_init_checked),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "<init>", "(Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_checkbox_init_synth),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "getState", "()Ljava/lang/Object;", true, filter_checkbox_state_obj),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Group;", "<init>", "(Ljava/lang/String;Ljava/util/List;)V", true, filter_group_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Group;", "<init>", "(Ljava/lang/String;Ljava/util/List;IILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_group_init),
@@ -1031,6 +1056,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "GET$default", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_get_default),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "GET$default", "(Lokhttp3/HttpUrl;Lokhttp3/Headers;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_get_default),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "__host_execute", "(Lokhttp3/Request;)Lokhttp3/Response;", false, keiyoushi_execute),
+    ne!("Leu/kanade/tachiyomi/network/OkHttpExtensionsKt;", "awaitSuccess", "(Lokhttp3/Call;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, okhttp_await_success),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getNetwork", "()Leu/kanade/tachiyomi/network/NetworkHelper;", true, http_source_get_network),
     ne!("Leu/kanade/tachiyomi/network/NetworkHelper;", "getClient", "()Lokhttp3/OkHttpClient;", true, network_helper_get_client),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "POST$default", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/RequestBody;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_post_default),

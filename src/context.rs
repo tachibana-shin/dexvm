@@ -330,7 +330,7 @@ impl Context {
         let recv = JValue::Obj(obj);
         let target = self
             .vm
-            .resolve_target(InvokeKind::Virtual, &mref, Some(obj))
+            .resolve_target(InvokeKind::Virtual, &mref, Some(obj), 0)
             .map_err(|e| JvmError::Resolution(format!("invoke_on {name}{sig}: {e}")))?;
         let mut call_args = Vec::with_capacity(args.len() + 1);
         call_args.push(recv);

@@ -280,6 +280,7 @@ fn parse_from_response_seam() {
                 headers: Vec::new(),
                 body: Some(r#"<div class="x"><a href="/img/1">pix</a></div>"#.as_bytes().to_vec()),
                 request: req,
+                prior: JValue::Null,
             },
         )
         .unwrap();

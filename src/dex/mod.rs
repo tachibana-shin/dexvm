@@ -204,6 +204,10 @@ pub struct ClassDef {
     pub source_file_idx: u32,
     pub class_data: Option<Arc<ClassData>>,
     pub static_values: Vec<EncodedValue>,
+    /// Runtime generic signature from the `Ldalvik/annotation/Signature;`
+    /// class annotation (e.g. a `FullTypeReference<Lkotlinx/.../Json;>`
+    /// subclass). `None` when absent.
+    pub generic_signature: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -337,6 +341,10 @@ impl DexFile {
         }
 
         // --- class defs ---
+        let signature_type_idx = strings
+            .iter()
+            .position(|s: &Arc<str>| s.as_ref() == "Ldalvik/annotation/Signature;")
+            .map(|i| i as u32);
         let mut classes = Vec::with_capacity(class_defs_size);
         for i in 0..class_defs_size {
             let off = class_defs_off + i * 32;
@@ -345,9 +353,15 @@ impl DexFile {
             let superclass_idx = c.u32_at(off + 8)?;
             let interfaces_off = c.u32_at(off + 12)? as usize;
             let source_file_idx = c.u32_at(off + 16)?;
-            let _annotations_off = c.u32_at(off + 20)?;
+            let annotations_off = c.u32_at(off + 20)? as usize;
             let class_data_off = c.u32_at(off + 24)? as usize;
             let static_values_off = c.u32_at(off + 28)? as usize;
+
+            let generic_signature = if annotations_off == 0 {
+                None
+            } else {
+                parse_runtime_signature(data, annotations_off, &strings, signature_type_idx)?
+            };
 
             let interfaces = if interfaces_off == 0 {
                 Vec::new()
@@ -387,6 +401,7 @@ impl DexFile {
                 source_file_idx,
                 class_data,
                 static_values,
+                generic_signature,
             });
         }
 
@@ -431,6 +446,61 @@ impl DexFile {
         let tid = self.types.iter().position(|t| *t == sid)? as u32;
         self.classes.iter().position(|cd| cd.class_idx == tid)
     }
+}
+
+/// Parses the class annotations of the class whose `annotations_off`
+/// (class_def field) points at an `annotations_directory_item` and returns
+/// the runtime generic signature string from any
+/// `Ldalvik/annotation/Signature;` class annotation (value = array of
+/// strings).
+pub(crate) fn parse_runtime_signature(
+    data: &[u8],
+    annotations_off: usize,
+    strings: &[Arc<str>],
+    signature_type_idx: Option<u32>,
+) -> Result<Option<String>, DexError> {
+    let Some(sig_type_idx) = signature_type_idx else {
+        return Ok(None);
+    };
+    let c = &mut Cursor::new(data);
+    c.seek(annotations_off)?;
+    // annotations_directory_item: class_annotations_off + section sizes.
+    let class_annotations_off = c.u32()? as usize;
+    if class_annotations_off == 0 {
+        return Ok(None);
+    }
+    c.seek(class_annotations_off)?;
+    let _visibility = c.u8()?;
+    let n = c.uleb128()? as usize;
+    for _ in 0..n {
+        let ann_off = c.uleb128()? as usize;
+        let ac = &mut Cursor::new(data);
+        ac.seek(ann_off)?;
+        let type_idx = ac.uleb128()?;
+        let sz = ac.uleb128()? as usize;
+        let mut elements = Vec::with_capacity(sz);
+        for _ in 0..sz {
+            let name_idx = ac.uleb128()?;
+            let v = EncodedValue::decode(ac)?;
+            elements.push((name_idx, v));
+        }
+        if type_idx == sig_type_idx {
+            for (_, v) in elements {
+                if let EncodedValue::Array(items) = v {
+                    let mut sig = String::new();
+                    for it in items {
+                        if let EncodedValue::String(s) = it {
+                            sig.push_str(&strings[s as usize]);
+                        }
+                    }
+                    if !sig.is_empty() {
+                        return Ok(Some(sig));
+                    }
+                }
+            }
+        }
+    }
+    Ok(None)
 }
 
 fn parse_class_data(data: &[u8], off: usize) -> Result<ClassData, DexError> {

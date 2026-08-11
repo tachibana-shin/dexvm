@@ -14,7 +14,7 @@ pub(crate) use ::fancy_regex::Regex;
 
 pub(crate) use crate::dex::insn::InvokeKind;
 pub(crate) use crate::vm::error::JvmError;
-pub(crate) use crate::vm::object::{ArrayData, ClassOrPrim, IterKind, MatcherState, Native};
+pub(crate) use crate::vm::object::{ArrayData, ClassOrPrim, IterKind, JsonVal, MatcherState, Native};
 pub(crate) use crate::vm::value::JValue;
 pub use crate::vm::{MethodRef, NatErr, NativeEntry, NativeFn, Target, Vm};
 
@@ -103,9 +103,13 @@ mod kotlin;
 mod okhttp;
 #[cfg(feature = "okhttp")]
 mod okio;
+#[cfg(feature = "tachiyomi")]
+mod serialization;
 
 #[cfg(feature = "tachiyomi")]
 pub(crate) use self::keiyoushi::*;
+#[cfg(feature = "tachiyomi")]
+pub(crate) use self::serialization::*;
 #[cfg(feature = "okhttp")]
 pub(crate) use self::okhttp::*;
 #[cfg(feature = "okhttp")]
@@ -222,6 +226,8 @@ pub(crate) fn native_tables() -> Vec<&'static [NativeEntry]> {
     out.push(android::ANDROID_TABLE);
     #[cfg(feature = "tachiyomi")]
     out.push(keiyoushi::KEIYOUSHI_TABLE);
+    #[cfg(feature = "tachiyomi")]
+    out.push(serialization::SERIALIZATION_TABLE);
     out.push(THROWABLE_CTORS);
     out
 }
@@ -247,6 +253,12 @@ pub(crate) fn uoe(vm: &mut Vm, m: impl Into<String>) -> NatErr {
 }
 pub(crate) fn nfe(vm: &mut Vm, m: impl Into<String>) -> NatErr {
     NatErr::Throw(vm.err_nfe(m))
+}
+pub(crate) fn fnf(vm: &mut Vm, m: impl Into<String>) -> NatErr {
+    NatErr::Throw(vm.err_fnf(m))
+}
+pub(crate) fn ioe(vm: &mut Vm, m: impl Into<String>) -> NatErr {
+    NatErr::Throw(vm.err_ioe(m))
 }
 pub(crate) fn aioobe(vm: &mut Vm, idx: i32, len: i32) -> NatErr {
     NatErr::Throw(vm.err_aioobe(idx, len))
@@ -408,8 +420,18 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
         "Ljava/lang/Float;" => Some(Native::FloatBox(0.0)),
         "Ljava/lang/Double;" => Some(Native::DoubleBox(0.0)),
         "Ljava/util/ArrayList;" => Some(Native::List(Vec::new())),
+        "Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;" => {
+            Some(Native::SerialDescriptor {
+                name: String::new(),
+                elements: Vec::new(),
+            })
+        }
+        "Lkotlinx/serialization/internal/ArrayListSerializer;" => Some(Native::ArrayListSerializer {
+            child: JValue::Null,
+        }),
         "Ljava/util/ArrayDeque;" => Some(Native::ArrayDeque(Vec::new())),
         "Lokhttp3/FormBody$Builder;" => Some(Native::FormBody(Vec::new())),
+        "Lokhttp3/CacheControl$Builder;" => Some(Native::CacheControlBuilder { max_age: 0 }),
         "Lokhttp3/Request$Builder;" => Some(Native::RequestBuilder {
             url: String::new(),
             method: String::new(),
@@ -734,7 +756,7 @@ pub(crate) fn inv_virt(
         class_desc: 0,
     };
     let target = vm
-        .resolve_target(InvokeKind::Virtual, &mref, Some(recv.as_obj()))
+        .resolve_target(InvokeKind::Virtual, &mref, Some(recv.as_obj()), 0)
         .map_err(nat_fatal)?;
     let mut args = Vec::with_capacity(1 + extra.len());
     args.push(recv);

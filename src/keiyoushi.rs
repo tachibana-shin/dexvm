@@ -591,6 +591,83 @@ impl Keiyoushi {
             Some(Native::SFilterList(children)),
         )))
     }
+
+    /// Allocates a shim continuation so suspend-style dex functions
+    /// (`getPopularManga`, `getSearchManga`, ...) run their coroutine state
+    /// machine to completion synchronously: every network native resolves
+    /// inline, the frame never actually suspends, and the finished value is
+    /// returned directly instead of `COROUTINE_SUSPENDED`.
+    fn suspend_cont(&mut self) -> Result<JValue, JvmError> {
+        let cid = self
+            .ctx
+            .vm()
+            .ensure_class_by_desc("Lkotlin/coroutines/jvm/internal/ContinuationImpl;")?;
+        Ok(JValue::Obj(self.ctx.vm().alloc_instance(cid)?))
+    }
+
+    /// `getPopularManga` (suspend) — the coroutine entry point used by
+    /// modern keiyoushi sources (request/parse pairs are stubbed there).
+    pub fn popular_coro(&mut self, src: &Source, page: i32) -> Result<MangaPages, JvmError> {
+        let cont = self.suspend_cont()?;
+        let out = self.ctx.invoke_on(
+            src.inst,
+            "getPopularManga",
+            "(ILkotlin/coroutines/Continuation;)Ljava/lang/Object;",
+            &[JValue::Int(page), cont],
+        )?;
+        self.manga_pages(out)
+    }
+
+    /// `getLatestUpdates` (suspend).
+    pub fn latest_coro(&mut self, src: &Source, page: i32) -> Result<MangaPages, JvmError> {
+        let cont = self.suspend_cont()?;
+        let out = self.ctx.invoke_on(
+            src.inst,
+            "getLatestUpdates",
+            "(ILkotlin/coroutines/Continuation;)Ljava/lang/Object;",
+            &[JValue::Int(page), cont],
+        )?;
+        self.manga_pages(out)
+    }
+
+    /// `getSearchManga` (suspend), with the query plus per-filter states.
+    pub fn search_coro(
+        &mut self,
+        src: &Source,
+        page: i32,
+        query: &str,
+        filters: &[FilterState],
+    ) -> Result<MangaPages, JvmError> {
+        let flist = self.build_filter_list(filters)?;
+        let query_obj = self.ctx.vm().alloc_string(query);
+        let cont = self.suspend_cont()?;
+        let out = self.ctx.invoke_on(
+            src.inst,
+            "getSearchManga",
+            "(ILjava/lang/String;Leu/kanade/tachiyomi/source/model/FilterList;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;",
+            &[JValue::Int(page), query_obj, flist, cont],
+        )?;
+        self.manga_pages(out)
+    }
+
+    /// `getPageList` (suspend) against a synthetic chapter ref.
+    pub fn pages_coro(&mut self, src: &Source, chapter: &Chapter) -> Result<Vec<PageRef>, JvmError> {
+        let (url, name) = (chapter.url.clone(), chapter.name.clone());
+        let cid = self.ctx.vm().ensure_class_by_desc(SCHAPTER)?;
+        let c = JValue::Obj(self.ctx.vm().arena.alloc(
+            cid,
+            Vec::new(),
+            Some(empty_chapter(url, name)),
+        ));
+        let cont = self.suspend_cont()?;
+        let out = self.ctx.invoke_on(
+            src.inst,
+            "getPageList",
+            "(Leu/kanade/tachiyomi/source/model/SChapter;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;",
+            &[c, cont],
+        )?;
+        self.read_page_list(out)
+    }
 }
 
 fn empty_chapter(url: String, name: String) -> Native {

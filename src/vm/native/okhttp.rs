@@ -89,6 +89,47 @@ pub(crate) fn request_builder_tag(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
+/// `Request$Builder.headers(Headers)` — copy all headers from the Headers
+/// object into the builder.
+pub(crate) fn request_builder_headers(vm: &mut Vm, args: &[JValue]) -> R {
+    let src = match payload(vm, args[1]) {
+        Some(Native::Headers(es)) => es.clone(),
+        _ => return Err(npe(vm)),
+    };
+    match payload_mut(vm, args[0]) {
+        Some(Native::RequestBuilder { headers, .. }) => headers.extend(src),
+        _ => return Err(npe(vm)),
+    }
+    Ok(args[0])
+}
+
+/// `Request$Builder.cacheControl(CacheControl)` — materializes the
+/// `Cache-Control` header the interceptor chain sees on the final request.
+pub(crate) fn request_builder_cache_control(vm: &mut Vm, args: &[JValue]) -> R {
+    let (max_age, no_cache) = match payload(vm, args[1]) {
+        Some(Native::CacheControl { max_age, no_cache }) => (*max_age, *no_cache),
+        _ => return Err(npe(vm)),
+    };
+    let mut hdr = String::new();
+    if no_cache {
+        hdr.push_str("no-cache");
+    }
+    if max_age >= 0 {
+        if !hdr.is_empty() {
+            hdr.push_str(", ");
+        }
+        hdr.push_str(&format!("max-age={max_age}"));
+    }
+    match payload_mut(vm, args[0]) {
+        Some(Native::RequestBuilder { headers, .. }) if !hdr.is_empty() => {
+            headers.push(("Cache-Control".to_string(), hdr));
+        }
+        Some(Native::RequestBuilder { .. }) => {}
+        _ => return Err(npe(vm)),
+    }
+    Ok(args[0])
+}
+
 pub(crate) fn request_builder_tag2(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
@@ -496,25 +537,148 @@ pub(crate) fn compression_interceptor_init(_vm: &mut Vm, _args: &[JValue]) -> R 
     Ok(JValue::Null)
 }
 
-pub(crate) fn request_cache_control(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(vm, "Lokhttp3/CacheControl;", Native::Opaque)
+/// `Request.cacheControl()` — parses the request's `Cache-Control` header
+/// into a real CacheControl (max-age in seconds, -1 when absent).
+pub(crate) fn request_cache_control(vm: &mut Vm, args: &[JValue]) -> R {
+    let headers = match payload(vm, args[0]) {
+        Some(Native::Request { headers, .. }) => headers.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let mut max_age = -1i64;
+    let mut no_cache = false;
+    for (k, v) in &headers {
+        if k.eq_ignore_ascii_case("Cache-Control") {
+            for part in v.split(',') {
+                let part = part.trim();
+                if part.eq_ignore_ascii_case("no-cache")
+                    || part.eq_ignore_ascii_case("no-store")
+                {
+                    no_cache = true;
+                }
+                if let Some(rest) = part.strip_prefix("max-age=") {
+                    if let Ok(n) = rest.trim().parse::<i64>() {
+                        max_age = n;
+                    }
+                }
+            }
+        }
+    }
+    alloc(
+        vm,
+        "Lokhttp3/CacheControl;",
+        Native::CacheControl { max_age, no_cache },
+    )
 }
 
-pub(crate) fn cache_control_max_age_seconds(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Int(-1))
-}
-pub(crate) fn call_is_canceled(_vm: &mut Vm, args: &[JValue]) -> R {
-    let _ = args[0];
-    Ok(JValue::Int(0))
+pub(crate) fn cache_control_max_age_seconds(vm: &mut Vm, args: &[JValue]) -> R {
+    let max_age = match payload(vm, args[0]) {
+        Some(Native::CacheControl { max_age, .. }) => *max_age,
+        _ => return Err(npe(vm)),
+    };
+    Ok(JValue::Int(max_age as i32))
 }
 
-pub(crate) fn call_timeout(_vm: &mut Vm, args: &[JValue]) -> R {
-    let _ = args[0];
+pub(crate) fn cache_control_no_cache(vm: &mut Vm, args: &[JValue]) -> R {
+    let no_cache = match payload(vm, args[0]) {
+        Some(Native::CacheControl { no_cache, .. }) => *no_cache,
+        _ => return Err(npe(vm)),
+    };
+    Ok(JValue::Int(i32::from(no_cache)))
+}
+
+/// `CacheControl$Builder.<init>()` — fresh builder, max-age in seconds.
+pub(crate) fn cache_control_builder_init(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
-pub(crate) fn response_prior_response(_vm: &mut Vm, _args: &[JValue]) -> R {
+/// `CacheControl$Builder.maxAge-LRDsOJo(J)` — kotlin.time.Duration is the
+/// inline long; the VM stores raw milliseconds, so translate to seconds.
+pub(crate) fn cache_control_builder_max_age(vm: &mut Vm, args: &[JValue]) -> R {
+    let millis = long_of(vm, args[1]);
+    match payload_mut(vm, args[0]) {
+        Some(Native::CacheControlBuilder { max_age }) => *max_age = millis / 1000,
+        _ => return Err(npe(vm)),
+    }
+    Ok(args[0])
+}
+
+/// `CacheControl$Builder.build()` — materialize the parsed CacheControl.
+pub(crate) fn cache_control_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
+    let max_age = match payload(vm, args[0]) {
+        Some(Native::CacheControlBuilder { max_age }) => *max_age,
+        _ => return Err(npe(vm)),
+    };
+    alloc(
+        vm,
+        "Lokhttp3/CacheControl;",
+        Native::CacheControl {
+            max_age,
+            no_cache: false,
+        },
+    )
+}
+
+/// `Call.isCanceled()` — reads the real canceled flag on the Call.
+pub(crate) fn call_is_canceled(vm: &mut Vm, args: &[JValue]) -> R {
+    let canceled = match payload(vm, args[0]) {
+        Some(Native::Call { canceled, .. }) => *canceled,
+        _ => return Err(npe(vm)),
+    };
+    Ok(JValue::Int(i32::from(canceled)))
+}
+
+/// `Call.cancel()` — sets the real canceled flag; subsequent executes throw
+/// IOException("Canceled") like OkHttp.
+pub(crate) fn call_cancel(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Call { canceled, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *canceled = true;
     Ok(JValue::Null)
+}
+
+/// `Call.timeout()` — a real per-call Timeout (defaults to the client's
+/// call timeout; none set here means zero, matching no configured value).
+pub(crate) fn call_timeout(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Lokhttp3/Timeout;", Native::Timeout { millis: 0 })
+}
+
+/// `Timeout.timeout(long)` — real setter (millis units as okio).
+pub(crate) fn timeout_timeout(vm: &mut Vm, args: &[JValue]) -> R {
+    let millis = long_of(vm, args[1]);
+    let Some(Native::Timeout { millis: dst }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *dst = millis;
+    Ok(args[0])
+}
+
+/// `Timeout.timeoutMillis()` — real getter.
+pub(crate) fn timeout_timeout_millis(vm: &mut Vm, args: &[JValue]) -> R {
+    let millis = match payload(vm, args[0]) {
+        Some(Native::Timeout { millis }) => *millis,
+        _ => return Err(npe(vm)),
+    };
+    Ok(JValue::Long(millis))
+}
+
+/// `Response.priorResponse()` — the response before a redirect chain, or
+/// null when there is none (the host bridge never redirects).
+pub(crate) fn response_prior_response(vm: &mut Vm, args: &[JValue]) -> R {
+    let prior = match payload(vm, args[0]) {
+        Some(Native::Response { prior, .. }) => *prior,
+        _ => return Err(npe(vm)),
+    };
+    Ok(prior)
+}
+
+/// `Response.Builder.priorResponse(Response)` — real setter.
+pub(crate) fn response_builder_prior_response(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::ResponseBuilder { prior, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *prior = Some(args[1]);
+    Ok(args[0])
 }
 
 pub(crate) fn okhttp_builder_add_interceptor(vm: &mut Vm, args: &[JValue]) -> R {
@@ -727,6 +891,7 @@ pub(crate) fn okhttp_client_new_call(vm: &mut Vm, args: &[JValue]) -> R {
         Native::Call {
             request: args[1],
             client: args[0],
+            canceled: false,
         },
     )
 }
@@ -735,7 +900,16 @@ pub(crate) fn okhttp_client_new_call(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn okhttp_call_execute(vm: &mut Vm, args: &[JValue]) -> R {
     let call = args[0];
     let (request, client) = match payload(vm, call) {
-        Some(Native::Call { request, client }) => (*request, *client),
+        Some(Native::Call {
+            request,
+            client,
+            canceled,
+        }) => {
+            if *canceled {
+                return Err(ioe(vm, "Canceled"));
+            }
+            (*request, *client)
+        }
         // legacy: Call payload was a bare Request
         Some(Native::Request { .. }) => (call, JValue::Null),
         _ => return Err(npe(vm)),
@@ -802,6 +976,7 @@ fn host_execute(vm: &mut Vm, request: JValue) -> R {
             headers: resp.headers,
             body: resp.body,
             request,
+            prior: JValue::Null,
         },
     )
 }
@@ -885,6 +1060,7 @@ pub(crate) fn response_new_builder(vm: &mut Vm, args: &[JValue]) -> R {
             headers,
             body: None,
             request: Some(request),
+            prior: None,
         },
     )
 }
@@ -898,14 +1074,22 @@ pub(crate) fn response_builder_body(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn response_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
-    let (code, message, headers, body, request) = match payload(vm, args[0]) {
+    let (code, message, headers, body, request, prior) = match payload(vm, args[0]) {
         Some(Native::ResponseBuilder {
             code,
             message,
             headers,
             body,
             request,
-        }) => (*code, message.clone(), headers.clone(), *body, *request),
+            prior,
+        }) => (
+            *code,
+            message.clone(),
+            headers.clone(),
+            *body,
+            *request,
+            *prior,
+        ),
         _ => return Err(npe(vm)),
     };
     let body = match body {
@@ -925,6 +1109,7 @@ pub(crate) fn response_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
             headers,
             body,
             request: request.unwrap_or(JValue::Null),
+            prior: prior.unwrap_or(JValue::Null),
         },
     )
 }
@@ -939,11 +1124,17 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Request$Builder;", "method", "(Ljava/lang/String;Lokhttp3/RequestBody;)Lokhttp3/Request$Builder;", true, request_builder_method),
     ne!("Lokhttp3/Request$Builder;", "header", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/Request$Builder;", true, request_builder_header),
     ne!("Lokhttp3/Request$Builder;", "addHeader", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/Request$Builder;", true, request_builder_add_header),
+    ne!("Lokhttp3/Request$Builder;", "headers", "(Lokhttp3/Headers;)Lokhttp3/Request$Builder;", true, request_builder_headers),
+    ne!("Lokhttp3/Request$Builder;", "cacheControl", "(Lokhttp3/CacheControl;)Lokhttp3/Request$Builder;", true, request_builder_cache_control),
     ne!("Lokhttp3/Request$Builder;", "tag", "(Ljava/lang/Class;)Lokhttp3/Request$Builder;", true, request_builder_tag),
     ne!("Lokhttp3/Request$Builder;", "tag", "(Ljava/lang/Class;Ljava/lang/Object;)Lokhttp3/Request$Builder;", true, request_builder_tag2),
     ne!("Lokhttp3/Request$Builder;", "build", "()Lokhttp3/Request;", true, request_builder_build),
     ne!("Lokhttp3/Request;", "cacheControl", "()Lokhttp3/CacheControl;", true, request_cache_control),
     ne!("Lokhttp3/CacheControl;", "maxAgeSeconds", "()I", true, cache_control_max_age_seconds),
+    ne!("Lokhttp3/CacheControl;", "noCache", "()Z", true, cache_control_no_cache),
+    ne!("Lokhttp3/CacheControl$Builder;", "<init>", "()V", true, cache_control_builder_init),
+    ne!("Lokhttp3/CacheControl$Builder;", "maxAge-LRDsOJo", "(J)Lokhttp3/CacheControl$Builder;", true, cache_control_builder_max_age),
+    ne!("Lokhttp3/CacheControl$Builder;", "build", "()Lokhttp3/CacheControl;", true, cache_control_builder_build),
     ne!("Lokhttp3/Request;", "newBuilder", "()Lokhttp3/Request$Builder;", true, request_new_builder),
     ne!("Lokhttp3/Request;", "url", "()Lokhttp3/HttpUrl;", true, request_url),
     ne!("Lokhttp3/Request;", "method", "()Ljava/lang/String;", true, request_method),
@@ -975,11 +1166,15 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Interceptor$Chain;", "proceed", "(Lokhttp3/Request;)Lokhttp3/Response;", true, chain_proceed),
     ne!("Lokhttp3/Interceptor$Chain;", "call", "()Lokhttp3/Call;", true, chain_call),
     ne!("Lokhttp3/Call;", "isCanceled", "()Z", true, call_is_canceled),
+    ne!("Lokhttp3/Call;", "cancel", "()V", true, call_cancel),
     ne!("Lokhttp3/Call;", "timeout", "()Lokhttp3/Timeout;", true, call_timeout),
+    ne!("Lokhttp3/Timeout;", "timeout", "(J)Lokhttp3/Timeout;", true, timeout_timeout),
+    ne!("Lokhttp3/Timeout;", "timeoutMillis", "()J", true, timeout_timeout_millis),
     ne!("Lokhttp3/Response;", "priorResponse", "()Lokhttp3/Response;", true, response_prior_response),
     ne!("Lokhttp3/Interceptor$Chain;", "connection", "()Lokhttp3/Connection;", true, chain_connection),
     ne!("Lokhttp3/Response;", "newBuilder", "()Lokhttp3/Response$Builder;", true, response_new_builder),
     ne!("Lokhttp3/Response$Builder;", "body", "(Lokhttp3/ResponseBody;)Lokhttp3/Response$Builder;", true, response_builder_body),
+    ne!("Lokhttp3/Response$Builder;", "priorResponse", "(Lokhttp3/Response;)Lokhttp3/Response$Builder;", true, response_builder_prior_response),
     ne!("Lokhttp3/Response$Builder;", "build", "()Lokhttp3/Response;", true, response_builder_build),
     ne!("Lokhttp3/HttpUrl;", "host", "()Ljava/lang/String;", true, http_url_host),
     // default-client interceptor stubs (mihon 0.17+ extensions validate them)

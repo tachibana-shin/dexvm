@@ -1564,6 +1564,11 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
                 ShimValue::Lazy(native::lazy_duration_unit_seconds)
             ),
             sdef!(
+                "MINUTES",
+                "Lkotlin/time/DurationUnit;",
+                ShimValue::Lazy(native::lazy_duration_unit_millis)
+            ),
+            sdef!(
                 "MILLISECONDS",
                 "Lkotlin/time/DurationUnit;",
                 ShimValue::Lazy(native::lazy_duration_unit_millis)
@@ -1646,10 +1651,35 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         0
     ),
     shim!(
+        "Lkotlin/coroutines/jvm/internal/ContinuationImpl;",
+        Some("Ljava/lang/Object;"),
+        &["Lkotlin/coroutines/Continuation;"],
+        0
+    ),
+    shim!(
+        "Lkotlin/coroutines/Continuation;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Lkotlin/coroutines/intrinsics/IntrinsicsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!("Lkotlin/ResultKt;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
         "Lkotlin/jvm/functions/Function2;",
         None,
         &[],
         ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Lokhttp3/CacheControl$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
     ),
     shim!(
         "Lkotlin/coroutines/CoroutineDispatcher;",
@@ -1663,10 +1693,210 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         &["Ljava/io/Serializable;"],
         0
     ),
+    shim!("Lkotlin/Result$Failure;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lkotlin/Result;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "Companion",
+            "Lkotlin/Result$Companion;",
+            ShimValue::Lazy(native::lazy_result_companion)
+        ),]
+    ),
+    shim!("Lkotlin/Result$Companion;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lkotlin/text/MatchResult;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
     shim!("Lkotlin/TuplesKt;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Lkotlin/ranges/RangesKt;", Some("Ljava/lang/Object;"), &[], 0),
     shim!(
         "Lkotlin/jvm/internal/DefaultConstructorMarker;",
         Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    // kotlinx.serialization JSON pipeline (cached filter lists, moetruyen)
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/Json;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;"],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonElement;",
+        Some("Ljava/lang/Object;"),
+        &["Ljava/io/Serializable;"],
+        ACC_ABSTRACT,
+        [sdef!(
+            "Companion",
+            "Lkotlinx/serialization/json/JsonElement$Companion;",
+            ShimValue::Lazy(native::lazy_json_element_companion)
+        )]
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonElement$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonObject;",
+        Some("Lkotlinx/serialization/json/JsonElement;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonArray;",
+        Some("Lkotlinx/serialization/json/JsonElement;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonPrimitive;",
+        Some("Lkotlinx/serialization/json/JsonElement;"),
+        &[],
+        ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonNull;",
+        Some("Lkotlinx/serialization/json/JsonPrimitive;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonLiteral;",
+        Some("Lkotlinx/serialization/json/JsonPrimitive;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/SerializationStrategy;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/DeserializationStrategy;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/KSerializer;",
+        None,
+        &[
+            "Lkotlinx/serialization/SerializationStrategy;",
+            "Lkotlinx/serialization/DeserializationStrategy;",
+        ],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/encoding/Decoder;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/encoding/CompositeDecoder;",
+        None,
+        &["Lkotlinx/serialization/encoding/Decoder;"],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/encoding/Encoder;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/encoding/CompositeEncoder;",
+        None,
+        &["Lkotlinx/serialization/encoding/Encoder;"],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonDecoder;",
+        None,
+        &["Lkotlinx/serialization/encoding/Decoder;"],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/descriptors/SerialDescriptor;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/GeneratedSerializer;",
+        None,
+        &["Lkotlinx/serialization/KSerializer;"],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;",
+        Some("Ljava/lang/Object;"),
+        &["Lkotlinx/serialization/descriptors/SerialDescriptor;"],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/ArrayListSerializer;",
+        Some("Ljava/lang/Object;"),
+        &["Lkotlinx/serialization/KSerializer;"],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/okio/OkioStreamsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lcom/squareup/zstd/okio/OkioZstd;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonDecoder;",
+        Some("Ljava/lang/Object;"),
+        &[
+            "Lkotlinx/serialization/json/JsonDecoder;",
+            "Lkotlinx/serialization/encoding/CompositeDecoder;",
+        ],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/UnknownFieldException;",
+        Some("Ljava/lang/IllegalArgumentException;"),
         &[],
         0
     ),

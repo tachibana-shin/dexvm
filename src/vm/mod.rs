@@ -131,6 +131,15 @@ pub struct Vm {
     pub array_classes: HashMap<(u32, u32), u32>,
     #[cfg(feature = "tachiyomi")]
     pub http: Option<native::keiyoushi::HttpCall>,
+    /// Real host directory backing `Context.getCacheDir()` (created on first
+    /// use so extension cache logic runs against a genuine filesystem).
+    pub cache_root: Option<String>,
+    /// FullTypeReference subclass descriptor -> concrete type descriptor,
+    /// derived from dex bytecode (`getInstance` result check-casts).
+    injekt_type_by_subclass: HashMap<u32, u32>,
+    /// class count when the injekt registry was last rebuilt; the scan re-runs
+    /// whenever new classes have been loaded since.
+    injekt_scanned_classes: usize,
     loading: Vec<(u32, usize)>,
 }
 
@@ -174,6 +183,9 @@ impl Vm {
             },
             array_classes: HashMap::new(),
             loading: Vec::new(),
+            injekt_type_by_subclass: HashMap::new(),
+            injekt_scanned_classes: 0,
+            cache_root: None,
             #[cfg(feature = "tachiyomi")]
             http: None,
             host_natives: Vec::new(),
@@ -222,6 +234,129 @@ impl Vm {
     /// Dotted class name for a class id, e.g. `a.b.Main`.
     pub fn class_desc_str(&self, class: u32) -> String {
         crate::vm::value::dotted_name(self.str_of(self.classes[class as usize].descriptor))
+    }
+
+    /// Runtime generic signature of a loaded class (from its dex
+    /// `Ldalvik/annotation/Signature;` annotation), if any.
+    pub fn generic_signature(&self, class: u32) -> Option<String> {
+        let desc = self.str_of(self.classes[class as usize].descriptor);
+        let (dex_idx, def_idx) = self.class_location(desc)?;
+        self.dex_at(dex_idx).classes[def_idx].generic_signature.clone()
+    }
+
+    /// Concrete type of an injekt `FullTypeReference` subclass, derived from
+    /// bytecode: the subclass is `new`-ed, passed through `getType()` into
+    /// `InjektFactory.getInstance(...)`, whose result is `check-cast` to the
+    /// concrete type. Used when the dex carries no generic `Signature`
+    /// annotation (obfuscated/minified APKs).
+    pub fn injekt_type_of(&mut self, subclass_desc: u32) -> Option<u32> {
+        if self.injekt_scanned_classes != self.classes.len() {
+            self.scan_injekt_types();
+        }
+        self.injekt_type_by_subclass.get(&subclass_desc).copied()
+    }
+
+    fn scan_injekt_types(&mut self) {
+        self.injekt_scanned_classes = self.classes.len();
+        use crate::dex::insn::{decode_all, Insn};
+        // Phase 1 (immutable): collect (subclass desc, type desc) pairs.
+        let mut pairs: Vec<(String, String)> = Vec::new();
+        let get_type_cls = "Luy/kohesive/injekt/api/FullTypeReference;";
+        let factory_cls = "Luy/kohesive/injekt/api/InjektFactory;";
+        for class in 0..self.classes.len() as u32 {
+            for m in &self.classes[class as usize].methods {
+                let Some(code) = &m.code else {
+                    continue;
+                };
+                let Ok(decoded) = decode_all(&code.insns) else {
+                    continue;
+                };
+                let dex = self.dex_at(m.dex_idx);
+                // register -> dex type id of the last `new-instance`.
+                let mut last_new: Vec<Option<u32>> = vec![None; code.registers_size as usize];
+                // register -> subclass descriptor of the last getType result.
+                let mut type_reg: Vec<Option<String>> = vec![None; code.registers_size as usize];
+                // set by getType; the next move-result carries its value.
+                let mut pending_get_type: Option<String> = None;
+                // set by getInstance; the next move-result carries its value.
+                let mut want_result: Option<String> = None;
+                // (result reg, subclass) awaiting the immediate check-cast.
+                let mut pending_inst: Option<(u8, String)> = None;
+                for insn in decoded.insns.iter() {
+                    match insn {
+                        Insn::NewInstance(reg, type_idx) => {
+                            if let Some(slot) = last_new.get_mut(*reg as usize) {
+                                *slot = Some(*type_idx);
+                            }
+                        }
+                        Insn::MoveResult(reg) | Insn::MoveResultWide(reg) => {
+                            if let Some(sub) = pending_get_type.take() {
+                                if let Some(slot) = type_reg.get_mut(*reg as usize) {
+                                    *slot = Some(sub);
+                                }
+                            }
+                            if let Some(sub) = want_result.take() {
+                                pending_inst = Some((*reg, sub));
+                            }
+                            if let Some(slot) = last_new.get_mut(*reg as usize) {
+                                *slot = None;
+                            }
+                        }
+                        Insn::Invoke(_, method_idx, args) => {
+                            let Some(mref) = dex.methods.get(*method_idx as usize) else {
+                                continue;
+                            };
+                            let name = dex
+                                .strings
+                                .get(mref.name as usize)
+                                .map(|s| s.as_ref())
+                                .unwrap_or("");
+                            let owner = dex
+                                .strings
+                                .get(
+                                    dex.types
+                                        .get(mref.class as usize)
+                                        .copied()
+                                        .unwrap_or(0) as usize,
+                                )
+                                .map(|s| s.as_ref())
+                                .unwrap_or("");
+                            match name {
+                                "getType" if owner == get_type_cls => {
+                                    let recv = args.reg_at(0) as usize;
+                                    if let Some(Some(sid)) = last_new.get(recv) {
+                                        pending_get_type =
+                                            Some(dex.type_descriptor(*sid).to_string());
+                                    }
+                                }
+                                "getInstance" if owner == factory_cls => {
+                                    let targ = args.reg_at(1) as usize;
+                                    if let Some(Some(sub)) = type_reg.get(targ) {
+                                        want_result = Some(sub.clone());
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        Insn::CheckCast(reg, type_idx) => {
+                            if let Some((r, sub)) = pending_inst.take() {
+                                if r == *reg {
+                                    let t = dex.type_descriptor(*type_idx);
+                                    pairs.push((sub, t.to_string()));
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+        // Phase 2 (mutable): intern and record.
+        for (sub, t) in pairs {
+            let sub_id = self.intern(&sub);
+            let t_id = self.intern(&t);
+            self.injekt_type_by_subclass.insert(sub_id, t_id);
+        }
     }
 
     // ---- class loading ----
@@ -821,7 +956,7 @@ impl Vm {
             return Err(JvmError::Fatal("invoke_virtual on null".into()));
         }
         let recv = receiver.as_obj();
-        let target = self.resolve_target(InvokeKind::Virtual, &mref, Some(recv))?;
+        let target = self.resolve_target(InvokeKind::Virtual, &mref, Some(recv), 0)?;
         let mut args = Vec::with_capacity(1 + mref.args.len());
         args.push(receiver);
         self.call_target(target, args)
@@ -845,7 +980,7 @@ impl Vm {
             return Err(JvmError::Fatal("invoke_virtual on null".into()));
         }
         let recv = receiver.as_obj();
-        let target = self.resolve_target(InvokeKind::Virtual, &mref, Some(recv))?;
+        let target = self.resolve_target(InvokeKind::Virtual, &mref, Some(recv), 0)?;
         let mut all = Vec::with_capacity(1 + args.len());
         all.push(receiver);
         all.extend(args);
@@ -866,7 +1001,7 @@ impl Vm {
             args: Vec::new(),
             class_desc: self.intern(class_desc),
         };
-        let target = self.resolve_target(InvokeKind::Static, &mref, None)?;
+        let target = self.resolve_target(InvokeKind::Static, &mref, None, 0)?;
         self.call_target(target, args)
     }
 
@@ -1075,6 +1210,7 @@ impl Vm {
         kind: InvokeKind,
         mref: &MethodRef,
         receiver: Option<u32>,
+        current_class: u32,
     ) -> Result<Target, JvmError> {
         let key = (mref.name, mref.sig);
         // The first class to search depends on the invoke kind.
@@ -1087,10 +1223,19 @@ impl Vm {
                 self.ensure_class_by_desc_id(mref.class_desc)?
             }
             InvokeKind::Super => {
-                // Dalvik: resolve against the ref class and its ancestors.
-                // The ref class (not its superclass) is where the method is
-                // declared; starting at the superclass misses that member.
-                self.ensure_class_by_desc_id(mref.class_desc)?
+                // Dalvik: resolve against the correct superclass start point.
+                // The ref class names the declaring class, but the search
+                // starts at the superclass of the currently executing method's
+                // class and walks up (resolves to the nearest override, which
+                // is at or above the ref class).
+                let sc = self
+                    .classes
+                    .get(current_class as usize)
+                    .and_then(|pc| pc.superclass);
+                match sc {
+                    Some(s) => s,
+                    None => self.ensure_class_by_desc_id(self.hot.object)?,
+                }
             }
         };
         let c0 = c;
@@ -1363,6 +1508,23 @@ impl Vm {
 
     // ---- throwables ----
 
+    /// Real host directory backing `Context.getCacheDir()`: a fresh
+    /// `<tmp>/dexvm-cache-<pid>-<n>` created on first use, so extension
+    /// cache logic runs against a genuine filesystem.
+    pub fn cache_root_path(&mut self) -> &str {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static SEQ: AtomicUsize = AtomicUsize::new(0);
+        if self.cache_root.is_none() {
+            let n = SEQ.fetch_add(1, Ordering::Relaxed);
+            let dir = std::env::temp_dir().join(format!(
+                "dexvm-cache-{}-{n}",
+                std::process::id()
+            ));
+            self.cache_root = Some(dir.to_string_lossy().into_owned());
+        }
+        self.cache_root.as_deref().unwrap()
+    }
+
     pub fn throwable_of(&mut self, class_desc: &str, message: impl Into<String>) -> u32 {
         let class = self
             .ensure_class_by_desc(class_desc)
@@ -1415,6 +1577,12 @@ impl Vm {
     }
     pub fn err_nfe(&mut self, msg: impl Into<String>) -> u32 {
         self.throwable_of("Ljava/lang/NumberFormatException;", msg)
+    }
+    pub fn err_fnf(&mut self, msg: impl Into<String>) -> u32 {
+        self.throwable_of("Ljava/io/FileNotFoundException;", msg)
+    }
+    pub fn err_ioe(&mut self, msg: impl Into<String>) -> u32 {
+        self.throwable_of("Ljava/io/IOException;", msg)
     }
     pub fn err_sioobe(&mut self, msg: impl Into<String>) -> u32 {
         self.throwable_of("Ljava/lang/StringIndexOutOfBoundsException;", msg)

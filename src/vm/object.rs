@@ -132,6 +132,18 @@ impl JsoupDocRef {
     }
 }
 
+/// A parsed JSON value tree (kotlinx.serialization JsonElement model).
+#[derive(Debug, Clone, PartialEq)]
+pub enum JsonVal {
+    Object(Vec<(String, JsonVal)>),
+    Array(Vec<JsonVal>),
+    Str(String),
+    Int(i64),
+    Double(f64),
+    Bool(bool),
+    Null,
+}
+
 /// Native (Rust-backed) objects. Objects of shim classes carry one of these
 /// instead of interpreted fields.
 #[derive(Clone)]
@@ -216,6 +228,7 @@ pub enum Native {
     Call {
         request: JValue,
         client: JValue,
+        canceled: bool,
     },
     /// okhttp3.Interceptor$Chain under execution.
     Chain {
@@ -231,6 +244,7 @@ pub enum Native {
         headers: Vec<(String, String)>,
         body: Option<JValue>,
         request: Option<JValue>,
+        prior: Option<JValue>,
     },
     /// java.security.MessageDigest: algorithm code + accumulated input.
     ///
@@ -266,6 +280,12 @@ pub enum Native {
     Date(i64),
     /// java.util.Locale and other inert Java objects.
     Opaque,
+    /// java.io.File: real host path. Every `File` method operates on the
+    /// actual filesystem (mkdirs/exists/lastModified/resolve/...).
+    File { path: String },
+    /// java.lang.reflect.Type produced by `FullTypeReference.getType()`:
+    /// carries the concrete descriptor from the receiver's generic signature.
+    Type { desc: String },
     /// java.util.TimeZone (zone id string, e.g. "UTC", "GMT+07:00").
     TimeZone(String),
     /// java.text.SimpleDateFormat: pattern + resolved time zone id.
@@ -308,12 +328,31 @@ pub enum Native {
     Headers(Vec<(String, String)>),
     /// okhttp3.Response produced by the host HTTP bridge. `body` is the raw
     /// payload (lossy UTF-8 for text responses); `None` means an empty body.
+    /// `prior` is the response before a redirect (Null when there is none).
     Response {
         code: i32,
         message: String,
         headers: Vec<(String, String)>,
         body: Option<Vec<u8>>,
         request: JValue,
+        prior: JValue,
+    },
+    /// okhttp3.CacheControl: parsed `Cache-Control` request header.
+    CacheControl {
+        max_age: i64,
+        no_cache: bool,
+    },
+    /// okhttp3.CacheControl$Builder (chained `maxAge(...)` before `build()`).
+    CacheControlBuilder {
+        max_age: i64,
+    },
+    /// kotlin.Result failure marker: holds the wrapped throwable.
+    ResultFailure(JValue),
+    /// java.net.URI (raw string form, parsed on demand).
+    URI(String),
+    /// okhttp3.Timeout: configurable timeout values on a call.
+    Timeout {
+        millis: i64,
     },
     /// okhttp3.Cookie.
     Cookie {
@@ -396,6 +435,24 @@ pub enum Native {
     IntRange(i32, i32),
     /// Array descriptor stored on a Class instance of an array type.
     ArrayDesc(ArrayData),
+    /// kotlinx.serialization JsonElement tree node (JsonObject/JsonArray/
+    /// JsonPrimitive/JsonNull objects).
+    Json(JsonVal),
+    /// kotlinx.serialization decoder state over a JsonElement node.
+    JsonDecoder {
+        element: JValue,
+        members: Option<Vec<(String, JValue)>>,
+        index: i32,
+    },
+    /// kotlinx.serialization PluginGeneratedSerialDescriptor.
+    SerialDescriptor {
+        name: String,
+        elements: Vec<String>,
+    },
+    /// kotlinx.serialization JsonElement serializer marker.
+    JsonElementSerializer,
+    /// kotlinx.serialization ArrayListSerializer(elementSerializer).
+    ArrayListSerializer { child: JValue },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -496,6 +553,7 @@ impl Native {
         match self {
             Native::Array(ArrayData::Obj(v)) => push_all(v, out),
             Native::Throwable { cause, .. } => push(Some(cause), out),
+            Native::ResultFailure(t) => push(Some(t), out),
             Native::List(v) | Native::Set(v) | Native::ArrayDeque(v) => push_all(v, out),
             Native::Map(v) => {
                 for (k, val) in v {
@@ -529,7 +587,11 @@ impl Native {
                 push_all(interceptors, out);
                 push_all(network_interceptors, out);
             }
-            Native::Call { request, client } => {
+            Native::Call {
+                request,
+                client,
+                ..
+            } => {
                 push(Some(request), out);
                 push(Some(client), out);
             }
@@ -556,6 +618,20 @@ impl Native {
             Native::SMangasPage { mangas, .. } => push_all(mangas, out),
             Native::SFilter { children, .. } => push_all(children, out),
             Native::SFilterList(v) => push_all(v, out),
+            Native::Json(_) | Native::SerialDescriptor { .. } | Native::JsonElementSerializer => {}
+            Native::JsonDecoder {
+                element,
+                members,
+                ..
+            } => {
+                push(Some(element), out);
+                if let Some(m) = members {
+                    for (_, v) in m {
+                        push(Some(v), out);
+                    }
+                }
+            }
+            Native::ArrayListSerializer { child } => push(Some(child), out),
             #[cfg(feature = "jsoup")]
             Native::JsoupDoc(_) => {}
             #[cfg(feature = "jsoup")]
@@ -586,6 +662,7 @@ impl Native {
             | Native::Random(_)
             | Native::Date(_)
             | Native::Opaque
+            | Native::File { .. }
             | Native::TimeZone(_)
             | Native::DateFormatter { .. }
             | Native::ParsePosition(_)
@@ -605,8 +682,13 @@ impl Native {
             | Native::IntRange(..)
             | Native::ArrayDesc(_)
             | Native::RespBody(_)
-            | Native::ByteArrayInputStream { .. }
-            | Native::OkioBuf { .. } => {}
+| Native::ByteArrayInputStream { .. }
+            | Native::CacheControl { .. }
+            | Native::CacheControlBuilder { .. }
+            | Native::URI(_)
+            | Native::Timeout { .. }
+            | Native::OkioBuf { .. }
+            | Native::Type { .. } => {}
         }
     }
 }
