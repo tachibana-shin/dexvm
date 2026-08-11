@@ -159,6 +159,16 @@ pub enum PreferenceEdit {
     Remove(String),
 }
 
+/// Primitive serializers used by compiler-generated kotlinx.serialization
+/// bytecode.  The serializer implementations themselves are host-backed; the
+/// generated model serializers remain ordinary DEX bytecode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PrimitiveSerializerKind {
+    String,
+    Int,
+    Long,
+}
+
 /// Native (Rust-backed) objects. Objects of shim classes carry one of these
 /// instead of interpreted fields.
 #[derive(Clone)]
@@ -487,6 +497,12 @@ pub enum Native {
         members: Option<Vec<(String, JValue)>>,
         index: i32,
     },
+    /// kotlinx.serialization encoder state for one JSON value. Structured
+    /// serializers append descriptor-named members before `endStructure`.
+    JsonEncoder {
+        value: Option<JsonVal>,
+        elements: Vec<(String, JsonVal)>,
+    },
     /// kotlinx.serialization PluginGeneratedSerialDescriptor.
     SerialDescriptor {
         name: String,
@@ -498,6 +514,8 @@ pub enum Native {
     ArrayListSerializer {
         child: JValue,
     },
+    /// StringSerializer / IntSerializer / LongSerializer singleton marker.
+    PrimitiveSerializer(PrimitiveSerializerKind),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -662,7 +680,11 @@ impl Native {
             Native::SMangasPage { mangas, .. } => push_all(mangas, out),
             Native::SFilter { children, .. } => push_all(children, out),
             Native::SFilterList(v) => push_all(v, out),
-            Native::Json(_) | Native::SerialDescriptor { .. } | Native::JsonElementSerializer => {}
+            Native::Json(_)
+            | Native::JsonEncoder { .. }
+            | Native::SerialDescriptor { .. }
+            | Native::JsonElementSerializer
+            | Native::PrimitiveSerializer(_) => {}
             Native::JsonDecoder {
                 element, members, ..
             } => {

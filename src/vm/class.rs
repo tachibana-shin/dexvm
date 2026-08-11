@@ -1928,6 +1928,56 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     ),
     #[cfg(feature = "tachiyomi")]
     shim!(
+        "Lkotlinx/serialization/builtins/BuiltinSerializersKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/PluginExceptionsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/StringSerializer;",
+        Some("Ljava/lang/Object;"),
+        &["Lkotlinx/serialization/KSerializer;"],
+        0,
+        [sdef!(
+            "INSTANCE",
+            "Lkotlinx/serialization/internal/StringSerializer;",
+            ShimValue::Lazy(native::lazy_string_serializer)
+        )]
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/IntSerializer;",
+        Some("Ljava/lang/Object;"),
+        &["Lkotlinx/serialization/KSerializer;"],
+        0,
+        [sdef!(
+            "INSTANCE",
+            "Lkotlinx/serialization/internal/IntSerializer;",
+            ShimValue::Lazy(native::lazy_int_serializer)
+        )]
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/LongSerializer;",
+        Some("Ljava/lang/Object;"),
+        &["Lkotlinx/serialization/KSerializer;"],
+        0,
+        [sdef!(
+            "INSTANCE",
+            "Lkotlinx/serialization/internal/LongSerializer;",
+            ShimValue::Lazy(native::lazy_long_serializer)
+        )]
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
         "Lcom/squareup/zstd/okio/OkioZstd;",
         Some("Ljava/lang/Object;"),
         &[],
@@ -1940,6 +1990,16 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         &[
             "Lkotlinx/serialization/json/JsonDecoder;",
             "Lkotlinx/serialization/encoding/CompositeDecoder;",
+        ],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        Some("Ljava/lang/Object;"),
+        &[
+            "Lkotlinx/serialization/encoding/Encoder;",
+            "Lkotlinx/serialization/encoding/CompositeEncoder;"
         ],
         0
     ),

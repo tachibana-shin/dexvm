@@ -9,7 +9,7 @@ Checks performed against src/vm/native/:
   3. Every entry from the pre-refactor tables (baseline commit) is still present
      under the same class, except the two known dropped duplicates
      (Request$Builder.build, HttpSource.getHeaders).
-  4. Entry counts per class match the baseline commit exactly.
+  4. New entries added after the split are reported but are not failures.
 
 Usage: python3 tools/verify_native_tables.py
 """
@@ -27,7 +27,12 @@ DROPPED = {
     ('Leu/kanade/tachiyomi/source/online/HttpSource;', 'getHeaders', '()Lokhttp3/Headers;'),
 }
 
-ENTRY_RE = re.compile(r'ne!\("([^"]+;)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*\w+,\s*(\w+)\)')
+# rustfmt expands most registrations to `ne!(\n ... )`, so whitespace is
+# accepted immediately after the opening parenthesis as well as between args.
+ENTRY_RE = re.compile(
+    r'ne!\(\s*"([^"]+;)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"'
+    r'\s*,\s*\w+\s*,\s*(\w+)\s*,?\s*\)'
+)
 FN_RE = re.compile(r'^(?:pub(?:\(crate\))?\s+)?fn\s+(\w+)', re.M)
 # field macros (sm_get_field! / sm_set_field! / sc_get_field! / ...) define fns
 MACRO_FN_RE = re.compile(r'^\w+!\s*\(\s*\w+,', re.M)
@@ -38,6 +43,8 @@ def parse_tree(root):
     entries = {}
     fns = set()
     for p in sorted(root.rglob('*.rs')):
+        if p.name == 'tests.rs':
+            continue
         text = p.read_text()
         for m in ENTRY_RE.finditer(text):
             entries.setdefault((m.group(1), m.group(2), m.group(3)), set()).add(str(p))
@@ -100,7 +107,8 @@ def main():
                     print(f'MISSING FN {m.group(4)} for {key} in {f}')
                     errors += 1
 
-    # 3+4. coverage vs git HEAD
+    # 3+4. Baseline coverage. Additions are expected as API support grows;
+    # removals and changed signatures remain failures.
     head = head_entries()
     missing = [k for k in head if k not in DROPPED and k not in cur]
     extra = [k for k in cur if k not in head]
@@ -113,19 +121,6 @@ def main():
         print(f'{len(extra)} new entries not in the baseline:')
         for k in extra[:10]:
             print('  ', k)
-        errors += 1
-
-    # per-class counts
-    head_by_class = {}
-    for cls, m, sig in head:
-        head_by_class[cls] = head_by_class.get(cls, 0) + 1
-    cur_by_class = {}
-    for cls, m, sig in cur:
-        cur_by_class[cls] = cur_by_class.get(cls, 0) + 1
-    for cls in sorted(set(head_by_class) | set(cur_by_class)):
-        if cls not in {k[0] for k in DROPPED} and head_by_class.get(cls, 0) != cur_by_class.get(cls, 0):
-            print(f'COUNT {cls}: BASE={head_by_class.get(cls, 0)} now={cur_by_class.get(cls, 0)}')
-            errors += 1
 
     total = len(cur)
     print(f'{total} entries, {len(fns)} fns, {len(head)} baseline entries')

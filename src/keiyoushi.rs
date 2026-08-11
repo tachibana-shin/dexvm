@@ -96,6 +96,15 @@ impl Keiyoushi {
         })
     }
 
+    /// Loads an extension together with additional DEX/APK libraries that
+    /// form its boot classpath. Extension classes take precedence over
+    /// library classes.
+    pub fn new_with_libraries(data: &[u8], libraries: &[&[u8]]) -> Result<Self, ContextError> {
+        Ok(Keiyoushi {
+            ctx: Context::new_with_libraries(data, libraries, SandboxOptions::allow_all())?,
+        })
+    }
+
     pub fn open(path: &str) -> Result<Self, ContextError> {
         let data = std::fs::read(path).map_err(ContextError::Io)?;
         Keiyoushi::new(&data)

@@ -141,11 +141,33 @@ impl Context {
 
     /// Loads a dex with the given sandbox grants pre-applied.
     pub fn new_with(data: &[u8], options: SandboxOptions) -> Result<Context, ContextError> {
-        let dexes_data = if data.starts_with(b"PK\x03\x04") || data.starts_with(b"PK\x05\x06") {
-            dexes_from_apk(data)?
-        } else {
-            vec![data.to_vec()]
-        };
+        Context::new_with_libraries(data, &[], options)
+    }
+
+    /// Loads an application DEX/APK plus additional DEX/APK libraries.
+    ///
+    /// Application classes have precedence, followed by libraries in the
+    /// supplied order. This acts as a boot classpath for pure Java/Kotlin
+    /// dependencies such as jsoup or kotlinx.serialization: their real DEX
+    /// bytecode can run in the VM while host shims remain responsible only
+    /// for platform operations.
+    pub fn new_with_libraries(
+        data: &[u8],
+        libraries: &[&[u8]],
+        options: SandboxOptions,
+    ) -> Result<Context, ContextError> {
+        fn container_dexes(data: &[u8]) -> Result<Vec<Vec<u8>>, ContextError> {
+            if data.starts_with(b"PK\x03\x04") || data.starts_with(b"PK\x05\x06") {
+                dexes_from_apk(data)
+            } else {
+                Ok(vec![data.to_vec()])
+            }
+        }
+
+        let mut dexes_data = container_dexes(data)?;
+        for library in libraries {
+            dexes_data.extend(container_dexes(library)?);
+        }
         let mut dexes = Vec::with_capacity(dexes_data.len());
         for d in dexes_data {
             dexes.push(DexFile::parse(&d).map_err(|e| ContextError::Dex(e.to_string()))?);
@@ -442,6 +464,59 @@ mod tests {
         assert_eq!(v, JValue::Int(11));
         let v = ctx.call("Lm2/Helper;", "VERSION", &[]).unwrap_err();
         assert!(matches!(v, JvmError::Resolution(_)));
+    }
+
+    #[test]
+    fn additional_apk_acts_as_boot_classpath() {
+        fn must_not_override_bytecode(_vm: &mut Vm, _args: &[JValue]) -> Result<JValue, NatErr> {
+            Ok(JValue::Int(999))
+        }
+        fn fill_missing_method(_vm: &mut Vm, _args: &[JValue]) -> Result<JValue, NatErr> {
+            Ok(JValue::Int(123))
+        }
+        static NATIVE_FALLBACKS: &[NativeEntry] = &[
+            NativeEntry {
+                class: "Lm2/Helper;",
+                name: "add",
+                sig: "(II)I",
+                instance: false,
+                f: must_not_override_bytecode,
+            },
+            NativeEntry {
+                class: "Lm2/Helper;",
+                name: "hostFallback",
+                sig: "()I",
+                instance: false,
+                f: fill_missing_method,
+            },
+        ];
+        crate::vm::native::register_global(NATIVE_FALLBACKS);
+
+        let app = std::fs::read("fixtures/classes.dex").unwrap();
+        let library = std::fs::read("fixtures/multidex.apk").unwrap();
+        let mut ctx =
+            Context::new_with_libraries(&app, &[library.as_slice()], SandboxOptions::allow_all())
+                .unwrap();
+
+        let value = ctx
+            .call("Lm2/Helper;", "add", &[JValue::Int(8), JValue::Int(9)])
+            .unwrap();
+        assert_eq!(value, JValue::Int(17));
+        assert_eq!(
+            ctx.call("Lm2/Helper;", "hostFallback", &[]).unwrap(),
+            JValue::Int(123)
+        );
+        let vm = ctx.vm();
+        let helper = vm.ensure_class_by_desc("Lm2/Helper;").unwrap();
+        let method = vm.classes[helper as usize]
+            .methods
+            .iter()
+            .find(|method| vm.str_of(method.name) == "add")
+            .unwrap();
+        assert!(method.native_key.is_none());
+        assert!(method.code.is_some());
+        // The application's primary DEX remains the public primary view.
+        assert!(ctx.dex().strings.iter().any(|s| s.as_ref() == "Lk;"));
     }
 
     #[test]

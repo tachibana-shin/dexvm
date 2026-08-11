@@ -199,7 +199,7 @@ pub(crate) const SECURITY_TABLE: &[NativeEntry] = &[
         "Ljava/security/MessageDigest;",
         "getInstance",
         "(Ljava/lang/String;)Ljava/security/MessageDigest;",
-        true,
+        false,
         md_get_instance
     ),
     ne!(

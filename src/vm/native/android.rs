@@ -1,6 +1,6 @@
 //! android / androidx framework host shims (keiyoushi feature).
 
-use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
+use base64::engine::general_purpose::{STANDARD, STANDARD_NO_PAD, URL_SAFE, URL_SAFE_NO_PAD};
 use base64::Engine as _;
 
 use super::*;
@@ -686,18 +686,45 @@ pub(crate) fn fileskt_resolve(vm: &mut Vm, args: &[JValue]) -> R {
 fn base64_decode(vm: &mut Vm, args: &[JValue]) -> R {
     let s = jstr(vm, args[0])?;
     let flags = int_of(vm, args[1]);
-    let t = s.trim();
-    let bytes = if flags & 4 != 0 {
-        URL_SAFE_NO_PAD
-            .decode(t.trim_end_matches('='))
-            .map_err(|_| iae(vm, "Base64 decode failed"))?
+    let t: String = s.chars().filter(|c| !c.is_ascii_whitespace()).collect();
+    let bytes = if flags & 8 != 0 {
+        URL_SAFE
+            .decode(&t)
+            .or_else(|_| URL_SAFE_NO_PAD.decode(t.trim_end_matches('=')))
     } else {
         STANDARD
-            .decode(t)
-            .map_err(|_| iae(vm, "Base64 decode failed"))?
-    };
+            .decode(&t)
+            .or_else(|_| STANDARD_NO_PAD.decode(t.trim_end_matches('=')))
+    }
+    .map_err(|_| iae(vm, "Base64 decode failed"))?;
     let data = bytes.into_iter().map(|b| b as i8).collect::<Vec<_>>();
     alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))
+}
+
+/// `android.util.Base64.encodeToString(byte[], int)`.
+fn base64_encode_to_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = bytes_of(vm, args[0]).ok_or_else(|| npe(vm))?;
+    let flags = int_of(vm, args[1]);
+    let url_safe = flags & 8 != 0;
+    let no_padding = flags & 1 != 0;
+    let raw = match (url_safe, no_padding) {
+        (false, false) => STANDARD.encode(bytes),
+        (false, true) => STANDARD_NO_PAD.encode(bytes),
+        (true, false) => URL_SAFE.encode(bytes),
+        (true, true) => URL_SAFE_NO_PAD.encode(bytes),
+    };
+    if flags & 2 != 0 || raw.is_empty() {
+        return Ok(new_str(vm, &raw));
+    }
+    let newline = if flags & 4 != 0 { "\r\n" } else { "\n" };
+    let mut wrapped = raw
+        .as_bytes()
+        .chunks(76)
+        .map(|line| std::str::from_utf8(line).expect("base64 is ASCII"))
+        .collect::<Vec<_>>()
+        .join(newline);
+    wrapped.push_str(newline);
+    Ok(new_str(vm, &wrapped))
 }
 
 // ---------------------------------------------------------------------------
@@ -1050,25 +1077,34 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "Landroid/util/Base64;",
         "decode",
         "(Ljava/lang/String;I)[B",
-        true,
+        false,
         base64_decode
+    ),
+    ne!(
+        "Landroid/util/Base64;",
+        "encodeToString",
+        "([BI)Ljava/lang/String;",
+        false,
+        base64_encode_to_string
     ),
     ne!(
         "Landroid/os/SystemClock;",
         "elapsedRealtime",
         "()J",
-        true,
+        false,
         elpased_realtime
     ),
 ];
 
-#[cfg(feature = "okhttp")]
 pub(crate) fn elpased_realtime(_vm: &mut Vm, _args: &[JValue]) -> R {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let millis = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| i64::try_from(d.as_millis()).unwrap_or(0))
-        .unwrap_or(0);
+    static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+    let millis = i64::try_from(
+        START
+            .get_or_init(std::time::Instant::now)
+            .elapsed()
+            .as_millis(),
+    )
+    .unwrap_or(i64::MAX);
     Ok(JValue::Long(millis))
 }
 

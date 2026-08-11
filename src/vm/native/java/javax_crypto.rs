@@ -124,7 +124,7 @@ pub(crate) const JAVAX_CRYPTO_TABLE: &[NativeEntry] = &[
         "Ljavax/crypto/Cipher;",
         "getInstance",
         "(Ljava/lang/String;)Ljavax/crypto/Cipher;",
-        true,
+        false,
         cipher_get_instance
     ),
     ne!(

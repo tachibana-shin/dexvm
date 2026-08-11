@@ -194,6 +194,34 @@ fn children_parent_html() {
 }
 
 #[test]
+fn parse_location_title_parents_and_previous_sibling() {
+    with_vm(|vm| {
+        let html = s(
+            vm,
+            "<html><head><title>Example</title></head><body><main><p>one</p>text<p>two</p></main></body></html>",
+        );
+        let base = s(vm, "https://example.test/path");
+        let doc = jsoup_parse_string(vm, &[html, base]).unwrap();
+        assert_eq!(
+            s_of!(vm, document_location(vm, &[doc])),
+            "https://example.test/path"
+        );
+        assert_eq!(s_of!(vm, document_title(vm, &[doc])), "Example");
+
+        let selector = s(vm, "p");
+        let paragraphs = document_select(vm, &[doc, selector]).unwrap();
+        let second = elements_get(vm, &[paragraphs, JValue::Int(1)]).unwrap();
+        let previous = element_previous_sibling(vm, &[second]).unwrap();
+        assert_eq!(s_of!(vm, element_text(vm, &[previous])), "one");
+
+        let parents = element_parents(vm, &[second]).unwrap();
+        assert!(int_of(elements_size(vm, &[parents]).unwrap()) >= 3);
+        let first_parent = elements_first(vm, &[parents]).unwrap();
+        assert_eq!(s_of!(vm, element_tag_name(vm, &[first_parent])), "main");
+    });
+}
+
+#[test]
 fn select_includes_self_when_matching() {
     with_vm(|vm| {
         let html = "<div><p>a</p><span>b</span></div>";

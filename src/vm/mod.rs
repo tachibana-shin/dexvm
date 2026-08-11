@@ -601,6 +601,70 @@ impl Vm {
             )?;
         }
 
+        // A real DEX declaration always wins. Native entries only fill API
+        // holes in a partially supplied class, or provide the implementation
+        // for a DEX method explicitly declared `native` (JNI itself is not
+        // available). Later entries win, preserving per-context host override
+        // precedence over built-in/global fallbacks.
+        let mut native_fallbacks: Vec<NativeEntry> = Vec::new();
+        let mut candidates: Vec<NativeEntry> = native::native_tables()
+            .into_iter()
+            .flatten()
+            .chain(native::global_native_entries())
+            .filter(|entry| entry.class == desc)
+            .copied()
+            .collect();
+        candidates.extend(
+            self.host_natives
+                .iter()
+                .filter(|entry| entry.class == desc)
+                .copied(),
+        );
+        for entry in candidates {
+            if let Some(existing) = native_fallbacks
+                .iter_mut()
+                .find(|existing| existing.name == entry.name && existing.sig == entry.sig)
+            {
+                *existing = entry;
+            } else {
+                native_fallbacks.push(entry);
+            }
+        }
+        for entry in native_fallbacks {
+            let name = self.intern(entry.name);
+            let sig = self.intern(entry.sig);
+            let key = (name, sig);
+            if let Some(&slot) = dispatch.get(&key) {
+                let method = &mut methods[slot as usize];
+                if method.native_decl && method.static_method == !entry.instance {
+                    method.native_key = Some((desc_id, name, sig));
+                    method.native_decl = false;
+                }
+                continue;
+            }
+            let (args, ret) = parse_sig(entry.sig);
+            let static_method = !entry.instance;
+            let slot = methods.len() as u32;
+            let ret = self.intern(ret);
+            let args = args.iter().map(|arg| self.intern(arg)).collect();
+            dispatch.insert(key, slot);
+            methods.push(Method {
+                slot,
+                class: id,
+                name,
+                sig,
+                ret,
+                args,
+                access_flags: class::ACC_PUBLIC | if static_method { ACC_STATIC } else { 0 },
+                static_method,
+                dex_idx: 0,
+                native_key: Some((desc_id, name, sig)),
+                native_decl: false,
+                code: None,
+                insns: OnceLock::new(),
+            });
+        }
+
         let cl = &mut self.classes[id as usize];
         cl.instance_fields = instance_fields;
         cl.field_offsets = field_offsets;

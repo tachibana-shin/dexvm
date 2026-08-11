@@ -14,9 +14,9 @@ pub(crate) use ::fancy_regex::Regex;
 
 pub(crate) use crate::dex::insn::InvokeKind;
 pub(crate) use crate::vm::error::JvmError;
-#[cfg(feature = "tachiyomi")]
-pub(crate) use crate::vm::object::JsonVal;
 pub(crate) use crate::vm::object::{ArrayData, ClassOrPrim, IterKind, MatcherState, Native};
+#[cfg(feature = "tachiyomi")]
+pub(crate) use crate::vm::object::{JsonVal, PrimitiveSerializerKind};
 #[cfg(feature = "android")]
 pub(crate) use crate::vm::object::{PreferenceEdit, PreferenceValue};
 pub(crate) use crate::vm::value::JValue;
@@ -452,6 +452,12 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             "Lkotlinx/serialization/internal/ArrayListSerializer;" => {
                 Some(Native::ArrayListSerializer {
                     child: JValue::Null,
+                })
+            }
+            "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;" => {
+                Some(Native::JsonEncoder {
+                    value: None,
+                    elements: Vec::new(),
                 })
             }
             "Ljava/util/ArrayDeque;" => Some(Native::ArrayDeque(Vec::new())),

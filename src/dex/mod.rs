@@ -41,13 +41,14 @@ pub struct Annotation {
 }
 
 impl EncodedValue {
-    /// Decode one encoded value. `value_arg` (low nibble of the first byte)
-    /// is the number of payload bytes minus one for byte-width types.
+    /// Decode one encoded value. The header's low five bits are `value_type`;
+    /// the high three bits are `value_arg` (payload byte count minus one for
+    /// byte-width values, or the boolean value for `VALUE_BOOLEAN`).
     fn decode(c: &mut Cursor) -> Result<EncodedValue, DexError> {
         let b = c.u8()?;
-        let value_type = b >> 4;
-        let value_arg = (b & 0x0f) as usize;
-        let size = if value_arg == 0x0f { 0 } else { value_arg + 1 };
+        let value_type = b & 0x1f;
+        let value_arg = (b >> 5) as usize;
+        let size = value_arg + 1;
         let read_signed = |c: &mut Cursor, n: usize| -> Result<i64, DexError> {
             let mut v: u64 = 0;
             for i in 0..n {
@@ -57,19 +58,35 @@ impl EncodedValue {
             let shift = 64 - 8 * n;
             Ok(((v << shift) as i64) >> shift)
         };
+        let read_unsigned = |c: &mut Cursor, n: usize| -> Result<u32, DexError> {
+            let mut v = 0u32;
+            for i in 0..n {
+                v |= u32::from(c.u8()?) << (8 * i);
+            }
+            Ok(v)
+        };
+        let invalid_arg = |c: &Cursor| {
+            DexError::new(
+                c.pos - 1,
+                format!("invalid value_arg {value_arg} for encoded value type {value_type:#x}"),
+            )
+        };
         match value_type {
-            0x00 => Ok(EncodedValue::Byte(read_signed(c, size)? as i8)),
-            0x02 => Ok(EncodedValue::Short(read_signed(c, size)? as i16)),
+            0x00 if value_arg == 0 => Ok(EncodedValue::Byte(read_signed(c, size)? as i8)),
+            0x02 if value_arg <= 1 => Ok(EncodedValue::Short(read_signed(c, size)? as i16)),
             0x03 => Ok(EncodedValue::Char({
+                if value_arg > 1 {
+                    return Err(invalid_arg(c));
+                }
                 let mut v: u64 = 0;
                 for i in 0..size {
                     v |= u64::from(c.u8()?) << (8 * i);
                 }
                 v as u16
             })),
-            0x04 => Ok(EncodedValue::Int(read_signed(c, size)? as i32)),
-            0x06 => Ok(EncodedValue::Long(read_signed(c, size)?)),
-            0x10 => {
+            0x04 if value_arg <= 3 => Ok(EncodedValue::Int(read_signed(c, size)? as i32)),
+            0x06 if value_arg <= 7 => Ok(EncodedValue::Long(read_signed(c, size)?)),
+            0x10 if value_arg <= 3 => {
                 // float: value_arg size <= 4, stored shifted right
                 let mut v: u64 = 0;
                 for i in 0..size {
@@ -79,21 +96,27 @@ impl EncodedValue {
                     (v << (32 - 8 * size)) as u32,
                 )))
             }
-            0x11 => {
+            0x11 if value_arg <= 7 => {
                 let mut v: u64 = 0;
                 for i in 0..size {
                     v |= u64::from(c.u8()?) << (8 * i);
                 }
                 Ok(EncodedValue::Double(f64::from_bits(v << (64 - 8 * size))))
             }
-            0x15 => Ok(EncodedValue::MethodType(read_uleb_idx(c)?)),
-            0x16 => Ok(EncodedValue::MethodHandle(read_uleb_idx(c)?)),
-            0x17 => Ok(EncodedValue::String(read_uleb_idx(c)?)),
-            0x18 => Ok(EncodedValue::Type(read_uleb_idx(c)?)),
-            0x19 => Ok(EncodedValue::Field(read_uleb_idx(c)?)),
-            0x1a => Ok(EncodedValue::Method(read_uleb_idx(c)?)),
-            0x1b => Ok(EncodedValue::Enum(read_uleb_idx(c)?)),
-            0x1c => {
+            0x15..=0x1b if value_arg <= 3 => {
+                let index = read_unsigned(c, size)?;
+                Ok(match value_type {
+                    0x15 => EncodedValue::MethodType(index),
+                    0x16 => EncodedValue::MethodHandle(index),
+                    0x17 => EncodedValue::String(index),
+                    0x18 => EncodedValue::Type(index),
+                    0x19 => EncodedValue::Field(index),
+                    0x1a => EncodedValue::Method(index),
+                    0x1b => EncodedValue::Enum(index),
+                    _ => unreachable!(),
+                })
+            }
+            0x1c if value_arg == 0 => {
                 let n = c.uleb128()? as usize;
                 let mut items = Vec::with_capacity(n);
                 for _ in 0..n {
@@ -101,7 +124,7 @@ impl EncodedValue {
                 }
                 Ok(EncodedValue::Array(items))
             }
-            0x1d => {
+            0x1d if value_arg == 0 => {
                 let type_idx = c.uleb128()?;
                 let n = c.uleb128()? as usize;
                 let mut elements = Vec::with_capacity(n);
@@ -112,18 +135,15 @@ impl EncodedValue {
                 }
                 Ok(EncodedValue::Annotation(Annotation { type_idx, elements }))
             }
-            0x1e => Ok(EncodedValue::Null),
-            0x1f => Ok(EncodedValue::Bool(size > 0 && c.u8()? != 0)),
+            0x1e if value_arg == 0 => Ok(EncodedValue::Null),
+            0x1f if value_arg <= 1 => Ok(EncodedValue::Bool(value_arg != 0)),
+            0x00 | 0x02..=0x04 | 0x06 | 0x10..=0x11 | 0x15..=0x1f => Err(invalid_arg(c)),
             other => Err(DexError::new(
                 c.pos - 1,
                 format!("unknown encoded value type {other:#x}"),
             )),
         }
     }
-}
-
-fn read_uleb_idx(c: &mut Cursor) -> Result<u32, DexError> {
-    c.uleb128()
 }
 
 #[derive(Debug, Clone)]
@@ -728,5 +748,37 @@ mod tests {
     fn sleb128_roundtrip() {
         let mut c = Cursor::new(&[0xc0, 0xbb, 0x78]); // -123456 (encoded)
         assert_eq!(c.sleb128().unwrap(), -123456);
+    }
+
+    #[test]
+    fn decodes_encoded_value_header_and_fixed_width_indices() {
+        let mut byte = Cursor::new(&[0x00, 0xfe]);
+        assert_eq!(
+            EncodedValue::decode(&mut byte).unwrap(),
+            EncodedValue::Byte(-2)
+        );
+
+        let mut int = Cursor::new(&[0x24, 0x34, 0x12]);
+        assert_eq!(
+            EncodedValue::decode(&mut int).unwrap(),
+            EncodedValue::Int(0x1234)
+        );
+
+        let mut string = Cursor::new(&[0x37, 0x34, 0x12]);
+        assert_eq!(
+            EncodedValue::decode(&mut string).unwrap(),
+            EncodedValue::String(0x1234)
+        );
+
+        let mut false_value = Cursor::new(&[0x1f]);
+        assert_eq!(
+            EncodedValue::decode(&mut false_value).unwrap(),
+            EncodedValue::Bool(false)
+        );
+        let mut true_value = Cursor::new(&[0x3f]);
+        assert_eq!(
+            EncodedValue::decode(&mut true_value).unwrap(),
+            EncodedValue::Bool(true)
+        );
     }
 }

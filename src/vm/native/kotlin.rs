@@ -298,6 +298,17 @@ pub(crate) fn intrinsics_are_equal(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(i32::from(java_equals(vm, args[0], args[1])?)))
 }
 
+pub(crate) fn intrinsics_check_not_null_parameter(vm: &mut Vm, args: &[JValue]) -> R {
+    if args[0].is_null_ref() {
+        let name = jstr(vm, args[1]).unwrap_or_else(|_| "parameter".into());
+        return Err(NatErr::Throw(vm.throwable_of(
+            "Ljava/lang/NullPointerException;",
+            format!("{name} must not be null"),
+        )));
+    }
+    Ok(JValue::Null)
+}
+
 // kotlin.Pair / TuplesKt
 // ---------------------------------------------------------------------------
 
@@ -817,6 +828,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "collectionSizeOrDefault", "(Ljava/lang/Iterable;I)I", false, collections_size_or_default),
     ne!("Lkotlin/collections/CollectionsKt;", "joinToString$default", "(Ljava/lang/Iterable;Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;ILjava/lang/CharSequence;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/String;", false, collections_join_to_string_default),
     ne!("Lkotlin/jvm/internal/Intrinsics;", "areEqual", "(Ljava/lang/Object;Ljava/lang/Object;)Z", false, intrinsics_are_equal),
+    ne!("Lkotlin/jvm/internal/Intrinsics;", "checkNotNullParameter", "(Ljava/lang/Object;Ljava/lang/String;)V", false, intrinsics_check_not_null_parameter),
     ne!("Lkotlin/Pair;", "getFirst", "()Ljava/lang/Object;", true, pair_get_first),
     ne!("Lkotlin/Pair;", "getSecond", "()Ljava/lang/Object;", true, pair_get_second),
     ne!("Lkotlin/Pair;", "component1", "()Ljava/lang/Object;", true, pair_get_first),

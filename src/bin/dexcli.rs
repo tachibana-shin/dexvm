@@ -3,6 +3,7 @@ use dexvm::vm::error::JvmError;
 use dexvm::vm::value::JValue;
 use dexvm::vm::Vm;
 use dexvm::{Context, SandboxOptions};
+use std::collections::{BTreeMap, BTreeSet};
 
 fn proto_sig(dex: &DexFile, proto_id: u32) -> String {
     let p = &dex.protos[proto_id as usize];
@@ -13,6 +14,142 @@ fn proto_sig(dex: &DexFile, proto_id: u32) -> String {
     s.push(')');
     s.push_str(dex.type_descriptor(p.return_type));
     s
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ApiSupport {
+    Native,
+    Bytecode,
+    MissingClass,
+    MissingMethod,
+    DynamicInterface,
+    StaticMismatch,
+    UnsupportedJni,
+}
+
+fn find_method(
+    vm: &Vm,
+    class: u32,
+    key: (u32, u32),
+    seen: &mut BTreeSet<u32>,
+) -> Option<(u32, u32)> {
+    if !seen.insert(class) {
+        return None;
+    }
+    let class_def = vm.classes.get(class as usize)?;
+    if let Some(&slot) = class_def.dispatch.get(&key) {
+        return Some((class, slot));
+    }
+    if let Some(superclass) = class_def.superclass {
+        if let Some(found) = find_method(vm, superclass, key, seen) {
+            return Some(found);
+        }
+    }
+    for &interface in &class_def.interfaces {
+        if let Some(found) = find_method(vm, interface, key, seen) {
+            return Some(found);
+        }
+    }
+    None
+}
+
+fn api_support(vm: &mut Vm, class: &str, name: &str, sig: &str, static_call: bool) -> ApiSupport {
+    let class_id = match vm.ensure_class_by_desc(class) {
+        Ok(class_id) => class_id,
+        Err(_) => return ApiSupport::MissingClass,
+    };
+    let key = (vm.intern(name), vm.intern(sig));
+    let Some((owner, slot)) = find_method(vm, class_id, key, &mut BTreeSet::new()) else {
+        if vm.classes[class_id as usize].is_interface && !static_call {
+            return ApiSupport::DynamicInterface;
+        }
+        return ApiSupport::MissingMethod;
+    };
+    let method = &vm.classes[owner as usize].methods[slot as usize];
+    if method.static_method != static_call && name != "<init>" {
+        return ApiSupport::StaticMismatch;
+    }
+    if method.native_decl {
+        ApiSupport::UnsupportedJni
+    } else if method.is_native() {
+        ApiSupport::Native
+    } else {
+        ApiSupport::Bytecode
+    }
+}
+
+fn audit_api_coverage(vm: &mut Vm) {
+    use dexvm::dex::insn::{decode_all, Insn, InvokeKind};
+
+    let defined: BTreeSet<String> = vm
+        .dexes
+        .iter()
+        .flat_map(|dex| {
+            dex.classes
+                .iter()
+                .map(|class| dex.type_descriptor(class.class_idx).to_owned())
+        })
+        .collect();
+    let mut calls: BTreeMap<(String, String, String, bool), usize> = BTreeMap::new();
+    for dex in &vm.dexes {
+        for class in &dex.classes {
+            let Some(data) = &class.class_data else {
+                continue;
+            };
+            for encoded in data.direct_methods.iter().chain(&data.virtual_methods) {
+                let Some(code) = &encoded.code else {
+                    continue;
+                };
+                let Ok(decoded) = decode_all(&code.insns) else {
+                    continue;
+                };
+                for insn in decoded.insns.iter() {
+                    let Insn::Invoke(kind, method_idx, _) = insn else {
+                        continue;
+                    };
+                    let method = &dex.methods[*method_idx as usize];
+                    let owner = dex.type_descriptor(method.class).to_owned();
+                    if defined.contains(&owner) {
+                        continue;
+                    }
+                    let name = dex.strings[method.name as usize].to_string();
+                    let sig = proto_sig(dex, method.proto);
+                    let static_call = matches!(kind, InvokeKind::Static);
+                    *calls.entry((owner, name, sig, static_call)).or_default() += 1;
+                }
+            }
+        }
+    }
+
+    let mut counts: BTreeMap<&'static str, usize> = BTreeMap::new();
+    let mut missing = Vec::new();
+    for ((class, name, sig, static_call), uses) in calls {
+        let support = api_support(vm, &class, &name, &sig, static_call);
+        let label = match support {
+            ApiSupport::Native => "native",
+            ApiSupport::Bytecode => "bytecode",
+            ApiSupport::MissingClass => "missing-class",
+            ApiSupport::MissingMethod => "missing-method",
+            ApiSupport::DynamicInterface => "dynamic-interface",
+            ApiSupport::StaticMismatch => "static-mismatch",
+            ApiSupport::UnsupportedJni => "unsupported-jni",
+        };
+        *counts.entry(label).or_default() += 1;
+        if !matches!(
+            support,
+            ApiSupport::Native | ApiSupport::Bytecode | ApiSupport::DynamicInterface
+        ) {
+            missing.push((label, uses, class, name, sig));
+        }
+    }
+
+    println!("-- external API coverage (distinct invoked signatures):");
+    for (label, count) in counts {
+        println!("  {label}: {count}");
+    }
+    for (label, uses, class, name, sig) in missing {
+        println!("  [{label}, x{uses}] {class}->{name}{sig}");
+    }
 }
 
 fn disassemble(dex: &DexFile, class: &str, method: &str) {
@@ -327,6 +464,7 @@ fn main() {
     let mut path: Option<String> = None;
     let mut show_types = false;
     let mut show_classes = false;
+    let mut api_coverage = false;
     let mut show_methods: Option<String> = None;
     let mut refs_target: Option<String> = None;
     let mut show_code: Option<(String, String)> = None;
@@ -337,6 +475,7 @@ fn main() {
         match args[i].as_str() {
             "--types" => show_types = true,
             "--classes" => show_classes = true,
+            "--api-coverage" => api_coverage = true,
             "--code" => {
                 i += 1;
                 let class = args.get(i).cloned().unwrap_or_default();
@@ -382,7 +521,7 @@ fn main() {
         i += 1;
     }
     let path = path.unwrap_or_else(|| {
-        eprintln!("usage: dexcli [--types] [--classes] [--methods <class>] [--code <class> <method>] [--run <class> <method> [ints...]] [--call ...] <file.dex|file.apk>");
+        eprintln!("usage: dexcli [--types] [--classes] [--api-coverage] [--methods <class>] [--code <class> <method>] [--run <class> <method> [ints...]] [--call ...] <file.dex|file.apk>");
         std::process::exit(2);
     });
     let data = std::fs::read(&path).unwrap_or_else(|e| {
@@ -396,31 +535,37 @@ fn main() {
             std::process::exit(1);
         }
     };
-    let dex = ctx.dex();
-    println!("dex: {} bytes", dex.data.len());
-    println!(
-        "strings={} types={} protos={} fields={} methods={} classes={}",
-        dex.strings.len(),
-        dex.types.len(),
-        dex.protos.len(),
-        dex.fields.len(),
-        dex.methods.len(),
-        dex.classes.len(),
-    );
-    if show_types {
-        let defined: std::collections::HashSet<u32> =
-            dex.classes.iter().map(|c| c.class_idx).collect();
-        println!("-- external (host API) types referenced:");
-        for (i, _t) in dex.types.iter().enumerate() {
-            if !defined.contains(&(i as u32)) {
-                println!("  {i}: {}", dex.type_descriptor(i as u32));
+    {
+        let dex = ctx.dex();
+        println!("dex: {} bytes", dex.data.len());
+        println!(
+            "strings={} types={} protos={} fields={} methods={} classes={}",
+            dex.strings.len(),
+            dex.types.len(),
+            dex.protos.len(),
+            dex.fields.len(),
+            dex.methods.len(),
+            dex.classes.len(),
+        );
+        if show_types {
+            let defined: std::collections::HashSet<u32> =
+                dex.classes.iter().map(|c| c.class_idx).collect();
+            println!("-- external (host API) types referenced:");
+            for (i, _t) in dex.types.iter().enumerate() {
+                if !defined.contains(&(i as u32)) {
+                    println!("  {i}: {}", dex.type_descriptor(i as u32));
+                }
             }
         }
+        if show_classes {
+            println!("-- classes:");
+            list_classes(dex);
+        }
     }
-    if show_classes {
-        println!("-- classes:");
-        list_classes(dex);
+    if api_coverage {
+        audit_api_coverage(ctx.vm());
     }
+    let dex = ctx.dex();
     if let Some(desc) = refs_target {
         let mut desc = desc;
         if !desc.starts_with('L') && !desc.starts_with('[') {

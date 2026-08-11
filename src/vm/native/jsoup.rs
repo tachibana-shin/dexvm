@@ -133,6 +133,15 @@ pub(crate) fn jsoup_parse(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Lorg/jsoup/nodes/Document;", Native::JsoupDoc(refd))
 }
 
+/// `Jsoup.parse(html, baseUri)`.
+pub(crate) fn jsoup_parse_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = jstr(vm, args[0])?;
+    let base = jstr(vm, args[1])?;
+    let mut doc = JsoupDocRef::new(Document::from(text));
+    doc.base = Some(base);
+    alloc(vm, "Lorg/jsoup/nodes/Document;", Native::JsoupDoc(doc))
+}
+
 fn jsoup_first_selector_arg(vm: &mut Vm, args: &[JValue]) -> Result<String, NatErr> {
     jstr(vm, args[1]).map_err(|_| npe(vm))
 }
@@ -178,6 +187,23 @@ pub(crate) fn document_text(vm: &mut Vm, args: &[JValue]) -> R {
     let root = doc.doc.root();
     let text = soup_text(root);
     Ok(vm.alloc_string(&text))
+}
+
+pub(crate) fn document_location(vm: &mut Vm, args: &[JValue]) -> R {
+    let doc = doc_of(vm, args[0])?;
+    Ok(vm.alloc_string(doc.base.as_deref().unwrap_or("")))
+}
+
+pub(crate) fn document_title(vm: &mut Vm, args: &[JValue]) -> R {
+    let doc = doc_of(vm, args[0])?;
+    let title = {
+        let root = doc.doc.root();
+        select_matches(&doc.doc, root, "title")
+            .first()
+            .map(|id| soup_text(node_ref_of(&doc.doc, *id)))
+            .unwrap_or_default()
+    };
+    Ok(vm.alloc_string(&title))
 }
 
 pub(crate) fn element_select(vm: &mut Vm, args: &[JValue]) -> R {
@@ -303,6 +329,38 @@ pub(crate) fn element_parent(vm: &mut Vm, args: &[JValue]) -> R {
                 doc: doc.clone(),
                 id: p.id,
             },
+        ),
+        None => Ok(JValue::Null),
+    }
+}
+
+pub(crate) fn element_parents(vm: &mut Vm, args: &[JValue]) -> R {
+    let doc = doc_of(vm, args[0])?;
+    let id = payload(vm, args[0])
+        .and_then(element_id_of)
+        .ok_or_else(|| npe(vm))?;
+    let ids = node_ref_of(&doc.doc, id)
+        .ancestors(None)
+        .into_iter()
+        .filter(|node| node.is_element())
+        .map(|node| node.id)
+        .collect();
+    jsoup_elements(vm, doc, ids)
+}
+
+pub(crate) fn element_previous_sibling(vm: &mut Vm, args: &[JValue]) -> R {
+    let doc = doc_of(vm, args[0])?;
+    let id = payload(vm, args[0])
+        .and_then(element_id_of)
+        .ok_or_else(|| npe(vm))?;
+    let previous = node_ref_of(&doc.doc, id)
+        .prev_element_sibling()
+        .map(|node| node.id);
+    match previous {
+        Some(id) => alloc(
+            vm,
+            "Lorg/jsoup/nodes/Element;",
+            Native::JsoupElement { doc, id },
         ),
         None => Ok(JValue::Null),
     }
@@ -539,8 +597,15 @@ pub(crate) const JSOUP_TABLE: &[NativeEntry] = &[
         "Leu/kanade/tachiyomi/util/JsoupExtensionsKt;",
         "asJsoup$default",
         "(Lokhttp3/Response;Ljava/lang/String;ILjava/lang/Object;)Lorg/jsoup/nodes/Document;",
-        true,
+        false,
         jsoup_parse
+    ),
+    ne!(
+        "Lorg/jsoup/Jsoup;",
+        "parse",
+        "(Ljava/lang/String;Ljava/lang/String;)Lorg/jsoup/nodes/Document;",
+        false,
+        jsoup_parse_string
     ),
     ne!(
         "Lorg/jsoup/nodes/Document;",
@@ -555,6 +620,20 @@ pub(crate) const JSOUP_TABLE: &[NativeEntry] = &[
         "()Ljava/lang/String;",
         true,
         document_text
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Document;",
+        "location",
+        "()Ljava/lang/String;",
+        true,
+        document_location
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Document;",
+        "title",
+        "()Ljava/lang/String;",
+        true,
+        document_title
     ),
     ne!(
         "Lorg/jsoup/nodes/Element;",
@@ -597,6 +676,20 @@ pub(crate) const JSOUP_TABLE: &[NativeEntry] = &[
         "()Lorg/jsoup/nodes/Element;",
         true,
         element_parent
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "parents",
+        "()Lorg/jsoup/select/Elements;",
+        true,
+        element_parents
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "previousElementSibling",
+        "()Lorg/jsoup/nodes/Element;",
+        true,
+        element_previous_sibling
     ),
     ne!(
         "Lorg/jsoup/nodes/Element;",

@@ -1,7 +1,7 @@
 //! kotlinx.serialization host implementation: a small JSON parser producing
 //! the `JsonElement` tree, plus the decoder / descriptor natives that the
-//! extension's generated serializers (real dex bytecode, e.g. `Lg.deserialize`)
-//! drive to decode cached filter lists.
+//! extension's generated serializers (real dex bytecode, e.g. `Lg.deserialize`
+//! and `Lg.serialize`) drive to decode and encode cached filter lists.
 //!
 //! The `JsonElement` tree is represented by [`JsonVal`]; each tree node is a
 //! host object of class `JsonObject` / `JsonArray` / `JsonPrimitive` /
@@ -332,6 +332,33 @@ fn invoke_deserialize(vm: &mut Vm, serializer: JValue, decoder: JValue) -> R {
         .map_err(nat_fatal)
 }
 
+/// Invokes the extension's generated `serializer.serialize(encoder, value)`.
+fn invoke_serialize(
+    vm: &mut Vm,
+    serializer: JValue,
+    encoder: JValue,
+    value: JValue,
+) -> Result<(), NatErr> {
+    let JValue::Obj(o) = serializer else {
+        return Err(nat_fatal(JvmError::Resolution(
+            "serialize: null serializer".into(),
+        )));
+    };
+    let mref = MethodRef {
+        name: vm.intern("serialize"),
+        sig: vm.intern("(Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V"),
+        ret: 0,
+        args: Vec::new(),
+        class_desc: 0,
+    };
+    let target = vm
+        .resolve_target(InvokeKind::Interface, &mref, Some(o), 0)
+        .map_err(nat_fatal)?;
+    vm.call_target(target, vec![serializer, encoder, value])
+        .map_err(nat_fatal)?;
+    Ok(())
+}
+
 fn json_decoder(vm: &mut Vm, element: JValue) -> R {
     alloc(
         vm,
@@ -350,6 +377,28 @@ fn json_decoder(vm: &mut Vm, element: JValue) -> R {
 fn run_serializer(vm: &mut Vm, serializer: JValue, element: JValue) -> R {
     let child = match payload(vm, serializer) {
         Some(Native::JsonElementSerializer) => return Ok(element),
+        Some(Native::PrimitiveSerializer(kind)) => {
+            let kind = *kind;
+            let value = match payload(vm, element) {
+                Some(Native::Json(value)) => value.clone(),
+                _ => JsonVal::Null,
+            };
+            return Ok(match kind {
+                PrimitiveSerializerKind::String => new_str(vm, &jsonval_to_string(&value)),
+                PrimitiveSerializerKind::Int => JValue::Int(match value {
+                    JsonVal::Int(v) => v as i32,
+                    JsonVal::Double(v) => v as i32,
+                    JsonVal::Str(v) => v.parse().unwrap_or_default(),
+                    _ => 0,
+                }),
+                PrimitiveSerializerKind::Long => JValue::Long(match value {
+                    JsonVal::Int(v) => v,
+                    JsonVal::Double(v) => v as i64,
+                    JsonVal::Str(v) => v.parse().unwrap_or_default(),
+                    _ => 0,
+                }),
+            });
+        }
         Some(Native::ArrayListSerializer { child }) => *child,
         _ => {
             let desc = match serializer {
@@ -374,6 +423,62 @@ fn run_serializer(vm: &mut Vm, serializer: JValue, element: JValue) -> R {
     alloc(vm, "Ljava/util/ArrayList;", Native::List(out))
 }
 
+fn json_encoder(vm: &mut Vm) -> R {
+    alloc(
+        vm,
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        Native::JsonEncoder {
+            value: None,
+            elements: Vec::new(),
+        },
+    )
+}
+
+/// Encodes a value using either a host serializer marker or the extension's
+/// generated serializer bytecode.
+fn run_serializer_encode(
+    vm: &mut Vm,
+    serializer: JValue,
+    value: JValue,
+) -> Result<JsonVal, NatErr> {
+    match payload(vm, serializer) {
+        Some(Native::JsonElementSerializer) => {
+            return match payload(vm, value) {
+                Some(Native::Json(value)) => Ok(value.clone()),
+                _ => Err(iae(vm, "JsonElement serializer expects JsonElement")),
+            };
+        }
+        Some(Native::PrimitiveSerializer(kind)) => {
+            return Ok(match kind {
+                PrimitiveSerializerKind::String => JsonVal::Str(jstr(vm, value)?),
+                PrimitiveSerializerKind::Int => JsonVal::Int(i64::from(int_of(vm, value))),
+                PrimitiveSerializerKind::Long => JsonVal::Int(long_of(vm, value)),
+            });
+        }
+        Some(Native::ArrayListSerializer { child }) => {
+            let child = *child;
+            let values = coll_elems(vm, value)?;
+            let mut encoded = Vec::with_capacity(values.len());
+            for value in values {
+                encoded.push(run_serializer_encode(vm, child, value)?);
+            }
+            return Ok(JsonVal::Array(encoded));
+        }
+        _ => {}
+    }
+
+    let encoder = json_encoder(vm)?;
+    invoke_serialize(vm, serializer, encoder, value)?;
+    match payload(vm, encoder) {
+        Some(Native::JsonEncoder {
+            value: Some(value), ..
+        }) => Ok(value.clone()),
+        _ => Err(nat_fatal(JvmError::Resolution(
+            "serializer produced no JSON value".into(),
+        ))),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Json / Okio entry points
 // ---------------------------------------------------------------------------
@@ -392,6 +497,18 @@ pub(crate) fn json_decode_from_string(vm: &mut Vm, args: &[JValue]) -> R {
     run_serializer(vm, args[1], node)
 }
 
+/// `Json.encodeToString(strategy, value)`.
+pub(crate) fn json_encode_to_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = run_serializer_encode(vm, args[1], args[2])?;
+    Ok(new_str(vm, &jsonval_to_json(&value)))
+}
+
+/// `Json.encodeToJsonElement(strategy, value)`.
+pub(crate) fn json_encode_to_json_element(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = run_serializer_encode(vm, args[1], args[2])?;
+    alloc_json_node(vm, &value)
+}
+
 /// `OkioStreamsKt.decodeFromBufferedSource(json, strategy, source)` — reads
 /// the buffered source to the end and decodes it.
 pub(crate) fn okio_decode_from_buffered_source(vm: &mut Vm, args: &[JValue]) -> R {
@@ -408,10 +525,8 @@ pub(crate) fn okio_decode_from_buffered_source(vm: &mut Vm, args: &[JValue]) -> 
 
 /// `OkioStreamsKt.encodeToBufferedSink(json, strategy, value, sink)`.
 pub(crate) fn okio_encode_to_buffered_sink(vm: &mut Vm, args: &[JValue]) -> R {
-    let text = match payload(vm, args[2]) {
-        Some(Native::Json(value)) => jsonval_to_json(value),
-        _ => return Err(iae(vm, "encodeToBufferedSink expects JsonElement")),
-    };
+    let value = run_serializer_encode(vm, args[1], args[2])?;
+    let text = jsonval_to_json(&value);
     let Some(Native::OkioSink { bytes, closed, .. }) = payload_mut(vm, args[3]) else {
         return Err(npe(vm));
     };
@@ -642,6 +757,162 @@ pub(crate) fn dec_decode_int(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 // ---------------------------------------------------------------------------
+// StreamingJsonEncoder (Encoder / CompositeEncoder)
+// ---------------------------------------------------------------------------
+
+pub(crate) fn enc_begin_structure(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::JsonEncoder { value, elements }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *value = None;
+    elements.clear();
+    Ok(args[0])
+}
+
+fn descriptor_element_name(vm: &Vm, descriptor: JValue, index: i32) -> String {
+    match payload(vm, descriptor) {
+        Some(Native::SerialDescriptor { elements, .. }) => elements
+            .get(index as usize)
+            .cloned()
+            .unwrap_or_else(|| index.to_string()),
+        _ => index.to_string(),
+    }
+}
+
+fn encoder_push_member(vm: &mut Vm, args: &[JValue], value: JsonVal) -> R {
+    let name = descriptor_element_name(vm, args[1], int_of(vm, args[2]));
+    let Some(Native::JsonEncoder { elements, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    elements.push((name, value));
+    Ok(JValue::Null)
+}
+
+pub(crate) fn enc_encode_string_element(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[3])?;
+    encoder_push_member(vm, args, JsonVal::Str(value))
+}
+
+pub(crate) fn enc_encode_int_element(vm: &mut Vm, args: &[JValue]) -> R {
+    encoder_push_member(vm, args, JsonVal::Int(i64::from(int_of(vm, args[3]))))
+}
+
+pub(crate) fn enc_encode_long_element(vm: &mut Vm, args: &[JValue]) -> R {
+    encoder_push_member(vm, args, JsonVal::Int(long_of(vm, args[3])))
+}
+
+pub(crate) fn enc_encode_bool_element(vm: &mut Vm, args: &[JValue]) -> R {
+    encoder_push_member(vm, args, JsonVal::Bool(bool_of(vm, args[3])))
+}
+
+pub(crate) fn enc_encode_float_element(vm: &mut Vm, args: &[JValue]) -> R {
+    encoder_push_member(vm, args, JsonVal::Double(f64::from(float_of(vm, args[3]))))
+}
+
+pub(crate) fn enc_encode_double_element(vm: &mut Vm, args: &[JValue]) -> R {
+    encoder_push_member(vm, args, JsonVal::Double(double_of(vm, args[3])))
+}
+
+pub(crate) fn enc_encode_serializable_element(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = run_serializer_encode(vm, args[3], args[4])?;
+    encoder_push_member(vm, args, value)
+}
+
+pub(crate) fn enc_encode_nullable_serializable_element(vm: &mut Vm, args: &[JValue]) -> R {
+    if args[4].is_null_ref() {
+        return encoder_push_member(vm, args, JsonVal::Null);
+    }
+    enc_encode_serializable_element(vm, args)
+}
+
+pub(crate) fn enc_should_encode_element_default(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(1))
+}
+
+pub(crate) fn enc_end_structure(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::JsonEncoder { value, elements }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *value = Some(JsonVal::Object(std::mem::take(elements)));
+    Ok(JValue::Null)
+}
+
+fn encoder_set_value(vm: &mut Vm, encoder: JValue, value: JsonVal) -> R {
+    let Some(Native::JsonEncoder { value: slot, .. }) = payload_mut(vm, encoder) else {
+        return Err(npe(vm));
+    };
+    *slot = Some(value);
+    Ok(JValue::Null)
+}
+
+pub(crate) fn enc_encode_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[1])?;
+    encoder_set_value(vm, args[0], JsonVal::Str(value))
+}
+
+pub(crate) fn enc_encode_int(vm: &mut Vm, args: &[JValue]) -> R {
+    encoder_set_value(vm, args[0], JsonVal::Int(i64::from(int_of(vm, args[1]))))
+}
+
+pub(crate) fn enc_encode_long(vm: &mut Vm, args: &[JValue]) -> R {
+    encoder_set_value(vm, args[0], JsonVal::Int(long_of(vm, args[1])))
+}
+
+pub(crate) fn enc_encode_bool(vm: &mut Vm, args: &[JValue]) -> R {
+    encoder_set_value(vm, args[0], JsonVal::Bool(bool_of(vm, args[1])))
+}
+
+pub(crate) fn enc_encode_float(vm: &mut Vm, args: &[JValue]) -> R {
+    encoder_set_value(
+        vm,
+        args[0],
+        JsonVal::Double(f64::from(float_of(vm, args[1]))),
+    )
+}
+
+pub(crate) fn enc_encode_double(vm: &mut Vm, args: &[JValue]) -> R {
+    encoder_set_value(vm, args[0], JsonVal::Double(double_of(vm, args[1])))
+}
+
+/// The nullable wrapper only changes null handling at call sites in the
+/// generated serializer, so retaining the underlying serializer is enough.
+pub(crate) fn builtin_get_nullable(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+
+pub(crate) fn throw_missing_field(vm: &mut Vm, _args: &[JValue]) -> R {
+    Err(iae(vm, "required serialized field is missing"))
+}
+
+fn lazy_primitive_serializer(vm: &mut Vm, desc: &str, kind: PrimitiveSerializerKind) -> JValue {
+    alloc(vm, desc, Native::PrimitiveSerializer(kind)).expect("primitive serializer shim")
+}
+
+pub(crate) fn lazy_string_serializer(vm: &mut Vm) -> JValue {
+    lazy_primitive_serializer(
+        vm,
+        "Lkotlinx/serialization/internal/StringSerializer;",
+        PrimitiveSerializerKind::String,
+    )
+}
+
+pub(crate) fn lazy_int_serializer(vm: &mut Vm) -> JValue {
+    lazy_primitive_serializer(
+        vm,
+        "Lkotlinx/serialization/internal/IntSerializer;",
+        PrimitiveSerializerKind::Int,
+    )
+}
+
+pub(crate) fn lazy_long_serializer(vm: &mut Vm) -> JValue {
+    lazy_primitive_serializer(
+        vm,
+        "Lkotlinx/serialization/internal/LongSerializer;",
+        PrimitiveSerializerKind::Long,
+    )
+}
+
+// ---------------------------------------------------------------------------
 // descriptors
 // ---------------------------------------------------------------------------
 
@@ -743,6 +1014,20 @@ pub(crate) const SERIALIZATION_TABLE: &[NativeEntry] = &[
         json_decode_from_string
     ),
     ne!(
+        "Lkotlinx/serialization/json/Json;",
+        "encodeToString",
+        "(Lkotlinx/serialization/SerializationStrategy;Ljava/lang/Object;)Ljava/lang/String;",
+        true,
+        json_encode_to_string
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/Json;",
+        "encodeToJsonElement",
+        "(Lkotlinx/serialization/SerializationStrategy;Ljava/lang/Object;)Lkotlinx/serialization/json/JsonElement;",
+        true,
+        json_encode_to_json_element
+    ),
+    ne!(
         "Lkotlinx/serialization/json/JsonElement$Companion;",
         "serializer",
         "()Lkotlinx/serialization/KSerializer;",
@@ -769,6 +1054,139 @@ pub(crate) const SERIALIZATION_TABLE: &[NativeEntry] = &[
         "(Lokio/Source;)Lokio/Source;",
         false,
         zstd_identity
+    ),
+    ne!(
+        "Lkotlinx/serialization/builtins/BuiltinSerializersKt;",
+        "getNullable",
+        "(Lkotlinx/serialization/KSerializer;)Lkotlinx/serialization/KSerializer;",
+        false,
+        builtin_get_nullable
+    ),
+    ne!(
+        "Lkotlinx/serialization/internal/PluginExceptionsKt;",
+        "throwMissingFieldException",
+        "(IILkotlinx/serialization/descriptors/SerialDescriptor;)V",
+        false,
+        throw_missing_field
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "beginStructure",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;)Lkotlinx/serialization/encoding/CompositeEncoder;",
+        true,
+        enc_begin_structure
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeStringElement",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;ILjava/lang/String;)V",
+        true,
+        enc_encode_string_element
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeIntElement",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;II)V",
+        true,
+        enc_encode_int_element
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeLongElement",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;IJ)V",
+        true,
+        enc_encode_long_element
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeBooleanElement",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;IZ)V",
+        true,
+        enc_encode_bool_element
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeFloatElement",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;IF)V",
+        true,
+        enc_encode_float_element
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeDoubleElement",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;ID)V",
+        true,
+        enc_encode_double_element
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeSerializableElement",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;ILkotlinx/serialization/SerializationStrategy;Ljava/lang/Object;)V",
+        true,
+        enc_encode_serializable_element
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeNullableSerializableElement",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;ILkotlinx/serialization/SerializationStrategy;Ljava/lang/Object;)V",
+        true,
+        enc_encode_nullable_serializable_element
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "shouldEncodeElementDefault",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;I)Z",
+        true,
+        enc_should_encode_element_default
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "endStructure",
+        "(Lkotlinx/serialization/descriptors/SerialDescriptor;)V",
+        true,
+        enc_end_structure
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeString",
+        "(Ljava/lang/String;)V",
+        true,
+        enc_encode_string
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeInt",
+        "(I)V",
+        true,
+        enc_encode_int
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeLong",
+        "(J)V",
+        true,
+        enc_encode_long
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeBoolean",
+        "(Z)V",
+        true,
+        enc_encode_bool
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeFloat",
+        "(F)V",
+        true,
+        enc_encode_float
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/internal/StreamingJsonEncoder;",
+        "encodeDouble",
+        "(D)V",
+        true,
+        enc_encode_double
     ),
     ne!(
         "Lcom/squareup/zstd/okio/OkioZstd;",
@@ -941,4 +1359,47 @@ pub(crate) fn descriptor_init_placeholder(vm: &mut Vm, args: &[JValue]) -> R {
     };
     let _ = n;
     Ok(JValue::Null)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Context;
+
+    #[test]
+    fn generated_dex_serializer_encodes_through_host_runtime() {
+        let apk =
+            std::fs::read("fixtures/tachiyomi-vi.moetruyen-v1.6.8.apk").expect("moetruyen fixture");
+        let mut ctx = Context::new(&apk).expect("load fixture");
+
+        let model_class = ctx.vm().ensure_class_by_desc("Li;").expect("model class");
+        let model = ctx.vm().alloc_instance(model_class).expect("model");
+        let name = ctx.vm().alloc_string("Action");
+        let id = ctx.vm().alloc_string("1");
+        ctx.invoke_on(
+            model,
+            "<init>",
+            "(Ljava/lang/String;Ljava/lang/String;)V",
+            &[name, id],
+        )
+        .expect("model constructor");
+
+        let serializer_class = ctx
+            .vm()
+            .ensure_class_by_desc("Lg;")
+            .expect("serializer class");
+        let serializer = ctx
+            .vm()
+            .alloc_instance(serializer_class)
+            .expect("serializer");
+        let encoded = run_serializer_encode(ctx.vm(), JValue::Obj(serializer), JValue::Obj(model))
+            .expect("generated serializer");
+        assert_eq!(
+            encoded,
+            JsonVal::Object(vec![
+                ("name".into(), JsonVal::Str("Action".into())),
+                ("id".into(), JsonVal::Str("1".into())),
+            ])
+        );
+    }
 }

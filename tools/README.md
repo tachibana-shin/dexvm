@@ -45,7 +45,56 @@ python3 tools/verify_native_tables.py
 
 Checks the current tree directly: no duplicate table keys, every `ne!()`
 target fn is defined (including field-macro-generated fns such as
-`sm_get_field!` / `sc_get_field!`), and full entry coverage vs git HEAD.
+`sm_get_field!` / `sc_get_field!`), and full entry coverage vs the split
+baseline. New API entries are reported for visibility but are allowed.
+
+## Auditing every Keiyoushi extension APK
+
+`keiyoushi_audit.rb` downloads the current v2 Keiyoushi repository index and
+all selected APKs, caches them under `target/`, asks `dexcli --api-coverage`
+to inspect every `classes*.dex`, and ranks missing Rust bridges by the number
+of affected APKs and call sites. It uses the full `index.json`; the legacy
+`index.min.json` now only contains upgrade notices.
+
+Build the analyzer once, then run the complete audit:
+
+```sh
+cargo build --features keiyoushi --bin dexcli
+ruby tools/keiyoushi_audit.rb
+```
+
+Reports are written to `target/keiyoushi-audit/report.yaml`, a `report.md`
+summary, and a very small `report.min.yaml`. Downloads
+are cached and assigned a local SHA-256 digest, so reruns only analyze them.
+Useful smaller runs:
+
+```sh
+# One language, eight concurrent workers
+ruby tools/keiyoushi_audit.rb --language vi --jobs 8
+
+# Name/package filter and a small sample
+ruby tools/keiyoushi_audit.rb --match 'manga|comic' --limit 25
+
+# Analyze APKs already on disk without network access
+ruby tools/keiyoushi_audit.rb --local fixtures --offline
+
+# Validate cached bytes before reuse
+ruby tools/keiyoushi_audit.rb --verify-cache
+
+# Skip Markdown, or explicitly request compact JSON as well
+ruby tools/keiyoushi_audit.rb --no-markdown --json target/keiyoushi-audit/report.json
+```
+
+The YAML report retains per-extension results without repeating full gap
+records: each gap is stored once under a compact ID and extensions contain only
+an ID-to-use-count map. Optional JSON uses the same normalized schema and is
+written compactly. The Markdown report defaults to the 250 highest-impact gaps
+and maps each signature to the likely Rust bridge source file. Use `--top` to
+change that limit. `report.min.yaml` contains only missing API signatures grouped
+by kind; each value is `[affected APKs, calls]`, with no origin or bridge-file
+metadata. Use `--minified PATH` to change its location. A failed download or
+malformed APK is reported without discarding successful results; the process
+exits with status 2 when any such partial failure occurred.
 
 ## Split history
 

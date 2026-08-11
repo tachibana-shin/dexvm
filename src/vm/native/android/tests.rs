@@ -133,3 +133,28 @@ fn file_table_marks_create_temp_file_static() {
         .unwrap();
     assert!(!entry.instance);
 }
+
+#[test]
+fn android_base64_flags_and_static_registration() {
+    with_vm(|vm| {
+        let input = alloc_arr(vm, "B", 3, || ArrayData::Byte(vec![-5, -1, -17])).unwrap();
+        let encoded = base64_encode_to_string(vm, &[input, JValue::Int(8 | 2 | 1)]).unwrap();
+        assert_eq!(jstr(vm, encoded).unwrap(), "-__v");
+
+        let text = vm.alloc_string("-__v");
+        let decoded = base64_decode(vm, &[text, JValue::Int(8)]).unwrap();
+        assert_eq!(bytes_of(vm, decoded).unwrap(), vec![0xfb, 0xff, 0xef]);
+    });
+
+    for (class, name) in [
+        ("Landroid/util/Base64;", "decode"),
+        ("Landroid/util/Base64;", "encodeToString"),
+        ("Landroid/os/SystemClock;", "elapsedRealtime"),
+    ] {
+        let entry = ANDROID_TABLE
+            .iter()
+            .find(|entry| entry.class == class && entry.name == name)
+            .unwrap();
+        assert!(!entry.instance, "{class}->{name} must be static");
+    }
+}
