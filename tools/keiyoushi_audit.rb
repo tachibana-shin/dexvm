@@ -200,13 +200,15 @@ class DexcliAudit
       end
     when /^Ljavax\/crypto\// then "src/vm/native/java/javax_crypto.rs"
     when /^Lkotlinx\/serialization\// then "src/vm/native/serialization.rs"
-    when /^Lkotlin\// then "src/vm/native/kotlin.rs"
-    when /^Lorg\/jsoup\// then "src/vm/native/jsoup.rs"
-    when /^Lokhttp3\// then "src/vm/native/okhttp.rs"
+    when /^Lkotlinx\/coroutines\// then "src/vm/native/kotlinx/coroutines.rs"
+    when /^Lkotlin\// then "src/vm/native/kotlin/mod.rs"
+    when /^Lorg\/jsoup\// then "src/vm/native/jsoup/mod.rs"
+    when /^Lokhttp3\// then "src/vm/native/okhttp/mod.rs"
     when /^Lokio\// then "src/vm/native/okio.rs"
-    when /^Landroidx?\// then "src/vm/native/android.rs"
+    when /^Landroidx\/preference\// then "src/vm/native/androidx/preference.rs"
+    when /^Landroid\// then "src/vm/native/android/mod.rs"
     when /^Leu\/kanade\/tachiyomi\// then "src/vm/native/keiyoushi.rs"
-    when /^Luy\/kohesive\/injekt\// then "src/vm/native/injekt.rs"
+    when /^Luy\/kohesive\/injekt\// then "src/vm/native/injekt/mod.rs"
     else "src/vm/native/mod.rs"
     end
   end

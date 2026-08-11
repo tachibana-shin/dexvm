@@ -12,21 +12,21 @@ import sys
 ROOT = Path(__file__).resolve().parents[1] / "src/vm/native"
 
 FORBIDDEN = {
-    "android.rs": {
+    "android/mod.rs": {
         "Leu/kanade/",
         "Lkotlinx/",
         "Ljava/",
         "Landroidx/",
     },
-    "jsoup.rs": {"Leu/kanade/"},
-    "okhttp.rs": {"Leu/kanade/"},
+    "jsoup/mod.rs": {"Leu/kanade/"},
+    "okhttp/mod.rs": {"Leu/kanade/"},
     "serialization.rs": {"Lcom/squareup/"},
-    "kotlin.rs": {"Ljava/net/", "Lkotlinx/"},
+    "kotlin/mod.rs": {"Ljava/net/", "Lkotlinx/"},
 }
 
 errors = []
 for path in ROOT.rglob("*.rs"):
-    rules = FORBIDDEN.get(path.name)
+    rules = FORBIDDEN.get(str(path.relative_to(ROOT)))
     if not rules:
         continue
     text = path.read_text(encoding="utf-8")

@@ -90,7 +90,7 @@ PYEOF
     for f in $GLUE; do
         cp "$OUT/${f#src/vm/native/}" "$WT/$f"
     done
-    for f in okhttp.rs kotlin.rs keiyoushi.rs jsoup.rs android.rs injekt.rs; do
+    for f in okhttp/mod.rs kotlin/mod.rs keiyoushi.rs jsoup/mod.rs android/mod.rs injekt/mod.rs; do
         cp "$OUT/$f" "$WT/src/vm/native/$f"
     done
     # vm/mod.rs references native::native_tables() since the refactor

@@ -8,8 +8,8 @@ native tables into one file per Java class, each registering its own
 
 - `src/vm/native/java/<pkg>/<Class>.rs` — host shims + `pub(crate) const TABLE`
   for each Java class (e.g. `java/lang/string.rs` for `Ljava/lang/String;`).
-- `src/vm/native/okhttp.rs` (okhttp3), `jsoup.rs`, `android.rs`,
-  `keiyoushi.rs` (eu.kanade only), `kotlin.rs`, `injekt.rs` — library shims,
+- `src/vm/native/okhttp/mod.rs` (okhttp3), `jsoup/mod.rs`, `android/mod.rs`,
+  `keiyoushi.rs` (eu.kanade only), `kotlin/mod.rs`, `injekt/mod.rs` — library shims,
   each with its own table.
 - Package mod files are **hand-maintained** (not generated): `native/mod.rs`
   (macro definitions, `register()`, `native_tables()`, helpers),

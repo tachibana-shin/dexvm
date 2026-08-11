@@ -33,6 +33,11 @@ ENTRY_RE = re.compile(
     r'ne!\(\s*"([^"]+;)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"'
     r'\s*,\s*\w+\s*,\s*(\w+)\s*,?\s*\)'
 )
+# Native handlers may be referenced through a qualified module path.
+ENTRY_RE = re.compile(
+    r'ne!\(\s*"([^"]+;)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"'
+    r'\s*,\s*\w+\s*,\s*([\w:]+)\s*,?\s*\)'
+)
 FN_RE = re.compile(r'^(?:pub(?:\(crate\))?\s+)?fn\s+(\w+)', re.M)
 # field macros (sm_get_field! / sm_set_field! / sc_get_field! / ...) define fns
 MACRO_FN_RE = re.compile(r'^\w+!\s*\(\s*\w+,', re.M)
@@ -103,7 +108,8 @@ def main():
         for f in files:
             text = Path(f).read_text()
             for m in ENTRY_RE.finditer(text):
-                if (m.group(1), m.group(2), m.group(3)) == key and m.group(4) not in fns:
+                fn_name = m.group(4).split("::")[-1]
+                if (m.group(1), m.group(2), m.group(3)) == key and fn_name not in fns:
                     print(f'MISSING FN {m.group(4)} for {key} in {f}')
                     errors += 1
 
