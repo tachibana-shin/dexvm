@@ -10,6 +10,7 @@ pub mod value;
 
 use std::collections::HashMap;
 use std::io::Write;
+use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
 
 use class::{Class, Method, ShimValue, ACC_NATIVE, ACC_STATIC, SHIM_CLASSES};
@@ -136,6 +137,10 @@ pub struct Vm {
     pub cache_root: Option<String>,
     /// Per-context Android SharedPreferences store.
     pub shared_preferences: HashMap<String, HashMap<String, PreferenceValue>>,
+    /// Optional host-owned persistence file for `shared_preferences`.
+    pub shared_preferences_path: Option<PathBuf>,
+    /// Whether the configured preferences file has been loaded.
+    pub shared_preferences_loaded: bool,
     /// FullTypeReference subclass descriptor -> concrete type descriptor,
     /// derived from dex bytecode (`getInstance` result check-casts).
     injekt_type_by_subclass: HashMap<u32, u32>,
@@ -189,6 +194,8 @@ impl Vm {
             injekt_scanned_classes: 0,
             cache_root: None,
             shared_preferences: HashMap::new(),
+            shared_preferences_path: None,
+            shared_preferences_loaded: false,
             #[cfg(feature = "tachiyomi")]
             http: None,
             host_natives: Vec::new(),

@@ -42,6 +42,60 @@ fn shared_preferences_roundtrip() {
 }
 
 #[test]
+fn shared_preferences_persist_without_guest_filesystem_permission() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static SEQ: AtomicUsize = AtomicUsize::new(0);
+    let data = std::fs::read("fixtures/classes.dex").unwrap();
+    let root = std::env::temp_dir().join(format!(
+        "dexvm-prefs-test-{}-{}",
+        std::process::id(),
+        SEQ.fetch_add(1, Ordering::Relaxed)
+    ));
+    let path = root.join("preferences.bin");
+
+    {
+        let mut ctx = Context::new(&data).unwrap();
+        ctx.set_shared_preferences_path(&path);
+        let vm = ctx.vm();
+        let context = opaque_inst(vm, "Landroid/content/Context;");
+        let name = vm.alloc_string("persistent");
+        let prefs = context_get_shared_prefs(vm, &[context, name, JValue::Int(0)]).unwrap();
+        let key = vm.alloc_string("answer");
+        let editor = shared_prefs_edit(vm, &[prefs]).unwrap();
+        editor_put_int(vm, &[editor, key, JValue::Int(42)]).unwrap();
+        assert_eq!(editor_commit(vm, &[editor]).unwrap(), JValue::Int(1));
+        let apply_key = vm.alloc_string("applied");
+        let apply_value = vm.alloc_string("saved");
+        let editor = shared_prefs_edit(vm, &[prefs]).unwrap();
+        editor_put_string(vm, &[editor, apply_key, apply_value]).unwrap();
+        editor_apply(vm, &[editor]).unwrap();
+        assert!(path.is_file());
+        assert!(!ctx.has_permission(&Permission::Filesystem(FilesystemPermission::Any)));
+    }
+
+    {
+        let mut ctx = Context::new(&data).unwrap();
+        ctx.set_shared_preferences_path(&path);
+        let vm = ctx.vm();
+        let context = opaque_inst(vm, "Landroid/content/Context;");
+        let name = vm.alloc_string("persistent");
+        let prefs = context_get_shared_prefs(vm, &[context, name, JValue::Int(0)]).unwrap();
+        let key = vm.alloc_string("answer");
+        assert_eq!(
+            shared_prefs_get_int(vm, &[prefs, key, JValue::Int(-1)]).unwrap(),
+            JValue::Int(42)
+        );
+        let apply_key = vm.alloc_string("applied");
+        let default = vm.alloc_string("missing");
+        let saved = shared_prefs_get_string(vm, &[prefs, apply_key, default]).unwrap();
+        assert_eq!(jstr(vm, saved).unwrap(), "saved");
+    }
+
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn androidx_preferences_stub() {
     with_vm(|vm| {
         // Preference.<init> / setKey are no-ops; prefs() returns a Context.

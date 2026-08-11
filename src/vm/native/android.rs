@@ -16,12 +16,206 @@ use crate::permission::{FilesystemPermission, Permission};
 
 pub(crate) fn context_get_shared_prefs(vm: &mut Vm, args: &[JValue]) -> R {
     let name = jstr(vm, args[1])?;
+    load_shared_preferences(vm)?;
     vm.shared_preferences.entry(name.clone()).or_default();
     alloc(
         vm,
         "Landroid/content/SharedPreferences;",
         Native::SharedPreferences(name),
     )
+}
+
+const PREFS_MAGIC: &[u8] = b"DEXVM-PREFS\0\x01";
+
+fn pref_u32(out: &mut Vec<u8>, value: usize) -> std::io::Result<()> {
+    let value = u32::try_from(value).map_err(|_| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "SharedPreferences value too large",
+        )
+    })?;
+    out.extend_from_slice(&value.to_le_bytes());
+    Ok(())
+}
+
+fn pref_bytes(out: &mut Vec<u8>, value: &[u8]) -> std::io::Result<()> {
+    pref_u32(out, value.len())?;
+    out.extend_from_slice(value);
+    Ok(())
+}
+
+fn encode_shared_preferences(
+    prefs: &std::collections::HashMap<String, std::collections::HashMap<String, PreferenceValue>>,
+) -> std::io::Result<Vec<u8>> {
+    let mut out = PREFS_MAGIC.to_vec();
+    let mut names: Vec<_> = prefs.iter().collect();
+    names.sort_unstable_by(|a, b| a.0.cmp(b.0));
+    pref_u32(&mut out, names.len())?;
+    for (name, values) in names {
+        pref_bytes(&mut out, name.as_bytes())?;
+        let mut entries: Vec<_> = values.iter().collect();
+        entries.sort_unstable_by(|a, b| a.0.cmp(b.0));
+        pref_u32(&mut out, entries.len())?;
+        for (key, value) in entries {
+            pref_bytes(&mut out, key.as_bytes())?;
+            match value {
+                PreferenceValue::Bool(value) => {
+                    out.push(0);
+                    out.push(u8::from(*value));
+                }
+                PreferenceValue::String(value) => {
+                    out.push(1);
+                    pref_bytes(&mut out, value.as_bytes())?;
+                }
+                PreferenceValue::Int(value) => {
+                    out.push(2);
+                    out.extend_from_slice(&value.to_le_bytes());
+                }
+                PreferenceValue::Long(value) => {
+                    out.push(3);
+                    out.extend_from_slice(&value.to_le_bytes());
+                }
+                PreferenceValue::Float(value) => {
+                    out.push(4);
+                    out.extend_from_slice(&value.to_bits().to_le_bytes());
+                }
+            }
+        }
+    }
+    Ok(out)
+}
+
+struct PrefReader<'a> {
+    bytes: &'a [u8],
+    pos: usize,
+}
+
+impl<'a> PrefReader<'a> {
+    fn take(&mut self, len: usize) -> std::io::Result<&'a [u8]> {
+        let end = self.pos.checked_add(len).ok_or_else(pref_invalid)?;
+        let value = self.bytes.get(self.pos..end).ok_or_else(pref_invalid)?;
+        self.pos = end;
+        Ok(value)
+    }
+
+    fn u8(&mut self) -> std::io::Result<u8> {
+        Ok(self.take(1)?[0])
+    }
+
+    fn u32(&mut self) -> std::io::Result<u32> {
+        Ok(u32::from_le_bytes(self.take(4)?.try_into().unwrap()))
+    }
+
+    fn string(&mut self) -> std::io::Result<String> {
+        let len = self.u32()? as usize;
+        String::from_utf8(self.take(len)?.to_vec()).map_err(|_| pref_invalid())
+    }
+}
+
+fn pref_invalid() -> std::io::Error {
+    std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        "invalid dexvm SharedPreferences file",
+    )
+}
+
+fn decode_shared_preferences(
+    bytes: &[u8],
+) -> std::io::Result<
+    std::collections::HashMap<String, std::collections::HashMap<String, PreferenceValue>>,
+> {
+    let Some(rest) = bytes.strip_prefix(PREFS_MAGIC) else {
+        return Err(pref_invalid());
+    };
+    let mut reader = PrefReader {
+        bytes: rest,
+        pos: 0,
+    };
+    let mut prefs = std::collections::HashMap::new();
+    for _ in 0..reader.u32()? {
+        let name = reader.string()?;
+        let mut values = std::collections::HashMap::new();
+        for _ in 0..reader.u32()? {
+            let key = reader.string()?;
+            let value = match reader.u8()? {
+                0 => PreferenceValue::Bool(match reader.u8()? {
+                    0 => false,
+                    1 => true,
+                    _ => return Err(pref_invalid()),
+                }),
+                1 => PreferenceValue::String(reader.string()?),
+                2 => PreferenceValue::Int(i32::from_le_bytes(reader.take(4)?.try_into().unwrap())),
+                3 => PreferenceValue::Long(i64::from_le_bytes(reader.take(8)?.try_into().unwrap())),
+                4 => PreferenceValue::Float(f32::from_bits(u32::from_le_bytes(
+                    reader.take(4)?.try_into().unwrap(),
+                ))),
+                _ => return Err(pref_invalid()),
+            };
+            values.insert(key, value);
+        }
+        prefs.insert(name, values);
+    }
+    if reader.pos != reader.bytes.len() {
+        return Err(pref_invalid());
+    }
+    Ok(prefs)
+}
+
+fn load_shared_preferences(vm: &mut Vm) -> Result<(), NatErr> {
+    if vm.shared_preferences_loaded {
+        return Ok(());
+    }
+    let Some(path) = vm.shared_preferences_path.clone() else {
+        vm.shared_preferences_loaded = true;
+        return Ok(());
+    };
+    let bytes = match std::fs::read(&path) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            vm.shared_preferences_loaded = true;
+            return Ok(());
+        }
+        Err(error) => return Err(ioe(vm, format!("read {}: {error}", path.display()))),
+    };
+    vm.shared_preferences = decode_shared_preferences(&bytes)
+        .map_err(|error| ioe(vm, format!("read {}: {error}", path.display())))?;
+    vm.shared_preferences_loaded = true;
+    Ok(())
+}
+
+fn persist_shared_preferences(
+    path: &std::path::Path,
+    prefs: &std::collections::HashMap<String, std::collections::HashMap<String, PreferenceValue>>,
+) -> std::io::Result<()> {
+    let bytes = encode_shared_preferences(prefs)?;
+    if let Some(parent) = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        std::fs::create_dir_all(parent)?;
+    }
+    let mut temp = path.as_os_str().to_os_string();
+    temp.push(".tmp");
+    let temp = std::path::PathBuf::from(temp);
+    let result = (|| {
+        use std::io::Write as _;
+        let mut file = std::fs::File::create(&temp)?;
+        file.write_all(&bytes)?;
+        file.sync_all()?;
+        std::fs::rename(&temp, path)?;
+        #[cfg(unix)]
+        if let Some(parent) = path
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+        {
+            std::fs::File::open(parent)?.sync_all()?;
+        }
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(temp);
+    }
+    result
 }
 
 fn shared_prefs_name(vm: &mut Vm, value: JValue) -> Result<String, NatErr> {
@@ -168,12 +362,19 @@ pub(crate) fn editor_clear(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
-fn editor_apply_inner(vm: &mut Vm, editor: JValue) -> Result<(), NatErr> {
+fn edited_preferences(
+    vm: &mut Vm,
+    editor: JValue,
+) -> Result<
+    std::collections::HashMap<String, std::collections::HashMap<String, PreferenceValue>>,
+    NatErr,
+> {
     let Some(Native::SharedPreferencesEditor { name, edits, clear }) = payload(vm, editor) else {
         return Err(npe(vm));
     };
     let (name, edits, clear) = (name.clone(), edits.clone(), *clear);
-    let values = vm.shared_preferences.entry(name).or_default();
+    let mut preferences = vm.shared_preferences.clone();
+    let values = preferences.entry(name).or_default();
     if clear {
         values.clear();
     }
@@ -187,16 +388,28 @@ fn editor_apply_inner(vm: &mut Vm, editor: JValue) -> Result<(), NatErr> {
             }
         }
     }
-    Ok(())
+    Ok(preferences)
 }
 
 pub(crate) fn editor_apply(vm: &mut Vm, args: &[JValue]) -> R {
-    editor_apply_inner(vm, args[0])?;
+    let preferences = edited_preferences(vm, args[0])?;
+    vm.shared_preferences = preferences;
+    if let Some(path) = vm.shared_preferences_path.clone() {
+        // Android's apply() has no failure result: the in-memory update is
+        // immediate and persistence is best-effort.
+        let _ = persist_shared_preferences(&path, &vm.shared_preferences);
+    }
     Ok(JValue::Null)
 }
 
 pub(crate) fn editor_commit(vm: &mut Vm, args: &[JValue]) -> R {
-    editor_apply_inner(vm, args[0])?;
+    let preferences = edited_preferences(vm, args[0])?;
+    vm.shared_preferences = preferences;
+    if let Some(path) = vm.shared_preferences_path.clone() {
+        if persist_shared_preferences(&path, &vm.shared_preferences).is_err() {
+            return Ok(JValue::Int(0));
+        }
+    }
     Ok(JValue::Int(1))
 }
 

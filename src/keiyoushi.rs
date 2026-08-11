@@ -112,6 +112,12 @@ impl Keiyoushi {
         self.ctx.set_http(move |r| f(r));
     }
 
+    /// Selects the host-owned file used to persist Android
+    /// `SharedPreferences`. Without this, preferences remain in memory only.
+    pub fn set_shared_preferences_path(&mut self, path: impl AsRef<std::path::Path>) {
+        self.ctx.set_shared_preferences_path(path);
+    }
+
     fn vm(&mut self) -> &mut Vm {
         self.ctx.vm()
     }

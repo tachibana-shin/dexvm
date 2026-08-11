@@ -20,6 +20,7 @@
 //! is deny-first, like `d4rt_rs::SandboxOptions` and Deno's `--allow-*`).
 
 use std::io::Read;
+use std::path::Path;
 
 use crate::dex::DexFile;
 use crate::permission::{FilesystemPermission, NetworkPermission, Permission, ProcessPermission};
@@ -186,6 +187,25 @@ impl Context {
     /// denied afterwards.
     pub fn revoke(&mut self, p: &Permission) {
         self.vm.perms.revoke(p);
+    }
+
+    /// Selects a host-owned persistence file for Android `SharedPreferences`.
+    ///
+    /// The file is loaded lazily on the next `getSharedPreferences` call. This
+    /// storage is deliberately separate from guest [`FilesystemPermission`]
+    /// grants: setting the path is the host's explicit authorization to use
+    /// this one internal file.
+    pub fn set_shared_preferences_path(&mut self, path: impl AsRef<Path>) {
+        self.vm.shared_preferences_path = Some(path.as_ref().to_path_buf());
+        self.vm.shared_preferences.clear();
+        self.vm.shared_preferences_loaded = false;
+    }
+
+    /// Disables on-disk `SharedPreferences`, retaining the current values in
+    /// memory for the remainder of this context's lifetime.
+    pub fn disable_shared_preferences_persistence(&mut self) {
+        self.vm.shared_preferences_path = None;
+        self.vm.shared_preferences_loaded = true;
     }
 
     /// Does the current grant set cover `p`?
