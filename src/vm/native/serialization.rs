@@ -1353,13 +1353,6 @@ pub(crate) const SERIALIZATION_TABLE: &[NativeEntry] = &[
         okio_encode_to_buffered_sink
     ),
     ne!(
-        "Lcom/squareup/zstd/okio/OkioZstd;",
-        "zstdDecompress",
-        "(Lokio/Source;)Lokio/Source;",
-        false,
-        zstd_identity
-    ),
-    ne!(
         "Lkotlinx/serialization/builtins/BuiltinSerializersKt;",
         "getNullable",
         "(Lkotlinx/serialization/KSerializer;)Lkotlinx/serialization/KSerializer;",
@@ -1491,13 +1484,6 @@ pub(crate) const SERIALIZATION_TABLE: &[NativeEntry] = &[
         "(D)V",
         true,
         enc_encode_double
-    ),
-    ne!(
-        "Lcom/squareup/zstd/okio/OkioZstd;",
-        "zstdCompress",
-        "(Lokio/Sink;)Lokio/Sink;",
-        false,
-        zstd_identity
     ),
     ne!(
         "Lkotlinx/serialization/json/internal/StreamingJsonDecoder;",

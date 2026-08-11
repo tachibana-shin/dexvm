@@ -350,6 +350,17 @@ pub enum Native {
         edits: Vec<PreferenceEdit>,
         clear: bool,
     },
+    /// android.content.Intent: action/data and primitive/object extras.
+    Intent {
+        action: Option<String>,
+        data: Option<String>,
+        extras: Vec<(String, JValue)>,
+    },
+    /// android.app.Activity lifecycle state. UI launching remains host-owned.
+    Activity {
+        intent: JValue,
+        finished: bool,
+    },
     /// java.io.File: real host path. Every `File` method operates on the
     /// actual filesystem (mkdirs/exists/lastModified/resolve/...).
     File {
@@ -767,6 +778,12 @@ impl Native {
                 }
             }
             Native::ArrayListSerializer { child } => push(Some(child), out),
+            Native::Intent { extras, .. } => {
+                for (_, value) in extras {
+                    push(Some(value), out);
+                }
+            }
+            Native::Activity { intent, .. } => push(Some(intent), out),
             #[cfg(feature = "jsoup")]
             Native::JsoupDoc(_) => {}
             #[cfg(feature = "jsoup")]

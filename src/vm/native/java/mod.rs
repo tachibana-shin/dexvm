@@ -2,6 +2,7 @@ use crate::vm::native::*;
 
 mod io;
 mod lang;
+mod net;
 mod nio;
 mod security;
 mod text;
@@ -20,7 +21,10 @@ pub(crate) use util::*;
 pub(crate) fn java_tables(out: &mut Vec<&'static [NativeEntry]>) {
     out.extend(lang::LANG_TABLE.iter().copied());
     out.push(io::TABLE);
+    #[cfg(feature = "android")]
+    out.push(io::FILE_TABLE);
     out.push(nio::TABLE);
+    out.push(net::TABLE);
     out.push(security::SECURITY_TABLE);
     out.push(javax_crypto::JAVAX_CRYPTO_TABLE);
     out.extend(text::TEXT_TABLE.iter().copied());

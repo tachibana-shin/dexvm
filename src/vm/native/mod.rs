@@ -96,21 +96,24 @@ pub const THROWABLE_CTORS: &[NativeEntry] = throwable_ctors_table![
 
 #[cfg(feature = "android")]
 mod android;
+#[cfg(feature = "android")]
+mod androidx;
 mod injekt;
 mod java;
 #[cfg(feature = "jsoup")]
-mod jsoup;
+pub(crate) mod jsoup;
 #[cfg(feature = "tachiyomi")]
 pub mod keiyoushi;
-mod kotlin;
+pub(crate) mod kotlin;
+mod kotlinx;
 #[cfg(feature = "okhttp")]
-mod okhttp;
+pub(crate) mod okhttp;
 #[cfg(feature = "okhttp")]
 mod okio;
 #[cfg(feature = "tachiyomi")]
 mod rx;
 #[cfg(feature = "tachiyomi")]
-mod serialization;
+pub(crate) mod serialization;
 
 #[cfg(feature = "tachiyomi")]
 pub(crate) use self::keiyoushi::*;
@@ -221,6 +224,7 @@ pub(crate) fn native_tables() -> Vec<&'static [NativeEntry]> {
     let mut out: Vec<&'static [NativeEntry]> = Vec::new();
     java::java_tables(&mut out);
     out.push(kotlin::KOTLIN_TABLE);
+    out.push(kotlinx::coroutines::TABLE);
     out.push(injekt::INJEKT_TABLE);
     #[cfg(feature = "okhttp")]
     out.push(okhttp::OKHTTP_TABLE);
@@ -230,6 +234,8 @@ pub(crate) fn native_tables() -> Vec<&'static [NativeEntry]> {
     out.push(jsoup::JSOUP_TABLE);
     #[cfg(feature = "android")]
     out.push(android::ANDROID_TABLE);
+    #[cfg(feature = "android")]
+    out.push(androidx::preference::TABLE);
     #[cfg(feature = "tachiyomi")]
     out.push(keiyoushi::KEIYOUSHI_TABLE);
     #[cfg(feature = "tachiyomi")]
@@ -502,6 +508,15 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             "Ljava/io/PrintStream;" => Some(Native::PrintStream),
             "Ljava/io/File;" => Some(Native::File {
                 path: String::new(),
+            }),
+            "Landroid/content/Intent;" => Some(Native::Intent {
+                action: None,
+                data: None,
+                extras: Vec::new(),
+            }),
+            "Landroid/app/Activity;" => Some(Native::Activity {
+                intent: JValue::Null,
+                finished: false,
             }),
             "Ljava/lang/Thread;" => Some(Native::Thread {
                 name: "Thread-0".into(),

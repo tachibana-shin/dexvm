@@ -127,7 +127,7 @@ fn file_operations_enforce_scoped_permissions() {
 
 #[test]
 fn file_table_marks_create_temp_file_static() {
-    let entry = ANDROID_TABLE
+    let entry = crate::vm::native::java::FILE_TABLE
         .iter()
         .find(|e| e.class == "Ljava/io/File;" && e.name == "createTempFile")
         .unwrap();

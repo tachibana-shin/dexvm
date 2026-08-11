@@ -1341,6 +1341,48 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getClient", "()Lokhttp3/OkHttpClient;", true, network_helper_get_client),
     ne!("Leu/kanade/tachiyomi/network/NetworkHelper;", "getClient", "()Lokhttp3/OkHttpClient;", true, network_helper_get_client),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "POST$default", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/RequestBody;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_post_default),
+    ne!(
+        "Leu/kanade/tachiyomi/util/JsoupExtensionsKt;",
+        "asJsoup$default",
+        "(Lokhttp3/Response;Ljava/lang/String;ILjava/lang/Object;)Lorg/jsoup/nodes/Document;",
+        false,
+        crate::vm::native::jsoup::jsoup_parse
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/network/interceptor/UncaughtExceptionInterceptor;",
+        "intercept",
+        "(Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;",
+        true,
+        crate::vm::native::okhttp::interceptor_pass_through
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/network/interceptor/UserAgentInterceptor;",
+        "intercept",
+        "(Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;",
+        true,
+        crate::vm::native::okhttp::interceptor_pass_through
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/network/interceptor/CloudflareInterceptor;",
+        "intercept",
+        "(Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;",
+        true,
+        crate::vm::native::okhttp::interceptor_pass_through
+    ),
+    ne!(
+        "Lcom/squareup/zstd/okio/OkioZstd;",
+        "zstdDecompress",
+        "(Lokio/Source;)Lokio/Source;",
+        false,
+        crate::vm::native::serialization::zstd_identity
+    ),
+    ne!(
+        "Lcom/squareup/zstd/okio/OkioZstd;",
+        "zstdCompress",
+        "(Lokio/Sink;)Lokio/Sink;",
+        false,
+        crate::vm::native::serialization::zstd_identity
+    ),
 ];
 
 #[cfg(test)]

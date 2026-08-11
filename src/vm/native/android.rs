@@ -436,6 +436,132 @@ pub(crate) fn context_get_cache_dir(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(vm, "Ljava/io/File;", Native::File { path })
 }
 
+fn intent_native(vm: &mut Vm, receiver: JValue) -> Result<&mut Native, NatErr> {
+    if payload(vm, receiver).is_none() {
+        return Err(npe(vm));
+    }
+    Ok(payload_mut(vm, receiver).expect("payload checked"))
+}
+
+pub(crate) fn intent_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let action = args.get(1).copied().filter(|v| !matches!(v, JValue::Null));
+    let action = action.map(|v| jstr(vm, v)).transpose()?;
+    let native = intent_native(vm, args[0])?;
+    *native = Native::Intent {
+        action,
+        data: None,
+        extras: Vec::new(),
+    };
+    Ok(JValue::Null)
+}
+
+pub(crate) fn intent_put_extra_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let key = jstr(vm, args[1])?;
+    let value = args[2];
+    let native = intent_native(vm, args[0])?;
+    let Native::Intent { extras, .. } = native else {
+        return Err(npe(vm));
+    };
+    if let Some(entry) = extras.iter_mut().find(|(k, _)| *k == key) {
+        entry.1 = value;
+    } else {
+        extras.push((key, value));
+    }
+    Ok(args[0])
+}
+
+pub(crate) fn intent_put_extra_long(vm: &mut Vm, args: &[JValue]) -> R {
+    intent_put_extra_string(vm, args)
+}
+
+pub(crate) fn intent_get_data(vm: &mut Vm, args: &[JValue]) -> R {
+    let data = match intent_native(vm, args[0])? {
+        Native::Intent { data, .. } => data.clone(),
+        _ => return Err(npe(vm)),
+    };
+    match data {
+        Some(value) => alloc(vm, "Landroid/net/Uri;", Native::URI(value)),
+        None => Ok(JValue::Null),
+    }
+}
+
+pub(crate) fn intent_set_action(vm: &mut Vm, args: &[JValue]) -> R {
+    let action = jstr(vm, args[1])?;
+    let native = intent_native(vm, args[0])?;
+    let Native::Intent { action: slot, .. } = native else {
+        return Err(npe(vm));
+    };
+    *slot = Some(action);
+    Ok(args[0])
+}
+
+pub(crate) fn context_wrapper_start_activity(_vm: &mut Vm, _args: &[JValue]) -> R {
+    // The VM has no UI host. Keep this as an intentional, side-effect-free bridge.
+    Ok(JValue::Null)
+}
+
+pub(crate) fn context_get_package_name(vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(new_str(vm, "dexvm.extension"))
+}
+
+pub(crate) fn activity_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let intent = alloc(
+        vm,
+        "Landroid/content/Intent;",
+        Native::Intent {
+            action: None,
+            data: None,
+            extras: Vec::new(),
+        },
+    )?;
+    let native = intent_native(vm, args[0])?;
+    *native = Native::Activity {
+        intent,
+        finished: false,
+    };
+    Ok(JValue::Null)
+}
+
+pub(crate) fn activity_finish(vm: &mut Vm, args: &[JValue]) -> R {
+    let native = intent_native(vm, args[0])?;
+    let Native::Activity { finished, .. } = native else {
+        return Err(npe(vm));
+    };
+    *finished = true;
+    Ok(JValue::Null)
+}
+
+pub(crate) fn activity_get_intent(vm: &mut Vm, args: &[JValue]) -> R {
+    let existing = match payload(vm, args[0]) {
+        Some(Native::Activity { intent, .. }) => *intent,
+        _ => return Err(npe(vm)),
+    };
+    let intent = if matches!(existing, JValue::Null) {
+        let created = alloc(
+            vm,
+            "Landroid/content/Intent;",
+            Native::Intent {
+                action: None,
+                data: None,
+                extras: Vec::new(),
+            },
+        )?;
+        let native = intent_native(vm, args[0])?;
+        let Native::Activity { intent, .. } = native else {
+            return Err(npe(vm));
+        };
+        *intent = created;
+        created
+    } else {
+        existing
+    };
+    Ok(intent)
+}
+
+pub(crate) fn activity_on_create(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
 fn file_path(vm: &mut Vm, arg: JValue) -> Result<String, NatErr> {
     match payload(vm, arg) {
         Some(Native::File { path }) => Ok(path.clone()),
@@ -733,6 +859,97 @@ fn base64_encode_to_string(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
     ne!(
+        "Landroid/content/Intent;",
+        "<init>",
+        "()V",
+        true,
+        intent_init
+    ),
+    ne!(
+        "Landroid/content/Intent;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        intent_init
+    ),
+    ne!(
+        "Landroid/content/Intent;",
+        "putExtra",
+        "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
+        true,
+        intent_put_extra_string
+    ),
+    ne!(
+        "Landroid/content/Intent;",
+        "putExtra",
+        "(Ljava/lang/String;J)Landroid/content/Intent;",
+        true,
+        intent_put_extra_long
+    ),
+    ne!(
+        "Landroid/content/Intent;",
+        "getData",
+        "()Landroid/net/Uri;",
+        true,
+        intent_get_data
+    ),
+    ne!(
+        "Landroid/content/Intent;",
+        "setAction",
+        "(Ljava/lang/String;)Landroid/content/Intent;",
+        true,
+        intent_set_action
+    ),
+    ne!(
+        "Landroid/content/ContextWrapper;",
+        "startActivity",
+        "(Landroid/content/Intent;)V",
+        true,
+        context_wrapper_start_activity
+    ),
+    ne!(
+        "Landroid/content/Context;",
+        "getPackageName",
+        "()Ljava/lang/String;",
+        true,
+        context_get_package_name
+    ),
+    ne!(
+        "Landroid/content/ContextWrapper;",
+        "getPackageName",
+        "()Ljava/lang/String;",
+        true,
+        context_get_package_name
+    ),
+    ne!(
+        "Landroid/app/Activity;",
+        "<init>",
+        "()V",
+        true,
+        activity_init
+    ),
+    ne!(
+        "Landroid/app/Activity;",
+        "finish",
+        "()V",
+        true,
+        activity_finish
+    ),
+    ne!(
+        "Landroid/app/Activity;",
+        "getIntent",
+        "()Landroid/content/Intent;",
+        true,
+        activity_get_intent
+    ),
+    ne!(
+        "Landroid/app/Activity;",
+        "onCreate",
+        "(Landroid/os/Bundle;)V",
+        true,
+        activity_on_create
+    ),
+    ne!(
         "Landroid/util/Log;",
         "e",
         "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I",
@@ -759,116 +976,6 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "()Ljava/io/File;",
         true,
         context_get_cache_dir
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "<init>",
-        "(Ljava/lang/String;)V",
-        true,
-        file_init_string
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "<init>",
-        "(Ljava/io/File;Ljava/lang/String;)V",
-        true,
-        file_init_parent_string
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "<init>",
-        "(Ljava/lang/String;Ljava/lang/String;)V",
-        true,
-        file_init_parent_strings
-    ),
-    ne!("Ljava/io/File;", "mkdirs", "()Z", true, file_mkdirs),
-    ne!("Ljava/io/File;", "exists", "()Z", true, file_exists),
-    ne!(
-        "Ljava/io/File;",
-        "lastModified",
-        "()J",
-        true,
-        file_last_modified
-    ),
-    ne!("Ljava/io/File;", "length", "()J", true, file_length),
-    ne!(
-        "Ljava/io/File;",
-        "isDirectory",
-        "()Z",
-        true,
-        file_is_directory
-    ),
-    ne!("Ljava/io/File;", "isFile", "()Z", true, file_is_file),
-    ne!(
-        "Ljava/io/File;",
-        "createNewFile",
-        "()Z",
-        true,
-        file_create_new_file
-    ),
-    ne!("Ljava/io/File;", "delete", "()Z", true, file_delete),
-    ne!(
-        "Ljava/io/File;",
-        "getAbsolutePath",
-        "()Ljava/lang/String;",
-        true,
-        file_get_absolute_path
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "getCanonicalPath",
-        "()Ljava/lang/String;",
-        true,
-        file_get_canonical_path
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "getPath",
-        "()Ljava/lang/String;",
-        true,
-        file_get_path
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "getName",
-        "()Ljava/lang/String;",
-        true,
-        file_get_name
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "getParent",
-        "()Ljava/lang/String;",
-        true,
-        file_get_parent
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "getParentFile",
-        "()Ljava/io/File;",
-        true,
-        file_get_parent_file
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "createTempFile",
-        "(Ljava/lang/String;Ljava/lang/String;Ljava/io/File;)Ljava/io/File;",
-        false,
-        file_create_temp_file
-    ),
-    ne!(
-        "Ljava/io/File;",
-        "renameTo",
-        "(Ljava/io/File;)Z",
-        true,
-        file_rename_to
-    ),
-    ne!(
-        "Lkotlin/io/FilesKt;",
-        "resolve",
-        "(Ljava/io/File;Ljava/lang/String;)Ljava/io/File;",
-        false,
-        fileskt_resolve
     ),
     ne!(
         "Landroid/content/SharedPreferences;",
@@ -981,97 +1088,6 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "()Z",
         true,
         editor_commit
-    ),
-    ne!(
-        "Landroidx/preference/Preference;",
-        "<init>",
-        "(Landroid/content/Context;)V",
-        true,
-        prefs_obj
-    ),
-    ne!(
-        "Landroidx/preference/Preference;",
-        "setKey",
-        "(Ljava/lang/String;)V",
-        true,
-        prefs_set
-    ),
-    ne!(
-        "Landroidx/preference/Preference;",
-        "setTitle",
-        "(Ljava/lang/CharSequence;)V",
-        true,
-        prefs_set
-    ),
-    ne!(
-        "Landroidx/preference/Preference;",
-        "setSummary",
-        "(Ljava/lang/CharSequence;)V",
-        true,
-        prefs_set
-    ),
-    ne!(
-        "Landroidx/preference/Preference;",
-        "setDefaultValue",
-        "(Ljava/lang/Object;)V",
-        true,
-        prefs_set
-    ),
-    ne!(
-        "Landroidx/preference/PreferenceScreen;",
-        "<init>",
-        "(Landroid/content/Context;)V",
-        true,
-        prefs_obj
-    ),
-    ne!(
-        "Landroidx/preference/PreferenceScreen;",
-        "getContext",
-        "()Landroid/content/Context;",
-        true,
-        prefs_ctx
-    ),
-    ne!(
-        "Landroidx/preference/PreferenceScreen;",
-        "setTitle",
-        "(Ljava/lang/CharSequence;)V",
-        true,
-        prefs_set
-    ),
-    ne!(
-        "Landroidx/preference/SwitchPreferenceCompat;",
-        "<init>",
-        "(Landroid/content/Context;)V",
-        true,
-        prefs_obj
-    ),
-    ne!(
-        "Landroidx/preference/SwitchPreferenceCompat;",
-        "setKey",
-        "(Ljava/lang/String;)V",
-        true,
-        prefs_set
-    ),
-    ne!(
-        "Landroidx/preference/SwitchPreferenceCompat;",
-        "setTitle",
-        "(Ljava/lang/CharSequence;)V",
-        true,
-        prefs_set
-    ),
-    ne!(
-        "Landroidx/preference/SwitchPreferenceCompat;",
-        "setSummary",
-        "(Ljava/lang/CharSequence;)V",
-        true,
-        prefs_set
-    ),
-    ne!(
-        "Landroidx/preference/SwitchPreferenceCompat;",
-        "setDefaultValue",
-        "(Ljava/lang/Object;)V",
-        true,
-        prefs_set
     ),
     ne!(
         "Landroid/util/Base64;",

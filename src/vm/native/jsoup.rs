@@ -652,13 +652,6 @@ pub(crate) fn elements_select(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) const JSOUP_TABLE: &[NativeEntry] = &[
     ne!(
-        "Leu/kanade/tachiyomi/util/JsoupExtensionsKt;",
-        "asJsoup$default",
-        "(Lokhttp3/Response;Ljava/lang/String;ILjava/lang/Object;)Lorg/jsoup/nodes/Document;",
-        false,
-        jsoup_parse
-    ),
-    ne!(
         "Lorg/jsoup/Jsoup;",
         "parse",
         "(Ljava/lang/String;Ljava/lang/String;)Lorg/jsoup/nodes/Document;",

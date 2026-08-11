@@ -1432,9 +1432,6 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Response$Builder;", "build", "()Lokhttp3/Response;", true, response_builder_build),
     ne!("Lokhttp3/HttpUrl;", "host", "()Ljava/lang/String;", true, http_url_host),
     // default-client interceptor stubs (mihon 0.17+ extensions validate them)
-    ne!("Leu/kanade/tachiyomi/network/interceptor/UncaughtExceptionInterceptor;", "intercept", INTERCEPT_SIG, true, interceptor_pass_through),
-    ne!("Leu/kanade/tachiyomi/network/interceptor/UserAgentInterceptor;", "intercept", INTERCEPT_SIG, true, interceptor_pass_through),
-    ne!("Leu/kanade/tachiyomi/network/interceptor/CloudflareInterceptor;", "intercept", INTERCEPT_SIG, true, interceptor_pass_through),
     ne!("Lokhttp3/CompressionInterceptor;", "<init>", "([Lokhttp3/CompressionInterceptor$DecompressionAlgorithm;)V", true, compression_interceptor_init),
     ne!("Lokhttp3/CompressionInterceptor;", "intercept", INTERCEPT_SIG, true, interceptor_pass_through),
     ne!("Lokhttp3/brotli/BrotliInterceptor;", "intercept", INTERCEPT_SIG, true, interceptor_pass_through),

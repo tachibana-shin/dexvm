@@ -40,7 +40,7 @@ pub(crate) fn lazy_result_companion(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lkotlin/Result$Companion;")
 }
 
-fn coroutine_scope_create(vm: &mut Vm, _args: &[JValue]) -> R {
+pub(crate) fn coroutine_scope_create(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)
 }
 
@@ -1095,14 +1095,14 @@ pub(crate) fn match_result_get_value(vm: &mut Vm, args: &[JValue]) -> R {
 // java.net.URI
 // ---------------------------------------------------------------------------
 
-fn uri_init(vm: &mut Vm, args: &[JValue]) -> R {
+pub(crate) fn uri_init(vm: &mut Vm, args: &[JValue]) -> R {
     let s = jstr(vm, args[1])?;
     let obj = args[0].as_obj();
     vm.arena.objects[obj as usize].native = Some(Native::URI(s));
     Ok(JValue::Null)
 }
 
-fn uri_get_host(vm: &mut Vm, args: &[JValue]) -> R {
+pub(crate) fn uri_get_host(vm: &mut Vm, args: &[JValue]) -> R {
     let s = match payload(vm, args[0]) {
         Some(Native::URI(s)) => s.clone(),
         _ => return Err(npe(vm)),
@@ -1287,17 +1287,17 @@ fn stringskt_trim_start(vm: &mut Vm, args: &[JValue]) -> R {
 
 // kotlinx.coroutines compatibility: the VM is single-threaded, so launched
 // work runs to completion synchronously while preserving the observable API.
-fn coroutines_global_scope(vm: &mut Vm, _args: &[JValue]) -> R {
+pub(crate) fn coroutines_global_scope(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(vm, "Lkotlinx/coroutines/GlobalScope;", Native::Opaque)
 }
-fn coroutines_dispatchers_io(vm: &mut Vm, _args: &[JValue]) -> R {
+pub(crate) fn coroutines_dispatchers_io(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(
         vm,
         "Lkotlinx/coroutines/CoroutineDispatcher;",
         Native::Opaque,
     )
 }
-fn coroutines_launch_default(vm: &mut Vm, args: &[JValue]) -> R {
+pub(crate) fn coroutines_launch_default(vm: &mut Vm, args: &[JValue]) -> R {
     let scope = args[0];
     let block = args[3];
     let _ = vm.invoke_virtual_args(
@@ -1321,17 +1321,17 @@ fn invoke_suspend_block(vm: &mut Vm, scope: JValue, block: JValue, continuation:
     )
 }
 
-fn coroutines_scope(vm: &mut Vm, args: &[JValue]) -> R {
+pub(crate) fn coroutines_scope(vm: &mut Vm, args: &[JValue]) -> R {
     let scope = alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)?;
     invoke_suspend_block(vm, scope, args[0], args[1])
 }
 
-fn coroutines_with_context(vm: &mut Vm, args: &[JValue]) -> R {
+pub(crate) fn coroutines_with_context(vm: &mut Vm, args: &[JValue]) -> R {
     let scope = alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)?;
     invoke_suspend_block(vm, scope, args[1], args[2])
 }
 
-fn coroutines_async_default(vm: &mut Vm, args: &[JValue]) -> R {
+pub(crate) fn coroutines_async_default(vm: &mut Vm, args: &[JValue]) -> R {
     let result = invoke_suspend_block(vm, args[0], args[3], JValue::Null);
     let (value, error) = match result {
         Ok(value) => (value, JValue::Null),
@@ -1345,7 +1345,7 @@ fn coroutines_async_default(vm: &mut Vm, args: &[JValue]) -> R {
     )
 }
 
-fn deferred_await(vm: &mut Vm, args: &[JValue]) -> R {
+pub(crate) fn deferred_await(vm: &mut Vm, args: &[JValue]) -> R {
     match payload(vm, args[0]) {
         Some(Native::Deferred {
             error: JValue::Obj(error),
@@ -1356,7 +1356,7 @@ fn deferred_await(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
-fn deferred_await_all(vm: &mut Vm, args: &[JValue]) -> R {
+pub(crate) fn deferred_await_all(vm: &mut Vm, args: &[JValue]) -> R {
     let deferreds = coll_elems(vm, args[0])?;
     let mut values = Vec::with_capacity(deferreds.len());
     for deferred in deferreds {
@@ -1549,7 +1549,6 @@ pub(crate) fn comparisons_max_of3(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/NoWhenBranchMatchedException;", "<init>", "()V", true, object_noop),
-    ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "CoroutineScope", "(Lkotlin/coroutines/CoroutineContext;)Lkotlinx/coroutines/CoroutineScope;", false, coroutine_scope_create),
     ne!("Lkotlin/enums/EnumEntriesKt;", "enumEntries", "([Ljava/lang/Enum;)Lkotlin/enums/EnumEntries;", false, enum_entries),
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxBoolean", "(Z)Ljava/lang/Boolean;", false, boxing_box_boolean),
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxInt", "(I)Ljava/lang/Integer;", false, boxing_box_int),
@@ -1647,8 +1646,6 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/ranges/RangesKt;", "coerceAtLeast", "(II)I", false, rangeskt_coerce_at_least),
     ne!("Lkotlin/text/MatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
     ne!("Lkotlin/text/MatcherMatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
-    ne!("Ljava/net/URI;", "<init>", "(Ljava/lang/String;)V", true, uri_init),
-    ne!("Ljava/net/URI;", "getHost", "()Ljava/lang/String;", true, uri_get_host),
     ne!("Lkotlin/ranges/IntRange;", "<init>", "(II)V", true, int_range_init),
     ne!("Lkotlin/ranges/RangesKt;", "until", "(II)Lkotlin/ranges/IntRange;", false, rangeskt_until),
     ne!("Lkotlin/ranges/IntRange;", "getFirst", "()I", true, int_range_get_first),
@@ -1664,14 +1661,6 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;CCZILjava/lang/Object;)Ljava/lang/String;", false, stringskt_replace_char_default),
     ne!("Lkotlin/text/StringsKt;", "trimStart", "(Ljava/lang/String;[C)Ljava/lang/String;", false, stringskt_trim_start),
     ne!("Lkotlin/collections/ArraysKt;", "copyOfRange", "([BII)[B", false, arrayskt_copy_of_range),
-    ne!("Lkotlinx/coroutines/GlobalScope;", "getInstance", "()Lkotlinx/coroutines/GlobalScope;", false, coroutines_global_scope),
-    ne!("Lkotlinx/coroutines/Dispatchers;", "getIO", "()Lkotlinx/coroutines/CoroutineDispatcher;", false, coroutines_dispatchers_io),
-    ne!("Lkotlinx/coroutines/BuildersKt;", "launch$default", "(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;", false, coroutines_launch_default),
-    ne!("Lkotlinx/coroutines/BuildersKt;", "async$default", "(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Deferred;", false, coroutines_async_default),
-    ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "coroutineScope", "(Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, coroutines_scope),
-    ne!("Lkotlinx/coroutines/BuildersKt;", "withContext", "(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, coroutines_with_context),
-    ne!("Lkotlinx/coroutines/Deferred;", "await", "(Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", true, deferred_await),
-    ne!("Lkotlinx/coroutines/AwaitKt;", "awaitAll", "(Ljava/util/Collection;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, deferred_await_all),
     ne!("Lkotlin/coroutines/jvm/internal/SuspendLambda;", "<init>", "(ILkotlin/coroutines/Continuation;)V", true, suspend_lambda_init),
     ne!("Lkotlin/coroutines/jvm/internal/ContinuationImpl;", "<init>", "(Lkotlin/coroutines/Continuation;)V", true, continuation_impl_init),
     ne!("Lkotlin/coroutines/jvm/internal/SpillingKt;", "nullOutSpilledVariable", "(Ljava/lang/Object;)Ljava/lang/Object;", false, null_out_spilled_variable),
