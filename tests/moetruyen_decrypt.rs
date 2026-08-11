@@ -292,8 +292,19 @@ fn run_intercept(
 // tests
 // ---------------------------------------------------------------------------
 
+fn init_logger() {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    ONCE.call_once(|| {
+        env_logger::Builder::from_env(
+            env_logger::Env::default().default_filter_or("off"),
+        )
+        .init();
+    });
+}
+
 #[test]
 fn imgx_gcm_decrypt_end_to_end() {
+    init_logger();
     let mut ctx = open();
     let payload = imgx_gcm_payload(&[7u8; 32], &[9u8; 12], &[0x10, 0x20, 0x30]);
     ctx.set_http(move |_req| dexvm::keiyoushi::HttpResp::ok_bytes(payload.clone()));
@@ -314,6 +325,7 @@ fn imgx_gcm_decrypt_end_to_end() {
 
 #[test]
 fn imgx_unsupported_version_throws() {
+    init_logger();
     let mut ctx = open();
     let mut bad = imgx_gcm_payload(&[7u8; 32], &[9u8; 12], &[1, 2, 3]);
     bad[4] = b'Z';
@@ -328,6 +340,7 @@ fn imgx_unsupported_version_throws() {
 
 #[test]
 fn imgx_wrong_key_fails() {
+    init_logger();
     let mut ctx = open();
     // encrypted with a different key: the grant's key (7s) no longer matches.
     let payload = imgx_gcm_payload(&[8u8; 32], &[9u8; 12], &[1, 2, 3]);
@@ -343,6 +356,7 @@ fn imgx_wrong_key_fails() {
 // Exercise the Cipher natives directly: encrypt/decrypt round-trip.
 #[test]
 fn cipher_native_roundtrip() {
+    init_logger();
     let mut ctx = open();
     let _ = SandboxOptions::allow_all();
 

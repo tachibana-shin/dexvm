@@ -163,7 +163,19 @@ pub enum Native {
         name: String,
         ordinal: i32,
     },
-    /// java.util.ArrayList / Arrays$ArrayList / Collections wrappers.
+    /// java.lang.reflect.Field (from Class.getDeclaredField).
+    Field {
+        class: u32,
+        name: u32,
+    },
+    /// java.util.concurrent.atomic.AtomicBoolean.
+    AtomicBool(bool),
+    /// java.util.concurrent.atomic.AtomicInteger.
+    AtomicInt(i32),
+    /// java.time.LocalDate (days since epoch).
+    LocalDay(u32),
+    /// java.time.Instant / ZonedDateTime (epoch millis).
+    EpochMillis(i64),
     List(Vec<JValue>),
     /// java.util.HashMap / LinkedHashMap.
     Map(Vec<(JValue, JValue)>),
@@ -582,6 +594,11 @@ impl Native {
             | Native::FormBody(_)
             | Native::Headers(_)
             | Native::Cookie { .. }
+            | Native::Field { .. }
+            | Native::AtomicBool(_)
+            | Native::AtomicInt(_)
+            | Native::LocalDay(_)
+            | Native::EpochMillis(_)
             | Native::SChapter { .. }
             | Native::SPPage { .. }
             | Native::Duration(_)

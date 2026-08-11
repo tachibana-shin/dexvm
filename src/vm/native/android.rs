@@ -32,6 +32,34 @@ pub(crate) fn prefs_set(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+/// `Context.getCacheDir() -> File`. The multiapk (L s) path only checks it for
+/// null; an opaque File satisfies that.
+pub(crate) fn context_get_cache_dir(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Ljava/io/File;", Native::Opaque)
+}
+
+/// `File.mkdirs() -> boolean`; the multiapk path ignores the result.
+pub(crate) fn file_mkdirs(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(1))
+}
+
+/// `File.exists() -> boolean`; report true so cache dirs are accepted.
+pub(crate) fn file_exists(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(1))
+}
+
+/// `File.lastModified() -> long`; 0 makes filter caches permanently stale,
+/// forcing recomputation from the network each time.
+pub(crate) fn file_last_modified(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Long(0))
+}
+
+/// `kotlin.io.FilesKt.resolve(File, String) -> File`; returns the same
+/// opaque file (path ignored, only the return value is used).
+pub(crate) fn fileskt_resolve(_vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(_vm, "Ljava/io/File;", Native::Opaque)
+}
+
 /// `android.util.Base64.decode(String, int) -> [B`. Standard alphabet (flag 0)
 /// or URL-safe (flag 4); padding-tolerant like the Android implementation.
 fn base64_decode(vm: &mut Vm, args: &[JValue]) -> R {
@@ -62,6 +90,48 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "(Ljava/lang/String;I)Landroid/content/SharedPreferences;",
         true,
         context_get_shared_prefs
+    ),
+    ne!(
+        "Landroid/content/Context;",
+        "getCacheDir",
+        "()Ljava/io/File;",
+        true,
+        context_get_cache_dir
+    ),
+    ne!(
+        "Landroid/content/ContextWrapper;",
+        "getCacheDir",
+        "()Ljava/io/File;",
+        true,
+        context_get_cache_dir
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "mkdirs",
+        "()Z",
+        true,
+        file_mkdirs
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "exists",
+        "()Z",
+        true,
+        file_exists
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "lastModified",
+        "()J",
+        true,
+        file_last_modified
+    ),
+    ne!(
+        "Lkotlin/io/FilesKt;",
+        "resolve",
+        "(Ljava/io/File;Ljava/lang/String;)Ljava/io/File;",
+        true,
+        fileskt_resolve
     ),
     ne!(
         "Landroid/content/SharedPreferences;",
@@ -168,7 +238,24 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         true,
         base64_decode
     ),
+    ne!(
+        "Landroid/os/SystemClock;",
+        "elapsedRealtime",
+        "()J",
+        true,
+        elpased_realtime
+    ),
 ];
+
+#[cfg(feature = "okhttp")]
+pub(crate) fn elpased_realtime(_vm: &mut Vm, _args: &[JValue]) -> R {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let millis = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| i64::try_from(d.as_millis()).unwrap_or(0))
+        .unwrap_or(0);
+    Ok(JValue::Long(millis))
+}
 
 #[cfg(test)]
 mod tests;

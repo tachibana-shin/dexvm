@@ -17,6 +17,12 @@ impl JValue {
         matches!(self, JValue::Null)
     }
 
+    /// True for a reference that is null in DEX semantics: either `Null` or an
+    /// `Int(0)` produced by a `const 0` in an object-typed register.
+    pub fn is_null_ref(&self) -> bool {
+        matches!(self, JValue::Null | JValue::Int(0))
+    }
+
     /// Wide values (long/double) occupy a register pair in DEX; the VM stores
     /// them in a single slot with the second slot unused.
     pub fn is_wide(&self) -> bool {

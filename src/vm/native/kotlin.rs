@@ -20,12 +20,20 @@ pub(crate) fn lazy_duration_unit_seconds(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lkotlin/time/DurationUnit;")
 }
 
+pub(crate) fn lazy_duration_unit_days(vm: &mut Vm) -> JValue {
+    opaque_inst(vm, "Lkotlin/time/DurationUnit;")
+}
+
 pub(crate) fn lazy_duration_unit_millis(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lkotlin/time/DurationUnit;")
 }
 
 pub(crate) fn lazy_unit_instance(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lkotlin/Unit;")
+}
+
+pub(crate) fn lazy_global_scope(vm: &mut Vm) -> JValue {
+    opaque_inst(vm, "Lkotlinx/coroutines/GlobalScope;")
 }
 
 // Lazy / LazyKt
@@ -40,7 +48,7 @@ pub(crate) fn lazy_get_value(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::Lazy(f)) => *f,
         _ => return Err(npe(vm)),
     };
-    if f.is_null() {
+    if f.is_null_ref() {
         return Err(npe(vm));
     }
     inv_virt(vm, f, "invoke", "()Ljava/lang/Object;", &[])
@@ -50,7 +58,7 @@ pub(crate) fn lazy_get_value(vm: &mut Vm, args: &[JValue]) -> R {
 // ---------------------------------------------------------------------------
 
 fn unit_millis(vm: &mut Vm, v: JValue) -> Result<i64, NatErr> {
-    if v.is_null() {
+    if v.is_null_ref() {
         return Ok(1000);
     }
     let desc = vm.class_desc_str(obj_class(vm, v.as_obj()));
@@ -138,7 +146,7 @@ pub(crate) fn collections_list_of_array(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn collections_list_of_single(vm: &mut Vm, args: &[JValue]) -> R {
-    let items = if args[0].is_null() {
+    let items = if args[0].is_null_ref() {
         Vec::new()
     } else {
         vec![args[0]]
@@ -148,6 +156,11 @@ pub(crate) fn collections_list_of_single(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn kotlin_empty_list(vm: &mut Vm, _args: &[JValue]) -> R {
     list_alloc(vm, Vec::new())
+}
+
+/// `CollectionsKt.build(list)` — the builder is already the final list.
+pub(crate) fn kotlin_list_identity(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
 }
 
 pub(crate) fn stringskt_starts_with_default(vm: &mut Vm, args: &[JValue]) -> R {
@@ -252,7 +265,7 @@ pub(crate) fn collections_join_to_string_default(vm: &mut Vm, args: &[JValue]) -
         if i > 0 {
             out.push_str(&separator);
         }
-        let s = if transform.is_null() {
+        let s = if transform.is_null_ref() {
             charseq_of(vm, *v)?
         } else {
             let r = inv_virt(
@@ -477,6 +490,23 @@ fn stringskt_trim_start(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Ljava/lang/String;", Native::Str(r.to_string()))
 }
 
+// kotlinx.coroutines stubs: the extension fires an async cache-writer via
+// GlobalScope.launch(Dispatchers.IO) and ignores the returned Job; none of
+// it must run in the VM.
+fn coroutines_global_scope(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Lkotlinx/coroutines/GlobalScope;", Native::Opaque)
+}
+fn coroutines_dispatchers_io(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+fn coroutines_launch_default(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
+fn suspend_lambda_init(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
 // kotlin.collections.ArraysKt.copyOfRange(byte[], from, to)
 fn arrayskt_copy_of_range(vm: &mut Vm, args: &[JValue]) -> R {
     let from = int_of(vm, args[1]).max(0) as usize;
@@ -567,6 +597,53 @@ pub(crate) fn keiyoushi_duration_equals(vm: &mut Vm, args: &[JValue]) -> R {
     )))
 }
 
+pub(crate) fn duration_box(vm: &mut Vm, args: &[JValue]) -> R {
+    let raw = long_of(vm, args[0]);
+    alloc(
+        vm,
+        "Lkotlin/time/Duration;",
+        Native::Duration(raw),
+    )
+}
+
+pub(crate) fn duration_unbox(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Duration(raw)) => Ok(JValue::Long(*raw)),
+        _ => Err(npe(vm)),
+    }
+}
+
+pub(crate) fn duration_nanos_impl(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Long(long_of(vm, args[0]).saturating_mul(1_000_000)))
+}
+
+/// `Duration.getInWholeMilliseconds-impl(J)J`; raw unit is milliseconds.
+pub(crate) fn duration_millis_impl(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Long(long_of(vm, args[0])))
+}
+
+pub(crate) fn duration_compare_to(vm: &mut Vm, args: &[JValue]) -> R {
+    let a = match payload(vm, args[0]) {
+        Some(Native::Duration(raw)) => *raw,
+        _ => return Err(npe(vm)),
+    };
+    let b = match payload(vm, args[1]) {
+        Some(Native::Duration(raw)) => *raw,
+        _ => long_of(vm, args[1]),
+    };
+    Ok(JValue::Int(a.cmp(&b) as i32))
+}
+
+pub(crate) fn comparisons_max_of3(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut best = args[0];
+    for v in [args[1], args[2]] {
+        if java_cmp(vm, v, best)? == Ordering::Greater {
+            best = v;
+        }
+    }
+    Ok(best)
+}
+
 // ---------------------------------------------------------------------------
 // kotlin stdlib native table
 // ---------------------------------------------------------------------------
@@ -586,6 +663,8 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "listOf", "(Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_single),
     ne!("Lkotlin/collections/CollectionsKt;", "mutableListOf", "([Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_array),
     ne!("Lkotlin/collections/CollectionsKt;", "emptyList", "()Ljava/util/List;", false, kotlin_empty_list),
+    ne!("Lkotlin/collections/CollectionsKt;", "createListBuilder", "()Ljava/util/List;", false, kotlin_empty_list),
+    ne!("Lkotlin/collections/CollectionsKt;", "build", "(Ljava/util/List;)Ljava/util/List;", true, kotlin_list_identity),
     ne!("Lkotlin/collections/CollectionsKt;", "plus", "(Ljava/util/Collection;Ljava/lang/Iterable;)Ljava/util/List;", false, collections_plus_iterable),
     ne!("Lkotlin/collections/CollectionsKt;", "plus", "(Ljava/util/Collection;Ljava/lang/Object;)Ljava/util/List;", false, collections_plus_obj),
     ne!("Lkotlin/collections/CollectionsKt;", "contains", "(Ljava/lang/Iterable;Ljava/lang/Object;)Z", false, collections_contains),
@@ -612,6 +691,10 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;CCZILjava/lang/Object;)Ljava/lang/String;", true, stringskt_replace_char_default),
     ne!("Lkotlin/text/StringsKt;", "trimStart", "(Ljava/lang/String;[C)Ljava/lang/String;", true, stringskt_trim_start),
     ne!("Lkotlin/collections/ArraysKt;", "copyOfRange", "([BII)[B", true, arrayskt_copy_of_range),
+    ne!("Lkotlinx/coroutines/GlobalScope;", "getInstance", "()Lkotlinx/coroutines/GlobalScope;", true, coroutines_global_scope),
+    ne!("Lkotlinx/coroutines/Dispatchers;", "getIO", "()Lkotlinx/coroutines/CoroutineDispatcher;", true, coroutines_dispatchers_io),
+    ne!("Lkotlinx/coroutines/BuildersKt;", "launch$default", "(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;", false, coroutines_launch_default),
+    ne!("Lkotlin/coroutines/jvm/internal/SuspendLambda;", "<init>", "(ILkotlin/coroutines/Continuation;)V", true, suspend_lambda_init),
     ne!("Lkotlin/UInt;", "constructor-impl", "(I)I", false, uint_constructor_impl),
     ne!("Lkotlin/UByte;", "constructor-impl", "(B)B", false, ubyte_constructor_impl),
     ne!("Lkotlin/io/CloseableKt;", "closeFinally", "(Ljava/io/Closeable;Ljava/lang/Throwable;)V", false, closeablekt_close_finally),
@@ -620,6 +703,12 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/time/Duration;", "minus-LRDsOJo", "(JJ)J", false, keiyoushi_duration_minus),
     ne!("Lkotlin/time/Duration;", "compareTo-LRDsOJo", "(JJ)I", false, keiyoushi_duration_compare),
     ne!("Lkotlin/time/Duration;", "equals-impl0", "(JJ)Z", false, keiyoushi_duration_equals),
+    ne!("Lkotlin/time/Duration;", "box-impl", "(J)Lkotlin/time/Duration;", false, duration_box),
+    ne!("Lkotlin/time/Duration;", "unbox-impl", "()J", true, duration_unbox),
+    ne!("Lkotlin/time/Duration;", "getInWholeNanoseconds-impl", "(J)J", false, duration_nanos_impl),
+    ne!("Lkotlin/time/Duration;", "getInWholeMilliseconds-impl", "(J)J", false, duration_millis_impl),
+    ne!("Lkotlin/time/Duration;", "compareTo", "(Ljava/lang/Object;)I", true, duration_compare_to),
+    ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of3),
 ];
 
 #[cfg(test)]

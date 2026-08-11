@@ -113,16 +113,28 @@ fn replay_ext() -> Option<(Keiyoushi, FixtureState)> {
             code: c.code,
             message: "OK".into(),
             headers: Vec::new(),
-            body: c.body.clone(),
-            body_bytes: c.bytes.clone(),
+            body: c.bytes.clone(),
         },
         None => HttpResp::ok("<html></html>"),
     }));
     Some((ext, state))
 }
 
+
+
+fn init_logger() {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    ONCE.call_once(|| {
+        env_logger::Builder::from_env(
+            env_logger::Env::default().default_filter_or("off"),
+        )
+        .init();
+    });
+}
+
 #[test]
 fn flow_sources_and_metadata() {
+    init_logger();
     let Some((mut ext, _state)) = replay_ext() else {
         eprintln!("{}", skip_msg(&FixtureState::Missing));
         return;
@@ -144,6 +156,7 @@ fn flow_sources_and_metadata() {
 
 #[test]
 fn flow_multiapk_metadata() {
+    init_logger();
     // Every fixture apk must give per-source metadata straight from its own
     // dex — no host-side assumptions about any single source. This is the
     // regression guard for the old hardcoded "Akuma"/"all"/baseUrl stubs.
@@ -195,6 +208,7 @@ fn flow_multiapk_metadata() {
 
 #[test]
 fn flow_filters() {
+    init_logger();
     let Some((mut ext, _state)) = replay_ext() else {
         eprintln!("{}", skip_msg(&FixtureState::Missing));
         return;
@@ -223,6 +237,7 @@ fn flow_filters() {
 
 #[test]
 fn flow_popular() {
+    init_logger();
     let Some((mut ext, state)) = replay_ext() else {
         eprintln!("{}", skip_msg(&FixtureState::Missing));
         return;
@@ -251,6 +266,7 @@ fn flow_popular() {
 
 #[test]
 fn flow_search_with_filter_states() {
+    init_logger();
     let Some((mut ext, state)) = replay_ext() else {
         eprintln!("{}", skip_msg(&FixtureState::Missing));
         return;
@@ -282,6 +298,7 @@ fn flow_search_with_filter_states() {
 
 #[test]
 fn flow_manga_details() {
+    init_logger();
     let Some((mut ext, state)) = replay_ext() else {
         eprintln!("{}", skip_msg(&FixtureState::Missing));
         return;
@@ -310,6 +327,7 @@ fn flow_manga_details() {
 
 #[test]
 fn flow_chapters_and_pages() {
+    init_logger();
     let Some((mut ext, state)) = replay_ext() else {
         eprintln!("{}", skip_msg(&FixtureState::Missing));
         return;
@@ -343,6 +361,7 @@ fn flow_chapters_and_pages() {
 
 #[test]
 fn flow_latest_unsupported() {
+    init_logger();
     // akuma-specific: the fixture dex reports supportsLatest=false and throws
     // latestUpdatesRequest. Other apks differ, so only run against the
     // default fixture apk.
@@ -365,6 +384,7 @@ fn flow_latest_unsupported() {
 
 #[test]
 fn http_resp_header_is_case_insensitive() {
+    init_logger();
     let mut resp = HttpResp::ok("x");
     resp.headers = vec![("Content-Type".to_string(), "text/html".to_string())];
     assert_eq!(resp.header("content-type"), Some("text/html"));

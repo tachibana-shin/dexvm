@@ -3,6 +3,7 @@ use crate::vm::native::*;
 mod arraydeque;
 mod arraylist;
 mod arrays;
+mod atomic;
 mod collections;
 mod condition;
 mod date;
@@ -36,6 +37,7 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
         JValue::Obj(_) => match payload(vm, v) {
             Some(Native::List(items)) => Ok(items.clone()),
             Some(Native::Set(items)) => Ok(items.clone()),
+            Some(Native::SFilterList(items)) => Ok(items.clone()),
             Some(Native::Array(ArrayData::Obj(items))) => Ok(items.clone()),
             #[cfg(feature = "jsoup")]
             Some(Native::JsoupElements { doc, ids }) => {
@@ -74,7 +76,9 @@ pub(crate) const UTIL_TABLE: &[&[NativeEntry]] = &[
     arraydeque::TABLE,
     arraylist::TABLE,
     arrays::TABLE,
+    atomic::TABLE,
     collections::TABLE,
+    hashmap::CHM_TABLE,
     condition::TABLE,
     date::TABLE,
     hashmap::TABLE,

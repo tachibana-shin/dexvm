@@ -635,6 +635,21 @@ pub(crate) fn filter_list_init(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+pub(crate) fn filter_list_init_list(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = match payload(vm, args[1]) {
+        Some(Native::List(items)) => items.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let Some(n) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    match n {
+        Native::SFilterList(dst) => *dst = items,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
 pub(crate) fn filter_list_get_filters(vm: &mut Vm, args: &[JValue]) -> R {
     let items = match payload(vm, args[0]) {
         Some(Native::SFilterList(items)) => items.clone(),
@@ -972,6 +987,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "getMangas", "()Ljava/util/List;", true, mangas_page_get_mangas),
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "hasNextPage", "()Z", true, mangas_page_has_next),
     ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "<init>", "([Leu/kanade/tachiyomi/source/model/Filter;)V", true, filter_list_init),
+    ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "<init>", "(Ljava/util/List;)V", true, filter_list_init_list),
     ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "getFilters", "()Ljava/util/List;", true, filter_list_get_filters),
     ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "iterator", "()Ljava/util/Iterator;", true, filter_list_iterator),
     ne!("Leu/kanade/tachiyomi/source/model/Filter;", "<init>", "(Ljava/lang/String;)V", true, filter_init_name),

@@ -347,10 +347,9 @@ pub(crate) fn payload_mut_two(
 
 /// Default payload for a freshly allocated object of a shim class.
 pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
-    let (class_id, desc) = {
+    let class_id = {
         let o = vm.arena.get(id)?;
-        let cl = vm.classes.get(o.class as usize)?;
-        (o.class, vm.str_of(cl.descriptor).to_string())
+        o.class
     };
     // Enum and Throwable defaults apply to dex subclasses as well, found by
     // walking the superclass chain (shim superclasses are already linked).
@@ -390,9 +389,14 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             }
             _ => {}
         }
+        let cdesc = vm.str_of(cl.descriptor);
+        if let Some(n) = default_payload_desc(cdesc) {
+            return Some(n);
+        }
         c = cl.superclass;
     }
-    match desc.as_str() {
+    fn default_payload_desc(desc: &str) -> Option<Native> {
+    match desc {
         "Ljava/lang/String;" => Some(Native::Str(String::new())),
         "Ljava/lang/StringBuilder;" => Some(Native::StringBuilder(String::new())),
         "Ljava/lang/Integer;" => Some(Native::IntBox(0)),
@@ -413,6 +417,7 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             body: None,
         }),
         "Ljava/util/HashMap;" | "Ljava/util/LinkedHashMap;" => Some(Native::Map(Vec::new())),
+        "Ljava/util/concurrent/ConcurrentHashMap;" => Some(Native::Map(Vec::new())),
         "Ljava/util/HashSet;" | "Ljava/util/LinkedHashSet;" => Some(Native::Set(Vec::new())),
         "Ljava/util/regex/Pattern;" => Some(Native::Pattern {
             re: Regex::new("").expect("empty regex"),
@@ -442,6 +447,15 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
         "Ljava/util/concurrent/locks/ReentrantLock;" => {
             Some(Native::ReentrantLock { locked: false })
         }
+        "Ljava/util/concurrent/atomic/AtomicBoolean;" => Some(Native::AtomicBool(false)),
+        "Ljava/util/concurrent/atomic/AtomicInteger;" => Some(Native::AtomicInt(0)),
+        "Ljava/time/LocalDate;" => Some(Native::LocalDay(0)),
+        "Ljava/time/ZonedDateTime;" | "Ljava/time/Instant;" => Some(Native::EpochMillis(0)),
+        "Ljava/time/ZoneId;" => Some(Native::Opaque),
+        "Ljava/time/format/DateTimeFormatter;" => Some(Native::DateFormatter {
+            pattern: String::new(),
+            zone: String::new(),
+        }),
         #[cfg(feature = "tachiyomi")]
         "Leu/kanade/tachiyomi/source/model/SManga;" => Some(keiyoushi::empty_smanga()),
         #[cfg(feature = "tachiyomi")]
@@ -477,7 +491,11 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             text_value: String::new(),
         }),
         _ => None,
-    }
+   }
+}
+
+    None
+
 }
 
 pub(crate) fn obj_class(vm: &Vm, id: u32) -> u32 {

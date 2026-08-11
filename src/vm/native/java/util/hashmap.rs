@@ -1,5 +1,7 @@
 //! java.util.HashMap host shims.
 
+use log::info;
+
 use crate::vm::native::*;
 
 // ---- java.util.HashMap ----
@@ -14,11 +16,15 @@ pub(crate) fn map_init(vm: &mut Vm, args: &[JValue]) -> R {
         Vec::new()
     };
     let Some(n) = payload_mut(vm, args[0]) else {
+        info!("MAP_INIT: no payload for {:?} args={}", args[0], args.len());
         return Err(npe(vm));
     };
     match n {
         Native::Map(dst) => *dst = entries,
-        _ => return Err(npe(vm)),
+        other => {
+            info!("MAP_INIT: wrong payload variant {:?}", std::mem::discriminant(other));
+            return Err(npe(vm));
+        }
     }
     Ok(JValue::Null)
 }
@@ -387,6 +393,150 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ),
     ne!(
         "Ljava/util/HashMap;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        map_to_string
+    ),
+];
+
+/// Same API surface for java.util.concurrent.ConcurrentHashMap.
+pub(crate) const CHM_TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "<init>",
+        "()V",
+        true,
+        map_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "<init>",
+        "(I)V",
+        true,
+        map_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "<init>",
+        "(IF)V",
+        true,
+        map_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "<init>",
+        "(Ljava/util/Map;)V",
+        true,
+        map_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "size",
+        "()I",
+        true,
+        map_size
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "isEmpty",
+        "()Z",
+        true,
+        map_is_empty
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "get",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_get
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "getOrDefault",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_get_default
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "put",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_put
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "putAll",
+        "(Ljava/util/Map;)V",
+        true,
+        map_put_all
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "putIfAbsent",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_put_if_absent
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "containsKey",
+        "(Ljava/lang/Object;)Z",
+        true,
+        map_contains_key
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "containsValue",
+        "(Ljava/lang/Object;)Z",
+        true,
+        map_contains_value
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "remove",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_remove
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "remove",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Z",
+        true,
+        map_remove
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "clear",
+        "()V",
+        true,
+        map_clear
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "keySet",
+        "()Ljava/util/Set;",
+        true,
+        map_keys
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "values",
+        "()Ljava/util/Collection;",
+        true,
+        map_values
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
+        "entrySet",
+        "()Ljava/util/Set;",
+        true,
+        map_entries
+    ),
+    ne!(
+        "Ljava/util/concurrent/ConcurrentHashMap;",
         "toString",
         "()Ljava/lang/String;",
         true,

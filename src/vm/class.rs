@@ -151,6 +151,18 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         &[],
         ACC_INTERFACE | ACC_ABSTRACT
     ),
+    shim!(
+        "Ljava/lang/reflect/AccessibleObject;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        ACC_PUBLIC | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/lang/reflect/Field;",
+        Some("Ljava/lang/reflect/AccessibleObject;"),
+        &[],
+        ACC_PUBLIC
+    ),
     // mihon extension host API (keiyoushi/Tachiyomi extension entry points)
     #[cfg(feature = "tachiyomi")]
     shim!(
@@ -414,6 +426,71 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         Some("Ljava/lang/Object;"),
         &[],
         0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Leu/kanade/tachiyomi/network/interceptor/UncaughtExceptionInterceptor;",
+        Some("Lokhttp3/Interceptor;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Leu/kanade/tachiyomi/network/interceptor/UserAgentInterceptor;",
+        Some("Lokhttp3/Interceptor;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Leu/kanade/tachiyomi/network/interceptor/CloudflareInterceptor;",
+        Some("Lokhttp3/Interceptor;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/CompressionInterceptor;",
+        Some("Lokhttp3/Interceptor;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokhttp3/CompressionInterceptor$DecompressionAlgorithm;", None, &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/brotli/BrotliInterceptor;",
+        Some("Lokhttp3/Interceptor;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/brotli/Brotli;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "INSTANCE",
+            "Lokhttp3/brotli/Brotli;",
+            ShimValue::Lazy(native::lazy_brotli_inst)
+        )]
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/Gzip;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!("INSTANCE", "Lokhttp3/Gzip;", ShimValue::Lazy(native::lazy_gzip_inst))]
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/zstd/Zstd;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!("INSTANCE", "Lokhttp3/zstd/Zstd;", ShimValue::Lazy(native::lazy_zstd_inst))]
     ),
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/FormBody;", Some("Ljava/lang/Object;"), &[], 0),
@@ -1491,6 +1568,11 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
                 "Lkotlin/time/DurationUnit;",
                 ShimValue::Lazy(native::lazy_duration_unit_millis)
             ),
+            sdef!(
+                "DAYS",
+                "Lkotlin/time/DurationUnit;",
+                ShimValue::Lazy(native::lazy_duration_unit_days)
+            ),
         ]
     ),
     shim!(
@@ -1545,6 +1627,35 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
             "Lkotlin/Unit;",
             ShimValue::Lazy(native::lazy_unit_instance)
         ),]
+    ),
+    shim!(
+        "Lkotlinx/coroutines/GlobalScope;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "INSTANCE",
+            "Lkotlinx/coroutines/GlobalScope;",
+            ShimValue::Lazy(native::lazy_global_scope)
+        ),]
+    ),
+    shim!(
+        "Lkotlin/coroutines/jvm/internal/SuspendLambda;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Lkotlin/jvm/functions/Function2;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Lkotlin/coroutines/CoroutineDispatcher;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
     ),
     shim!(
         "Lkotlin/Pair;",

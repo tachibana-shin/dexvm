@@ -12,6 +12,12 @@ pub(crate) fn okio_source_input_stream(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Lokio/BufferedSource;", Native::OkioBuf { bytes, pos })
 }
 
+/// `Okio.source(File)` — the filter cache never exists in the VM; throwing
+/// lets the caller's try/catch fall through to the network path.
+pub(crate) fn okio_source_file(vm: &mut Vm, _args: &[JValue]) -> R {
+    Err(iae(vm, "cache file unavailable"))
+}
+
 pub(crate) fn okio_source_response_body(vm: &mut Vm, args: &[JValue]) -> R {
     let bytes = resp_body_bytes(vm, args[0])?;
     alloc(
@@ -97,6 +103,13 @@ pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
         "(Ljava/io/InputStream;)Lokio/Source;",
         false,
         okio_source_input_stream
+    ),
+    ne!(
+        "Lokio/Okio;",
+        "source",
+        "(Ljava/io/File;)Lokio/Source;",
+        false,
+        okio_source_file
     ),
     ne!(
         "Lokio/Okio;",

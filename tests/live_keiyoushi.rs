@@ -48,8 +48,7 @@ fn real_http(req: &HttpData) -> HttpResp {
                 code: 0,
                 message: e.to_string(),
                 headers: Vec::new(),
-                body: String::new(),
-                body_bytes: None,
+                body: None,
             },
         }
     } else {
@@ -63,20 +62,20 @@ fn real_http(req: &HttpData) -> HttpResp {
                 code: 0,
                 message: e.to_string(),
                 headers: Vec::new(),
-                body: String::new(),
-                body_bytes: None,
+                body: None,
             },
         }
     }
 }
 
 fn to_resp(r: ureq::http::Response<ureq::Body>) -> HttpResp {
+    let code = r.status().as_u16() as i32;
+    let bytes = r.into_body().read_to_vec().unwrap_or_default();
     HttpResp {
-        code: r.status().as_u16() as i32,
+        code,
         message: "OK".into(),
         headers: Vec::new(),
-        body: r.into_body().read_to_string().unwrap_or_default(),
-        body_bytes: None,
+        body: Some(bytes),
     }
 }
 
@@ -116,8 +115,21 @@ fn save_fixtures(caps: &[(String, String, i32, String)], blocked: bool) {
     eprintln!("live: captured {n} responses into {LIVE_DIR}/ (blocked={blocked})");
 }
 
+
+
+fn init_logger() {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    ONCE.call_once(|| {
+        env_logger::Builder::from_env(
+            env_logger::Env::default().default_filter_or("off"),
+        )
+        .init();
+    });
+}
+
 #[test]
 fn live_full_pipeline() {
+    init_logger();
     if std::env::var("DEXVM_LIVE").is_err() {
         eprintln!("note: set DEXVM_LIVE=1 to run the live network test (hits api.akuma.moe)");
         return;

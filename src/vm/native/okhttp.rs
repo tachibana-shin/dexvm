@@ -8,6 +8,8 @@ pub(crate) const RESPONSE: &str = "Lokhttp3/Response;";
 pub(crate) const REQUEST: &str = "Lokhttp3/Request;";
 pub(crate) const HTTP_URL: &str = "Lokhttp3/HttpUrl;";
 
+use log::info;
+
 use super::*;
 
 // ---------------------------------------------------------------------------
@@ -84,6 +86,10 @@ pub(crate) fn request_builder_add_header(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn request_builder_tag(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+
+pub(crate) fn request_builder_tag2(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
@@ -447,14 +453,68 @@ pub(crate) fn http_url_to_string(vm: &mut Vm, args: &[JValue]) -> R {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn okhttp_client_new_builder(vm: &mut Vm, _args: &[JValue]) -> R {
+    let interceptors = mihon_default_interceptors(vm)?;
     alloc(
         vm,
         "Lokhttp3/OkHttpClient$Builder;",
         Native::OkHttpBuilder {
-            interceptors: Vec::new(),
+            interceptors,
             network_interceptors: Vec::new(),
         },
     )
+}
+
+/// The three interceptor stubs every mihon default client ships
+/// (UncaughtExceptionInterceptor, UserAgentInterceptor,
+/// CloudflareInterceptor). Synthetic extensions validate their presence by
+/// simple-class-name, then reorder and re-wrap them; each one passes
+/// requests through untouched.
+pub(crate) fn mihon_default_interceptors(vm: &mut Vm) -> Result<Vec<JValue>, NatErr> {
+    let mut out = Vec::new();
+    for desc in [
+        "Leu/kanade/tachiyomi/network/interceptor/UncaughtExceptionInterceptor;",
+        "Leu/kanade/tachiyomi/network/interceptor/UserAgentInterceptor;",
+        "Leu/kanade/tachiyomi/network/interceptor/CloudflareInterceptor;",
+    ] {
+        out.push(alloc(vm, desc, Native::Opaque)?);
+    }
+    Ok(out)
+}
+
+/// Ignores the interceptor and proceeds: used by the default-client stubs
+/// and the compression library shims.
+pub(crate) fn interceptor_pass_through(vm: &mut Vm, args: &[JValue]) -> R {
+    let chain = args[1];
+    let request = match payload(vm, chain) {
+        Some(Native::Chain { request, .. }) => *request,
+        _ => return Err(npe(vm)),
+    };
+    chain_proceed(vm, &[chain, request])
+}
+
+pub(crate) fn compression_interceptor_init(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
+pub(crate) fn request_cache_control(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Lokhttp3/CacheControl;", Native::Opaque)
+}
+
+pub(crate) fn cache_control_max_age_seconds(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(-1))
+}
+pub(crate) fn call_is_canceled(_vm: &mut Vm, args: &[JValue]) -> R {
+    let _ = args[0];
+    Ok(JValue::Int(0))
+}
+
+pub(crate) fn call_timeout(_vm: &mut Vm, args: &[JValue]) -> R {
+    let _ = args[0];
+    Ok(JValue::Null)
+}
+
+pub(crate) fn response_prior_response(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
 }
 
 pub(crate) fn okhttp_builder_add_interceptor(vm: &mut Vm, args: &[JValue]) -> R {
@@ -641,6 +701,19 @@ pub(crate) fn okhttp_http_url_builder_to_string(vm: &mut Vm, args: &[JValue]) ->
 // ---------------------------------------------------------------------------
 // okhttp3 native table
 // ---------------------------------------------------------------------------
+/// Lokhttp3/brotli/Brotli.INSTANCE & co (compression algorithms).
+pub fn lazy_brotli_inst(vm: &mut Vm) -> JValue {
+    opaque_inst(vm, "Lokhttp3/brotli/Brotli;")
+}
+pub fn lazy_gzip_inst(vm: &mut Vm) -> JValue {
+    opaque_inst(vm, "Lokhttp3/Gzip;")
+}
+pub fn lazy_zstd_inst(vm: &mut Vm) -> JValue {
+    opaque_inst(vm, "Lokhttp3/zstd/Zstd;")
+}
+
+
+
 
 #[cfg(feature = "okhttp")]
 pub(crate) fn okhttp_client_new_call(vm: &mut Vm, args: &[JValue]) -> R {
@@ -709,6 +782,7 @@ pub(crate) fn okhttp_call_execute(vm: &mut Vm, args: &[JValue]) -> R {
 /// Runs the real host HTTP request for `request` and wraps it as a Response.
 fn host_execute(vm: &mut Vm, request: JValue) -> R {
     let (url, method, headers, body) = request_parts(vm, request)?;
+    info!("DBG HOST fetch {method} {url} hdrs={}", headers.len());
     let body_str = form_body_to_string(vm, &body);
     let Some(http) = vm.http.clone() else {
         return Err(uoe(vm, "no HTTP client registered for this SourceEngine"));
@@ -774,6 +848,13 @@ pub(crate) fn chain_proceed(vm: &mut Vm, args: &[JValue]) -> R {
             next = Some(interceptors[*pos]);
             *pos += 1;
         }
+    }
+    if next.is_some() {
+        let cls = match next {
+            Some(JValue::Obj(o)) => vm.class_desc_str(vm.object_class(JValue::Obj(o)).unwrap_or(0)),
+            _ => String::new(),
+        };
+        info!("DBG chain.proceed -> {cls}");
     }
     match next {
         Some(interceptor) => vm
@@ -859,7 +940,10 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Request$Builder;", "header", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/Request$Builder;", true, request_builder_header),
     ne!("Lokhttp3/Request$Builder;", "addHeader", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/Request$Builder;", true, request_builder_add_header),
     ne!("Lokhttp3/Request$Builder;", "tag", "(Ljava/lang/Class;)Lokhttp3/Request$Builder;", true, request_builder_tag),
+    ne!("Lokhttp3/Request$Builder;", "tag", "(Ljava/lang/Class;Ljava/lang/Object;)Lokhttp3/Request$Builder;", true, request_builder_tag2),
     ne!("Lokhttp3/Request$Builder;", "build", "()Lokhttp3/Request;", true, request_builder_build),
+    ne!("Lokhttp3/Request;", "cacheControl", "()Lokhttp3/CacheControl;", true, request_cache_control),
+    ne!("Lokhttp3/CacheControl;", "maxAgeSeconds", "()I", true, cache_control_max_age_seconds),
     ne!("Lokhttp3/Request;", "newBuilder", "()Lokhttp3/Request$Builder;", true, request_new_builder),
     ne!("Lokhttp3/Request;", "url", "()Lokhttp3/HttpUrl;", true, request_url),
     ne!("Lokhttp3/Request;", "method", "()Ljava/lang/String;", true, request_method),
@@ -890,11 +974,21 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Interceptor$Chain;", "request", "()Lokhttp3/Request;", true, chain_request),
     ne!("Lokhttp3/Interceptor$Chain;", "proceed", "(Lokhttp3/Request;)Lokhttp3/Response;", true, chain_proceed),
     ne!("Lokhttp3/Interceptor$Chain;", "call", "()Lokhttp3/Call;", true, chain_call),
+    ne!("Lokhttp3/Call;", "isCanceled", "()Z", true, call_is_canceled),
+    ne!("Lokhttp3/Call;", "timeout", "()Lokhttp3/Timeout;", true, call_timeout),
+    ne!("Lokhttp3/Response;", "priorResponse", "()Lokhttp3/Response;", true, response_prior_response),
     ne!("Lokhttp3/Interceptor$Chain;", "connection", "()Lokhttp3/Connection;", true, chain_connection),
     ne!("Lokhttp3/Response;", "newBuilder", "()Lokhttp3/Response$Builder;", true, response_new_builder),
     ne!("Lokhttp3/Response$Builder;", "body", "(Lokhttp3/ResponseBody;)Lokhttp3/Response$Builder;", true, response_builder_body),
     ne!("Lokhttp3/Response$Builder;", "build", "()Lokhttp3/Response;", true, response_builder_build),
     ne!("Lokhttp3/HttpUrl;", "host", "()Ljava/lang/String;", true, http_url_host),
+    // default-client interceptor stubs (mihon 0.17+ extensions validate them)
+    ne!("Leu/kanade/tachiyomi/network/interceptor/UncaughtExceptionInterceptor;", "intercept", INTERCEPT_SIG, true, interceptor_pass_through),
+    ne!("Leu/kanade/tachiyomi/network/interceptor/UserAgentInterceptor;", "intercept", INTERCEPT_SIG, true, interceptor_pass_through),
+    ne!("Leu/kanade/tachiyomi/network/interceptor/CloudflareInterceptor;", "intercept", INTERCEPT_SIG, true, interceptor_pass_through),
+    ne!("Lokhttp3/CompressionInterceptor;", "<init>", "([Lokhttp3/CompressionInterceptor$DecompressionAlgorithm;)V", true, compression_interceptor_init),
+    ne!("Lokhttp3/CompressionInterceptor;", "intercept", INTERCEPT_SIG, true, interceptor_pass_through),
+    ne!("Lokhttp3/brotli/BrotliInterceptor;", "intercept", INTERCEPT_SIG, true, interceptor_pass_through),
     ne!("Lokhttp3/HttpUrl;", "scheme", "()Ljava/lang/String;", true, http_url_scheme),
     ne!("Lokhttp3/HttpUrl;", "queryParameter", "(Ljava/lang/String;)Ljava/lang/String;", true, http_url_query_parameter),
     ne!("Lokhttp3/HttpUrl;", "pathSegments", "()Ljava/util/List;", true, http_url_path_segments),

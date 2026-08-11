@@ -18,8 +18,21 @@ const POPULAR_HTML: &str = r#"<html><body>
 </div>
 </body></html>"#;
 
+
+
+fn init_logger() {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    ONCE.call_once(|| {
+        env_logger::Builder::from_env(
+            env_logger::Env::default().default_filter_or("off"),
+        )
+        .init();
+    });
+}
+
 #[test]
 fn smoke_all_apis() {
+    init_logger();
     let mut ext = Keiyoushi::open(APK).unwrap();
     ext.set_http(move |_req| HttpResp::ok(POPULAR_HTML));
     let srcs = ext.sources().unwrap();

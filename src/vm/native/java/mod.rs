@@ -5,6 +5,7 @@ mod lang;
 mod nio;
 mod security;
 mod text;
+mod r#time;
 mod util;
 
 mod javax_crypto;
@@ -23,5 +24,6 @@ pub(crate) fn java_tables(out: &mut Vec<&'static [NativeEntry]>) {
     out.push(security::SECURITY_TABLE);
     out.push(javax_crypto::JAVAX_CRYPTO_TABLE);
     out.extend(text::TEXT_TABLE.iter().copied());
+    out.push(r#time::TABLE);
     out.extend(util::UTIL_TABLE.iter().copied());
 }

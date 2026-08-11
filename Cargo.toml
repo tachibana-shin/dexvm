@@ -47,6 +47,10 @@ name = "live_keiyoushi"
 required-features = ["keiyoushi"]
 
 [[test]]
+name = "live_moetruyen"
+required-features = ["keiyoushi"]
+
+[[test]]
 name = "keiyoushi_flow"
 required-features = ["keiyoushi"]
 
@@ -60,7 +64,9 @@ sha2 = "0.10"
 aes = "0.8"
 base64 = "0.22"
 aes-gcm = "0.10"
+log = "0.4"
 
 [dev-dependencies]
 aes-gcm = "0.10"
 ureq = "3.4.0"
+env_logger = "0.11"

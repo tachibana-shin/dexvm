@@ -991,6 +991,15 @@ impl Vm {
         self.arena.objects[id as usize].native.clone()
     }
 
+    /// Resolved class id for a non-null object value.
+    pub fn object_class(&self, v: JValue) -> Option<u32> {
+        if v.is_null() {
+            return None;
+        }
+        let id = v.as_obj();
+        Some(self.arena.objects[id as usize].class)
+    }
+
     /// Calls a resolved target with a fresh frame (native or bytecode).
     pub fn call_target(&mut self, target: Target, args: Vec<JValue>) -> Result<JValue, JvmError> {
         match target {
@@ -1217,6 +1226,18 @@ impl Vm {
         None
     }
 
+    /// Reads an instance field by name, returning its slot index too.
+    pub fn instance_field_id(&self, obj: u32, name: &str) -> Option<(usize, JValue)> {
+        let o = self.arena.get(obj)?;
+        let c = self.classes.get(o.class as usize)?;
+        for (off, f) in c.instance_fields.iter().enumerate() {
+            if self.str_of(f.0) == name {
+                return Some((off, o.fields.get(off).copied().unwrap_or(JValue::Null)));
+            }
+        }
+        None
+    }
+
     /// Overwrites the instance field `name` of an in-dex object.
     pub fn instance_field_set(&mut self, obj: u32, name: &str, v: JValue) -> bool {
         let Some(o) = self.arena.get_mut(obj) else {
@@ -1241,6 +1262,22 @@ impl Vm {
         };
         *slot = v;
         true
+    }
+
+    /// Whether `class` declares any instance fields. Host shims carry none.
+    pub fn class_has_instance_fields(&self, class: u32) -> bool {
+        self.classes
+            .get(class as usize)
+            .is_some_and(|c| !c.instance_fields.is_empty())
+    }
+
+    /// Byte offset of the named instance field on `class`, or `None`.
+    pub fn class_field_offset(&self, class: u32, name: &str) -> Option<u32> {
+        let c = self.classes.get(class as usize)?;
+        c.instance_fields
+            .iter()
+            .position(|f| self.str_of(f.0) == name)
+            .map(|i| i as u32)
     }
 
     /// Depth-first search for the `[B` byte array held somewhere inside an

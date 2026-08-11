@@ -21,8 +21,21 @@ const POPULAR_HTML: &str = r#"<html><body>
 </div>
 </body></html>"#;
 
+
+
+fn init_logger() {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    ONCE.call_once(|| {
+        env_logger::Builder::from_env(
+            env_logger::Env::default().default_filter_or("off"),
+        )
+        .init();
+    });
+}
+
 #[test]
 fn create_sources() {
+    init_logger();
     let mut ext = Keiyoushi::open(APK).unwrap();
     let srcs = ext.sources().unwrap();
     assert!(!srcs.is_empty(), "expected at least one source");
@@ -34,6 +47,7 @@ fn create_sources() {
 
 #[test]
 fn popular_parses_html() {
+    init_logger();
     let mut ext = Keiyoushi::open(APK).unwrap();
     ext.set_http(move |_req| HttpResp::ok(POPULAR_HTML));
     let srcs = ext.sources().unwrap();
@@ -48,6 +62,7 @@ fn popular_parses_html() {
 
 #[test]
 fn filters_listed() {
+    init_logger();
     let mut ext = Keiyoushi::open(APK).unwrap();
     ext.set_http(move |_| HttpResp::ok("<html></html>"));
     let srcs = ext.sources().unwrap();

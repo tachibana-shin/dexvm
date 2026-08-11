@@ -525,12 +525,16 @@ fn parse_code_item(data: &[u8], off: usize) -> Result<CodeItem, DexError> {
         c.u16()?; // padding
     }
     let mut tries = Vec::with_capacity(tries_size as usize);
+    // handler_off values are relative to the start of the
+    // encoded_catch_handler_list, which begins right after the tries array
+    // (each try item is 8 bytes: start_addr u32, insn_count u16, handler_off u16).
+    let tries_start = c.pos;
     for _ in 0..tries_size {
         let start_addr = c.u32()?;
         let insn_count = c.u16()?;
         let handler_off = c.u16()? as usize;
         // handler list starts at handler_off relative to the encoded_catch_handler_list
-        let list_pos = c.pos + handler_off;
+        let list_pos = tries_start + tries_size as usize * 8 + handler_off;
         let saved = c.pos;
         c.seek(list_pos)?;
         let n = c.sleb128()?;

@@ -11,6 +11,7 @@ mod integer;
 mod long;
 mod math;
 mod object;
+mod reflect;
 mod short;
 mod string;
 mod stringbuilder;
@@ -31,6 +32,7 @@ pub(crate) const LANG_TABLE: &[&[NativeEntry]] = &[
     string::TABLE,
     stringbuilder::TABLE,
     class::TABLE,
+    reflect::TABLE,
     r#enum::TABLE,
     throwable::TABLE,
     system::TABLE,

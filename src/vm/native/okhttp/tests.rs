@@ -254,7 +254,20 @@ fn okhttp_builder_interceptor_lists() {
             Some(Native::List(items)) => items.clone(),
             _ => panic!("expected List payload"),
         };
-        let strs: Vec<String> = items.into_iter().map(|v| jstr(vm, v).unwrap()).collect();
+        // The builder starts with the three mihon default stubs, then our adds.
+        assert_eq!(items.len(), 5);
+        for (v, want) in items.iter().zip([
+            "eu.kanade.tachiyomi.network.interceptor.UncaughtExceptionInterceptor",
+            "eu.kanade.tachiyomi.network.interceptor.UserAgentInterceptor",
+            "eu.kanade.tachiyomi.network.interceptor.CloudflareInterceptor",
+        ]) {
+            let cls = vm.class_desc_str(vm.object_class(*v).unwrap());
+            assert_eq!(cls, want);
+        }
+        let strs: Vec<String> = items[3..]
+            .iter()
+            .map(|v| jstr(vm, *v).unwrap())
+            .collect();
         assert_eq!(strs, ["interceptor-1", "interceptor-2"]);
 
         let netlist = okhttp_builder_network_interceptors(vm, &[b]).unwrap();

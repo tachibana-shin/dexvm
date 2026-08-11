@@ -3,6 +3,8 @@
 
 use std::sync::Arc;
 
+use log::info;
+
 use crate::dex::insn::{Args, Binop, CmpOp, FillArray, IfOp, Insn, InvokeKind, Unop};
 use crate::dex::TryItem;
 use crate::vm::error::JvmError;
@@ -153,7 +155,7 @@ impl Vm {
             let step = match self.step(&mut f) {
                 Ok(s) => s,
                 Err(e) => {
-                    eprintln!(
+                    info!(
                         "ERR {} pc={:#06x} class={} method={}: {e}",
                         self.str_of(self.classes[f.class as usize].descriptor),
                         f.pc,
@@ -182,6 +184,13 @@ impl Vm {
                         };
                         match &target {
                             Target::Native(key) => {
+                                if self.str_of(mref.name) == "<init>" {
+                                    let (kc, _, ks) = *key;
+                                    info!(
+                                        "INV native <init> sig={} class={} args={}",
+                                        self.str_of(ks), self.str_of(kc), args.count
+                                    );
+                                }
                                 let nf = *self.natives.get(key).ok_or_else(|| {
                                     JvmError::Fatal(format!("no native for {key:?}"))
                                 })?;
@@ -212,7 +221,7 @@ impl Vm {
                                         match self.unwind()? {
                                             true => f = self.frames.pop().unwrap(),
                                             false => {
-                                                eprintln!(
+                                                info!(
                                                     "DBG uncaught native-throw at {}::{} from native {}",
                                                     self.class_desc_str(dbg_c),
                                                     self.str_of(self.classes[dbg_c as usize].methods[dbg_s as usize].name),
@@ -243,11 +252,15 @@ impl Vm {
                                 }
                                 let mut ri = if kind == InvokeKind::Static { 0 } else { 1 };
                                 for &arg_desc in m_args {
-                                    call_args.push(f.regs[args.reg_at(ri) as usize]);
+                                    let a = f.regs[args.reg_at(ri) as usize];
                                     ri += 1;
                                     if is_wide_desc(self.str_of(arg_desc)) {
+                                        // wide args occupy two registers: duplicate so
+                                        // the callee's register file stays aligned.
+                                        call_args.push(a);
                                         ri += 1;
                                     }
+                                    call_args.push(a);
                                 }
                                 let code = code.clone().ok_or_else(|| {
                                     JvmError::Resolution("callee has no code item".into())
@@ -277,6 +290,120 @@ impl Vm {
                     }
                 },
                 StepOutcome::Throw(ex) => {
+                    if let JValue::Obj(o) = ex {
+                        let m = match self.payload_of(JValue::Obj(o)) {
+                            Some(Native::Throwable { message, .. }) => {
+                                message.clone().unwrap_or_default()
+                            }
+                            _ => String::new(),
+                        };
+                        info!(
+                            "DBG throw pc={:04x} cls={} msg={:?}",
+                            f.pc,
+                            self.class_desc_str(f.class),
+                            m
+                        );
+                        if m.is_empty() {
+                            let mut acc = 0usize;
+                            let mut iv: Option<&crate::dex::insn::Insn> = None;
+                            for (i, s) in f.decoded.sizes.iter().enumerate() {
+                                if acc + *s as usize > f.pc {
+                                    iv = Some(&f.decoded.insns[i]);
+                                    break;
+                                }
+                                acc += *s as usize;
+                            }
+                            let r6 = f.regs.get(6).copied().unwrap_or(JValue::Null);
+                            let r6cls = match r6 {
+                                JValue::Obj(o) => Some(
+                                    self.class_desc_str(
+                                        self.object_class(JValue::Obj(o)).unwrap_or(0),
+                                    ),
+                                ),
+                                _ => None,
+                            };
+                            info!(
+                                "DBG NPE-throw pc={:04x} cls={} insn={:?} v6={:?}",
+                                f.pc,
+                                self.class_desc_str(f.class),
+                                iv,
+                                r6cls
+                            );
+                            for &ninst in &[
+                                f.regs.len().saturating_sub(2),
+                                f.regs.len().saturating_sub(1),
+                                f.regs.len().saturating_sub(3),
+                            ] {
+                                let Some(JValue::Obj(fo)) = f.regs.get(ninst).copied() else {
+                                    continue;
+                                };
+                                let fcls = self.class_desc_str(
+                                    self.object_class(JValue::Obj(fo)).unwrap_or(0),
+                                );
+                                for name in ["a", "b", "c"] {
+                                    let field_value = self.instance_field(fo, name);
+                                    let Some(JValue::Obj(lo)) = field_value else {
+                                        continue;
+                                    };
+                                    if let Native::List(l) = self
+                                        .payload_of(JValue::Obj(lo))
+                                        .unwrap_or(Native::Opaque)
+                                    {
+                                        info!("DBG {fcls}#{name} list len={}", l.len());
+                                        for (i, it) in l.iter().enumerate() {
+                                            let c = match *it {
+                                                JValue::Obj(o) => self.class_desc_str(
+                                                    self.object_class(JValue::Obj(o)).unwrap_or(0),
+                                                ),
+                                                _ => format!("{it:?}"),
+                                            };
+                                            info!("DBG rules[{i}] = {c}");
+                                            if let JValue::Obj(ro) = *it {
+                                                for (n, _) in [("a", ""), ("b", ""), ("c", "")] {
+                                                    let (idx, val) =
+                                                        match self.instance_field_id(ro, n) {
+                                                            Some((i, val)) => {
+                                                                (i, format!("{val:?}"))
+                                                            }
+                                                            None => {
+                                                                (usize::MAX, "none".into())
+                                                            }
+                                                        };
+                                                    info!("DBG   c1.{n}[{idx}] = {val}");
+                                                }
+                                                let o = self.arena.objects.get(ro as usize);
+                                                match o {
+                                                    Some(o) => {
+                                                        info!(
+                                                            "DBG   c1-cid={} fields-len={}",
+                                                            o.class,
+                                                            o.fields.len()
+                                                        );
+                                                        for (i, fv) in
+                                                            o.fields.iter().enumerate()
+                                                        {
+                                                            info!("DBG   c1.F[{i}] = {fv:?}");
+                                                        }
+                                                        let ccls = self
+                                                            .classes
+                                                            .get(o.class as usize)
+                                                            .unwrap();
+                                                        let names: Vec<&str> = ccls
+                                                            .instance_fields
+                                                            .iter()
+                                                            .map(|(n, ..)| self.str_of(*n))
+                                                            .collect();
+                                                        info!("DBG   c1-i-field-names={names:?}");
+                                                    }
+                                                    None => info!("DBG   c1-not-found"),
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     let (dbg_c, dbg_s) = (f.class, f.slot);
                     f.pending_exc = Some(ex);
                     self.frames.push(f);
@@ -287,7 +414,7 @@ impl Vm {
                                 JValue::Obj(o) => o,
                                 _ => 0,
                             };
-                            eprintln!(
+                            info!(
                                 "DBG uncaught throw at {}::{}",
                                 self.class_desc_str(dbg_c),
                                 self.str_of(
@@ -318,10 +445,24 @@ impl Vm {
                     Some(e) => e,
                     None => return Err(JvmError::Fatal("unwind without pending exception".into())),
                 };
-                let insn_addr = f.decoded.units.get(f.err_pc).copied().unwrap_or(0);
+                // err_pc is a code-unit offset; find the exact instruction
+                // address to match against try-region spans.
+                let idx = f
+                    .decoded
+                    .units
+                    .binary_search(&(f.err_pc as u32))
+                    .unwrap_or_else(|i| i.saturating_sub(1));
+                let insn_addr = f.decoded.units.get(idx).copied().unwrap_or(0);
                 (f.dex, insn_addr, f.tries.clone(), exc)
             };
             let catch_addr = {
+                for t in tries.iter() {
+                    let end = t.start_addr + u32::from(t.insn_count);
+                    info!(
+                        "DBG try [{:04x},{:04x}) handlers={:?} catchall={:?}",
+                        t.start_addr, end, t.handlers, t.catch_all
+                    );
+                }
                 let mut found = None;
                 for t in tries.iter() {
                     let end = t.start_addr + u32::from(t.insn_count);
@@ -356,13 +497,11 @@ impl Vm {
             };
             match catch_addr {
                 Some(addr) => {
+                    info!("DBG unwind catch @ {:04x}", addr);
                     let f = self.frames.last_mut().expect("frame");
-                    let idx = f
-                        .decoded
-                        .units
-                        .binary_search(&addr)
-                        .unwrap_or_else(|i| i.saturating_sub(1));
-                    f.pc = idx;
+                    // f.pc is a code-unit address, not an instruction index;
+                    // jump to the handler's exact address.
+                    f.pc = addr as usize;
                     f.regs[0] = exc;
                     return Ok(true);
                 }
@@ -392,6 +531,25 @@ impl Vm {
             .unwrap_or_else(|i| i.saturating_sub(1));
         let next_pc = pc + decoded.sizes[idx] as usize;
         let insn = &insns[idx];
+        if matches!(self.class_desc_str(f.class).as_str(), "e1" | "a0" | "f1" | "m") {
+            let mut rs = String::new();
+            if self.class_desc_str(f.class) == "m" && pc == 0 {
+                for (_i, r) in f.regs.iter().enumerate().take(6) {
+                    if let JValue::Obj(o) = r {
+                        if let Some(obj) = self.arena.objects.get(*o as usize) {
+                            rs.push_str(&format!("\nDBG   o{o} fields={:?}", obj.fields));
+                        }
+                    }
+                }
+            }
+            info!(
+                "DBG step {} @ {:04x} {:?}{}",
+                self.class_desc_str(f.class),
+                pc,
+                insns[idx],
+                rs
+            );
+        }
         let out = match insn {
             Insn::Nop => Flow::Next(0),
             Insn::Move(d, s) => {
@@ -572,7 +730,7 @@ impl Vm {
             }
             Insn::Throw(d) => {
                 let v = f.regs[*d as usize];
-                if v.is_null() {
+                if v.is_null_ref() {
                     return Ok(StepOutcome::Throw(JValue::Obj(self.err_npe())));
                 }
                 return Ok(StepOutcome::Throw(v));
@@ -725,7 +883,13 @@ impl Vm {
                         self.class_desc_str(oc)
                     ))
                 })?;
-                f.regs[*d as usize] = self.arena.objects[o as usize].fields[off as usize];
+                let fv = self.arena.objects[o as usize].fields[off as usize];
+                let fcls = self.class_desc_str(oc);
+                if fcls == "g1" || fcls == "c1" {
+                    let ob_cls = match fv { JValue::Obj(oo) => self.class_desc_str(self.object_class(JValue::Obj(oo)).unwrap_or(0)), _ => format!("{fv:?}") };
+                    info!("DBG IGet {} {} -> d{} = {}", fcls, self.str_of(fr.name), f.regs.len().saturating_sub(2), ob_cls);
+                }
+                f.regs[*d as usize] = fv;
                 Flow::Next(0)
             }
             Insn::IPut(src, obj, field_idx)
@@ -744,7 +908,17 @@ impl Vm {
                         self.class_desc_str(oc)
                     ))
                 })?;
-                self.arena.objects[o as usize].fields[off as usize] = f.regs[*src as usize];
+                let v = f.regs[*src as usize];
+                let fcls = self.class_desc_str(oc);
+                if fcls == "g1" || fcls == "c1" {
+                    let s = match v { JValue::Obj(oo) => self.class_desc_str(self.object_class(JValue::Obj(oo)).unwrap_or(0)), _ => format!("{v:?}") };
+                    info!("DBG IPut {} {} <- src{}({}) = {}", fcls, self.str_of(fr.name), *src, f.regs.len(), s);
+                }
+                let stored = match insn {
+                    Insn::IPutObj(..) if v.is_null_ref() => JValue::Null,
+                    _ => v,
+                };
+                self.arena.objects[o as usize].fields[off as usize] = stored;
                 Flow::Next(0)
             }
             Insn::Invoke(kind, method_idx, args) => {
@@ -753,12 +927,31 @@ impl Vm {
                     None
                 } else {
                     let r = f.regs[args.reg_at(0) as usize];
-                    if r.is_null() {
+                    if r.is_null_ref() {
                         return Ok(StepOutcome::Throw(JValue::Obj(self.err_npe())));
                     }
                     Some(r.as_obj())
                 };
                 let target = self.resolve_target(*kind, &mref, receiver)?;
+                let tcls = match &target { Target::Bytecode { class, .. } => Some(self.class_desc_str(*class)), _ => None };
+                if matches!(tcls.as_deref(), Some("m" | "a0" | "c" | "b" | "y2")) {
+                    info!("DBG inv {tcls:?} {}", self.str_of(mref.name));
+                }
+                if *kind == InvokeKind::Direct && self.str_of(mref.name) == "<init>" {
+                    let a0 = f.regs[args.reg_at(0) as usize];
+                    if let JValue::Obj(a0) = a0 {
+                        let cdesc = self.class_desc_str(self.object_class(JValue::Obj(a0)).unwrap_or(0));
+                        info!("DBG CTOR {cdesc} argc={}", args.count);
+                        if cdesc == "c1" || cdesc == "g1" || cdesc == "f1" {
+                            for ai in 1..7 {
+                                if ai >= args.count as usize { break; }
+                                let av = f.regs[args.reg_at(ai as u8) as usize];
+                                let s = match av { JValue::Obj(o) => self.class_desc_str(self.object_class(JValue::Obj(o)).unwrap_or(0)), _ => format!("{av:?}") };
+                                info!("DBG   {cdesc} arg{ai}: {s}");
+                            }
+                        }
+                    }
+                }
                 if *kind == InvokeKind::Static {
                     if let Target::Bytecode { class, .. } = &target {
                         self.ensure_class_initialized(*class)?;
@@ -901,6 +1094,11 @@ impl Vm {
             return Err(JValue::Obj(self.err_aioobe(idx, len as i32)));
         }
         if let Some(Native::Array(a)) = self.arena.objects[arr as usize].native.as_mut() {
+            let v = if matches!(a, ArrayData::Obj(_)) && v.is_null_ref() {
+                JValue::Null
+            } else {
+                v
+            };
             a.set(idx as usize, v);
         }
         Ok(())
