@@ -595,6 +595,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         true,
         string_init_bytes
     ),
+    ne!(
+        "Ljava/lang/String;",
+        "<init>",
+        "([BLjava/nio/charset/Charset;)V",
+        true,
+        string_init_bytes
+    ),
     ne!("Ljava/lang/String;", "length", "()I", true, string_length),
     ne!(
         "Ljava/lang/String;",

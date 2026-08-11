@@ -142,6 +142,81 @@ fn headers_builder_and_lookup() {
 }
 
 #[test]
+fn headers_set_and_new_builder_replace_case_insensitively() {
+    with_vm(|vm| {
+        let builder = headers_builder_init(vm, &[]).unwrap();
+        let name = s(vm, "X-Test");
+        let first = s(vm, "one");
+        headers_builder_add(vm, &[builder, name, first]).unwrap();
+        let name = s(vm, "x-test");
+        let second = s(vm, "two");
+        headers_builder_set(vm, &[builder, name, second]).unwrap();
+        let headers = headers_builder_build(vm, &[builder]).unwrap();
+        assert_eq!(int_of(headers_size(vm, &[headers]).unwrap()), 1);
+        let copied = headers_new_builder(vm, &[headers]).unwrap();
+        let copied_headers = headers_builder_build(vm, &[copied]).unwrap();
+        let name = s(vm, "X-TEST");
+        assert_eq!(s_of!(vm, headers_get(vm, &[copied_headers, name])), "two");
+    });
+}
+
+#[test]
+fn http_url_path_builder_encodes_and_replaces_segments() {
+    with_vm(|vm| {
+        let raw = s(vm, "https://example.com/base?q=1#frag");
+        let url = okhttp_http_url_parse(vm, &[JValue::Null, raw]).unwrap();
+        let builder = okhttp_http_url_new_builder(vm, &[url]).unwrap();
+        let segment = s(vm, "a/b c");
+        okhttp_http_url_builder_add_path_segment(vm, &[builder, segment]).unwrap();
+        let replacement = s(vm, "new value");
+        okhttp_http_url_builder_set_path_segment(vm, &[builder, JValue::Int(0), replacement])
+            .unwrap();
+        let built = okhttp_http_url_builder_build(vm, &[builder]).unwrap();
+        assert_eq!(
+            s_of!(vm, http_url_to_string(vm, &[built])),
+            "https://example.com/new%20value/a%2Fb%20c?q=1#frag"
+        );
+        assert_eq!(
+            s_of!(vm, http_url_encoded_path(vm, &[built])),
+            "/new%20value/a%2Fb%20c"
+        );
+        assert_eq!(s_of!(vm, http_url_fragment(vm, &[built])), "frag");
+    });
+}
+
+#[test]
+fn response_builder_mutators_update_response() {
+    with_vm(|vm| {
+        let request = request_of(vm, "https://example.com", "GET");
+        let response = alloc(
+            vm,
+            RESPONSE,
+            Native::Response {
+                code: 200,
+                message: "OK".into(),
+                headers: Vec::new(),
+                body: None,
+                request,
+                prior: JValue::Null,
+            },
+        )
+        .unwrap();
+        let builder = response_new_builder(vm, &[response]).unwrap();
+        response_builder_code(vm, &[builder, JValue::Int(201)]).unwrap();
+        let message = s(vm, "Created");
+        response_builder_message(vm, &[builder, message]).unwrap();
+        let name = s(vm, "X-Test");
+        let value = s(vm, "yes");
+        response_builder_header(vm, &[builder, name, value]).unwrap();
+        let built = response_builder_build(vm, &[builder]).unwrap();
+        assert_eq!(int_of(response_code(vm, &[built]).unwrap()), 201);
+        assert_eq!(s_of!(vm, response_message(vm, &[built])), "Created");
+        let name = s(vm, "x-test");
+        assert_eq!(s_of!(vm, response_header(vm, &[built, name])), "yes");
+    });
+}
+
+#[test]
 fn response_accessors() {
     with_vm(|vm| {
         let req = request_of(vm, "https://api.example.com/manga/5", "GET");

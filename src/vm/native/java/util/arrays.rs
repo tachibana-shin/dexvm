@@ -59,6 +59,15 @@ pub(crate) fn arrays_copy_of_range(vm: &mut Vm, args: &[JValue]) -> R {
     alloc_arr(vm, &e, n, move || dst)
 }
 
+pub(crate) fn arrays_fill_byte(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = int_of(vm, args[1]) as i8;
+    match payload_mut(vm, args[0]) {
+        Some(Native::Array(ArrayData::Byte(values))) => values.fill(value),
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
 pub(crate) fn prim_ordering(a: JValue, b: JValue) -> Ordering {
     match (a, b) {
         (JValue::Int(x), JValue::Int(y)) => x.cmp(&y),
@@ -264,6 +273,13 @@ pub(crate) fn arrays_equals(vm: &mut Vm, args: &[JValue]) -> R {
 
 /// Native methods for Ljava/util/Arrays;
 pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/util/Arrays;",
+        "fill",
+        "([BB)V",
+        false,
+        arrays_fill_byte
+    ),
     ne!(
         "Ljava/util/Arrays;",
         "asList",

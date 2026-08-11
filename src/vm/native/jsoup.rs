@@ -262,6 +262,32 @@ pub(crate) fn element_text(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(vm.alloc_string(&soup_text(node)))
 }
 
+pub(crate) fn element_data(vm: &mut Vm, args: &[JValue]) -> R {
+    let doc = doc_of(vm, args[0])?;
+    let id = payload(vm, args[0])
+        .and_then(element_id_of)
+        .ok_or_else(|| npe(vm))?;
+    let data = node_ref_of(&doc.doc, id).text().to_string();
+    Ok(vm.alloc_string(&data))
+}
+
+pub(crate) fn element_val(vm: &mut Vm, args: &[JValue]) -> R {
+    let doc = doc_of(vm, args[0])?;
+    let id = payload(vm, args[0])
+        .and_then(element_id_of)
+        .ok_or_else(|| npe(vm))?;
+    let node = node_ref_of(&doc.doc, id);
+    let value = if node
+        .node_name()
+        .is_some_and(|name| name.eq_ignore_ascii_case("textarea"))
+    {
+        node.text().to_string()
+    } else {
+        node.attr("value").unwrap_or_default().to_string()
+    };
+    Ok(vm.alloc_string(&value))
+}
+
 pub(crate) fn element_attr(vm: &mut Vm, args: &[JValue]) -> R {
     let (doc, name) = (doc_of(vm, args[0])?, jsoup_first_selector_arg(vm, args)?);
     let payload0 = payload(vm, args[0]);
@@ -655,6 +681,20 @@ pub(crate) const JSOUP_TABLE: &[NativeEntry] = &[
         "()Ljava/lang/String;",
         true,
         element_text
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "data",
+        "()Ljava/lang/String;",
+        true,
+        element_data
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "val",
+        "()Ljava/lang/String;",
+        true,
+        element_val
     ),
     ne!(
         "Lorg/jsoup/nodes/Element;",

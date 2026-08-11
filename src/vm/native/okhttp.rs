@@ -229,11 +229,35 @@ pub(crate) fn headers_builder_add(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
+pub(crate) fn headers_builder_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let (name, value) = match (jstr(vm, args[1]), jstr(vm, args[2])) {
+        (Ok(name), Ok(value)) => (name, value),
+        _ => return Err(npe(vm)),
+    };
+    let Some(Native::Headers(headers)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    headers.retain(|(existing, _)| !existing.eq_ignore_ascii_case(&name));
+    headers.push((name, value));
+    Ok(args[0])
+}
+
 pub(crate) fn headers_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::Headers(headers)) = payload(vm, args[0]) else {
         return Err(npe(vm));
     };
     alloc(vm, HEADERS, Native::Headers(headers.clone()))
+}
+
+pub(crate) fn headers_new_builder(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Headers(headers)) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    alloc(
+        vm,
+        "Lokhttp3/Headers$Builder;",
+        Native::Headers(headers.clone()),
+    )
 }
 
 pub(crate) fn headers_size(vm: &mut Vm, args: &[JValue]) -> R {
@@ -487,6 +511,64 @@ pub(crate) fn http_url_to_string(vm: &mut Vm, args: &[JValue]) -> R {
         _ => return Err(npe(vm)),
     };
     Ok(vm.alloc_string(&s))
+}
+
+fn http_url_encoded_path_value(url: &str) -> &str {
+    let after_authority = url.find("://").map(|index| index + 3).unwrap_or_default();
+    let path_start = url[after_authority..]
+        .find('/')
+        .map(|index| after_authority + index);
+    let suffix_start = url[after_authority..]
+        .find(['?', '#'])
+        .map(|index| after_authority + index)
+        .unwrap_or(url.len());
+    path_start
+        .filter(|start| *start < suffix_start)
+        .map(|start| &url[start..suffix_start])
+        .unwrap_or("/")
+}
+
+pub(crate) fn http_url_encoded_path(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::HttpUrl(url)) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    let path = http_url_encoded_path_value(url).to_string();
+    Ok(new_str(vm, &path))
+}
+
+pub(crate) fn http_url_fragment(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::HttpUrl(url)) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    let fragment = url
+        .split_once('#')
+        .map(|(_, fragment)| fragment.to_string());
+    Ok(fragment
+        .map(|fragment| new_str(vm, &fragment))
+        .unwrap_or(JValue::Null))
+}
+
+pub(crate) fn http_url_port(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::HttpUrl(url)) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    let scheme = url.split("://").next().unwrap_or_default();
+    let authority = url
+        .split("://")
+        .nth(1)
+        .unwrap_or_default()
+        .split(['/', '?', '#'])
+        .next()
+        .unwrap_or_default();
+    let port = authority
+        .rsplit_once(':')
+        .and_then(|(_, port)| port.parse::<i32>().ok())
+        .unwrap_or(if scheme.eq_ignore_ascii_case("https") {
+            443
+        } else {
+            80
+        });
+    Ok(JValue::Int(port))
 }
 
 // ---------------------------------------------------------------------------
@@ -813,6 +895,98 @@ pub(crate) fn okhttp_http_url_builder_add_query(vm: &mut Vm, args: &[JValue]) ->
     Ok(args[0])
 }
 
+fn encode_path_segment(segment: &str) -> String {
+    let mut encoded = String::with_capacity(segment.len());
+    for byte in segment.bytes() {
+        if byte.is_ascii_alphanumeric() || b"-._~!$&'()*+,;=:@".contains(&byte) {
+            encoded.push(char::from(byte));
+        } else {
+            use std::fmt::Write as _;
+            write!(encoded, "%{byte:02X}").expect("writing to String cannot fail");
+        }
+    }
+    encoded
+}
+
+fn append_path_segment(url: &mut String, segment: &str) {
+    let suffix_at = url.find(['?', '#']).unwrap_or(url.len());
+    let suffix = url.split_off(suffix_at);
+    if !url.ends_with('/') {
+        url.push('/');
+    }
+    url.push_str(&encode_path_segment(segment));
+    url.push_str(&suffix);
+}
+
+pub(crate) fn okhttp_http_url_builder_add_path_segment(vm: &mut Vm, args: &[JValue]) -> R {
+    let segment = jstr(vm, args[1])?;
+    let Some(Native::HttpUrl(url)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    append_path_segment(url, &segment);
+    Ok(args[0])
+}
+
+pub(crate) fn okhttp_http_url_builder_add_path_segments(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = jstr(vm, args[1])?;
+    let Some(Native::HttpUrl(url)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    for segment in path.split(['/', '\\']) {
+        append_path_segment(url, segment);
+    }
+    Ok(args[0])
+}
+
+pub(crate) fn okhttp_http_url_builder_set_path_segment(vm: &mut Vm, args: &[JValue]) -> R {
+    let index = int_of(vm, args[1]);
+    let segment = jstr(vm, args[2])?;
+    if index < 0 {
+        return Err(iae(vm, "unexpected path segment index"));
+    }
+    let Some(Native::HttpUrl(url)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    let suffix_at = url.find(['?', '#']).unwrap_or(url.len());
+    let suffix = url[suffix_at..].to_string();
+    let prefix_end = url
+        .find("://")
+        .map(|scheme| scheme + 3)
+        .and_then(|start| url[start..].find('/').map(|slash| start + slash))
+        .unwrap_or(suffix_at);
+    let prefix = url[..prefix_end].to_string();
+    let mut segments: Vec<String> = http_url_encoded_path_value(url)
+        .trim_start_matches('/')
+        .split('/')
+        .map(str::to_string)
+        .collect();
+    let Some(slot) = segments.get_mut(index as usize) else {
+        return Err(iae(vm, "unexpected path segment index"));
+    };
+    *slot = encode_path_segment(&segment);
+    *url = format!("{prefix}/{}{suffix}", segments.join("/"));
+    Ok(args[0])
+}
+
+pub(crate) fn okhttp_http_url_builder_fragment(vm: &mut Vm, args: &[JValue]) -> R {
+    let fragment = if args[1].is_null() {
+        None
+    } else {
+        Some(jstr(vm, args[1])?)
+    };
+    let Some(Native::HttpUrl(url)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    if let Some(index) = url.find('#') {
+        url.truncate(index);
+    }
+    if let Some(fragment) = fragment {
+        url.push('#');
+        url.push_str(&fragment.replace(' ', "%20"));
+    }
+    Ok(args[0])
+}
+
 pub(crate) fn okhttp_request_builder_url(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(url) = payload(vm, args[1]).and_then(|n| match n {
         Native::HttpUrl(u) => Some(u.clone()),
@@ -1069,6 +1243,45 @@ pub(crate) fn response_builder_body(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
+pub(crate) fn response_builder_header(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[1])?;
+    let value = jstr(vm, args[2])?;
+    let Some(Native::ResponseBuilder { headers, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    headers.retain(|(existing, _)| !existing.eq_ignore_ascii_case(&name));
+    headers.push((name, value));
+    Ok(args[0])
+}
+
+pub(crate) fn response_builder_code(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = int_of(vm, args[1]);
+    let Some(Native::ResponseBuilder { code, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *code = value;
+    Ok(args[0])
+}
+
+pub(crate) fn response_builder_message(vm: &mut Vm, args: &[JValue]) -> R {
+    let message = jstr(vm, args[1])?;
+    let Some(Native::ResponseBuilder { message: dst, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *dst = message;
+    Ok(args[0])
+}
+
+pub(crate) fn request_body_create_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let content = jstr(vm, args[1])?;
+    alloc(vm, "Lokhttp3/RequestBody;", Native::Str(content))
+}
+
+pub(crate) fn request_builder_post(vm: &mut Vm, args: &[JValue]) -> R {
+    let method = new_str(vm, "POST");
+    request_builder_method(vm, &[args[0], method, args[1]])
+}
+
 pub(crate) fn response_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
     let (code, message, headers, body, request, prior) = match payload(vm, args[0]) {
         Some(Native::ResponseBuilder {
@@ -1138,7 +1351,9 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Request;", "tag", "(Ljava/lang/Class;)Ljava/lang/Object;", true, request_tag),
     ne!("Lokhttp3/Headers$Builder;", "<init>", "()V", true, headers_builder_init),
     ne!("Lokhttp3/Headers$Builder;", "add", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/Headers$Builder;", true, headers_builder_add),
+    ne!("Lokhttp3/Headers$Builder;", "set", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/Headers$Builder;", true, headers_builder_set),
     ne!("Lokhttp3/Headers$Builder;", "build", "()Lokhttp3/Headers;", true, headers_builder_build),
+    ne!("Lokhttp3/Headers;", "newBuilder", "()Lokhttp3/Headers$Builder;", true, headers_new_builder),
     ne!("Lokhttp3/Headers;", "size", "()I", true, headers_size),
     ne!("Lokhttp3/Headers;", "get", "(Ljava/lang/String;)Ljava/lang/String;", true, headers_get),
     ne!("Lokhttp3/Headers;", "toString", "()Ljava/lang/String;", true, headers_to_string),
@@ -1170,6 +1385,9 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Interceptor$Chain;", "connection", "()Lokhttp3/Connection;", true, chain_connection),
     ne!("Lokhttp3/Response;", "newBuilder", "()Lokhttp3/Response$Builder;", true, response_new_builder),
     ne!("Lokhttp3/Response$Builder;", "body", "(Lokhttp3/ResponseBody;)Lokhttp3/Response$Builder;", true, response_builder_body),
+    ne!("Lokhttp3/Response$Builder;", "header", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/Response$Builder;", true, response_builder_header),
+    ne!("Lokhttp3/Response$Builder;", "code", "(I)Lokhttp3/Response$Builder;", true, response_builder_code),
+    ne!("Lokhttp3/Response$Builder;", "message", "(Ljava/lang/String;)Lokhttp3/Response$Builder;", true, response_builder_message),
     ne!("Lokhttp3/Response$Builder;", "priorResponse", "(Lokhttp3/Response;)Lokhttp3/Response$Builder;", true, response_builder_prior_response),
     ne!("Lokhttp3/Response$Builder;", "build", "()Lokhttp3/Response;", true, response_builder_build),
     ne!("Lokhttp3/HttpUrl;", "host", "()Ljava/lang/String;", true, http_url_host),
@@ -1183,6 +1401,9 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/HttpUrl;", "scheme", "()Ljava/lang/String;", true, http_url_scheme),
     ne!("Lokhttp3/HttpUrl;", "queryParameter", "(Ljava/lang/String;)Ljava/lang/String;", true, http_url_query_parameter),
     ne!("Lokhttp3/HttpUrl;", "pathSegments", "()Ljava/util/List;", true, http_url_path_segments),
+    ne!("Lokhttp3/HttpUrl;", "encodedPath", "()Ljava/lang/String;", true, http_url_encoded_path),
+    ne!("Lokhttp3/HttpUrl;", "fragment", "()Ljava/lang/String;", true, http_url_fragment),
+    ne!("Lokhttp3/HttpUrl;", "port", "()I", true, http_url_port),
     ne!("Lokhttp3/HttpUrl;", "toString", "()Ljava/lang/String;", true, http_url_to_string),
     ne!("Lokhttp3/HttpUrl$Companion;", "get", "(Ljava/lang/String;)Lokhttp3/HttpUrl;", true, okhttp_http_url_parse),
     ne!("Lokhttp3/MediaType$Companion;", "get", "(Ljava/lang/String;)Lokhttp3/MediaType;", true, media_type_get),
@@ -1198,6 +1419,12 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/HttpUrl$Companion;", "parse", "(Ljava/lang/String;)Lokhttp3/HttpUrl;", true, okhttp_http_url_parse),
     ne!("Lokhttp3/HttpUrl;", "newBuilder", "()Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_new_builder),
     ne!("Lokhttp3/HttpUrl$Builder;", "addQueryParameter", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_add_query),
+    ne!("Lokhttp3/HttpUrl$Builder;", "addPathSegment", "(Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_add_path_segment),
+    ne!("Lokhttp3/HttpUrl$Builder;", "addPathSegments", "(Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_add_path_segments),
+    ne!("Lokhttp3/HttpUrl$Builder;", "setPathSegment", "(ILjava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_set_path_segment),
+    ne!("Lokhttp3/HttpUrl$Builder;", "fragment", "(Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_fragment),
+    ne!("Lokhttp3/RequestBody$Companion;", "create", "(Ljava/lang/String;Lokhttp3/MediaType;)Lokhttp3/RequestBody;", true, request_body_create_string),
+    ne!("Lokhttp3/Request$Builder;", "post", "(Lokhttp3/RequestBody;)Lokhttp3/Request$Builder;", true, request_builder_post),
     ne!("Lokhttp3/HttpUrl$Builder;", "addEncodedQueryParameter", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_add_query),
     ne!("Lokhttp3/HttpUrl$Builder;", "setQueryParameter", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/HttpUrl$Builder;", true, okhttp_http_url_builder_set_query),
     ne!("Lokhttp3/HttpUrl$Builder;", "build", "()Lokhttp3/HttpUrl;", true, okhttp_http_url_builder_build),

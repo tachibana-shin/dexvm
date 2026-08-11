@@ -308,6 +308,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
         "Ljava/lang/StringBuilder;",
         "append",
+        "(C)Ljava/lang/Appendable;",
+        true,
+        sb_append_char
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
         "(F)Ljava/lang/StringBuilder;",
         true,
         sb_append_float

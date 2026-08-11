@@ -180,6 +180,27 @@ pub(crate) fn okhttp_await_success(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
+fn okhttp_as_observable_success(vm: &mut Vm, args: &[JValue]) -> R {
+    let result = (|| {
+        let response = okhttp_call_execute(vm, &args[..1])?;
+        let code = match payload(vm, response) {
+            Some(Native::Response { code, .. }) => *code,
+            _ => return Err(npe(vm)),
+        };
+        if (200..300).contains(&code) {
+            Ok(response)
+        } else {
+            Err(ioe(vm, format!("HTTP {code}")))
+        }
+    })();
+    rx::rx_from_result(vm, result)
+}
+
+fn okhttp_as_observable(vm: &mut Vm, args: &[JValue]) -> R {
+    let result = okhttp_call_execute(vm, &args[..1]);
+    rx::rx_from_result(vm, result)
+}
+
 // ---------------------------------------------------------------------------
 // eu.kanade.tachiyomi.source.online.HttpSource defaults
 // ---------------------------------------------------------------------------
@@ -214,6 +235,71 @@ pub(crate) fn http_source_get_headers_default(vm: &mut Vm, _args: &[JValue]) -> 
 
 pub(crate) fn http_source_headers_builder(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(vm, "Lokhttp3/Headers$Builder;", Native::Headers(Vec::new()))
+}
+
+fn http_source_fetch(
+    vm: &mut Vm,
+    receiver: JValue,
+    request_name: &str,
+    request_sig: &str,
+    request_args: &[JValue],
+    parse_name: &str,
+    parse_sig: &str,
+) -> R {
+    let result = (|| {
+        let request = inv_virt(vm, receiver, request_name, request_sig, request_args)?;
+        let response = keiyoushi_execute(vm, &[request])?;
+        inv_virt(vm, receiver, parse_name, parse_sig, &[response])
+    })();
+    rx::rx_from_result(vm, result)
+}
+
+fn http_source_fetch_search(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_fetch(
+        vm,
+        args[0],
+        "searchMangaRequest",
+        "(ILjava/lang/String;Leu/kanade/tachiyomi/source/model/FilterList;)Lokhttp3/Request;",
+        &args[1..4],
+        "searchMangaParse",
+        "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/MangasPage;",
+    )
+}
+
+fn http_source_fetch_details(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_fetch(
+        vm,
+        args[0],
+        "mangaDetailsRequest",
+        "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;",
+        &args[1..2],
+        "mangaDetailsParse",
+        "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/SManga;",
+    )
+}
+
+fn http_source_fetch_chapters(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_fetch(
+        vm,
+        args[0],
+        "chapterListRequest",
+        "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;",
+        &args[1..2],
+        "chapterListParse",
+        "(Lokhttp3/Response;)Ljava/util/List;",
+    )
+}
+
+fn http_source_fetch_pages(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_fetch(
+        vm,
+        args[0],
+        "pageListRequest",
+        "(Leu/kanade/tachiyomi/source/model/SChapter;)Lokhttp3/Request;",
+        &args[1..2],
+        "pageListParse",
+        "(Lokhttp3/Response;)Ljava/util/List;",
+    )
 }
 
 pub(crate) fn http_source_get_lang(vm: &mut Vm, args: &[JValue]) -> R {
@@ -1049,6 +1135,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "<init>", "(Ljava/util/List;Z)V", true, mangas_page_init),
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "getMangas", "()Ljava/util/List;", true, mangas_page_get_mangas),
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "hasNextPage", "()Z", true, mangas_page_has_next),
+    ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "getHasNextPage", "()Z", true, mangas_page_has_next),
     ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "<init>", "([Leu/kanade/tachiyomi/source/model/Filter;)V", true, filter_list_init),
     ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "<init>", "(Ljava/util/List;)V", true, filter_list_init_list),
     ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "getFilters", "()Ljava/util/List;", true, filter_list_get_filters),
@@ -1086,6 +1173,10 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getName", "()Ljava/lang/String;", true, http_source_get_name),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getId", "()J", true, http_source_get_id),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getSupportsLatest", "()Z", true, http_source_get_supports_latest),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchSearchManga", "(ILjava/lang/String;Leu/kanade/tachiyomi/source/model/FilterList;)Lrx/Observable;", true, http_source_fetch_search),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchMangaDetails", "(Leu/kanade/tachiyomi/source/model/SManga;)Lrx/Observable;", true, http_source_fetch_details),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchChapterList", "(Leu/kanade/tachiyomi/source/model/SManga;)Lrx/Observable;", true, http_source_fetch_chapters),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchPageList", "(Leu/kanade/tachiyomi/source/model/SChapter;)Lrx/Observable;", true, http_source_fetch_pages),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "headersBuilder", "()Lokhttp3/Headers$Builder;", true, http_source_headers_builder),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "setUrlWithoutDomain", "(Leu/kanade/tachiyomi/source/model/SManga;Ljava/lang/String;)V", true, http_source_set_url_no_domain_manga),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "setUrlWithoutDomain", "(Leu/kanade/tachiyomi/source/model/SChapter;Ljava/lang/String;)V", true, http_source_set_url_no_domain_chapter),
@@ -1096,7 +1187,10 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "GET$default", "(Lokhttp3/HttpUrl;Lokhttp3/Headers;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_get_default),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "__host_execute", "(Lokhttp3/Request;)Lokhttp3/Response;", false, keiyoushi_execute),
     ne!("Leu/kanade/tachiyomi/network/OkHttpExtensionsKt;", "awaitSuccess", "(Lokhttp3/Call;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, okhttp_await_success),
+    ne!("Leu/kanade/tachiyomi/network/OkHttpExtensionsKt;", "asObservableSuccess", "(Lokhttp3/Call;)Lrx/Observable;", false, okhttp_as_observable_success),
+    ne!("Leu/kanade/tachiyomi/network/OkHttpExtensionsKt;", "asObservable", "(Lokhttp3/Call;)Lrx/Observable;", false, okhttp_as_observable),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getNetwork", "()Leu/kanade/tachiyomi/network/NetworkHelper;", true, http_source_get_network),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getClient", "()Lokhttp3/OkHttpClient;", true, network_helper_get_client),
     ne!("Leu/kanade/tachiyomi/network/NetworkHelper;", "getClient", "()Lokhttp3/OkHttpClient;", true, network_helper_get_client),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "POST$default", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/RequestBody;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_post_default),
 ];

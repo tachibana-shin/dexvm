@@ -109,7 +109,7 @@ fn androidx_preferences_stub() {
 #[test]
 fn file_operations_enforce_scoped_permissions() {
     with_denied_vm(|vm| {
-        let path = vm.cache_root_path().to_owned();
+        let path = format!("{}/permission-test", vm.cache_root_path());
         let file = alloc(vm, "Ljava/io/File;", Native::File { path: path.clone() }).unwrap();
 
         assert!(matches!(file_exists(vm, &[file]), Err(NatErr::Throw(_))));

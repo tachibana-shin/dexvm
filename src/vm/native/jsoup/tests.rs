@@ -97,6 +97,34 @@ fn select_size_first_document_text() {
 }
 
 #[test]
+fn element_data_and_value_follow_jsoup_conventions() {
+    with_vm(|vm| {
+        let doc = doc_of(
+            vm,
+            "<script>window.answer = 42;</script><input value='yes'><textarea>hello</textarea>",
+            None,
+        );
+        let selector = s(vm, "script");
+        let selected = document_select(vm, &[doc, selector]).unwrap();
+        let script = elements_first(vm, &[selected]).unwrap();
+        assert_eq!(
+            s_of!(vm, element_data(vm, &[script])),
+            "window.answer = 42;"
+        );
+
+        let selector = s(vm, "input");
+        let selected = document_select(vm, &[doc, selector]).unwrap();
+        let input = elements_first(vm, &[selected]).unwrap();
+        assert_eq!(s_of!(vm, element_val(vm, &[input])), "yes");
+
+        let selector = s(vm, "textarea");
+        let selected = document_select(vm, &[doc, selector]).unwrap();
+        let textarea = elements_first(vm, &[selected]).unwrap();
+        assert_eq!(s_of!(vm, element_val(vm, &[textarea])), "hello");
+    });
+}
+
+#[test]
 fn elements_first_last_get() {
     with_vm(|vm| {
         let html = "<ul><li>1</li><li>2</li><li>3</li></ul>";

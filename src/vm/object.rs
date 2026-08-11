@@ -2,6 +2,16 @@
 
 use crate::vm::value::JValue;
 
+/// Deferred RxJava 1 operations. Keeping callbacks in the heap payload lets
+/// `fromCallable` and its operator chain run when the stream is consumed.
+#[derive(Debug, Clone)]
+pub enum RxOperator {
+    Map(JValue),
+    FlatMap(JValue),
+    DoOnNext(JValue),
+    ToList,
+}
+
 #[derive(Debug, Clone)]
 pub enum ArrayData {
     Byte(Vec<i8>),
@@ -401,6 +411,14 @@ pub enum Native {
     },
     /// kotlin.Result failure marker: holds the wrapped throwable.
     ResultFailure(JValue),
+    /// RxJava 1 Observable/BlockingObservable. Execution is synchronous, but
+    /// callable sources and operators remain lazy until the stream is consumed.
+    RxObservable {
+        values: Vec<JValue>,
+        error: JValue,
+        callable: JValue,
+        operators: Vec<RxOperator>,
+    },
     /// java.net.URI (raw string form, parsed on demand).
     URI(String),
     /// okhttp3.Timeout: configurable timeout values on a call.
@@ -617,6 +635,24 @@ impl Native {
             Native::Array(ArrayData::Obj(v)) => push_all(v, out),
             Native::Throwable { cause, .. } => push(Some(cause), out),
             Native::ResultFailure(t) => push(Some(t), out),
+            Native::RxObservable {
+                values,
+                error,
+                callable,
+                operators,
+            } => {
+                push_all(values, out);
+                push(Some(error), out);
+                push(Some(callable), out);
+                for operator in operators {
+                    match operator {
+                        RxOperator::Map(callback)
+                        | RxOperator::FlatMap(callback)
+                        | RxOperator::DoOnNext(callback) => push(Some(callback), out),
+                        RxOperator::ToList => {}
+                    }
+                }
+            }
             Native::List(v) | Native::Set(v) | Native::ArrayDeque(v) => push_all(v, out),
             Native::Map(v) => {
                 for (k, val) in v {

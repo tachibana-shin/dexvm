@@ -133,6 +133,13 @@ pub(crate) fn integer_signum(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
         "Ljava/lang/Integer;",
+        "hashCode",
+        "(I)I",
+        false,
+        integer_hash_code
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
         "valueOf",
         "(I)Ljava/lang/Integer;",
         false,

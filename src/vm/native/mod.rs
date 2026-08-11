@@ -108,6 +108,8 @@ mod okhttp;
 #[cfg(feature = "okhttp")]
 mod okio;
 #[cfg(feature = "tachiyomi")]
+mod rx;
+#[cfg(feature = "tachiyomi")]
 mod serialization;
 
 #[cfg(feature = "tachiyomi")]
@@ -232,6 +234,8 @@ pub(crate) fn native_tables() -> Vec<&'static [NativeEntry]> {
     out.push(keiyoushi::KEIYOUSHI_TABLE);
     #[cfg(feature = "tachiyomi")]
     out.push(serialization::SERIALIZATION_TABLE);
+    #[cfg(feature = "tachiyomi")]
+    out.push(rx::RX_TABLE);
     out.push(THROWABLE_CTORS);
     out
 }

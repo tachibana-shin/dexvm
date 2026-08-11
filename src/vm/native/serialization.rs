@@ -287,6 +287,156 @@ fn jsonval_to_json(v: &JsonVal) -> String {
     }
 }
 
+fn json_parse_to_element(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = jstr(vm, args[1])?;
+    let value = parse_json(&text).map_err(|error| iae(vm, error))?;
+    alloc_json_node(vm, &value)
+}
+
+fn json_primitive_content(vm: &mut Vm, args: &[JValue]) -> R {
+    let content = match payload(vm, args[0]) {
+        Some(Native::Json(value)) => jsonval_to_string(value),
+        _ => return Err(npe(vm)),
+    };
+    Ok(new_str(vm, &content))
+}
+
+fn json_element_get_primitive(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Json(
+            JsonVal::Str(_) | JsonVal::Int(_) | JsonVal::Double(_) | JsonVal::Bool(_),
+        )) => Ok(args[0]),
+        _ => Err(iae(vm, "JsonElement is not a JsonPrimitive")),
+    }
+}
+
+fn json_element_get_array(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Array(_))) => Ok(args[0]),
+        _ => Err(iae(vm, "JsonElement is not a JsonArray")),
+    }
+}
+
+fn json_element_get_object(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Object(_))) => Ok(args[0]),
+        _ => Err(iae(vm, "JsonElement is not a JsonObject")),
+    }
+}
+
+fn json_object_get(vm: &mut Vm, args: &[JValue]) -> R {
+    let key = jstr(vm, args[1])?;
+    let value = match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Object(entries))) => entries
+            .iter()
+            .find(|(name, _)| *name == key)
+            .map(|(_, value)| value.clone()),
+        _ => return Err(npe(vm)),
+    };
+    match value {
+        Some(value) => alloc_json_node(vm, &value),
+        None => Ok(JValue::Null),
+    }
+}
+
+fn json_get_serializers_module(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Lkotlinx/serialization/modules/SerializersModule;",
+        Native::Opaque,
+    )
+}
+
+fn json_primitive_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    alloc_json_node(vm, &JsonVal::Str(value))
+}
+
+fn json_primitive_is_string(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(i32::from(matches!(
+        payload(vm, args[0]),
+        Some(Native::Json(JsonVal::Str(_)))
+    ))))
+}
+
+fn json_content_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Null)) | None => Ok(JValue::Null),
+        Some(Native::Json(value)) => {
+            let content = jsonval_to_string(value);
+            Ok(new_str(vm, &content))
+        }
+        _ => Err(npe(vm)),
+    }
+}
+
+fn json_array_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = coll_elems(vm, args[1])?
+        .into_iter()
+        .map(|value| match payload(vm, value) {
+            Some(Native::Json(value)) => Ok(value.clone()),
+            _ => Err(npe(vm)),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let Some(native) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *native = Native::Json(JsonVal::Array(values));
+    Ok(JValue::Null)
+}
+
+fn json_array_get(vm: &mut Vm, args: &[JValue]) -> R {
+    let index = int_of(vm, args[1]);
+    let value = match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Array(values))) if index >= 0 => {
+            values.get(index as usize).cloned()
+        }
+        _ => None,
+    }
+    .ok_or_else(|| ioobe(vm, index))?;
+    alloc_json_node(vm, &value)
+}
+
+fn json_array_size(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Array(values))) => Ok(JValue::Int(values.len() as i32)),
+        _ => Err(npe(vm)),
+    }
+}
+
+fn json_array_iterator(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Array(values))) => values.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let mut nodes = Vec::with_capacity(values.len());
+    for value in values {
+        nodes.push(alloc_json_node(vm, &value)?);
+    }
+    let list = list_alloc(vm, nodes)?;
+    list_iterator(vm, &[list])
+}
+
+fn json_object_values(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Object(entries))) => entries
+            .iter()
+            .map(|(_, value)| value.clone())
+            .collect::<Vec<_>>(),
+        _ => return Err(npe(vm)),
+    };
+    let mut nodes = Vec::with_capacity(values.len());
+    for value in values {
+        nodes.push(alloc_json_node(vm, &value)?);
+    }
+    list_alloc(vm, nodes)
+}
+
+fn descriptor_push_annotation(_vm: &mut Vm, _args: &[JValue]) -> R {
+    // Runtime annotations do not affect the generated serializer's field map.
+    Ok(JValue::Null)
+}
+
 fn object_members(vm: &Vm, element: JValue) -> Vec<(String, JsonVal)> {
     match payload(vm, element) {
         Some(Native::Json(JsonVal::Object(m))) => m.clone(),
@@ -1001,6 +1151,64 @@ pub(crate) fn array_list_serializer_deserialize(vm: &mut Vm, args: &[JValue]) ->
 pub(crate) const SERIALIZATION_TABLE: &[NativeEntry] = &[
     ne!(
         "Lkotlinx/serialization/json/Json;",
+        "parseToJsonElement",
+        "(Ljava/lang/String;)Lkotlinx/serialization/json/JsonElement;",
+        true,
+        json_parse_to_element
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/Json;",
+        "getSerializersModule",
+        "()Lkotlinx/serialization/modules/SerializersModule;",
+        true,
+        json_get_serializers_module
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/JsonPrimitive;",
+        "getContent",
+        "()Ljava/lang/String;",
+        true,
+        json_primitive_content
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/JsonElementKt;",
+        "getJsonPrimitive",
+        "(Lkotlinx/serialization/json/JsonElement;)Lkotlinx/serialization/json/JsonPrimitive;",
+        false,
+        json_element_get_primitive
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/JsonElementKt;",
+        "getJsonArray",
+        "(Lkotlinx/serialization/json/JsonElement;)Lkotlinx/serialization/json/JsonArray;",
+        false,
+        json_element_get_array
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/JsonElementKt;",
+        "getJsonObject",
+        "(Lkotlinx/serialization/json/JsonElement;)Lkotlinx/serialization/json/JsonObject;",
+        false,
+        json_element_get_object
+    ),
+    ne!(
+        "Lkotlinx/serialization/json/JsonObject;",
+        "get",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        json_object_get
+    ),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "JsonPrimitive", "(Ljava/lang/String;)Lkotlinx/serialization/json/JsonPrimitive;", false, json_primitive_string),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "getContentOrNull", "(Lkotlinx/serialization/json/JsonPrimitive;)Ljava/lang/String;", false, json_content_or_null),
+    ne!("Lkotlinx/serialization/json/JsonPrimitive;", "isString", "()Z", true, json_primitive_is_string),
+    ne!("Lkotlinx/serialization/json/JsonArray;", "<init>", "(Ljava/util/List;)V", true, json_array_init),
+    ne!("Lkotlinx/serialization/json/JsonArray;", "get", "(I)Lkotlinx/serialization/json/JsonElement;", true, json_array_get),
+    ne!("Lkotlinx/serialization/json/JsonArray;", "get", "(I)Ljava/lang/Object;", true, json_array_get),
+    ne!("Lkotlinx/serialization/json/JsonArray;", "size", "()I", true, json_array_size),
+    ne!("Lkotlinx/serialization/json/JsonArray;", "iterator", "()Ljava/util/Iterator;", true, json_array_iterator),
+    ne!("Lkotlinx/serialization/json/JsonObject;", "values", "()Ljava/util/Collection;", true, json_object_values),
+    ne!(
+        "Lkotlinx/serialization/json/Json;",
         "decodeFromJsonElement",
         "(Lkotlinx/serialization/DeserializationStrategy;Lkotlinx/serialization/json/JsonElement;)Ljava/lang/Object;",
         true,
@@ -1328,6 +1536,7 @@ pub(crate) const SERIALIZATION_TABLE: &[NativeEntry] = &[
         true,
         descriptor_get_serial_name
     ),
+    ne!("Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;", "pushAnnotation", "(Ljava/lang/annotation/Annotation;)V", true, descriptor_push_annotation),
     ne!(
         "Lkotlinx/serialization/internal/ArrayListSerializer;",
         "<init>",
@@ -1365,6 +1574,33 @@ pub(crate) fn descriptor_init_placeholder(vm: &mut Vm, args: &[JValue]) -> R {
 mod tests {
     use super::*;
     use crate::Context;
+
+    #[test]
+    fn json_tree_accessors_parse_and_navigate() {
+        let data = std::fs::read("fixtures/classes.dex").unwrap();
+        let mut ctx = Context::new(&data).unwrap();
+        let vm = ctx.vm();
+        let json = alloc(vm, "Lkotlinx/serialization/json/Json;", Native::Opaque).unwrap();
+        let text = new_str(vm, r#"{"name":"Dex","items":[1,2]}"#);
+        let root = json_parse_to_element(vm, &[json, text]).unwrap();
+        assert_eq!(json_element_get_object(vm, &[root]).unwrap(), root);
+
+        let key = new_str(vm, "name");
+        let name = json_object_get(vm, &[root, key]).unwrap();
+        let content = json_primitive_content(vm, &[name]).unwrap();
+        assert_eq!(jstr(vm, content).unwrap(), "Dex");
+
+        let key = new_str(vm, "items");
+        let items = json_object_get(vm, &[root, key]).unwrap();
+        assert_eq!(json_element_get_array(vm, &[items]).unwrap(), items);
+        assert_eq!(json_array_size(vm, &[items]).unwrap(), JValue::Int(2));
+        let first = json_array_get(vm, &[items, JValue::Int(0)]).unwrap();
+        let content = json_primitive_content(vm, &[first]).unwrap();
+        assert_eq!(jstr(vm, content).unwrap(), "1");
+
+        let iterator = json_array_iterator(vm, &[items]).unwrap();
+        assert_eq!(iter_has_next(vm, &[iterator]).unwrap(), JValue::Int(1));
+    }
 
     #[test]
     fn generated_dex_serializer_encodes_through_host_runtime() {

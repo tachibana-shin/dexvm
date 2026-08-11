@@ -97,6 +97,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ),
     ne!(
         "Ljava/lang/Boolean;",
+        "hashCode",
+        "(Z)I",
+        false,
+        bool_hash_code
+    ),
+    ne!(
+        "Ljava/lang/Boolean;",
         "toString",
         "()Ljava/lang/String;",
         true,

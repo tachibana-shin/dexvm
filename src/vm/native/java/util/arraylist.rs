@@ -395,6 +395,27 @@ pub(crate) fn list_sort_cmp(vm: &mut Vm, args: &[JValue]) -> R {
 
 /// Native methods for Ljava/util/ArrayList;
 pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/util/AbstractCollection;",
+        "size",
+        "()I",
+        true,
+        list_size
+    ),
+    ne!(
+        "Ljava/util/AbstractCollection;",
+        "isEmpty",
+        "()Z",
+        true,
+        list_is_empty
+    ),
+    ne!(
+        "Ljava/util/AbstractList;",
+        "get",
+        "(I)Ljava/lang/Object;",
+        true,
+        list_get
+    ),
     ne!("Ljava/util/ArrayList;", "<init>", "()V", true, list_init),
     ne!("Ljava/util/ArrayList;", "<init>", "(I)V", true, list_init),
     ne!(

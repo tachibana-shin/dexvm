@@ -47,6 +47,10 @@ pub(crate) fn lazy_kt_lazy(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Lkotlin/SynchronizedLazyImpl;", Native::Lazy(args[0]))
 }
 
+pub(crate) fn lazy_kt_lazy_mode(vm: &mut Vm, args: &[JValue]) -> R {
+    alloc(vm, "Lkotlin/SynchronizedLazyImpl;", Native::Lazy(args[1]))
+}
+
 pub(crate) fn lazy_get_value(vm: &mut Vm, args: &[JValue]) -> R {
     let f = match payload(vm, args[0]) {
         Some(Native::Lazy(f)) => *f,
@@ -131,6 +135,67 @@ pub(crate) fn regex_matches(vm: &mut Vm, args: &[JValue]) -> R {
         .flatten()
         .is_some_and(|m| m.start() == 0 && m.end() == text.len());
     Ok(JValue::Int(i32::from(full)))
+}
+
+pub(crate) fn regex_contains_match_in(vm: &mut Vm, args: &[JValue]) -> R {
+    let re = match payload(vm, args[0]) {
+        Some(Native::Pattern { re, .. }) => re.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let text = charseq_of(vm, args[1])?;
+    Ok(JValue::Int(i32::from(re.is_match(&text).unwrap_or(false))))
+}
+
+pub(crate) fn regex_find_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let re = match payload(vm, args[0]) {
+        Some(Native::Pattern { re, .. }) => re.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let text = charseq_of(vm, args[1])?;
+    let start = if int_of(vm, args[3]) & 2 != 0 {
+        0
+    } else {
+        int_of(vm, args[2]).max(0) as usize
+    };
+    let hit = re
+        .find_iter(&text)
+        .flatten()
+        .find(|matched| matched.start() >= start)
+        .map(|matched| (matched.start(), matched.end()));
+    let Some((match_start, match_end)) = hit else {
+        return Ok(JValue::Null);
+    };
+    alloc(
+        vm,
+        "Lkotlin/text/MatcherMatchResult;",
+        Native::Matcher(MatcherState {
+            pattern: re,
+            text,
+            pos: match_end,
+            last: Some((match_start, match_end)),
+        }),
+    )
+}
+
+pub(crate) fn regex_split(vm: &mut Vm, args: &[JValue]) -> R {
+    let re = match payload(vm, args[0]) {
+        Some(Native::Pattern { re, .. }) => re.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let text = charseq_of(vm, args[1])?;
+    let limit = int_of(vm, args[2]);
+    let raw_parts = if limit > 0 {
+        re.splitn(&text, limit as usize)
+            .collect::<Result<Vec<_>, _>>()
+    } else {
+        re.split(&text).collect::<Result<Vec<_>, _>>()
+    }
+    .map_err(|error| iae(vm, format!("regex split failed: {error}")))?;
+    let parts = raw_parts
+        .into_iter()
+        .map(|part| new_str(vm, part))
+        .collect();
+    list_alloc(vm, parts)
 }
 
 pub(crate) fn regex_to_string(vm: &mut Vm, args: &[JValue]) -> R {
@@ -218,6 +283,55 @@ pub(crate) fn collections_first(vm: &mut Vm, args: &[JValue]) -> R {
         Some(v) => Ok(v),
         None => Err(no_such_elem(vm)),
     }
+}
+
+pub(crate) fn collections_first_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(coll_elems(vm, args[0])?
+        .into_iter()
+        .next()
+        .unwrap_or(JValue::Null))
+}
+
+pub(crate) fn collections_last(vm: &mut Vm, args: &[JValue]) -> R {
+    coll_elems(vm, args[0])?
+        .into_iter()
+        .last()
+        .ok_or_else(|| no_such_elem(vm))
+}
+
+pub(crate) fn collections_get_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let index = int_of(vm, args[1]);
+    if index < 0 {
+        return Ok(JValue::Null);
+    }
+    Ok(coll_elems(vm, args[0])?
+        .get(index as usize)
+        .copied()
+        .unwrap_or(JValue::Null))
+}
+
+pub(crate) fn collections_to_mutable_list(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = coll_elems(vm, args[0])?;
+    list_alloc(vm, items)
+}
+
+pub(crate) fn collections_add_all(vm: &mut Vm, args: &[JValue]) -> R {
+    let additions = coll_elems(vm, args[1])?;
+    if additions.is_empty() {
+        return Ok(JValue::Int(0));
+    }
+    match payload_mut(vm, args[0]) {
+        Some(Native::List(items) | Native::Set(items)) => items.extend(additions),
+        _ => return Err(iae(vm, "not a mutable collection")),
+    }
+    Ok(JValue::Int(1))
+}
+
+pub(crate) fn collections_throw_index_overflow(vm: &mut Vm, _args: &[JValue]) -> R {
+    Err(NatErr::Throw(vm.throwable_of(
+        "Ljava/lang/ArithmeticException;",
+        "Index overflow has happened.",
+    )))
 }
 
 pub(crate) fn collections_size_or_default(vm: &mut Vm, args: &[JValue]) -> R {
@@ -376,6 +490,273 @@ pub(crate) fn stringskt_to_int_or_null(vm: &mut Vm, args: &[JValue]) -> R {
         Ok(n) => boxed(vm, "Ljava/lang/Integer;", Native::IntBox(n)),
         Err(_) => Ok(JValue::Null),
     }
+}
+
+fn stringskt_contains(vm: &mut Vm, args: &[JValue]) -> R {
+    let haystack = charseq_of(vm, args[0])?;
+    let needle = charseq_of(vm, args[1])?;
+    let found = if args[2].as_int() != 0 {
+        haystack.to_lowercase().contains(&needle.to_lowercase())
+    } else {
+        haystack.contains(&needle)
+    };
+    Ok(JValue::Int(i32::from(found)))
+}
+
+fn stringskt_starts_with(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = charseq_of(vm, args[0])?;
+    let prefix = charseq_of(vm, args[1])?;
+    let result = if args[2].as_int() != 0 {
+        value.to_lowercase().starts_with(&prefix.to_lowercase())
+    } else {
+        value.starts_with(&prefix)
+    };
+    Ok(JValue::Int(i32::from(result)))
+}
+
+fn stringskt_ends_with(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = charseq_of(vm, args[0])?;
+    let suffix = charseq_of(vm, args[1])?;
+    let result = if args[2].as_int() != 0 {
+        value.to_lowercase().ends_with(&suffix.to_lowercase())
+    } else {
+        value.ends_with(&suffix)
+    };
+    Ok(JValue::Int(i32::from(result)))
+}
+
+fn stringskt_ends_with_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let ignore_case = if int_of(vm, args[3]) & 2 != 0 {
+        JValue::Int(0)
+    } else {
+        args[2]
+    };
+    stringskt_ends_with(vm, &[args[0], args[1], ignore_case])
+}
+
+fn stringskt_remove_prefix(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let prefix = charseq_of(vm, args[1])?;
+    Ok(new_str(vm, value.strip_prefix(&prefix).unwrap_or(&value)))
+}
+
+fn stringskt_remove_suffix(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let suffix = charseq_of(vm, args[1])?;
+    Ok(new_str(vm, value.strip_suffix(&suffix).unwrap_or(&value)))
+}
+
+fn stringskt_substring_before_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let delimiter = jstr(vm, args[1])?;
+    let missing = if int_of(vm, args[3]) & 2 != 0 {
+        value.clone()
+    } else {
+        jstr(vm, args[2])?
+    };
+    Ok(new_str(
+        vm,
+        value
+            .find(&delimiter)
+            .map(|index| &value[..index])
+            .unwrap_or(&missing),
+    ))
+}
+
+fn split_literal(value: &str, delimiters: &[String], ignore_case: bool, limit: i32) -> Vec<String> {
+    let mut output = Vec::new();
+    let mut offset = 0;
+    while offset <= value.len() && (limit <= 0 || output.len() + 1 < limit as usize) {
+        let rest = &value[offset..];
+        let folded = ignore_case.then(|| rest.to_lowercase());
+        let hit = delimiters
+            .iter()
+            .filter(|delimiter| !delimiter.is_empty())
+            .filter_map(|delimiter| {
+                let index = if let Some(folded) = &folded {
+                    folded.find(&delimiter.to_lowercase())
+                } else {
+                    rest.find(delimiter)
+                }?;
+                Some((index, delimiter.len()))
+            })
+            .min_by_key(|(index, _)| *index);
+        let Some((index, delimiter_len)) = hit else {
+            break;
+        };
+        output.push(rest[..index].to_string());
+        offset += index + delimiter_len;
+    }
+    output.push(value[offset..].to_string());
+    output
+}
+
+fn stringskt_split_strings_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = charseq_of(vm, args[0])?;
+    let delimiters = coll_elems(vm, args[1])?
+        .into_iter()
+        .map(|value| jstr(vm, value))
+        .collect::<Result<Vec<_>, _>>()?;
+    let mask = int_of(vm, args[4]);
+    let ignore_case = mask & 2 == 0 && args[2].as_int() != 0;
+    let limit = if mask & 4 != 0 {
+        0
+    } else {
+        int_of(vm, args[3])
+    };
+    let parts = split_literal(&value, &delimiters, ignore_case, limit)
+        .into_iter()
+        .map(|part| new_str(vm, &part))
+        .collect();
+    list_alloc(vm, parts)
+}
+
+fn stringskt_split_chars_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = charseq_of(vm, args[0])?;
+    let delimiters = match payload(vm, args[1]) {
+        Some(Native::Array(ArrayData::Char(chars))) => chars
+            .iter()
+            .map(|value| {
+                char::from_u32(u32::from(*value))
+                    .unwrap_or('\u{fffd}')
+                    .to_string()
+            })
+            .collect::<Vec<_>>(),
+        _ => return Err(npe(vm)),
+    };
+    let mask = int_of(vm, args[4]);
+    let ignore_case = mask & 2 == 0 && args[2].as_int() != 0;
+    let limit = if mask & 4 != 0 {
+        0
+    } else {
+        int_of(vm, args[3])
+    };
+    let parts = split_literal(&value, &delimiters, ignore_case, limit)
+        .into_iter()
+        .map(|part| new_str(vm, &part))
+        .collect();
+    list_alloc(vm, parts)
+}
+
+fn setskt_set_of(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut unique = Vec::new();
+    for value in coll_elems(vm, args[0])? {
+        let mut exists = false;
+        for existing in &unique {
+            if java_equals(vm, *existing, value)? {
+                exists = true;
+                break;
+            }
+        }
+        if !exists {
+            unique.push(value);
+        }
+    }
+    set_alloc(vm, unique)
+}
+
+fn collections_list_of_not_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = if matches!(payload(vm, args[0]), Some(Native::Array(_))) {
+        coll_elems(vm, args[0])?
+    } else {
+        vec![args[0]]
+    };
+    list_alloc(
+        vm,
+        values
+            .into_iter()
+            .filter(|value| !value.is_null())
+            .collect(),
+    )
+}
+
+fn arrayskt_plus_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut left = match payload(vm, args[0]) {
+        Some(Native::Array(ArrayData::Byte(values))) => values.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let right = match payload(vm, args[1]) {
+        Some(Native::Array(ArrayData::Byte(values))) => values.clone(),
+        _ => return Err(npe(vm)),
+    };
+    left.extend(right);
+    alloc_arr(vm, "B", left.len(), move || ArrayData::Byte(left))
+}
+
+fn mapskt_map_of(vm: &mut Vm, args: &[JValue]) -> R {
+    let pairs = coll_elems(vm, args[0])?;
+    let mut entries = Vec::with_capacity(pairs.len());
+    for pair in pairs {
+        match payload(vm, pair) {
+            Some(Native::Pair(key, value)) => entries.push((*key, *value)),
+            _ => return Err(iae(vm, "mapOf element is not a Pair")),
+        }
+    }
+    alloc(vm, "Ljava/util/LinkedHashMap;", Native::Map(entries))
+}
+
+fn mapskt_to_list(vm: &mut Vm, args: &[JValue]) -> R {
+    let entries = match payload(vm, args[0]) {
+        Some(Native::Map(entries)) => entries.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let mut pairs = Vec::with_capacity(entries.len());
+    for (key, value) in entries {
+        pairs.push(alloc(vm, "Lkotlin/Pair;", Native::Pair(key, value))?);
+    }
+    list_alloc(vm, pairs)
+}
+
+fn charskt_is_whitespace(_vm: &mut Vm, args: &[JValue]) -> R {
+    let value = char::from_u32(args[0].as_int() as u32).unwrap_or('\u{fffd}');
+    Ok(JValue::Int(i32::from(value.is_whitespace())))
+}
+
+fn charskt_titlecase(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = char::from_u32(args[0].as_int() as u32).unwrap_or('\u{fffd}');
+    Ok(new_str(vm, &value.to_uppercase().collect::<String>()))
+}
+
+fn comparisons_compare_values(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(java_cmp(vm, args[0], args[1])? as i32))
+}
+
+fn stringskt_substring_before_last_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let delimiter = jstr(vm, args[1])?;
+    let missing = if int_of(vm, args[3]) & 2 != 0 {
+        value.clone()
+    } else {
+        jstr(vm, args[2])?
+    };
+    Ok(new_str(
+        vm,
+        value
+            .rfind(&delimiter)
+            .map(|index| &value[..index])
+            .unwrap_or(&missing),
+    ))
+}
+
+fn stringskt_substring_after_last_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let delimiter = jstr(vm, args[1])?;
+    let missing = if int_of(vm, args[3]) & 2 != 0 {
+        value.clone()
+    } else {
+        jstr(vm, args[2])?
+    };
+    Ok(new_str(
+        vm,
+        value
+            .rfind(&delimiter)
+            .map(|index| &value[index + delimiter.len()..])
+            .unwrap_or(&missing),
+    ))
+}
+
+fn rangeskt_coerce_at_least(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(args[0].as_int().max(args[1].as_int())))
 }
 
 /// `RangesKt.coerceIn(Int, Int, Int)`.
@@ -805,12 +1186,16 @@ pub(crate) fn comparisons_max_of3(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/Lazy;", "getValue", "()Ljava/lang/Object;", true, lazy_get_value),
     ne!("Lkotlin/LazyKt;", "lazy", "(Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;", false, lazy_kt_lazy),
+    ne!("Lkotlin/LazyKt;", "lazy", "(Lkotlin/LazyThreadSafetyMode;Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;", false, lazy_kt_lazy_mode),
     ne!("Lkotlin/time/Duration$Companion;", "getZERO-UwyO8pc", "()J", true, duration_get_zero),
     ne!("Lkotlin/time/DurationKt;", "toDuration", "(ILkotlin/time/DurationUnit;)J", false, duration_to_duration_int),
     ne!("Lkotlin/time/DurationKt;", "toDuration", "(JLkotlin/time/DurationUnit;)J", false, duration_to_duration_long),
     ne!("Lkotlin/text/Regex;", "<init>", "(Ljava/lang/String;)V", true, regex_init),
     ne!("Lkotlin/text/Regex;", "replace", "(Ljava/lang/CharSequence;Ljava/lang/String;)Ljava/lang/String;", true, regex_replace),
     ne!("Lkotlin/text/Regex;", "matches", "(Ljava/lang/CharSequence;)Z", true, regex_matches),
+    ne!("Lkotlin/text/Regex;", "containsMatchIn", "(Ljava/lang/CharSequence;)Z", true, regex_contains_match_in),
+    ne!("Lkotlin/text/Regex;", "find$default", "(Lkotlin/text/Regex;Ljava/lang/CharSequence;IILjava/lang/Object;)Lkotlin/text/MatchResult;", false, regex_find_default),
+    ne!("Lkotlin/text/Regex;", "split", "(Ljava/lang/CharSequence;I)Ljava/util/List;", true, regex_split),
     ne!("Lkotlin/text/Regex;", "toString", "()Ljava/lang/String;", true, regex_to_string),
     ne!("Lkotlin/text/StringsKt;", "append", "(Ljava/lang/StringBuilder;[Ljava/lang/String;)Ljava/lang/StringBuilder;", false, strings_append_array),
     ne!("Lkotlin/collections/CollectionsKt;", "listOf", "([Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_array),
@@ -823,6 +1208,19 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "plus", "(Ljava/util/Collection;Ljava/lang/Object;)Ljava/util/List;", false, collections_plus_obj),
     ne!("Lkotlin/collections/CollectionsKt;", "contains", "(Ljava/lang/Iterable;Ljava/lang/Object;)Z", false, collections_contains),
     ne!("Lkotlin/collections/CollectionsKt;", "first", "(Ljava/lang/Iterable;)Ljava/lang/Object;", false, collections_first),
+    ne!("Lkotlin/collections/CollectionsKt;", "first", "(Ljava/util/List;)Ljava/lang/Object;", false, collections_first),
+    ne!("Lkotlin/collections/CollectionsKt;", "firstOrNull", "(Ljava/util/List;)Ljava/lang/Object;", false, collections_first_or_null),
+    ne!("Lkotlin/collections/CollectionsKt;", "last", "(Ljava/util/List;)Ljava/lang/Object;", false, collections_last),
+    ne!("Lkotlin/collections/CollectionsKt;", "getOrNull", "(Ljava/util/List;I)Ljava/lang/Object;", false, collections_get_or_null),
+    ne!("Lkotlin/collections/CollectionsKt;", "toMutableList", "(Ljava/util/Collection;)Ljava/util/List;", false, collections_to_mutable_list),
+    ne!("Lkotlin/collections/CollectionsKt;", "addAll", "(Ljava/util/Collection;Ljava/lang/Iterable;)Z", false, collections_add_all),
+    ne!("Lkotlin/collections/CollectionsKt;", "throwIndexOverflow", "()V", false, collections_throw_index_overflow),
+    ne!("Lkotlin/collections/CollectionsKt;", "listOfNotNull", "(Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_not_null),
+    ne!("Lkotlin/collections/CollectionsKt;", "listOfNotNull", "([Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_not_null),
+    ne!("Lkotlin/collections/SetsKt;", "setOf", "([Ljava/lang/Object;)Ljava/util/Set;", false, setskt_set_of),
+    ne!("Lkotlin/collections/MapsKt;", "mapOf", "([Lkotlin/Pair;)Ljava/util/Map;", false, mapskt_map_of),
+    ne!("Lkotlin/collections/MapsKt;", "toList", "(Ljava/util/Map;)Ljava/util/List;", false, mapskt_to_list),
+    ne!("Lkotlin/collections/ArraysKt;", "plus", "([B[B)[B", false, arrayskt_plus_bytes),
     ne!("Lkotlin/collections/CollectionsKt;", "reversed", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_reversed),
     ne!("Lkotlin/text/StringsKt;", "startsWith$default", "(Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Z", false, stringskt_starts_with_default),
     ne!("Lkotlin/collections/CollectionsKt;", "collectionSizeOrDefault", "(Ljava/lang/Iterable;I)I", false, collections_size_or_default),
@@ -840,8 +1238,23 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/ResultKt;", "createFailure", "(Ljava/lang/Throwable;)Ljava/lang/Object;", false, resultkt_create_failure),
     ne!("Lkotlin/text/StringsKt;", "isBlank", "(Ljava/lang/CharSequence;)Z", false, stringskt_is_blank),
     ne!("Lkotlin/text/StringsKt;", "toIntOrNull", "(Ljava/lang/String;)Ljava/lang/Integer;", false, stringskt_to_int_or_null),
+    ne!("Lkotlin/text/StringsKt;", "contains", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;Z)Z", false, stringskt_contains),
+    ne!("Lkotlin/text/StringsKt;", "startsWith", "(Ljava/lang/String;Ljava/lang/String;Z)Z", false, stringskt_starts_with),
+    ne!("Lkotlin/text/StringsKt;", "endsWith", "(Ljava/lang/String;Ljava/lang/String;Z)Z", false, stringskt_ends_with),
+    ne!("Lkotlin/text/StringsKt;", "endsWith$default", "(Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Z", false, stringskt_ends_with_default),
+    ne!("Lkotlin/text/StringsKt;", "removePrefix", "(Ljava/lang/String;Ljava/lang/CharSequence;)Ljava/lang/String;", false, stringskt_remove_prefix),
+    ne!("Lkotlin/text/StringsKt;", "removeSuffix", "(Ljava/lang/String;Ljava/lang/CharSequence;)Ljava/lang/String;", false, stringskt_remove_suffix),
+    ne!("Lkotlin/text/StringsKt;", "substringBefore$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_before_default),
+    ne!("Lkotlin/text/StringsKt;", "split$default", "(Ljava/lang/CharSequence;[Ljava/lang/String;ZIILjava/lang/Object;)Ljava/util/List;", false, stringskt_split_strings_default),
+    ne!("Lkotlin/text/StringsKt;", "split$default", "(Ljava/lang/CharSequence;[CZIILjava/lang/Object;)Ljava/util/List;", false, stringskt_split_chars_default),
+    ne!("Lkotlin/text/StringsKt;", "substringBeforeLast$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_before_last_default),
+    ne!("Lkotlin/text/StringsKt;", "substringAfterLast$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_after_last_default),
+    ne!("Lkotlin/text/CharsKt;", "isWhitespace", "(C)Z", false, charskt_is_whitespace),
+    ne!("Lkotlin/text/CharsKt;", "titlecase", "(CLjava/util/Locale;)Ljava/lang/String;", false, charskt_titlecase),
     ne!("Lkotlin/ranges/RangesKt;", "coerceIn", "(III)I", false, rangeskt_coerce_in),
+    ne!("Lkotlin/ranges/RangesKt;", "coerceAtLeast", "(II)I", false, rangeskt_coerce_at_least),
     ne!("Lkotlin/text/MatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
+    ne!("Lkotlin/text/MatcherMatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
     ne!("Ljava/net/URI;", "<init>", "(Ljava/lang/String;)V", true, uri_init),
     ne!("Ljava/net/URI;", "getHost", "()Ljava/lang/String;", true, uri_get_host),
     ne!("Lkotlin/ranges/IntRange;", "<init>", "(II)V", true, int_range_init),
@@ -852,6 +1265,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/IntIterator;", "hasNext", "()Z", true, int_iterator_has_next),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of),
     ne!("Lkotlin/jvm/internal/DefaultConstructorMarker;", "<init>", "()V", true, object_noop),
+    ne!("Lkotlin/jvm/internal/Lambda;", "<init>", "(I)V", true, object_noop),
     ne!("Lkotlin/text/StringsKt;", "contains$default", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;ZILjava/lang/Object;)Z", false, stringskt_contains_default),
     ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;", false, stringskt_replace_default),
     ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;CCZILjava/lang/Object;)Ljava/lang/String;", false, stringskt_replace_char_default),
@@ -879,6 +1293,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/time/Duration;", "getInWholeMilliseconds-impl", "(J)J", false, duration_millis_impl),
     ne!("Lkotlin/time/Duration;", "compareTo", "(Ljava/lang/Object;)I", true, duration_compare_to),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of3),
+    ne!("Lkotlin/comparisons/ComparisonsKt;", "compareValues", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)I", false, comparisons_compare_values),
 ];
 
 #[cfg(test)]

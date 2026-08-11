@@ -10,6 +10,7 @@ mod float;
 mod integer;
 mod long;
 mod math;
+mod number;
 mod object;
 mod reflect;
 mod short;
@@ -38,6 +39,7 @@ pub(crate) const LANG_TABLE: &[&[NativeEntry]] = &[
     system::TABLE,
     thread::TABLE,
     math::TABLE,
+    number::TABLE,
     integer::TABLE,
     long::TABLE,
     short::TABLE,

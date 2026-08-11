@@ -142,6 +142,139 @@ fn collections_first_empty_errors() {
 }
 
 #[test]
+fn missing_collection_helpers_are_stateful() {
+    with_vm(|vm| {
+        let empty = kotlin_empty_list(vm, &[]).unwrap();
+        assert!(collections_first_or_null(vm, &[empty]).unwrap().is_null());
+
+        let a = s(vm, "a");
+        let list = collections_list_of_single(vm, &[a]).unwrap();
+        let b = s(vm, "b");
+        let extra = collections_list_of_single(vm, &[b]).unwrap();
+        assert!(bool_of(collections_add_all(vm, &[list, extra]).unwrap()));
+        assert_eq!(s_of!(vm, collections_last(vm, &[list])), "b");
+        assert!(collections_get_or_null(vm, &[list, JValue::Int(9)])
+            .unwrap()
+            .is_null());
+        assert!(matches!(
+            collections_throw_index_overflow(vm, &[]),
+            Err(NatErr::Throw(_))
+        ));
+    });
+}
+
+#[test]
+fn missing_string_and_regex_helpers_match_kotlin_behavior() {
+    with_vm(|vm| {
+        let value = s(vm, "Prefix-Middle.Suffix");
+        let needle = s(vm, "middle");
+        assert!(bool_of(
+            stringskt_contains(vm, &[value, needle, JValue::Int(1)]).unwrap()
+        ));
+
+        let value = s(vm, "Prefix-Middle.Suffix");
+        let delimiter = s(vm, ".");
+        assert_eq!(
+            s_of!(
+                vm,
+                stringskt_substring_before_default(
+                    vm,
+                    &[value, delimiter, JValue::Null, JValue::Int(2), JValue::Null]
+                )
+            ),
+            "Prefix-Middle"
+        );
+
+        let pattern = alloc(
+            vm,
+            "Lkotlin/text/Regex;",
+            Native::Pattern {
+                re: fancy_regex::Regex::new("[,;]").unwrap(),
+                source: "[,;]".to_string(),
+            },
+        )
+        .unwrap();
+        let input = s(vm, "a,b;c");
+        assert!(bool_of(
+            regex_contains_match_in(vm, &[pattern, input]).unwrap()
+        ));
+        let input = s(vm, "a,b;c");
+        assert_eq!(
+            list_of!(vm, regex_split(vm, &[pattern, input, JValue::Int(0)])),
+            ["a", "b", "c"]
+        );
+    });
+}
+
+#[test]
+fn default_split_and_regex_find_return_real_values() {
+    with_vm(|vm| {
+        let comma = s(vm, ",");
+        let semi = s(vm, ";");
+        let delimiters = alloc_arr(vm, "Ljava/lang/String;", 2, || {
+            ArrayData::Obj(vec![comma, semi])
+        })
+        .unwrap();
+        let input = s(vm, "a,b;c");
+        assert_eq!(
+            list_of!(
+                vm,
+                stringskt_split_strings_default(
+                    vm,
+                    &[
+                        input,
+                        delimiters,
+                        JValue::Int(0),
+                        JValue::Int(0),
+                        JValue::Int(6),
+                        JValue::Null,
+                    ]
+                )
+            ),
+            ["a", "b", "c"]
+        );
+
+        let regex = alloc(
+            vm,
+            "Lkotlin/text/Regex;",
+            Native::Pattern {
+                re: fancy_regex::Regex::new("b+").unwrap(),
+                source: "b+".to_string(),
+            },
+        )
+        .unwrap();
+        let input = s(vm, "aa-bbb-cc");
+        let found = regex_find_default(
+            vm,
+            &[regex, input, JValue::Int(0), JValue::Int(2), JValue::Null],
+        )
+        .unwrap();
+        assert_eq!(s_of!(vm, match_result_get_value(vm, &[found])), "bbb");
+    });
+}
+
+#[test]
+fn map_and_byte_array_helpers_preserve_values() {
+    with_vm(|vm| {
+        let key = s(vm, "key");
+        let value = s(vm, "value");
+        let pair = alloc(vm, "Lkotlin/Pair;", Native::Pair(key, value)).unwrap();
+        let pairs = alloc_arr(vm, "Lkotlin/Pair;", 1, || ArrayData::Obj(vec![pair])).unwrap();
+        let map = mapskt_map_of(vm, &[pairs]).unwrap();
+        let list = mapskt_to_list(vm, &[map]).unwrap();
+        assert_eq!(coll_elems(vm, list).unwrap().len(), 1);
+
+        let left = alloc_arr(vm, "B", 2, || ArrayData::Byte(vec![1, 2])).unwrap();
+        let right = alloc_arr(vm, "B", 1, || ArrayData::Byte(vec![3])).unwrap();
+        let joined = arrayskt_plus_bytes(vm, &[left, right]).unwrap();
+        assert!(matches!(
+            payload(vm, joined),
+            Some(Native::Array(ArrayData::Byte(values))) if values == &[1, 2, 3]
+        ));
+    });
+}
+
+#[test]
 fn starts_with_default_mask() {
     with_vm(|vm| {
         // (str, prefix, ignoreCase, mask, marker).
