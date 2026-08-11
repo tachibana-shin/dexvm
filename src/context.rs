@@ -19,6 +19,7 @@
 //! By default a context denies every host capability ([`SandboxOptions`]
 //! is deny-first, like `d4rt_rs::SandboxOptions` and Deno's `--allow-*`).
 
+use std::collections::HashMap;
 use std::io::Read;
 use std::path::Path;
 
@@ -99,21 +100,30 @@ pub struct Context {
     last_instance: Option<u32>,
 }
 
+type ApkContents = (Vec<Vec<u8>>, HashMap<String, Vec<u8>>);
+
 /// Extract every `classes*.dex` entry from a zip/apk container, in dex order
 /// (`classes.dex`, `classes2.dex`, ...), so multidex programs load completely.
-fn dexes_from_apk(data: &[u8]) -> Result<Vec<Vec<u8>>, ContextError> {
+fn contents_from_apk(data: &[u8]) -> Result<ApkContents, ContextError> {
     let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data))
         .map_err(|e| ContextError::BadArchive(e.to_string()))?;
     let mut entries = Vec::new();
+    let mut resources = HashMap::new();
     for i in 0..archive.len() {
         let mut f = archive
             .by_index(i)
             .map_err(|e| ContextError::BadArchive(e.to_string()))?;
-        if f.name().starts_with("classes") && f.name().ends_with(".dex") {
+        let name = f.name().to_string();
+        if name.starts_with("classes") && name.ends_with(".dex") {
             let mut buf = Vec::new();
             f.read_to_end(&mut buf)
                 .map_err(|e| ContextError::BadArchive(format!("read {}: {e}", f.name())))?;
-            entries.push((f.name().to_string(), buf));
+            entries.push((name, buf));
+        } else if !f.is_dir() {
+            let mut buf = Vec::new();
+            f.read_to_end(&mut buf)
+                .map_err(|e| ContextError::BadArchive(format!("read {}: {e}", f.name())))?;
+            resources.insert(name, buf);
         }
     }
     if entries.is_empty() {
@@ -128,7 +138,7 @@ fn dexes_from_apk(data: &[u8]) -> Result<Vec<Vec<u8>>, ContextError> {
         };
         num(a).cmp(&num(b))
     });
-    Ok(entries.into_iter().map(|(_, b)| b).collect())
+    Ok((entries.into_iter().map(|(_, b)| b).collect(), resources))
 }
 
 impl Context {
@@ -156,23 +166,28 @@ impl Context {
         libraries: &[&[u8]],
         options: SandboxOptions,
     ) -> Result<Context, ContextError> {
-        fn container_dexes(data: &[u8]) -> Result<Vec<Vec<u8>>, ContextError> {
+        fn container_contents(data: &[u8]) -> Result<ApkContents, ContextError> {
             if data.starts_with(b"PK\x03\x04") || data.starts_with(b"PK\x05\x06") {
-                dexes_from_apk(data)
+                contents_from_apk(data)
             } else {
-                Ok(vec![data.to_vec()])
+                Ok((vec![data.to_vec()], HashMap::new()))
             }
         }
 
-        let mut dexes_data = container_dexes(data)?;
+        let (mut dexes_data, mut resources) = container_contents(data)?;
         for library in libraries {
-            dexes_data.extend(container_dexes(library)?);
+            let (library_dexes, library_resources) = container_contents(library)?;
+            dexes_data.extend(library_dexes);
+            for (name, bytes) in library_resources {
+                resources.entry(name).or_insert(bytes);
+            }
         }
         let mut dexes = Vec::with_capacity(dexes_data.len());
         for d in dexes_data {
             dexes.push(DexFile::parse(&d).map_err(|e| ContextError::Dex(e.to_string()))?);
         }
         let mut vm = Vm::new(dexes, Box::new(std::io::sink()))?;
+        vm.resources = resources;
         if let Some(p) = options.network {
             vm.perms.grant(Permission::Network(p));
         }

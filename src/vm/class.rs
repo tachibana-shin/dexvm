@@ -838,7 +838,7 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         0
     ),
     shim!(
-        "Ljava/lang/NoSuchElementException;",
+        "Ljava/util/NoSuchElementException;",
         Some("Ljava/lang/RuntimeException;"),
         &[],
         0

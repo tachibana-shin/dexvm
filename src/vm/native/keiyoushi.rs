@@ -180,6 +180,10 @@ pub(crate) fn okhttp_await_success(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
+fn okhttp_await(vm: &mut Vm, args: &[JValue]) -> R {
+    okhttp_call_execute(vm, &args[..1])
+}
+
 fn okhttp_as_observable_success(vm: &mut Vm, args: &[JValue]) -> R {
     let result = (|| {
         let response = okhttp_call_execute(vm, &args[..1])?;
@@ -264,6 +268,34 @@ fn http_source_fetch_search(vm: &mut Vm, args: &[JValue]) -> R {
         "searchMangaParse",
         "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/MangasPage;",
     )
+}
+
+fn http_source_fetch_popular(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_fetch(
+        vm,
+        args[0],
+        "popularMangaRequest",
+        "(I)Lokhttp3/Request;",
+        &args[1..2],
+        "popularMangaParse",
+        "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/MangasPage;",
+    )
+}
+
+fn http_source_fetch_image_url(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_fetch(
+        vm,
+        args[0],
+        "imageUrlRequest",
+        "(Leu/kanade/tachiyomi/source/model/Page;)Lokhttp3/Request;",
+        &args[1..2],
+        "imageUrlParse",
+        "(Lokhttp3/Response;)Ljava/lang/String;",
+    )
+}
+
+fn http_source_prepare_new_chapter(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
 }
 
 fn http_source_fetch_details(vm: &mut Vm, args: &[JValue]) -> R {
@@ -757,6 +789,31 @@ pub(crate) fn mangas_page_has_next(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
+fn smanga_update_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::SMangaUpdate {
+        manga: args[1],
+        chapters: args[2],
+    });
+    Ok(JValue::Null)
+}
+
+fn smanga_update_get_manga(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::SMangaUpdate { manga, .. }) => Ok(*manga),
+        _ => Err(npe(vm)),
+    }
+}
+
+fn smanga_update_get_chapters(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::SMangaUpdate { chapters, .. }) => Ok(*chapters),
+        _ => Err(npe(vm)),
+    }
+}
+
 pub(crate) fn filter_list_init(vm: &mut Vm, args: &[JValue]) -> R {
     let items = match payload(vm, args[1]) {
         Some(Native::Array(data)) => {
@@ -808,6 +865,13 @@ pub(crate) fn filter_list_iterator(vm: &mut Vm, args: &[JValue]) -> R {
         "Ljava/util/Iterator;",
         Native::Iter(IterKind::List { list, idx: 0 }),
     )
+}
+
+fn filter_list_is_empty(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::SFilterList(items)) => Ok(JValue::Int(i32::from(items.is_empty()))),
+        _ => Err(npe(vm)),
+    }
 }
 
 // ---- Filter hierarchy ----
@@ -978,6 +1042,70 @@ pub(crate) fn filter_select_state_obj(vm: &mut Vm, args: &[JValue]) -> R {
     box_int_value(vm, "Ljava/lang/Integer;", JValue::Int(state))
 }
 
+fn filter_select_get_values(vm: &mut Vm, args: &[JValue]) -> R {
+    let options = match payload(vm, args[0]) {
+        Some(Native::SFilter { options, .. }) => options.clone(),
+        _ => return Err(npe(vm)),
+    };
+    alloc_arr(vm, "Ljava/lang/Object;", options.len(), move || {
+        ArrayData::Obj(options)
+    })
+}
+
+fn sort_selection_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::SortSelection {
+        index: int_of(vm, args[1]),
+        ascending: int_of(vm, args[2]) != 0,
+    });
+    Ok(JValue::Null)
+}
+
+fn sort_selection_get_index(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::SortSelection { index, .. }) => Ok(JValue::Int(*index)),
+        _ => Err(npe(vm)),
+    }
+}
+
+fn sort_selection_get_ascending(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::SortSelection { ascending, .. }) => Ok(JValue::Int(i32::from(*ascending))),
+        _ => Err(npe(vm)),
+    }
+}
+
+fn filter_sort_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[1])?;
+    let options = match payload(vm, args[2]) {
+        Some(Native::Array(ArrayData::Obj(values))) => values.clone(),
+        _ => return Err(npe(vm)),
+    };
+    set_filter_payload(
+        vm,
+        args[0],
+        Native::SFilter {
+            name,
+            state: 0,
+            is_checked: false,
+            children: vec![args[3]],
+            options,
+            text_value: String::new(),
+        },
+    )
+}
+
+fn filter_sort_get_state(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::SFilter { children, .. }) => {
+            Ok(children.first().copied().unwrap_or(JValue::Null))
+        }
+        _ => Err(npe(vm)),
+    }
+}
+
 pub(crate) fn filter_checkbox_state_obj(vm: &mut Vm, args: &[JValue]) -> R {
     let checked = match payload(vm, args[0]) {
         Some(Native::SFilter { is_checked, .. }) => *is_checked,
@@ -1028,6 +1156,11 @@ pub(crate) fn filter_tristate_is_included(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::SFilter { state, .. }) => Ok(JValue::Int(i32::from(state == &1))),
         _ => Err(npe(vm)),
     }
+}
+
+fn filter_tristate_state_obj(vm: &mut Vm, args: &[JValue]) -> R {
+    let state = filter_get_state(vm, args)?;
+    box_int_value(vm, "Ljava/lang/Integer;", state)
 }
 
 pub(crate) fn requests_kt_get_default(vm: &mut Vm, args: &[JValue]) -> R {
@@ -1136,10 +1269,14 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "getMangas", "()Ljava/util/List;", true, mangas_page_get_mangas),
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "hasNextPage", "()Z", true, mangas_page_has_next),
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "getHasNextPage", "()Z", true, mangas_page_has_next),
+    ne!("Leu/kanade/tachiyomi/source/model/SMangaUpdate;", "<init>", "(Leu/kanade/tachiyomi/source/model/SManga;Ljava/util/List;)V", true, smanga_update_init),
+    ne!("Leu/kanade/tachiyomi/source/model/SMangaUpdate;", "getManga", "()Leu/kanade/tachiyomi/source/model/SManga;", true, smanga_update_get_manga),
+    ne!("Leu/kanade/tachiyomi/source/model/SMangaUpdate;", "getChapters", "()Ljava/util/List;", true, smanga_update_get_chapters),
     ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "<init>", "([Leu/kanade/tachiyomi/source/model/Filter;)V", true, filter_list_init),
     ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "<init>", "(Ljava/util/List;)V", true, filter_list_init_list),
     ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "getFilters", "()Ljava/util/List;", true, filter_list_get_filters),
     ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "iterator", "()Ljava/util/Iterator;", true, filter_list_iterator),
+    ne!("Leu/kanade/tachiyomi/source/model/FilterList;", "isEmpty", "()Z", true, filter_list_is_empty),
     ne!("Leu/kanade/tachiyomi/source/model/Filter;", "<init>", "(Ljava/lang/String;)V", true, filter_init_name),
     ne!("Leu/kanade/tachiyomi/source/model/Filter;", "<init>", "(Ljava/lang/String;Z)V", true, filter_init_checked),
     ne!("Leu/kanade/tachiyomi/source/model/Filter;", "getName", "()Ljava/lang/String;", true, filter_get_name),
@@ -1157,10 +1294,17 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/Filter$TriState;", "<init>", "(Ljava/lang/String;IILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_tristate_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$TriState;", "isExcluded", "()Z", true, filter_tristate_is_excluded),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$TriState;", "isIncluded", "()Z", true, filter_tristate_is_included),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$TriState;", "getState", "()Ljava/lang/Object;", true, filter_tristate_state_obj),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "<init>", "(Ljava/lang/String;[Ljava/lang/String;)V", true, filter_select_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "<init>", "(Ljava/lang/String;[Ljava/lang/Object;I)V", true, filter_select_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "<init>", "(Ljava/lang/String;[Ljava/lang/Object;IILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_select_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "getState", "()Ljava/lang/Object;", true, filter_select_state_obj),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "getValues", "()[Ljava/lang/Object;", true, filter_select_get_values),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;", "<init>", "(IZ)V", true, sort_selection_init),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;", "getIndex", "()I", true, sort_selection_get_index),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;", "getAscending", "()Z", true, sort_selection_get_ascending),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort;", "<init>", "(Ljava/lang/String;[Ljava/lang/String;Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;)V", true, filter_sort_init),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort;", "getState", "()Ljava/lang/Object;", true, filter_sort_get_state),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "<init>", "(Ljava/lang/String;Z)V", true, filter_init_checked),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "<init>", "(Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_checkbox_init_synth),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "getState", "()Ljava/lang/Object;", true, filter_checkbox_state_obj),
@@ -1174,9 +1318,12 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getId", "()J", true, http_source_get_id),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getSupportsLatest", "()Z", true, http_source_get_supports_latest),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchSearchManga", "(ILjava/lang/String;Leu/kanade/tachiyomi/source/model/FilterList;)Lrx/Observable;", true, http_source_fetch_search),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchPopularManga", "(I)Lrx/Observable;", true, http_source_fetch_popular),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchMangaDetails", "(Leu/kanade/tachiyomi/source/model/SManga;)Lrx/Observable;", true, http_source_fetch_details),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchChapterList", "(Leu/kanade/tachiyomi/source/model/SManga;)Lrx/Observable;", true, http_source_fetch_chapters),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchPageList", "(Leu/kanade/tachiyomi/source/model/SChapter;)Lrx/Observable;", true, http_source_fetch_pages),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchImageUrl", "(Leu/kanade/tachiyomi/source/model/Page;)Lrx/Observable;", true, http_source_fetch_image_url),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "prepareNewChapter", "(Leu/kanade/tachiyomi/source/model/SChapter;Leu/kanade/tachiyomi/source/model/SManga;)V", true, http_source_prepare_new_chapter),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "headersBuilder", "()Lokhttp3/Headers$Builder;", true, http_source_headers_builder),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "setUrlWithoutDomain", "(Leu/kanade/tachiyomi/source/model/SManga;Ljava/lang/String;)V", true, http_source_set_url_no_domain_manga),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "setUrlWithoutDomain", "(Leu/kanade/tachiyomi/source/model/SChapter;Ljava/lang/String;)V", true, http_source_set_url_no_domain_chapter),
@@ -1187,6 +1334,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "GET$default", "(Lokhttp3/HttpUrl;Lokhttp3/Headers;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_get_default),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "__host_execute", "(Lokhttp3/Request;)Lokhttp3/Response;", false, keiyoushi_execute),
     ne!("Leu/kanade/tachiyomi/network/OkHttpExtensionsKt;", "awaitSuccess", "(Lokhttp3/Call;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, okhttp_await_success),
+    ne!("Leu/kanade/tachiyomi/network/OkHttpExtensionsKt;", "await", "(Lokhttp3/Call;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, okhttp_await),
     ne!("Leu/kanade/tachiyomi/network/OkHttpExtensionsKt;", "asObservableSuccess", "(Lokhttp3/Call;)Lrx/Observable;", false, okhttp_as_observable_success),
     ne!("Leu/kanade/tachiyomi/network/OkHttpExtensionsKt;", "asObservable", "(Lokhttp3/Call;)Lrx/Observable;", false, okhttp_as_observable),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getNetwork", "()Leu/kanade/tachiyomi/network/NetworkHelper;", true, http_source_get_network),

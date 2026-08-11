@@ -106,6 +106,9 @@ pub struct Vm {
     /// referencing class; the class namespace is shared across dexes with
     /// earlier files winning on duplicates.
     pub dexes: Vec<DexFile>,
+    /// Non-DEX entries retained from the application and library APKs.
+    /// These are package resources, not guest filesystem paths.
+    pub resources: HashMap<String, Vec<u8>>,
     pub intern: Vec<Arc<str>>,
     pub intern_map: HashMap<String, u32>,
     pub classes: Vec<Class>,
@@ -154,6 +157,7 @@ impl Vm {
     pub fn new(dexes: Vec<DexFile>, out: Box<dyn Write>) -> Result<Vm, JvmError> {
         let mut vm = Vm {
             dexes,
+            resources: HashMap::new(),
             intern: Vec::new(),
             intern_map: HashMap::new(),
             classes: Vec::new(),

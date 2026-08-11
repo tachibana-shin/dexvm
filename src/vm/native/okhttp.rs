@@ -242,6 +242,15 @@ pub(crate) fn headers_builder_set(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
+fn headers_builder_remove_all(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[1])?;
+    let Some(Native::Headers(headers)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    headers.retain(|(existing, _)| !existing.eq_ignore_ascii_case(&name));
+    Ok(args[0])
+}
+
 pub(crate) fn headers_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::Headers(headers)) = payload(vm, args[0]) else {
         return Err(npe(vm));
@@ -1122,6 +1131,34 @@ pub(crate) fn okhttp_call_execute(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(resp)
 }
 
+#[cfg(feature = "tachiyomi")]
+fn okhttp_call_enqueue(vm: &mut Vm, args: &[JValue]) -> R {
+    let call = args[0];
+    let callback = args[1];
+    match okhttp_call_execute(vm, &[call]) {
+        Ok(response) => {
+            inv_virt(
+                vm,
+                callback,
+                "onResponse",
+                "(Lokhttp3/Call;Lokhttp3/Response;)V",
+                &[call, response],
+            )?;
+        }
+        Err(NatErr::Throw(error)) => {
+            inv_virt(
+                vm,
+                callback,
+                "onFailure",
+                "(Lokhttp3/Call;Ljava/io/IOException;)V",
+                &[call, JValue::Obj(error)],
+            )?;
+        }
+        Err(error) => return Err(error),
+    }
+    Ok(JValue::Null)
+}
+
 /// Runs the real host HTTP request for `request` and wraps it as a Response.
 fn host_execute(vm: &mut Vm, request: JValue) -> R {
     let (url, method, headers, body) = request_parts(vm, request)?;
@@ -1328,6 +1365,8 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/OkHttpClient;", "newCall", "(Lokhttp3/Request;)Lokhttp3/Call;", true, okhttp_client_new_call),
     #[cfg(feature = "tachiyomi")]
     ne!("Lokhttp3/Call;", "execute", "()Lokhttp3/Response;", true, okhttp_call_execute),
+    #[cfg(feature = "tachiyomi")]
+    ne!("Lokhttp3/Call;", "enqueue", "(Lokhttp3/Callback;)V", true, okhttp_call_enqueue),
     ne!("Lokhttp3/Request$Builder;", "<init>", "()V", true, request_builder_init),
     ne!("Lokhttp3/Request$Builder;", "url", "(Ljava/lang/String;)Lokhttp3/Request$Builder;", true, request_builder_url),
     ne!("Lokhttp3/Request$Builder;", "method", "(Ljava/lang/String;Lokhttp3/RequestBody;)Lokhttp3/Request$Builder;", true, request_builder_method),
@@ -1352,6 +1391,7 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Headers$Builder;", "<init>", "()V", true, headers_builder_init),
     ne!("Lokhttp3/Headers$Builder;", "add", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/Headers$Builder;", true, headers_builder_add),
     ne!("Lokhttp3/Headers$Builder;", "set", "(Ljava/lang/String;Ljava/lang/String;)Lokhttp3/Headers$Builder;", true, headers_builder_set),
+    ne!("Lokhttp3/Headers$Builder;", "removeAll", "(Ljava/lang/String;)Lokhttp3/Headers$Builder;", true, headers_builder_remove_all),
     ne!("Lokhttp3/Headers$Builder;", "build", "()Lokhttp3/Headers;", true, headers_builder_build),
     ne!("Lokhttp3/Headers;", "newBuilder", "()Lokhttp3/Headers$Builder;", true, headers_new_builder),
     ne!("Lokhttp3/Headers;", "size", "()I", true, headers_size),

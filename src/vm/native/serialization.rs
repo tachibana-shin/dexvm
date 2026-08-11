@@ -339,6 +339,95 @@ fn json_object_get(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
+fn json_object_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let source = match payload(vm, args[1]) {
+        Some(Native::Map(entries)) => entries.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let mut entries = Vec::with_capacity(source.len());
+    for (key, value) in source {
+        let key = jstr(vm, key)?;
+        let value = match payload(vm, value) {
+            Some(Native::Json(value)) => value.clone(),
+            _ => return Err(iae(vm, "JsonObject map value is not a JsonElement")),
+        };
+        entries.push((key, value));
+    }
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::Json(JsonVal::Object(entries)));
+    Ok(JValue::Null)
+}
+
+fn json_object_contains_key(vm: &mut Vm, args: &[JValue]) -> R {
+    let key = jstr(vm, args[1])?;
+    let found = match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Object(entries))) => {
+            entries.iter().any(|(name, _)| name == &key)
+        }
+        _ => return Err(npe(vm)),
+    };
+    Ok(JValue::Int(i32::from(found)))
+}
+
+fn json_object_builder_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::Json(JsonVal::Object(Vec::new())));
+    Ok(JValue::Null)
+}
+
+fn json_object_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
+    let object = match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Object(entries))) => JsonVal::Object(entries.clone()),
+        _ => return Err(npe(vm)),
+    };
+    alloc_json_node(vm, &object)
+}
+
+fn json_object_builder_put(vm: &mut Vm, args: &[JValue]) -> R {
+    let key = jstr(vm, args[1])?;
+    let value = match payload(vm, args[2]) {
+        Some(Native::Json(value)) => value.clone(),
+        _ => return Err(iae(vm, "JsonObjectBuilder value is not a JsonElement")),
+    };
+    let previous = match payload_mut(vm, args[0]) {
+        Some(Native::Json(JsonVal::Object(entries))) => {
+            if let Some((_, old)) = entries.iter_mut().find(|(name, _)| name == &key) {
+                Some(std::mem::replace(old, value))
+            } else {
+                entries.push((key, value));
+                None
+            }
+        }
+        _ => return Err(npe(vm)),
+    };
+    match previous {
+        Some(previous) => alloc_json_node(vm, &previous),
+        None => Ok(JValue::Null),
+    }
+}
+
+fn json_builder_put_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[2])?;
+    let element = alloc_json_node(vm, &JsonVal::Str(value))?;
+    json_object_builder_put(vm, &[args[0], args[1], element])?;
+    Ok(element)
+}
+
+fn json_builder_put_number(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = to_string_of(vm, args[2])?;
+    let value = text
+        .parse::<i64>()
+        .map(JsonVal::Int)
+        .unwrap_or_else(|_| JsonVal::Double(text.parse().unwrap_or(0.0)));
+    let element = alloc_json_node(vm, &value)?;
+    json_object_builder_put(vm, &[args[0], args[1], element])?;
+    Ok(element)
+}
+
 fn json_get_serializers_module(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(
         vm,
@@ -1198,6 +1287,13 @@ pub(crate) const SERIALIZATION_TABLE: &[NativeEntry] = &[
         true,
         json_object_get
     ),
+    ne!("Lkotlinx/serialization/json/JsonObject;", "<init>", "(Ljava/util/Map;)V", true, json_object_init),
+    ne!("Lkotlinx/serialization/json/JsonObject;", "containsKey", "(Ljava/lang/Object;)Z", true, json_object_contains_key),
+    ne!("Lkotlinx/serialization/json/JsonObjectBuilder;", "<init>", "()V", true, json_object_builder_init),
+    ne!("Lkotlinx/serialization/json/JsonObjectBuilder;", "build", "()Lkotlinx/serialization/json/JsonObject;", true, json_object_builder_build),
+    ne!("Lkotlinx/serialization/json/JsonObjectBuilder;", "put", "(Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)Lkotlinx/serialization/json/JsonElement;", true, json_object_builder_put),
+    ne!("Lkotlinx/serialization/json/JsonElementBuildersKt;", "put", "(Lkotlinx/serialization/json/JsonObjectBuilder;Ljava/lang/String;Ljava/lang/String;)Lkotlinx/serialization/json/JsonElement;", false, json_builder_put_string),
+    ne!("Lkotlinx/serialization/json/JsonElementBuildersKt;", "put", "(Lkotlinx/serialization/json/JsonObjectBuilder;Ljava/lang/String;Ljava/lang/Number;)Lkotlinx/serialization/json/JsonElement;", false, json_builder_put_number),
     ne!("Lkotlinx/serialization/json/JsonElementKt;", "JsonPrimitive", "(Ljava/lang/String;)Lkotlinx/serialization/json/JsonPrimitive;", false, json_primitive_string),
     ne!("Lkotlinx/serialization/json/JsonElementKt;", "getContentOrNull", "(Lkotlinx/serialization/json/JsonPrimitive;)Ljava/lang/String;", false, json_content_or_null),
     ne!("Lkotlinx/serialization/json/JsonPrimitive;", "isString", "()Z", true, json_primitive_is_string),

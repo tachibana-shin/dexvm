@@ -220,6 +220,31 @@ pub(crate) fn okio_buffer_get(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
+fn okio_buffer_size(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::OkioBuf { bytes, pos }) => Ok(JValue::Long((bytes.len() - pos) as i64)),
+        _ => Err(npe(vm)),
+    }
+}
+
+fn okio_buffer_write(vm: &mut Vm, args: &[JValue]) -> R {
+    let input = bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
+    match payload_mut(vm, args[0]) {
+        Some(Native::OkioBuf { bytes, .. }) => bytes.extend_from_slice(&input),
+        _ => return Err(npe(vm)),
+    }
+    Ok(args[0])
+}
+
+fn okio_buffer_output_stream(vm: &mut Vm, args: &[JValue]) -> R {
+    let buffer = args[0].as_obj();
+    alloc(
+        vm,
+        "Ljava/io/OutputStream;",
+        Native::OkioOutputStream(buffer),
+    )
+}
+
 pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
     ne!(
         "Lokio/Okio;",
@@ -335,6 +360,21 @@ pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
     ),
     ne!("Lokio/Buffer;", "get", "(J)B", true, okio_buffer_get),
     ne!("Lokio/Buffer;", "getByte", "(J)B", true, okio_buffer_get),
+    ne!("Lokio/Buffer;", "size", "()J", true, okio_buffer_size),
+    ne!(
+        "Lokio/Buffer;",
+        "write",
+        "([B)Lokio/Buffer;",
+        true,
+        okio_buffer_write
+    ),
+    ne!(
+        "Lokio/Buffer;",
+        "outputStream",
+        "()Ljava/io/OutputStream;",
+        true,
+        okio_buffer_output_stream
+    ),
     ne!(
         "Lokio/Buffer;",
         "readByteArray",

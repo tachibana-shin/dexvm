@@ -40,6 +40,31 @@ pub(crate) fn lazy_result_companion(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lkotlin/Result$Companion;")
 }
 
+fn coroutine_scope_create(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)
+}
+
+fn enum_entries(vm: &mut Vm, args: &[JValue]) -> R {
+    let entries = coll_elems(vm, args[0])?;
+    list_alloc(vm, entries)
+}
+
+fn boxing_box_boolean(vm: &mut Vm, args: &[JValue]) -> R {
+    boxed(
+        vm,
+        "Ljava/lang/Boolean;",
+        Native::BoolBox(int_of(vm, args[0]) != 0),
+    )
+}
+
+fn boxing_box_int(vm: &mut Vm, args: &[JValue]) -> R {
+    boxed(
+        vm,
+        "Ljava/lang/Integer;",
+        Native::IntBox(int_of(vm, args[0])),
+    )
+}
+
 // Lazy / LazyKt
 // ---------------------------------------------------------------------------
 
@@ -111,6 +136,23 @@ pub(crate) fn regex_init(vm: &mut Vm, args: &[JValue]) -> R {
         _ => return Err(npe(vm)),
     }
     Ok(JValue::Null)
+}
+
+fn regex_init_option(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut src = jstr(vm, args[1])?;
+    let option = match payload(vm, args[2]) {
+        Some(Native::Enum { name, .. }) => name.as_str(),
+        _ => "",
+    };
+    src = match option {
+        "IGNORE_CASE" => format!("(?i:{src})"),
+        "MULTILINE" => format!("(?m:{src})"),
+        "DOT_MATCHES_ALL" => format!("(?s:{src})"),
+        "LITERAL" => fancy_regex::escape(&src).into_owned(),
+        _ => src,
+    };
+    let pattern = new_str(vm, &src);
+    regex_init(vm, &[args[0], pattern])
 }
 
 pub(crate) fn regex_replace(vm: &mut Vm, args: &[JValue]) -> R {
@@ -464,6 +506,13 @@ pub(crate) fn result_is_failure_impl(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(i32::from(failure)))
 }
 
+fn result_exception_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::ResultFailure(error)) => Ok(*error),
+        _ => Ok(JValue::Null),
+    }
+}
+
 /// `ResultKt.createFailure(Throwable)` — wraps a throwable in a distinct
 /// marker object (the real runtime uses an alias bit on the payload).
 pub(crate) fn resultkt_create_failure(vm: &mut Vm, args: &[JValue]) -> R {
@@ -490,6 +539,172 @@ pub(crate) fn stringskt_to_int_or_null(vm: &mut Vm, args: &[JValue]) -> R {
         Ok(n) => boxed(vm, "Ljava/lang/Integer;", Native::IntBox(n)),
         Err(_) => Ok(JValue::Null),
     }
+}
+
+fn stringskt_to_float_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    match value.trim().parse::<f32>() {
+        Ok(value) => boxed(vm, "Ljava/lang/Float;", Native::FloatBox(value)),
+        Err(_) => Ok(JValue::Null),
+    }
+}
+
+fn stringskt_to_int_radix_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let radix = int_of(vm, args[1]);
+    if !(2..=36).contains(&radix) {
+        return Err(iae(vm, format!("radix {radix} was not in 2..36")));
+    }
+    match i32::from_str_radix(value.trim(), radix as u32) {
+        Ok(value) => boxed(vm, "Ljava/lang/Integer;", Native::IntBox(value)),
+        Err(_) => Ok(JValue::Null),
+    }
+}
+
+fn stringskt_to_long_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    match value.trim().parse::<i64>() {
+        Ok(value) => boxed(vm, "Ljava/lang/Long;", Native::LongBox(value)),
+        Err(_) => Ok(JValue::Null),
+    }
+}
+
+fn chars_from_array(vm: &mut Vm, value: JValue) -> Result<Vec<char>, NatErr> {
+    match payload(vm, value) {
+        Some(Native::Array(ArrayData::Char(chars))) => Ok(chars
+            .iter()
+            .map(|value| char::from_u32(u32::from(*value)).unwrap_or('\u{fffd}'))
+            .collect()),
+        _ => Err(npe(vm)),
+    }
+}
+
+fn stringskt_trim_chars(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let chars = chars_from_array(vm, args[1])?;
+    Ok(new_str(vm, value.trim_matches(|ch| chars.contains(&ch))))
+}
+
+fn stringskt_trim_end_chars(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let chars = chars_from_array(vm, args[1])?;
+    Ok(new_str(
+        vm,
+        value.trim_end_matches(|ch| chars.contains(&ch)),
+    ))
+}
+
+fn stringskt_remove_surrounding(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let delimiter = charseq_of(vm, args[1])?;
+    let stripped = value
+        .strip_prefix(&delimiter)
+        .and_then(|value| value.strip_suffix(&delimiter))
+        .unwrap_or(&value);
+    Ok(new_str(vm, stripped))
+}
+
+fn setskt_to_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = coll_elems(vm, args[0])?;
+    let array = alloc_arr(vm, "Ljava/lang/Object;", values.len(), move || {
+        ArrayData::Obj(values)
+    })?;
+    setskt_set_of(vm, &[array])
+}
+
+fn setskt_plus(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut values = coll_elems(vm, args[0])?;
+    let mut exists = false;
+    for value in &values {
+        if java_equals(vm, *value, args[1])? {
+            exists = true;
+            break;
+        }
+    }
+    if !exists {
+        values.push(args[1]);
+    }
+    set_alloc(vm, values)
+}
+
+fn arrayskt_contains(vm: &mut Vm, args: &[JValue]) -> R {
+    for value in coll_elems(vm, args[0])? {
+        if java_equals(vm, value, args[1])? {
+            return Ok(JValue::Int(1));
+        }
+    }
+    Ok(JValue::Int(0))
+}
+
+fn collections_filter_not_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = coll_elems(vm, args[0])?
+        .into_iter()
+        .filter(|value| !value.is_null_ref())
+        .collect();
+    list_alloc(vm, values)
+}
+
+fn mapskt_map_capacity(vm: &mut Vm, args: &[JValue]) -> R {
+    let expected = int_of(vm, args[0]);
+    let capacity = if expected < 3 {
+        expected + 1
+    } else if expected < 1_073_741_824 {
+        expected / 3 * 4 + 1
+    } else {
+        i32::MAX
+    };
+    Ok(JValue::Int(capacity))
+}
+
+fn setskt_empty_set(vm: &mut Vm, _args: &[JValue]) -> R {
+    set_alloc(vm, Vec::new())
+}
+
+fn collections_distinct(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut unique = Vec::new();
+    for value in coll_elems(vm, args[0])? {
+        let mut found = false;
+        for existing in &unique {
+            if java_equals(vm, *existing, value)? {
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            unique.push(value);
+        }
+    }
+    list_alloc(vm, unique)
+}
+
+fn collections_last_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(coll_elems(vm, args[0])?
+        .last()
+        .copied()
+        .unwrap_or(JValue::Null))
+}
+
+fn collections_sorted_with(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut values = coll_elems(vm, args[0])?;
+    let comparator = args[1];
+    for idx in 1..values.len() {
+        let mut pos = idx;
+        while pos > 0 {
+            let result = inv_virt(
+                vm,
+                comparator,
+                "compare",
+                "(Ljava/lang/Object;Ljava/lang/Object;)I",
+                &[values[pos - 1], values[pos]],
+            )?;
+            if int_of(vm, result) <= 0 {
+                break;
+            }
+            values.swap(pos - 1, pos);
+            pos -= 1;
+        }
+    }
+    list_alloc(vm, values)
 }
 
 fn stringskt_contains(vm: &mut Vm, args: &[JValue]) -> R {
@@ -755,6 +970,101 @@ fn stringskt_substring_after_last_default(vm: &mut Vm, args: &[JValue]) -> R {
     ))
 }
 
+fn stringskt_substring_after_last_char_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let delimiter = char::from_u32(int_of(vm, args[1]) as u32).unwrap_or('\0');
+    let missing = if int_of(vm, args[3]) & 2 != 0 {
+        value.clone()
+    } else {
+        jstr(vm, args[2])?
+    };
+    Ok(new_str(
+        vm,
+        value
+            .rfind(delimiter)
+            .map(|index| &value[index + delimiter.len_utf8()..])
+            .unwrap_or(&missing),
+    ))
+}
+
+fn stringskt_substring_before_char_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let delimiter = char::from_u32(int_of(vm, args[1]) as u32).unwrap_or('\0');
+    let missing = if int_of(vm, args[3]) & 2 != 0 {
+        value.clone()
+    } else {
+        jstr(vm, args[2])?
+    };
+    Ok(new_str(
+        vm,
+        value
+            .find(delimiter)
+            .map(|index| &value[..index])
+            .unwrap_or(&missing),
+    ))
+}
+
+fn stringskt_equals(vm: &mut Vm, args: &[JValue]) -> R {
+    let left = jstr(vm, args[0])?;
+    let right = jstr(vm, args[1])?;
+    let equals = if int_of(vm, args[2]) != 0 {
+        left.to_lowercase() == right.to_lowercase()
+    } else {
+        left == right
+    };
+    Ok(JValue::Int(i32::from(equals)))
+}
+
+fn stringskt_index_of_char_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = charseq_of(vm, args[0])?;
+    let needle = char::from_u32(int_of(vm, args[1]) as u32).unwrap_or('\0');
+    let start = if int_of(vm, args[4]) & 2 != 0 {
+        0
+    } else {
+        int_of(vm, args[2]).max(0) as usize
+    };
+    let ignore_case = int_of(vm, args[4]) & 4 == 0 && int_of(vm, args[3]) != 0;
+    let suffix = text.get(start..).unwrap_or("");
+    let found = if ignore_case {
+        suffix
+            .char_indices()
+            .find(|(_, ch)| ch.to_lowercase().to_string() == needle.to_lowercase().to_string())
+            .map(|(index, _)| start + index)
+    } else {
+        suffix.find(needle).map(|index| start + index)
+    };
+    Ok(JValue::Int(found.map_or(-1, |index| index as i32)))
+}
+
+fn stringskt_index_of_string_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = charseq_of(vm, args[0])?;
+    let needle = jstr(vm, args[1])?;
+    let start = if int_of(vm, args[4]) & 2 != 0 {
+        0
+    } else {
+        int_of(vm, args[2]).max(0) as usize
+    };
+    let ignore_case = int_of(vm, args[4]) & 4 == 0 && int_of(vm, args[3]) != 0;
+    let suffix = text.get(start..).unwrap_or("");
+    let found = if ignore_case {
+        suffix
+            .to_lowercase()
+            .find(&needle.to_lowercase())
+            .map(|index| start + index)
+    } else {
+        suffix.find(&needle).map(|index| start + index)
+    };
+    Ok(JValue::Int(found.map_or(-1, |index| index as i32)))
+}
+
+fn rangeskt_until(vm: &mut Vm, args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Lkotlin/ranges/IntRange;",
+        Native::IntRange(int_of(vm, args[0]), int_of(vm, args[1]).saturating_sub(1)),
+    )
+}
+
 fn rangeskt_coerce_at_least(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(args[0].as_int().max(args[1].as_int())))
 }
@@ -1001,6 +1311,60 @@ fn coroutines_launch_default(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Lkotlinx/coroutines/Job;", Native::Opaque)
 }
 
+fn invoke_suspend_block(vm: &mut Vm, scope: JValue, block: JValue, continuation: JValue) -> R {
+    inv_virt(
+        vm,
+        block,
+        "invoke",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        &[scope, continuation],
+    )
+}
+
+fn coroutines_scope(vm: &mut Vm, args: &[JValue]) -> R {
+    let scope = alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)?;
+    invoke_suspend_block(vm, scope, args[0], args[1])
+}
+
+fn coroutines_with_context(vm: &mut Vm, args: &[JValue]) -> R {
+    let scope = alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)?;
+    invoke_suspend_block(vm, scope, args[1], args[2])
+}
+
+fn coroutines_async_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let result = invoke_suspend_block(vm, args[0], args[3], JValue::Null);
+    let (value, error) = match result {
+        Ok(value) => (value, JValue::Null),
+        Err(NatErr::Throw(error)) => (JValue::Null, JValue::Obj(error)),
+        Err(error) => return Err(error),
+    };
+    alloc(
+        vm,
+        "Lkotlinx/coroutines/Deferred;",
+        Native::Deferred { value, error },
+    )
+}
+
+fn deferred_await(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Deferred {
+            error: JValue::Obj(error),
+            ..
+        }) => Err(NatErr::Throw(*error)),
+        Some(Native::Deferred { value, .. }) => Ok(*value),
+        _ => Err(npe(vm)),
+    }
+}
+
+fn deferred_await_all(vm: &mut Vm, args: &[JValue]) -> R {
+    let deferreds = coll_elems(vm, args[0])?;
+    let mut values = Vec::with_capacity(deferreds.len());
+    for deferred in deferreds {
+        values.push(deferred_await(vm, &[deferred])?);
+    }
+    list_alloc(vm, values)
+}
+
 fn suspend_lambda_init(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
@@ -1184,6 +1548,11 @@ pub(crate) fn comparisons_max_of3(vm: &mut Vm, args: &[JValue]) -> R {
 // ---------------------------------------------------------------------------
 
 pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
+    ne!("Lkotlin/NoWhenBranchMatchedException;", "<init>", "()V", true, object_noop),
+    ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "CoroutineScope", "(Lkotlin/coroutines/CoroutineContext;)Lkotlinx/coroutines/CoroutineScope;", false, coroutine_scope_create),
+    ne!("Lkotlin/enums/EnumEntriesKt;", "enumEntries", "([Ljava/lang/Enum;)Lkotlin/enums/EnumEntries;", false, enum_entries),
+    ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxBoolean", "(Z)Ljava/lang/Boolean;", false, boxing_box_boolean),
+    ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxInt", "(I)Ljava/lang/Integer;", false, boxing_box_int),
     ne!("Lkotlin/Lazy;", "getValue", "()Ljava/lang/Object;", true, lazy_get_value),
     ne!("Lkotlin/LazyKt;", "lazy", "(Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;", false, lazy_kt_lazy),
     ne!("Lkotlin/LazyKt;", "lazy", "(Lkotlin/LazyThreadSafetyMode;Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;", false, lazy_kt_lazy_mode),
@@ -1191,6 +1560,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/time/DurationKt;", "toDuration", "(ILkotlin/time/DurationUnit;)J", false, duration_to_duration_int),
     ne!("Lkotlin/time/DurationKt;", "toDuration", "(JLkotlin/time/DurationUnit;)J", false, duration_to_duration_long),
     ne!("Lkotlin/text/Regex;", "<init>", "(Ljava/lang/String;)V", true, regex_init),
+    ne!("Lkotlin/text/Regex;", "<init>", "(Ljava/lang/String;Lkotlin/text/RegexOption;)V", true, regex_init_option),
     ne!("Lkotlin/text/Regex;", "replace", "(Ljava/lang/CharSequence;Ljava/lang/String;)Ljava/lang/String;", true, regex_replace),
     ne!("Lkotlin/text/Regex;", "matches", "(Ljava/lang/CharSequence;)Z", true, regex_matches),
     ne!("Lkotlin/text/Regex;", "containsMatchIn", "(Ljava/lang/CharSequence;)Z", true, regex_contains_match_in),
@@ -1203,6 +1573,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "mutableListOf", "([Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_array),
     ne!("Lkotlin/collections/CollectionsKt;", "emptyList", "()Ljava/util/List;", false, kotlin_empty_list),
     ne!("Lkotlin/collections/CollectionsKt;", "createListBuilder", "()Ljava/util/List;", false, kotlin_empty_list),
+    ne!("Lkotlin/collections/CollectionsKt;", "createListBuilder", "(I)Ljava/util/List;", false, kotlin_empty_list),
     ne!("Lkotlin/collections/CollectionsKt;", "build", "(Ljava/util/List;)Ljava/util/List;", false, kotlin_list_identity),
     ne!("Lkotlin/collections/CollectionsKt;", "plus", "(Ljava/util/Collection;Ljava/lang/Iterable;)Ljava/util/List;", false, collections_plus_iterable),
     ne!("Lkotlin/collections/CollectionsKt;", "plus", "(Ljava/util/Collection;Ljava/lang/Object;)Ljava/util/List;", false, collections_plus_obj),
@@ -1217,10 +1588,19 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "throwIndexOverflow", "()V", false, collections_throw_index_overflow),
     ne!("Lkotlin/collections/CollectionsKt;", "listOfNotNull", "(Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_not_null),
     ne!("Lkotlin/collections/CollectionsKt;", "listOfNotNull", "([Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_not_null),
+    ne!("Lkotlin/collections/CollectionsKt;", "distinct", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_distinct),
+    ne!("Lkotlin/collections/CollectionsKt;", "filterNotNull", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_filter_not_null),
+    ne!("Lkotlin/collections/CollectionsKt;", "lastOrNull", "(Ljava/util/List;)Ljava/lang/Object;", false, collections_last_or_null),
+    ne!("Lkotlin/collections/CollectionsKt;", "sortedWith", "(Ljava/lang/Iterable;Ljava/util/Comparator;)Ljava/util/List;", false, collections_sorted_with),
     ne!("Lkotlin/collections/SetsKt;", "setOf", "([Ljava/lang/Object;)Ljava/util/Set;", false, setskt_set_of),
+    ne!("Lkotlin/collections/SetsKt;", "emptySet", "()Ljava/util/Set;", false, setskt_empty_set),
+    ne!("Lkotlin/collections/SetsKt;", "plus", "(Ljava/util/Set;Ljava/lang/Object;)Ljava/util/Set;", false, setskt_plus),
+    ne!("Lkotlin/collections/CollectionsKt;", "toSet", "(Ljava/lang/Iterable;)Ljava/util/Set;", false, setskt_to_set),
     ne!("Lkotlin/collections/MapsKt;", "mapOf", "([Lkotlin/Pair;)Ljava/util/Map;", false, mapskt_map_of),
     ne!("Lkotlin/collections/MapsKt;", "toList", "(Ljava/util/Map;)Ljava/util/List;", false, mapskt_to_list),
+    ne!("Lkotlin/collections/MapsKt;", "mapCapacity", "(I)I", false, mapskt_map_capacity),
     ne!("Lkotlin/collections/ArraysKt;", "plus", "([B[B)[B", false, arrayskt_plus_bytes),
+    ne!("Lkotlin/collections/ArraysKt;", "contains", "([Ljava/lang/Object;Ljava/lang/Object;)Z", false, arrayskt_contains),
     ne!("Lkotlin/collections/CollectionsKt;", "reversed", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_reversed),
     ne!("Lkotlin/text/StringsKt;", "startsWith$default", "(Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Z", false, stringskt_starts_with_default),
     ne!("Lkotlin/collections/CollectionsKt;", "collectionSizeOrDefault", "(Ljava/lang/Iterable;I)I", false, collections_size_or_default),
@@ -1235,9 +1615,16 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/TuplesKt;", "to", "(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;", false, tupled_to),
     ne!("Lkotlin/Result;", "constructor-impl", "(Ljava/lang/Object;)Ljava/lang/Object;", false, result_constructor_impl),
     ne!("Lkotlin/Result;", "isFailure-impl", "(Ljava/lang/Object;)Z", false, result_is_failure_impl),
+    ne!("Lkotlin/Result;", "exceptionOrNull-impl", "(Ljava/lang/Object;)Ljava/lang/Throwable;", false, result_exception_or_null),
     ne!("Lkotlin/ResultKt;", "createFailure", "(Ljava/lang/Throwable;)Ljava/lang/Object;", false, resultkt_create_failure),
     ne!("Lkotlin/text/StringsKt;", "isBlank", "(Ljava/lang/CharSequence;)Z", false, stringskt_is_blank),
     ne!("Lkotlin/text/StringsKt;", "toIntOrNull", "(Ljava/lang/String;)Ljava/lang/Integer;", false, stringskt_to_int_or_null),
+    ne!("Lkotlin/text/StringsKt;", "toFloatOrNull", "(Ljava/lang/String;)Ljava/lang/Float;", false, stringskt_to_float_or_null),
+    ne!("Lkotlin/text/StringsKt;", "toIntOrNull", "(Ljava/lang/String;I)Ljava/lang/Integer;", false, stringskt_to_int_radix_or_null),
+    ne!("Lkotlin/text/StringsKt;", "toLongOrNull", "(Ljava/lang/String;)Ljava/lang/Long;", false, stringskt_to_long_or_null),
+    ne!("Lkotlin/text/StringsKt;", "trim", "(Ljava/lang/String;[C)Ljava/lang/String;", false, stringskt_trim_chars),
+    ne!("Lkotlin/text/StringsKt;", "trimEnd", "(Ljava/lang/String;[C)Ljava/lang/String;", false, stringskt_trim_end_chars),
+    ne!("Lkotlin/text/StringsKt;", "removeSurrounding", "(Ljava/lang/String;Ljava/lang/CharSequence;)Ljava/lang/String;", false, stringskt_remove_surrounding),
     ne!("Lkotlin/text/StringsKt;", "contains", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;Z)Z", false, stringskt_contains),
     ne!("Lkotlin/text/StringsKt;", "startsWith", "(Ljava/lang/String;Ljava/lang/String;Z)Z", false, stringskt_starts_with),
     ne!("Lkotlin/text/StringsKt;", "endsWith", "(Ljava/lang/String;Ljava/lang/String;Z)Z", false, stringskt_ends_with),
@@ -1249,6 +1636,11 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/StringsKt;", "split$default", "(Ljava/lang/CharSequence;[CZIILjava/lang/Object;)Ljava/util/List;", false, stringskt_split_chars_default),
     ne!("Lkotlin/text/StringsKt;", "substringBeforeLast$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_before_last_default),
     ne!("Lkotlin/text/StringsKt;", "substringAfterLast$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_after_last_default),
+    ne!("Lkotlin/text/StringsKt;", "substringAfterLast$default", "(Ljava/lang/String;CLjava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_after_last_char_default),
+    ne!("Lkotlin/text/StringsKt;", "substringBefore$default", "(Ljava/lang/String;CLjava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_before_char_default),
+    ne!("Lkotlin/text/StringsKt;", "equals", "(Ljava/lang/String;Ljava/lang/String;Z)Z", false, stringskt_equals),
+    ne!("Lkotlin/text/StringsKt;", "indexOf$default", "(Ljava/lang/CharSequence;CIZILjava/lang/Object;)I", false, stringskt_index_of_char_default),
+    ne!("Lkotlin/text/StringsKt;", "indexOf$default", "(Ljava/lang/CharSequence;Ljava/lang/String;IZILjava/lang/Object;)I", false, stringskt_index_of_string_default),
     ne!("Lkotlin/text/CharsKt;", "isWhitespace", "(C)Z", false, charskt_is_whitespace),
     ne!("Lkotlin/text/CharsKt;", "titlecase", "(CLjava/util/Locale;)Ljava/lang/String;", false, charskt_titlecase),
     ne!("Lkotlin/ranges/RangesKt;", "coerceIn", "(III)I", false, rangeskt_coerce_in),
@@ -1258,6 +1650,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Ljava/net/URI;", "<init>", "(Ljava/lang/String;)V", true, uri_init),
     ne!("Ljava/net/URI;", "getHost", "()Ljava/lang/String;", true, uri_get_host),
     ne!("Lkotlin/ranges/IntRange;", "<init>", "(II)V", true, int_range_init),
+    ne!("Lkotlin/ranges/RangesKt;", "until", "(II)Lkotlin/ranges/IntRange;", false, rangeskt_until),
     ne!("Lkotlin/ranges/IntRange;", "getFirst", "()I", true, int_range_get_first),
     ne!("Lkotlin/ranges/IntRange;", "getLast", "()I", true, int_range_get_last),
     ne!("Lkotlin/collections/IntIterator;", "<init>", "()V", true, int_iterator_init),
@@ -1274,6 +1667,11 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlinx/coroutines/GlobalScope;", "getInstance", "()Lkotlinx/coroutines/GlobalScope;", false, coroutines_global_scope),
     ne!("Lkotlinx/coroutines/Dispatchers;", "getIO", "()Lkotlinx/coroutines/CoroutineDispatcher;", false, coroutines_dispatchers_io),
     ne!("Lkotlinx/coroutines/BuildersKt;", "launch$default", "(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;", false, coroutines_launch_default),
+    ne!("Lkotlinx/coroutines/BuildersKt;", "async$default", "(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Deferred;", false, coroutines_async_default),
+    ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "coroutineScope", "(Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, coroutines_scope),
+    ne!("Lkotlinx/coroutines/BuildersKt;", "withContext", "(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, coroutines_with_context),
+    ne!("Lkotlinx/coroutines/Deferred;", "await", "(Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", true, deferred_await),
+    ne!("Lkotlinx/coroutines/AwaitKt;", "awaitAll", "(Ljava/util/Collection;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, deferred_await_all),
     ne!("Lkotlin/coroutines/jvm/internal/SuspendLambda;", "<init>", "(ILkotlin/coroutines/Continuation;)V", true, suspend_lambda_init),
     ne!("Lkotlin/coroutines/jvm/internal/ContinuationImpl;", "<init>", "(Lkotlin/coroutines/Continuation;)V", true, continuation_impl_init),
     ne!("Lkotlin/coroutines/jvm/internal/SpillingKt;", "nullOutSpilledVariable", "(Ljava/lang/Object;)Ljava/lang/Object;", false, null_out_spilled_variable),

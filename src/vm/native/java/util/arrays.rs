@@ -269,10 +269,29 @@ pub(crate) fn arrays_equals(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(1))
 }
 
+fn arrays_hash_code(vm: &mut Vm, args: &[JValue]) -> R {
+    let values: Vec<JValue> = match payload(vm, args[0]) {
+        Some(Native::Array(data)) => (0..data.len()).map(|index| data.get(index)).collect(),
+        _ => return Ok(JValue::Int(0)),
+    };
+    let mut hash = 1_i32;
+    for value in values {
+        hash = hash.wrapping_mul(31).wrapping_add(java_hash(vm, value));
+    }
+    Ok(JValue::Int(hash))
+}
+
 // ---------------------------------------------------------------------------
 
 /// Native methods for Ljava/util/Arrays;
 pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/util/Arrays;",
+        "hashCode",
+        "([Ljava/lang/Object;)I",
+        false,
+        arrays_hash_code
+    ),
     ne!(
         "Ljava/util/Arrays;",
         "fill",

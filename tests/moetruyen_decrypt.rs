@@ -358,9 +358,10 @@ fn cipher_native_roundtrip() {
     fn cipher(vm: &mut dexvm::vm::Vm) -> JValue {
         vm.alloc_native(
             "Ljavax/crypto/Cipher;",
-            Native::AesGcm {
+            Native::CipherState {
+                transformation: "AES/GCM/NOPADDING".into(),
                 mode: 0,
-                secret: [0; 32],
+                key: Vec::new(),
                 iv: Vec::new(),
                 tag_bits: 0,
                 aad: Vec::new(),

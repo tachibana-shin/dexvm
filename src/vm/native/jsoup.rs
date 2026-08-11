@@ -142,6 +142,20 @@ pub(crate) fn jsoup_parse_string(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Lorg/jsoup/nodes/Document;", Native::JsoupDoc(doc))
 }
 
+fn jsoup_parse_string_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let base = new_str(vm, "");
+    jsoup_parse_string(vm, &[args[0], base])
+}
+
+fn jsoup_parse_body_fragment(vm: &mut Vm, args: &[JValue]) -> R {
+    let base = if args.len() > 1 {
+        args[1]
+    } else {
+        new_str(vm, "")
+    };
+    jsoup_parse_string(vm, &[args[0], base])
+}
+
 fn jsoup_first_selector_arg(vm: &mut Vm, args: &[JValue]) -> Result<String, NatErr> {
     jstr(vm, args[1]).map_err(|_| npe(vm))
 }
@@ -383,6 +397,24 @@ pub(crate) fn element_previous_sibling(vm: &mut Vm, args: &[JValue]) -> R {
         .prev_element_sibling()
         .map(|node| node.id);
     match previous {
+        Some(id) => alloc(
+            vm,
+            "Lorg/jsoup/nodes/Element;",
+            Native::JsoupElement { doc, id },
+        ),
+        None => Ok(JValue::Null),
+    }
+}
+
+fn element_next_sibling(vm: &mut Vm, args: &[JValue]) -> R {
+    let doc = doc_of(vm, args[0])?;
+    let id = payload(vm, args[0])
+        .and_then(element_id_of)
+        .ok_or_else(|| npe(vm))?;
+    let next = node_ref_of(&doc.doc, id)
+        .next_element_sibling()
+        .map(|node| node.id);
+    match next {
         Some(id) => alloc(
             vm,
             "Lorg/jsoup/nodes/Element;",
@@ -634,6 +666,27 @@ pub(crate) const JSOUP_TABLE: &[NativeEntry] = &[
         jsoup_parse_string
     ),
     ne!(
+        "Lorg/jsoup/Jsoup;",
+        "parse",
+        "(Ljava/lang/String;)Lorg/jsoup/nodes/Document;",
+        false,
+        jsoup_parse_string_default
+    ),
+    ne!(
+        "Lorg/jsoup/Jsoup;",
+        "parseBodyFragment",
+        "(Ljava/lang/String;)Lorg/jsoup/nodes/Document;",
+        false,
+        jsoup_parse_body_fragment
+    ),
+    ne!(
+        "Lorg/jsoup/Jsoup;",
+        "parseBodyFragment",
+        "(Ljava/lang/String;Ljava/lang/String;)Lorg/jsoup/nodes/Document;",
+        false,
+        jsoup_parse_body_fragment
+    ),
+    ne!(
         "Lorg/jsoup/nodes/Document;",
         "select",
         "(Ljava/lang/String;)Lorg/jsoup/select/Elements;",
@@ -730,6 +783,13 @@ pub(crate) const JSOUP_TABLE: &[NativeEntry] = &[
         "()Lorg/jsoup/nodes/Element;",
         true,
         element_previous_sibling
+    ),
+    ne!(
+        "Lorg/jsoup/nodes/Element;",
+        "nextElementSibling",
+        "()Lorg/jsoup/nodes/Element;",
+        true,
+        element_next_sibling
     ),
     ne!(
         "Lorg/jsoup/nodes/Element;",

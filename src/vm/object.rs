@@ -249,6 +249,14 @@ pub enum Native {
         bytes: Vec<u8>,
         pos: usize,
     },
+    /// java.io.InputStreamReader decoded text.
+    Reader(String),
+    /// java.io.ByteArrayOutputStream accumulated bytes.
+    ByteArrayOutputStream(Vec<u8>),
+    /// java.io.OutputStream view that appends to an okio Buffer.
+    OkioOutputStream(u32),
+    /// java.util.ResourceBundle key/value entries.
+    ResourceBundle(Vec<(String, String)>),
     /// okio.BufferedSource / okio.Buffer sharing a byte cursor.
     OkioBuf {
         bytes: Vec<u8>,
@@ -297,12 +305,13 @@ pub enum Native {
     },
     /// java.security.SecureRandom: xorshift64* state.
     SecureRandom(u64),
-    /// javax.crypto.Cipher: AES-256-GCM state machine.
+    /// javax.crypto.Cipher: AES GCM/CBC/ECB state machine.
     ///
     /// `mode` mirrors the JCE constants: 1 = ENCRYPT, 2 = DECRYPT, 0 = unset.
-    AesGcm {
+    CipherState {
+        transformation: String,
         mode: u8,
-        secret: [u8; 32],
+        key: Vec<u8>,
         iv: Vec<u8>,
         tag_bits: usize,
         aad: Vec<u8>,
@@ -320,6 +329,8 @@ pub enum Native {
     Random(u64),
     /// java.util.Date (epoch millis).
     Date(i64),
+    /// java.util.Calendar (UTC epoch millis; host timezone-independent).
+    Calendar(i64),
     /// java.util.Locale and other inert Java objects.
     Opaque,
     /// java.lang.Thread. Execution is synchronous, but observable thread
@@ -411,6 +422,11 @@ pub enum Native {
     },
     /// kotlin.Result failure marker: holds the wrapped throwable.
     ResultFailure(JValue),
+    /// Completed synchronous kotlinx.coroutines Deferred.
+    Deferred {
+        value: JValue,
+        error: JValue,
+    },
     /// RxJava 1 Observable/BlockingObservable. Execution is synchronous, but
     /// callable sources and operators remain lazy until the stream is consumed.
     RxObservable {
@@ -466,6 +482,11 @@ pub enum Native {
         mangas: Vec<JValue>,
         has_next: bool,
     },
+    /// Newer Tachiyomi model pairing an updated manga with its chapters.
+    SMangaUpdate {
+        manga: JValue,
+        chapters: JValue,
+    },
     /// eu.kanade.tachiyomi.source.model.Filter and its subtypes.
     SFilter {
         name: String,
@@ -474,6 +495,11 @@ pub enum Native {
         children: Vec<JValue>,
         options: Vec<JValue>,
         text_value: String,
+    },
+    /// Filter.Sort.Selection value object.
+    SortSelection {
+        index: i32,
+        ascending: bool,
     },
     /// eu.kanade.tachiyomi.source.model.FilterList.
     SFilterList(Vec<JValue>),
@@ -635,6 +661,10 @@ impl Native {
             Native::Array(ArrayData::Obj(v)) => push_all(v, out),
             Native::Throwable { cause, .. } => push(Some(cause), out),
             Native::ResultFailure(t) => push(Some(t), out),
+            Native::Deferred { value, error } => {
+                push(Some(value), out);
+                push(Some(error), out);
+            }
             Native::RxObservable {
                 values,
                 error,
@@ -670,6 +700,7 @@ impl Native {
                 IterKind::Jsoup { .. } => {}
             },
             Native::MapEntry { map, .. } => out.push(*map),
+            Native::OkioOutputStream(buffer) => out.push(*buffer),
             Native::Lazy(v) => push(Some(v), out),
             Native::Thread { runnable, .. } => push(Some(runnable), out),
             Native::Pair(a, b) => {
@@ -714,6 +745,10 @@ impl Native {
                 update_strategy, ..
             } => push(Some(update_strategy), out),
             Native::SMangasPage { mangas, .. } => push_all(mangas, out),
+            Native::SMangaUpdate { manga, chapters } => {
+                push(Some(manga), out);
+                push(Some(chapters), out);
+            }
             Native::SFilter { children, .. } => push_all(children, out),
             Native::SFilterList(v) => push_all(v, out),
             Native::Json(_)
@@ -755,12 +790,13 @@ impl Native {
             | Native::Matcher(_)
             | Native::MessageDigest { .. }
             | Native::SecureRandom(_)
-            | Native::AesGcm { .. }
+            | Native::CipherState { .. }
             | Native::Key(_)
             | Native::GcmSpec { .. }
             | Native::PrintStream
             | Native::Random(_)
             | Native::Date(_)
+            | Native::Calendar(_)
             | Native::Opaque
             | Native::SharedPreferences(_)
             | Native::SharedPreferencesEditor { .. }
@@ -779,12 +815,16 @@ impl Native {
             | Native::LocalDay(_)
             | Native::EpochMillis(_)
             | Native::SChapter { .. }
+            | Native::SortSelection { .. }
             | Native::SPPage { .. }
             | Native::Duration(_)
             | Native::IntRange(..)
             | Native::ArrayDesc(_)
             | Native::RespBody(_)
             | Native::ByteArrayInputStream { .. }
+            | Native::Reader(_)
+            | Native::ByteArrayOutputStream(_)
+            | Native::ResourceBundle(_)
             | Native::CacheControl { .. }
             | Native::CacheControlBuilder { .. }
             | Native::URI(_)

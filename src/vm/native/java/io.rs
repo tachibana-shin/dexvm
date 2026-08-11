@@ -82,6 +82,79 @@ pub(crate) fn bais_close(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+fn output_stream_append(vm: &mut Vm, stream: JValue, bytes: &[u8]) -> R {
+    let target = match payload(vm, stream) {
+        Some(Native::OkioOutputStream(target)) => Some(*target),
+        _ => None,
+    };
+    if let Some(target) = target {
+        match payload_mut(vm, JValue::Obj(target)) {
+            Some(Native::OkioBuf { bytes: output, .. }) => output.extend_from_slice(bytes),
+            _ => return Err(npe(vm)),
+        }
+    } else {
+        match payload_mut(vm, stream) {
+            Some(Native::ByteArrayOutputStream(output)) => output.extend_from_slice(bytes),
+            _ => return Err(npe(vm)),
+        }
+    }
+    Ok(JValue::Null)
+}
+
+fn output_stream_write_byte(vm: &mut Vm, args: &[JValue]) -> R {
+    output_stream_append(vm, args[0], &[int_of(vm, args[1]) as u8])
+}
+
+fn output_stream_write_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
+    output_stream_append(vm, args[0], &bytes)
+}
+
+fn output_stream_write_range(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
+    let offset = usize::try_from(int_of(vm, args[2])).unwrap_or(usize::MAX);
+    let length = usize::try_from(int_of(vm, args[3])).unwrap_or(usize::MAX);
+    let Some(end) = offset.checked_add(length).filter(|end| *end <= bytes.len()) else {
+        return Err(iae(vm, "byte range out of bounds"));
+    };
+    output_stream_append(vm, args[0], &bytes[offset..end])
+}
+
+fn byte_array_output_stream_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::ByteArrayOutputStream(Vec::new()));
+    Ok(JValue::Null)
+}
+
+fn byte_array_output_stream_to_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = match payload(vm, args[0]) {
+        Some(Native::ByteArrayOutputStream(bytes)) => bytes.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let data = bytes.into_iter().map(|byte| byte as i8).collect::<Vec<_>>();
+    alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))
+}
+
+fn input_stream_reader_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let charset = jstr(vm, args[2])?;
+    let bytes = match payload(vm, args[1]) {
+        Some(Native::ByteArrayInputStream { bytes, pos }) => bytes[*pos..].to_vec(),
+        _ => return Err(npe(vm)),
+    };
+    let text = if charset.eq_ignore_ascii_case("UTF-8") || charset.eq_ignore_ascii_case("UTF8") {
+        String::from_utf8_lossy(&bytes).into_owned()
+    } else {
+        bytes.into_iter().map(char::from).collect()
+    };
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::Reader(text));
+    Ok(JValue::Null)
+}
+
 pub(crate) fn ps_println(vm: &mut Vm, args: &[JValue]) -> R {
     let s = if args.len() > 1 {
         to_string_of(vm, args[1])?
@@ -148,6 +221,64 @@ pub(crate) fn ps_init(vm: &mut Vm, args: &[JValue]) -> R {
 
 /// Native methods for Ljava/io/PrintStream;
 pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/io/OutputStream;",
+        "write",
+        "(I)V",
+        true,
+        output_stream_write_byte
+    ),
+    ne!(
+        "Ljava/io/OutputStream;",
+        "write",
+        "([B)V",
+        true,
+        output_stream_write_bytes
+    ),
+    ne!(
+        "Ljava/io/OutputStream;",
+        "write",
+        "([BII)V",
+        true,
+        output_stream_write_range
+    ),
+    ne!("Ljava/io/OutputStream;", "flush", "()V", true, bais_close),
+    ne!("Ljava/io/OutputStream;", "close", "()V", true, bais_close),
+    ne!(
+        "Ljava/io/ByteArrayOutputStream;",
+        "<init>",
+        "()V",
+        true,
+        byte_array_output_stream_init
+    ),
+    ne!(
+        "Ljava/io/ByteArrayOutputStream;",
+        "write",
+        "(I)V",
+        true,
+        output_stream_write_byte
+    ),
+    ne!(
+        "Ljava/io/ByteArrayOutputStream;",
+        "write",
+        "([BII)V",
+        true,
+        output_stream_write_range
+    ),
+    ne!(
+        "Ljava/io/ByteArrayOutputStream;",
+        "toByteArray",
+        "()[B",
+        true,
+        byte_array_output_stream_to_bytes
+    ),
+    ne!(
+        "Ljava/io/InputStreamReader;",
+        "<init>",
+        "(Ljava/io/InputStream;Ljava/lang/String;)V",
+        true,
+        input_stream_reader_init
+    ),
     ne!(
         "Ljava/io/PrintStream;",
         "<init>",

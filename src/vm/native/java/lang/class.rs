@@ -283,8 +283,8 @@ pub(crate) fn class_desired_assertion_status(_vm: &mut Vm, _args: &[JValue]) -> 
     Ok(JValue::Int(0))
 }
 
-pub(crate) fn class_get_class_loader(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
+pub(crate) fn class_get_class_loader(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Ljava/lang/ClassLoader;", Native::Opaque)
 }
 
 pub(crate) fn class_get_modifiers(_vm: &mut Vm, _args: &[JValue]) -> R {

@@ -4,6 +4,7 @@ mod boolean;
 mod byte;
 mod character;
 mod class;
+mod classloader;
 mod double;
 mod r#enum;
 mod float;
@@ -33,6 +34,7 @@ pub(crate) const LANG_TABLE: &[&[NativeEntry]] = &[
     string::TABLE,
     stringbuilder::TABLE,
     class::TABLE,
+    classloader::TABLE,
     reflect::TABLE,
     r#enum::TABLE,
     throwable::TABLE,

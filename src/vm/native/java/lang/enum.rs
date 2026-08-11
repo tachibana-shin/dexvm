@@ -52,10 +52,38 @@ pub(crate) fn enum_compare_to(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(a.cmp(&b) as i32))
 }
 
+fn enum_value_of(vm: &mut Vm, args: &[JValue]) -> R {
+    let class = match payload(vm, args[0]) {
+        Some(Native::ClassObj(ClassOrPrim::Class(class))) => *class,
+        _ => return Err(npe(vm)),
+    };
+    let wanted = jstr(vm, args[1])?;
+    vm.ensure_class_initialized(class).map_err(nat_fatal)?;
+    let statics = vm.classes[class as usize].statics.clone();
+    for value in statics {
+        if let Some(Native::Enum { name, .. }) = payload(vm, value) {
+            if name == &wanted && obj_class(vm, value.as_obj()) == class {
+                return Ok(value);
+            }
+        }
+    }
+    Err(iae(
+        vm,
+        format!("No enum constant {}.{wanted}", vm.class_desc_str(class)),
+    ))
+}
+
 // ---------------------------------------------------------------------------
 
 /// Native methods for Ljava/lang/Enum;
 pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/lang/Enum;",
+        "valueOf",
+        "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;",
+        false,
+        enum_value_of
+    ),
     ne!(
         "Ljava/lang/Enum;",
         "<init>",

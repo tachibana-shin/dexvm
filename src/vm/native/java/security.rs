@@ -134,6 +134,46 @@ pub(crate) fn md_get_algorithm(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, algo_name(algo)))
 }
 
+fn md_get_digest_length(vm: &mut Vm, args: &[JValue]) -> R {
+    let algo = match payload(vm, args[0]) {
+        Some(Native::MessageDigest { algo, .. }) => *algo,
+        _ => return Err(npe(vm)),
+    };
+    Ok(JValue::Int(match algo {
+        ALGO_MD5 => 16,
+        ALGO_SHA1 => 20,
+        ALGO_SHA256 => 32,
+        ALGO_SHA384 => 48,
+        _ => 64,
+    }))
+}
+
+fn md_digest_into(vm: &mut Vm, args: &[JValue]) -> R {
+    let (algo, input) = match payload(vm, args[0]) {
+        Some(Native::MessageDigest { algo, buf }) => (*algo, buf.clone()),
+        _ => return Err(npe(vm)),
+    };
+    let digest = digest_of(algo, &input);
+    let offset = usize::try_from(int_of(vm, args[2])).unwrap_or(usize::MAX);
+    let requested = usize::try_from(int_of(vm, args[3])).unwrap_or(0);
+    let digest_len = digest.len();
+    {
+        let Some(Native::Array(ArrayData::Byte(output))) = payload_mut(vm, args[1]) else {
+            return Err(npe(vm));
+        };
+        if requested < digest_len || offset.saturating_add(digest_len) > output.len() {
+            return Err(iae(vm, "digest output buffer is too small"));
+        }
+        for (dst, src) in output[offset..offset + digest_len].iter_mut().zip(digest) {
+            *dst = src as i8;
+        }
+    }
+    if let Some(Native::MessageDigest { buf, .. }) = payload_mut(vm, args[0]) {
+        buf.clear();
+    }
+    Ok(JValue::Int(digest_len as i32))
+}
+
 // ---------------------------------------------------------------------------
 // SecureRandom
 // ---------------------------------------------------------------------------
@@ -243,6 +283,20 @@ pub(crate) const SECURITY_TABLE: &[NativeEntry] = &[
         "()Ljava/lang/String;",
         true,
         md_get_algorithm
+    ),
+    ne!(
+        "Ljava/security/MessageDigest;",
+        "getDigestLength",
+        "()I",
+        true,
+        md_get_digest_length
+    ),
+    ne!(
+        "Ljava/security/MessageDigest;",
+        "digest",
+        "([BII)I",
+        true,
+        md_digest_into
     ),
     ne!(
         "Ljava/security/SecureRandom;",

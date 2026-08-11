@@ -84,7 +84,7 @@ pub const THROWABLE_CTORS: &[NativeEntry] = throwable_ctors_table![
     "Ljava/lang/StringIndexOutOfBoundsException;",
     "Ljava/lang/ClassCastException;",
     "Ljava/lang/NegativeArraySizeException;",
-    "Ljava/lang/NoSuchElementException;",
+    "Ljava/util/NoSuchElementException;",
     "Ljava/lang/NoSuchMethodError;",
     "Ljava/lang/NoClassDefFoundError;",
     "Ljava/lang/ClassNotFoundException;",
@@ -492,6 +492,7 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             })),
             "Ljava/util/Random;" => Some(Native::Random(0)),
             "Ljava/util/Date;" => Some(Native::Date(0)),
+            "Ljava/util/Calendar;" => Some(Native::Calendar(0)),
             "Ljava/text/SimpleDateFormat;" => Some(Native::DateFormatter {
                 pattern: String::new(),
                 zone: String::new(),

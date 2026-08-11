@@ -4,6 +4,7 @@ mod arraydeque;
 mod arraylist;
 mod arrays;
 mod atomic;
+mod calendar;
 mod collections;
 mod condition;
 mod date;
@@ -19,6 +20,7 @@ mod objects;
 mod random;
 mod reentrant_lock;
 mod regex;
+mod resourcebundle;
 mod timezone;
 
 pub(crate) use arraylist::*;
@@ -77,6 +79,7 @@ pub(crate) const UTIL_TABLE: &[&[NativeEntry]] = &[
     arraylist::TABLE,
     arrays::TABLE,
     atomic::TABLE,
+    calendar::TABLE,
     collections::TABLE,
     hashmap::CHM_TABLE,
     condition::TABLE,
@@ -91,6 +94,7 @@ pub(crate) const UTIL_TABLE: &[&[NativeEntry]] = &[
     map_entry::TABLE,
     objects::TABLE,
     random::TABLE,
+    resourcebundle::TABLE,
     reentrant_lock::TABLE,
     regex::matcher::TABLE,
     regex::pattern::TABLE,
