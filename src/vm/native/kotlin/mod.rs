@@ -910,6 +910,10 @@ fn mapskt_map_of(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Ljava/util/LinkedHashMap;", Native::Map(entries))
 }
 
+fn mapskt_empty_map(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Ljava/util/LinkedHashMap;", Native::Map(Vec::new()))
+}
+
 fn mapskt_to_list(vm: &mut Vm, args: &[JValue]) -> R {
     let entries = match payload(vm, args[0]) {
         Some(Native::Map(entries)) => entries.clone(),
@@ -1130,6 +1134,53 @@ pub(crate) fn kotlin_instant_minus(vm: &mut Vm, args: &[JValue]) -> R {
         "Lkotlin/time/Instant;",
         Native::EpochMillis(base.saturating_sub(long_of(vm, args[1]))),
     )
+}
+
+/// Kotlin's ISO-8601 parser used by extension date filters.  This accepts the
+/// common UTC form (`YYYY-MM-DDTHH:MM:SS[.fraction]Z`) and returns null for
+/// malformed/unsupported values, matching `parseOrNull`.
+pub(crate) fn kotlin_instant_parse_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = jstr(vm, args[1]).unwrap_or_default();
+    let Some((date, time)) = text.split_once('T') else {
+        return Ok(JValue::Null);
+    };
+    let mut d = date.split('-');
+    let (Ok(y), Ok(m), Ok(day)) = (
+        d.next().unwrap_or("").parse::<i64>(),
+        d.next().unwrap_or("").parse::<i64>(),
+        d.next().unwrap_or("").parse::<i64>(),
+    ) else {
+        return Ok(JValue::Null);
+    };
+    let time = time.strip_suffix('Z').unwrap_or(time);
+    let (clock, frac) = time.split_once('.').map_or((time, ""), |v| v);
+    let mut c = clock.split(':');
+    let (Ok(h), Ok(min), Ok(sec)) = (
+        c.next().unwrap_or("").parse::<i64>(),
+        c.next().unwrap_or("").parse::<i64>(),
+        c.next().unwrap_or("").parse::<i64>(),
+    ) else {
+        return Ok(JValue::Null);
+    };
+    if !(1..=12).contains(&m) || !(1..=31).contains(&day) || h > 23 || min > 59 || sec > 60 {
+        return Ok(JValue::Null);
+    }
+    let (y2, m2) = (y - i64::from(m <= 2), if m <= 2 { m + 12 } else { m });
+    let days =
+        365 * y2 + y2 / 4 - y2 / 100 + y2 / 400 + (153 * (m2 - 3) + 2) / 5 + day - 1 - 719468;
+    let millis = (days * 86_400 + h * 3600 + min * 60 + sec) * 1000
+        + frac
+            .chars()
+            .take(3)
+            .collect::<String>()
+            .parse::<i64>()
+            .unwrap_or(0)
+            * [100, 10, 1][frac.len().min(3).saturating_sub(1)];
+    alloc(vm, "Lkotlin/time/Instant;", Native::EpochMillis(millis))
+}
+
+pub(crate) fn kotlin_reflection_class(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
 }
 
 // java.net.URI
@@ -1646,6 +1697,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/Regex;", "matches", "(Ljava/lang/CharSequence;)Z", true, regex_matches),
     ne!("Lkotlin/text/Regex;", "containsMatchIn", "(Ljava/lang/CharSequence;)Z", true, regex_contains_match_in),
     ne!("Lkotlin/text/Regex;", "find$default", "(Lkotlin/text/Regex;Ljava/lang/CharSequence;IILjava/lang/Object;)Lkotlin/text/MatchResult;", false, regex_find_default),
+    ne!("Lkotlin/text/Regex;", "findAll$default", "(Lkotlin/text/Regex;Ljava/lang/CharSequence;IILjava/lang/Object;)Lkotlin/sequences/Sequence;", false, regex_find_default),
     ne!("Lkotlin/text/Regex;", "split", "(Ljava/lang/CharSequence;I)Ljava/util/List;", true, regex_split),
     ne!("Lkotlin/text/Regex;", "toString", "()Ljava/lang/String;", true, regex_to_string),
     ne!("Lkotlin/text/StringsKt;", "append", "(Ljava/lang/StringBuilder;[Ljava/lang/String;)Ljava/lang/StringBuilder;", false, strings_append_array),
@@ -1678,6 +1730,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/SetsKt;", "plus", "(Ljava/util/Set;Ljava/lang/Object;)Ljava/util/Set;", false, setskt_plus),
     ne!("Lkotlin/collections/CollectionsKt;", "toSet", "(Ljava/lang/Iterable;)Ljava/util/Set;", false, setskt_to_set),
     ne!("Lkotlin/collections/MapsKt;", "mapOf", "([Lkotlin/Pair;)Ljava/util/Map;", false, mapskt_map_of),
+    ne!("Lkotlin/collections/MapsKt;", "emptyMap", "()Ljava/util/Map;", false, mapskt_empty_map),
     ne!("Lkotlin/collections/MapsKt;", "toList", "(Ljava/util/Map;)Ljava/util/List;", false, mapskt_to_list),
     ne!("Lkotlin/collections/MapsKt;", "mapCapacity", "(I)I", false, mapskt_map_capacity),
     ne!("Lkotlin/collections/ArraysKt;", "plus", "([B[B)[B", false, arrayskt_plus_bytes),
@@ -1732,6 +1785,9 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/time/Instant;", "toEpochMilliseconds", "()J", true, kotlin_instant_to_epoch_millis),
     ne!("Lkotlin/time/Instant;", "minus-LRDsOJo", "(J)Lkotlin/time/Instant;", true, kotlin_instant_minus),
     ne!("Lkotlin/time/Clock$System;", "now", "()Lkotlin/time/Instant;", false, kotlin_instant_now),
+    ne!("Lkotlin/time/Instant$Companion;", "parseOrNull", "(Ljava/lang/CharSequence;)Lkotlin/time/Instant;", true, kotlin_instant_parse_or_null),
+    ne!("Lkotlin/jvm/internal/Reflection;", "getOrCreateKotlinClass", "(Ljava/lang/Class;)Lkotlin/reflect/KClass;", false, kotlin_reflection_class),
+    ne!("Lkotlin/jvm/internal/Reflection;", "typeOf", "(Ljava/lang/Class;)Lkotlin/reflect/KType;", false, kotlin_reflection_class),
     ne!("Lkotlin/text/MatcherMatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
     ne!("Lkotlin/ranges/IntRange;", "<init>", "(II)V", true, int_range_init),
     ne!("Lkotlin/ranges/RangesKt;", "until", "(II)Lkotlin/ranges/IntRange;", false, rangeskt_until),

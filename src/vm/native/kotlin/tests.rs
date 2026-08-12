@@ -407,3 +407,16 @@ fn instant_and_match_result_bridges_keep_values() {
         assert!(matches!(payload(vm, list), Some(Native::List(values)) if values.len() == 1));
     });
 }
+
+#[test]
+fn instant_parse_and_reflection_bridges_are_real() {
+    with_vm(|vm| {
+        let text = s(vm, "2024-01-02T03:04:05.123Z");
+        let companion = opaque_inst(vm, "Lkotlin/time/Instant$Companion;");
+        let parsed = kotlin_instant_parse_or_null(vm, &[companion, text]).unwrap();
+        assert_eq!(
+            kotlin_instant_to_epoch_millis(vm, &[parsed]).unwrap(),
+            JValue::Long(1_704_164_645_123)
+        );
+    });
+}

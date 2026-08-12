@@ -3,6 +3,7 @@
 use crate::vm::native::*;
 
 mod uri;
+mod url;
 
 /// All java.net native tables, grouped for `register`.
-pub(crate) const NET_TABLE: &[&[NativeEntry]] = &[uri::TABLE];
+pub(crate) const NET_TABLE: &[&[NativeEntry]] = &[uri::TABLE, url::TABLE];
