@@ -1092,6 +1092,19 @@ pub(crate) fn match_result_get_value(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &s))
 }
 
+pub(crate) fn match_result_destructured_to_list(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = match_result_get_value(vm, args)?;
+    list_alloc(vm, vec![value])
+}
+
+pub(crate) fn match_group_get_value(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = match payload(vm, args[0]) {
+        Some(Native::Str(value)) => value.clone(),
+        _ => String::new(),
+    };
+    Ok(new_str(vm, &value))
+}
+
 pub(crate) fn kotlin_instant_to_epoch_millis(vm: &mut Vm, args: &[JValue]) -> R {
     match payload(vm, args[0]) {
         Some(Native::EpochMillis(m)) => Ok(JValue::Long(*m)),
@@ -1714,6 +1727,8 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/ranges/RangesKt;", "coerceIn", "(III)I", false, rangeskt_coerce_in),
     ne!("Lkotlin/ranges/RangesKt;", "coerceAtLeast", "(II)I", false, rangeskt_coerce_at_least),
     ne!("Lkotlin/text/MatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
+    ne!("Lkotlin/text/MatchResult$Destructured;", "toList", "()Ljava/util/List;", true, match_result_destructured_to_list),
+    ne!("Lkotlin/text/MatchGroup;", "getValue", "()Ljava/lang/String;", true, match_group_get_value),
     ne!("Lkotlin/time/Instant;", "toEpochMilliseconds", "()J", true, kotlin_instant_to_epoch_millis),
     ne!("Lkotlin/time/Instant;", "minus-LRDsOJo", "(J)Lkotlin/time/Instant;", true, kotlin_instant_minus),
     ne!("Lkotlin/time/Clock$System;", "now", "()Lkotlin/time/Instant;", false, kotlin_instant_now),
