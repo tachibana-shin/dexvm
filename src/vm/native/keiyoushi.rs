@@ -426,6 +426,29 @@ fn http_source_get_request(vm: &mut Vm, src: JValue, obj: JValue) -> R {
     )
 }
 
+fn http_source_get_url(vm: &mut Vm, src: JValue, obj: JValue) -> R {
+    let Some(url) = obj_url(vm, obj) else {
+        return Err(npe(vm));
+    };
+    let full = if url.starts_with("http") {
+        url
+    } else {
+        format!("{}{url}", source_base_url(vm, src)?)
+    };
+    Ok(new_str(vm, &full))
+}
+
+/// Host default for `getMangaUrl` when the extension does not override it:
+/// `baseUrl + manga.url` (used for "open in browser" / share actions).
+pub(crate) fn http_source_get_manga_url(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_get_url(vm, args[0], args[1])
+}
+
+/// Host default for `getChapterUrl`.
+pub(crate) fn http_source_get_chapter_url(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_get_url(vm, args[0], args[1])
+}
+
 /// Host default for `mangaDetailsRequest` when the extension does not
 /// override it: `GET baseUrl + manga.url`.
 pub(crate) fn http_source_manga_details_request(vm: &mut Vm, args: &[JValue]) -> R {
@@ -438,6 +461,24 @@ pub(crate) fn http_source_chapter_list_request(vm: &mut Vm, args: &[JValue]) -> 
 
 pub(crate) fn http_source_page_list_request(vm: &mut Vm, args: &[JValue]) -> R {
     http_source_get_request(vm, args[0], args[1])
+}
+
+/// Host default for `imageRequest`: `GET page.imageUrl`.
+pub(crate) fn http_source_image_request(vm: &mut Vm, args: &[JValue]) -> R {
+    let url = match payload(vm, args[1]) {
+        Some(Native::SPPage { image_url, .. }) => image_url.clone(),
+        _ => return Err(npe(vm)),
+    };
+    alloc(
+        vm,
+        REQUEST,
+        Native::Request {
+            url,
+            method: "GET".into(),
+            headers: Vec::new(),
+            body: None,
+        },
+    )
 }
 
 /// Resolves the source instance's `baseUrl` by invoking its (possibly
@@ -1508,6 +1549,9 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "mangaDetailsRequest", "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;", true, http_source_manga_details_request),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "chapterListRequest", "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;", true, http_source_chapter_list_request),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "pageListRequest", "(Leu/kanade/tachiyomi/source/model/SChapter;)Lokhttp3/Request;", true, http_source_page_list_request),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getMangaUrl", "(Leu/kanade/tachiyomi/source/model/SManga;)Ljava/lang/String;", true, http_source_get_manga_url),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getChapterUrl", "(Leu/kanade/tachiyomi/source/model/SChapter;)Ljava/lang/String;", true, http_source_get_chapter_url),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "imageRequest", "(Leu/kanade/tachiyomi/source/model/Page;)Lokhttp3/Request;", true, http_source_image_request),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "GET$default", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_get_default),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "GET$default", "(Lokhttp3/HttpUrl;Lokhttp3/Headers;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_get_default),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "__host_execute", "(Lokhttp3/Request;)Lokhttp3/Response;", false, keiyoushi_execute),

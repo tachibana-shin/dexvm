@@ -578,6 +578,20 @@ fn stringskt_substring_before_char_default(vm: &mut Vm, args: &[JValue]) -> R {
     ))
 }
 
+fn stringskt_substring_before_last_char_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[0])?;
+    let delimiter = char::from_u32(int_of(vm, args[1]) as u32).unwrap_or('\0');
+    let missing = if int_of(vm, args[3]) & 2 != 0 {
+        value.clone()
+    } else {
+        jstr(vm, args[2])?
+    };
+    Ok(new_str(
+        vm,
+        value.rfind(delimiter).map(|index| &value[..index]).unwrap_or(&missing),
+    ))
+}
+
 fn stringskt_equals(vm: &mut Vm, args: &[JValue]) -> R {
     let left = jstr(vm, args[0])?;
     let right = jstr(vm, args[1])?;
@@ -1729,6 +1743,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/StringsKt;", "split$default", "(Ljava/lang/CharSequence;[Ljava/lang/String;ZIILjava/lang/Object;)Ljava/util/List;", false, stringskt_split_strings_default),
     ne!("Lkotlin/text/StringsKt;", "split$default", "(Ljava/lang/CharSequence;[CZIILjava/lang/Object;)Ljava/util/List;", false, stringskt_split_chars_default),
     ne!("Lkotlin/text/StringsKt;", "substringBeforeLast$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_before_last_default),
+    ne!("Lkotlin/text/StringsKt;", "substringBeforeLast$default", "(Ljava/lang/String;CLjava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_before_last_char_default),
     ne!("Lkotlin/text/StringsKt;", "substringAfterLast$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_after_last_default),
     ne!("Lkotlin/text/StringsKt;", "substringAfterLast$default", "(Ljava/lang/String;CLjava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_after_last_char_default),
     ne!("Lkotlin/text/StringsKt;", "lastIndexOf$default", "(Ljava/lang/CharSequence;Ljava/lang/String;IZILjava/lang/Object;)I", false, stringskt_last_index_of_default),

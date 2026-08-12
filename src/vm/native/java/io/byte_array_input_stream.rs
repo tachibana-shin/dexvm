@@ -67,6 +67,15 @@ pub(crate) fn bais_read_buf(vm: &mut Vm, args: &[JValue]) -> R {
     }))
 }
 
+/// `InputStream.read(byte[])` — fills the whole buffer starting at 0.
+pub(crate) fn bais_read_all_buf(vm: &mut Vm, args: &[JValue]) -> R {
+    let len = match payload(vm, args[1]) {
+        Some(Native::Array(ArrayData::Byte(dst))) => dst.len() as i32,
+        _ => return Err(npe(vm)),
+    };
+    bais_read_buf(vm, &[args[0], args[1], JValue::Int(0), JValue::Int(len)])
+}
+
 pub(crate) fn bais_available(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::ByteArrayInputStream { bytes, pos }) = payload(vm, args[0]) else {
         return Err(npe(vm));
@@ -120,5 +129,35 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "()V",
         true,
         bais_close
+    ),
+    ne!(
+        "Ljava/io/ByteArrayInputStream;",
+        "read",
+        "([B)I",
+        true,
+        bais_read_all_buf
+    ),
+    ne!("Ljava/io/InputStream;", "read", "()I", true, bais_read),
+    ne!(
+        "Ljava/io/InputStream;",
+        "read",
+        "([B)I",
+        true,
+        bais_read_all_buf
+    ),
+    ne!(
+        "Ljava/io/InputStream;",
+        "read",
+        "([BII)I",
+        true,
+        bais_read_buf
+    ),
+    ne!("Ljava/io/InputStream;", "close", "()V", true, bais_close),
+    ne!(
+        "Ljava/io/InputStream;",
+        "available",
+        "()I",
+        true,
+        bais_available
     ),
 ];

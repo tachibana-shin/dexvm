@@ -115,6 +115,19 @@ pub(crate) fn char_get_numeric_value(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(v))
 }
 
+pub(crate) fn char_digit(vm: &mut Vm, args: &[JValue]) -> R {
+    let c = int_of(vm, args[0]) as u32;
+    let radix = int_of(vm, args[1]);
+    if !(2..=36).contains(&radix) {
+        return Ok(JValue::Int(-1));
+    }
+    let v = char::from_u32(c)
+        .and_then(|c| c.to_digit(radix as u32))
+        .map(|d| d as i32)
+        .unwrap_or(-1);
+    Ok(JValue::Int(v))
+}
+
 /// Native methods for Ljava/lang/Character;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
@@ -250,4 +263,5 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         false,
         char_get_numeric_value
     ),
+    ne!("Ljava/lang/Character;", "digit", "(CI)I", false, char_digit),
 ];

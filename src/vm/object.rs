@@ -332,6 +332,28 @@ pub enum Native {
         tag_bits: i32,
         iv: Vec<u8>,
     },
+    /// javax.crypto.spec.PBEKeySpec: password + salt + iteration/length params.
+    PbeKeySpec {
+        password: Vec<u8>,
+        salt: Vec<u8>,
+        iterations: i32,
+        key_len_bits: i32,
+    },
+    /// javax.crypto.Mac: algorithm name + HMAC key.
+    Mac {
+        algorithm: String,
+        key: Vec<u8>,
+    },
+    /// java.util.zip.Inflater: accumulates `setInput` bytes, then
+    /// decompresses in one shot on the first `inflate` call.
+    Inflater {
+        input: Vec<u8>,
+        nowrap: bool,
+        output: Option<Vec<u8>>,
+        out_pos: usize,
+    },
+    /// java.math.BigInteger: arbitrary-precision signed integer.
+    BigInt(num_bigint::BigInt),
     /// java.io.PrintStream (writes to the VM output sink).
     PrintStream,
     /// java.util.Random (xorshift64*).
@@ -970,6 +992,10 @@ impl Native {
             | Native::CipherState { .. }
             | Native::Key(_)
             | Native::GcmSpec { .. }
+            | Native::PbeKeySpec { .. }
+            | Native::Mac { .. }
+            | Native::Inflater { .. }
+            | Native::BigInt(_)
             | Native::PrintStream
             | Native::Random(_)
             | Native::Date(_)

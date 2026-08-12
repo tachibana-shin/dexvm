@@ -339,6 +339,12 @@ pub(crate) fn class_is_assignable_from(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(i32::from(ok)))
 }
 
+/// We have no bundled classpath resources to serve; matches the real API's
+/// "not found" contract of returning `null` rather than throwing.
+pub(crate) fn class_get_resource(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
 pub(crate) fn class_get_interfaces(_vm: &mut Vm, _args: &[JValue]) -> R {
     alloc_empty_arr(_vm, "Ljava/lang/Class;")
 }
@@ -466,5 +472,19 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;",
         false,
         class_for_name
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "getResource",
+        "(Ljava/lang/String;)Ljava/net/URL;",
+        true,
+        class_get_resource
+    ),
+    ne!(
+        "Ljava/lang/Class;",
+        "getResourceAsStream",
+        "(Ljava/lang/String;)Ljava/io/InputStream;",
+        true,
+        class_get_resource
     ),
 ];

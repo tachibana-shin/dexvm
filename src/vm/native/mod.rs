@@ -527,6 +527,12 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             "Ljava/util/HashMap;" | "Ljava/util/LinkedHashMap;" => Some(Native::Map(Vec::new())),
             "Ljava/util/concurrent/ConcurrentHashMap;" => Some(Native::Map(Vec::new())),
             "Ljava/util/HashSet;" | "Ljava/util/LinkedHashSet;" => Some(Native::Set(Vec::new())),
+            "Ljava/util/zip/Inflater;" => Some(Native::Inflater {
+                input: Vec::new(),
+                nowrap: false,
+                output: None,
+                out_pos: 0,
+            }),
             "Ljava/util/regex/Pattern;" => Some(Native::Pattern {
                 re: Regex::new("").expect("empty regex"),
                 source: String::new(),

@@ -24,6 +24,29 @@ fn get_host(vm: &mut Vm, args: &[JValue]) -> R {
     ))
 }
 
+fn get_path(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = match payload(vm, args[0]) {
+        Some(Native::URI(value)) => value.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let after_scheme = value.split("://").last().unwrap_or(&value);
+    let path = if let Some(rest) = after_scheme.strip_prefix("//") {
+        rest.find('/').map(|i| &rest[i..]).unwrap_or("")
+    } else {
+        after_scheme
+    };
+    let path = path.split(['?', '#']).next().unwrap_or("");
+    Ok(new_str(vm, path))
+}
+
+fn to_ascii_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = match payload(vm, args[0]) {
+        Some(Native::URI(value)) => value.clone(),
+        _ => return Err(npe(vm)),
+    };
+    Ok(new_str(vm, &value))
+}
+
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
         "Ljava/net/URI;",
@@ -38,5 +61,19 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "()Ljava/lang/String;",
         true,
         get_host
+    ),
+    ne!(
+        "Ljava/net/URI;",
+        "getPath",
+        "()Ljava/lang/String;",
+        true,
+        get_path
+    ),
+    ne!(
+        "Ljava/net/URI;",
+        "toASCIIString",
+        "()Ljava/lang/String;",
+        true,
+        to_ascii_string
     ),
 ];

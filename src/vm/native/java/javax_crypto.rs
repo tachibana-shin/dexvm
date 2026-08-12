@@ -3,10 +3,25 @@
 use super::*;
 use aes::cipher::{BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::{Aes128, Aes192, Aes256};
+use hmac::digest::KeyInit as HmacKeyInit;
+use hmac::{Hmac, Mac as HmacMac};
+use sha1::Sha1;
+use sha2::{Sha256, Sha512};
 
 fn byte_array(vm: &mut Vm, bytes: Vec<u8>) -> Result<JValue, NatErr> {
     let data = bytes.into_iter().map(|b| b as i8).collect::<Vec<_>>();
     alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))
+}
+
+/// `char[]` -> UTF-8 bytes, matching how JCE password-based key derivation
+/// treats a `PBEKeySpec` password.
+fn chars_to_utf8(vm: &Vm, v: JValue) -> Option<Vec<u8>> {
+    match payload(vm, v) {
+        Some(Native::Array(ArrayData::Char(units))) => {
+            Some(String::from_utf16_lossy(units).into_bytes())
+        }
+        _ => None,
+    }
 }
 
 pub(crate) fn cipher_get_instance(vm: &mut Vm, args: &[JValue]) -> R {
@@ -281,6 +296,125 @@ fn cipher_do_final_all(vm: &mut Vm, args: &[JValue]) -> R {
     cipher_do_final(vm, &[args[0], args[1], JValue::Int(0), JValue::Int(len)])
 }
 
+// ---- javax.crypto.spec.PBEKeySpec / SecretKeyFactory ----
+
+fn pbe_key_spec_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let password = chars_to_utf8(vm, args[1]).unwrap_or_default();
+    let salt = bytes_of(vm, args[2]).unwrap_or_default();
+    let iterations = int_of(vm, args[3]);
+    let key_len_bits = int_of(vm, args[4]);
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::PbeKeySpec {
+        password,
+        salt,
+        iterations,
+        key_len_bits,
+    });
+    Ok(JValue::Null)
+}
+
+fn secret_key_factory_get_instance(vm: &mut Vm, args: &[JValue]) -> R {
+    let algo = jstr(vm, args[0])?;
+    alloc(vm, "Ljavax/crypto/SecretKeyFactory;", Native::Str(algo))
+}
+
+fn secret_key_factory_generate_secret(vm: &mut Vm, args: &[JValue]) -> R {
+    let algo = match payload(vm, args[0]) {
+        Some(Native::Str(s)) => s.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let (password, salt, iterations, key_len_bits) = match payload(vm, args[1]) {
+        Some(Native::PbeKeySpec {
+            password,
+            salt,
+            iterations,
+            key_len_bits,
+        }) => (password.clone(), salt.clone(), *iterations, *key_len_bits),
+        _ => return Err(iae(vm, "not a PBEKeySpec")),
+    };
+    let rounds = iterations.max(1) as u32;
+    let out_len = (key_len_bits.max(8) as usize).div_ceil(8);
+    let mut out = vec![0u8; out_len];
+    let algo_upper = algo.to_ascii_uppercase();
+    if algo_upper.contains("SHA256") {
+        pbkdf2::pbkdf2_hmac::<Sha256>(&password, &salt, rounds, &mut out);
+    } else if algo_upper.contains("SHA512") {
+        pbkdf2::pbkdf2_hmac::<Sha512>(&password, &salt, rounds, &mut out);
+    } else {
+        pbkdf2::pbkdf2_hmac::<Sha1>(&password, &salt, rounds, &mut out);
+    }
+    alloc(vm, "Ljavax/crypto/spec/SecretKeySpec;", Native::Key(out))
+}
+
+// ---- javax.crypto.Mac ----
+
+fn mac_get_instance(vm: &mut Vm, args: &[JValue]) -> R {
+    let algorithm = jstr(vm, args[0])?;
+    alloc(
+        vm,
+        "Ljavax/crypto/Mac;",
+        Native::Mac {
+            algorithm,
+            key: Vec::new(),
+        },
+    )
+}
+
+fn mac_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let key = match payload(vm, args[1]) {
+        Some(Native::Key(k)) => k.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let Some(Native::Mac { key: dst, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *dst = key;
+    Ok(JValue::Null)
+}
+
+fn mac_get_algorithm(vm: &mut Vm, args: &[JValue]) -> R {
+    let algorithm = match payload(vm, args[0]) {
+        Some(Native::Mac { algorithm, .. }) => algorithm.clone(),
+        _ => return Err(npe(vm)),
+    };
+    Ok(new_str(vm, &algorithm))
+}
+
+fn mac_do_final(vm: &mut Vm, args: &[JValue]) -> R {
+    let input = bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
+    let (algorithm, key) = match payload(vm, args[0]) {
+        Some(Native::Mac { algorithm, key }) => (algorithm.clone(), key.clone()),
+        _ => return Err(npe(vm)),
+    };
+    let algo_upper = algorithm.to_ascii_uppercase();
+    let out = if algo_upper.contains("SHA256") {
+        let mut mac =
+            <Hmac<Sha256> as HmacKeyInit>::new_from_slice(&key).map_err(|_| iae(vm, "invalid HMAC key"))?;
+        mac.update(&input);
+        mac.finalize().into_bytes().to_vec()
+    } else if algo_upper.contains("SHA512") {
+        let mut mac =
+            <Hmac<Sha512> as HmacKeyInit>::new_from_slice(&key).map_err(|_| iae(vm, "invalid HMAC key"))?;
+        mac.update(&input);
+        mac.finalize().into_bytes().to_vec()
+    } else if algo_upper.contains("SHA1") {
+        let mut mac =
+            <Hmac<Sha1> as HmacKeyInit>::new_from_slice(&key).map_err(|_| iae(vm, "invalid HMAC key"))?;
+        mac.update(&input);
+        mac.finalize().into_bytes().to_vec()
+    } else if algo_upper.contains("MD5") {
+        let mut mac = <Hmac<md5::Md5> as HmacKeyInit>::new_from_slice(&key)
+            .map_err(|_| iae(vm, "invalid HMAC key"))?;
+        mac.update(&input);
+        mac.finalize().into_bytes().to_vec()
+    } else {
+        return Err(iae(vm, format!("unsupported Mac algorithm {algorithm}")));
+    };
+    byte_array(vm, out)
+}
+
 pub(crate) const JAVAX_CRYPTO_TABLE: &[NativeEntry] = &[
     ne!(
         "Ljavax/crypto/Cipher;",
@@ -345,6 +479,49 @@ pub(crate) const JAVAX_CRYPTO_TABLE: &[NativeEntry] = &[
         true,
         iv_parameter_spec_init
     ),
+    ne!(
+        "Ljavax/crypto/spec/PBEKeySpec;",
+        "<init>",
+        "([C[BII)V",
+        true,
+        pbe_key_spec_init
+    ),
+    ne!(
+        "Ljavax/crypto/SecretKeyFactory;",
+        "getInstance",
+        "(Ljava/lang/String;)Ljavax/crypto/SecretKeyFactory;",
+        false,
+        secret_key_factory_get_instance
+    ),
+    ne!(
+        "Ljavax/crypto/SecretKeyFactory;",
+        "generateSecret",
+        "(Ljava/security/spec/KeySpec;)Ljavax/crypto/SecretKey;",
+        true,
+        secret_key_factory_generate_secret
+    ),
+    ne!(
+        "Ljavax/crypto/Mac;",
+        "getInstance",
+        "(Ljava/lang/String;)Ljavax/crypto/Mac;",
+        false,
+        mac_get_instance
+    ),
+    ne!(
+        "Ljavax/crypto/Mac;",
+        "init",
+        "(Ljava/security/Key;)V",
+        true,
+        mac_init
+    ),
+    ne!(
+        "Ljavax/crypto/Mac;",
+        "getAlgorithm",
+        "()Ljava/lang/String;",
+        true,
+        mac_get_algorithm
+    ),
+    ne!("Ljavax/crypto/Mac;", "doFinal", "([B)[B", true, mac_do_final),
 ];
 
 #[cfg(test)]
@@ -379,6 +556,37 @@ mod tests {
         assert_eq!(
             aes_block_mode("AES/CBC/PKCS5PADDING", 2, &key, &iv, &encrypted).unwrap(),
             message
+        );
+    }
+
+    /// RFC 6070 PBKDF2-HMAC-SHA1 test vector 1.
+    #[test]
+    fn pbkdf2_hmac_sha1_matches_rfc6070_vector() {
+        let mut out = [0u8; 20];
+        pbkdf2::pbkdf2_hmac::<Sha1>(b"password", b"salt", 1, &mut out);
+        assert_eq!(
+            out,
+            [
+                0x0c, 0x60, 0xc8, 0x0f, 0x96, 0x1f, 0x0e, 0x71, 0xf3, 0xa9, 0xb5, 0x24, 0xaf,
+                0x60, 0x12, 0x06, 0x2f, 0xe0, 0x37, 0xa6,
+            ]
+        );
+    }
+
+    /// RFC 4231 HMAC-SHA256 test case 1.
+    #[test]
+    fn hmac_sha256_matches_rfc4231_vector() {
+        let key = [0x0bu8; 20];
+        let mut mac = <Hmac<Sha256> as HmacKeyInit>::new_from_slice(&key).unwrap();
+        mac.update(b"Hi There");
+        let result = mac.finalize().into_bytes();
+        assert_eq!(
+            result.as_slice(),
+            [
+                0xb0, 0x34, 0x4c, 0x61, 0xd8, 0xdb, 0x38, 0x53, 0x5c, 0xa8, 0xaf, 0xce, 0xaf,
+                0x0b, 0xf1, 0x2b, 0x88, 0x1d, 0xc2, 0x00, 0xc9, 0x83, 0x3d, 0xa7, 0x26, 0xe9,
+                0x37, 0x6c, 0x2e, 0x32, 0xcf, 0xf7,
+            ]
         );
     }
 }

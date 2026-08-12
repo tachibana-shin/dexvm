@@ -2936,6 +2936,8 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     ),
     #[cfg(feature = "okhttp")]
     shim!("Lokio/InflaterSource;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokio/CipherSource;", Some("Ljava/lang/Object;"), &[], 0),
     // audit gap shim classes (jsoup)
     #[cfg(feature = "jsoup")]
     shim!(

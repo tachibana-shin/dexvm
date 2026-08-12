@@ -11,6 +11,7 @@ mod count_down_latch;
 mod date;
 mod hashmap;
 mod hashset;
+mod inflater;
 mod iterator;
 mod linkedhashmap;
 mod linkedhashset;
@@ -23,6 +24,7 @@ mod reentrant_lock;
 mod regex;
 mod resourcebundle;
 mod timezone;
+mod uuid;
 
 pub(crate) use arraylist::*;
 pub(crate) use hashmap::*;
@@ -149,6 +151,7 @@ pub(crate) const UTIL_TABLE: &[&[NativeEntry]] = &[
     date::TABLE,
     hashmap::TABLE,
     hashset::TABLE,
+    inflater::TABLE,
     iterator::TABLE,
     list_iterator::TABLE,
     linkedhashmap::TABLE,
@@ -162,4 +165,5 @@ pub(crate) const UTIL_TABLE: &[&[NativeEntry]] = &[
     regex::matcher::TABLE,
     regex::pattern::TABLE,
     timezone::TABLE,
+    uuid::TABLE,
 ];

@@ -3,7 +3,79 @@
 use super::*;
 use crate::permission::{FilesystemPermission, Permission};
 use crate::vm::native::okhttp::resp_body_bytes;
+use base64::engine::general_purpose::STANDARD as BASE64_STD;
+use base64::Engine as _;
+use sha2::{Digest, Sha256, Sha512};
 use std::io::Write as _;
+
+// ---- okio.ByteString: an immutable byte sequence, backed by a plain byte array ----
+
+fn byte_string_alloc(vm: &mut Vm, bytes: Vec<u8>) -> R {
+    let data: Vec<i8> = bytes.iter().map(|&b| b as i8).collect();
+    alloc(vm, "Lokio/ByteString;", Native::Array(ArrayData::Byte(data)))
+}
+
+fn byte_string_decode_base64(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    match BASE64_STD.decode(s.trim()) {
+        Ok(bytes) => byte_string_alloc(vm, bytes),
+        Err(_) => Ok(JValue::Null),
+    }
+}
+
+fn byte_string_encode_utf8(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    byte_string_alloc(vm, s.into_bytes())
+}
+
+fn byte_string_bytes(vm: &Vm, args: &[JValue]) -> Option<Vec<u8>> {
+    match payload(vm, args[0]) {
+        Some(Native::Array(ArrayData::Byte(bs))) => Some(bs.iter().map(|&b| b as u8).collect()),
+        _ => None,
+    }
+}
+
+fn byte_string_hex(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = byte_string_bytes(vm, args).ok_or_else(|| npe(vm))?;
+    let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+    Ok(new_str(vm, &hex))
+}
+
+fn byte_string_to_byte_array(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = byte_string_bytes(vm, args).ok_or_else(|| npe(vm))?;
+    let data: Vec<i8> = bytes.iter().map(|&b| b as i8).collect();
+    alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))
+}
+
+fn byte_string_sha256(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = byte_string_bytes(vm, args).ok_or_else(|| npe(vm))?;
+    byte_string_alloc(vm, Sha256::digest(&bytes).to_vec())
+}
+
+fn byte_string_sha512(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = byte_string_bytes(vm, args).ok_or_else(|| npe(vm))?;
+    byte_string_alloc(vm, Sha512::digest(&bytes).to_vec())
+}
+
+fn byte_string_get_byte(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = byte_string_bytes(vm, args).ok_or_else(|| npe(vm))?;
+    let i = int_of(vm, args[1]);
+    match bytes.get(i as usize) {
+        Some(&b) => Ok(JValue::Int(b as i8 as i32)),
+        None => Err(iae(vm, format!("index {i} out of bounds"))),
+    }
+}
+
+fn byte_string_size(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = byte_string_bytes(vm, args).ok_or_else(|| npe(vm))?;
+    Ok(JValue::Int(bytes.len() as i32))
+}
+
+fn byte_string_utf8(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = byte_string_bytes(vm, args).ok_or_else(|| npe(vm))?;
+    let s = String::from_utf8_lossy(&bytes).into_owned();
+    Ok(new_str(vm, &s))
+}
 
 pub(crate) fn okio_source_input_stream(vm: &mut Vm, args: &[JValue]) -> R {
     let (bytes, pos) = match payload(vm, args[0]) {
@@ -42,6 +114,91 @@ pub(crate) fn okio_source_response_body(vm: &mut Vm, args: &[JValue]) -> R {
         "Lokio/BufferedSource;",
         Native::OkioBuf { bytes, pos: 0 },
     )
+}
+
+/// Reads the unread bytes of any of our eager, in-memory `Source`-shaped
+/// payloads (this VM has no real streaming — every source is fully
+/// buffered up front).
+fn okio_bytes_of(vm: &Vm, v: JValue) -> Option<Vec<u8>> {
+    match payload(vm, v) {
+        Some(Native::OkioBuf { bytes, pos }) => Some(bytes[*pos..].to_vec()),
+        Some(Native::ByteArrayInputStream { bytes, pos }) => Some(bytes[*pos..].to_vec()),
+        Some(Native::Str(s)) => Some(s.as_bytes().to_vec()),
+        _ => None,
+    }
+}
+
+/// `InflaterSource(source, inflater)`: eagerly reads and decompresses the
+/// wrapped source, then behaves exactly like any other in-memory
+/// `BufferedSource` from then on.
+pub(crate) fn okio_inflater_source_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let compressed = okio_bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
+    let nowrap = matches!(payload(vm, args[2]), Some(Native::Inflater { nowrap: true, .. }));
+    let decompressed = if nowrap {
+        miniz_oxide::inflate::decompress_to_vec(&compressed)
+    } else {
+        miniz_oxide::inflate::decompress_to_vec_zlib(&compressed)
+    }
+    .map_err(|_| ioe(vm, "invalid deflate data"))?;
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::OkioBuf {
+        bytes: decompressed,
+        pos: 0,
+    });
+    Ok(JValue::Null)
+}
+
+/// `Okio.cipherSource(source, cipher)`: eagerly reads the wrapped source and
+/// runs it through the already-initialized `Cipher` (decrypt or encrypt,
+/// whichever mode the caller set up), yielding another in-memory source.
+pub(crate) fn okio_cipher_source(vm: &mut Vm, args: &[JValue]) -> R {
+    let input = okio_bytes_of(vm, args[0]).ok_or_else(|| npe(vm))?;
+    let len = input.len() as i32;
+    let data: Vec<i8> = input.iter().map(|&b| b as i8).collect();
+    let arr = alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))?;
+    let out = crate::vm::native::java::javax_crypto::cipher_do_final(
+        vm,
+        &[args[1], arr, JValue::Int(0), JValue::Int(len)],
+    )?;
+    let bytes = bytes_of(vm, out).unwrap_or_default();
+    alloc(vm, "Lokio/CipherSource;", Native::OkioBuf { bytes, pos: 0 })
+}
+
+/// `ForwardingSource(delegate)`: this VM has no partial reads to forward
+/// through, so it's equivalent to just aliasing the delegate's buffer.
+pub(crate) fn okio_forwarding_source_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = okio_bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::OkioBuf { bytes, pos: 0 });
+    Ok(JValue::Null)
+}
+
+/// `ForwardingSource.read(sink, byteCount)`: drains up to `byteCount` bytes
+/// into `sink`'s buffer (both share the same in-memory `OkioBuf` shape).
+pub(crate) fn okio_forwarding_source_read(vm: &mut Vm, args: &[JValue]) -> R {
+    let want = long_of(vm, args[2]).max(0) as usize;
+    let chunk = match payload_mut(vm, args[0]) {
+        Some(Native::OkioBuf { bytes, pos }) => {
+            let n = (bytes.len() - *pos).min(want);
+            let chunk = bytes[*pos..*pos + n].to_vec();
+            *pos += n;
+            chunk
+        }
+        _ => return Err(npe(vm)),
+    };
+    if chunk.is_empty() {
+        return Ok(JValue::Long(-1));
+    }
+    let n = chunk.len() as i64;
+    match payload_mut(vm, args[1]) {
+        Some(Native::OkioBuf { bytes, .. }) => bytes.extend_from_slice(&chunk),
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Long(n))
 }
 
 fn file_arg_path(vm: &mut Vm, arg: JValue) -> Result<String, NatErr> {
@@ -247,6 +404,27 @@ fn okio_buffer_output_stream(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
     ne!(
+        "Lokio/ByteString$Companion;",
+        "decodeBase64",
+        "(Ljava/lang/String;)Lokio/ByteString;",
+        true,
+        byte_string_decode_base64
+    ),
+    ne!(
+        "Lokio/ByteString$Companion;",
+        "encodeUtf8",
+        "(Ljava/lang/String;)Lokio/ByteString;",
+        true,
+        byte_string_encode_utf8
+    ),
+    ne!("Lokio/ByteString;", "hex", "()Ljava/lang/String;", true, byte_string_hex),
+    ne!("Lokio/ByteString;", "toByteArray", "()[B", true, byte_string_to_byte_array),
+    ne!("Lokio/ByteString;", "sha256", "()Lokio/ByteString;", true, byte_string_sha256),
+    ne!("Lokio/ByteString;", "sha512", "()Lokio/ByteString;", true, byte_string_sha512),
+    ne!("Lokio/ByteString;", "getByte", "(I)B", true, byte_string_get_byte),
+    ne!("Lokio/ByteString;", "size", "()I", true, byte_string_size),
+    ne!("Lokio/ByteString;", "utf8", "()Ljava/lang/String;", true, byte_string_utf8),
+    ne!(
         "Lokio/Okio;",
         "source",
         "(Ljava/io/InputStream;)Lokio/Source;",
@@ -294,6 +472,34 @@ pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
         "(Lokio/Sink;)Lokio/BufferedSink;",
         false,
         okio_identity
+    ),
+    ne!(
+        "Lokio/Okio;",
+        "cipherSource",
+        "(Lokio/Source;Ljavax/crypto/Cipher;)Lokio/CipherSource;",
+        false,
+        okio_cipher_source
+    ),
+    ne!(
+        "Lokio/InflaterSource;",
+        "<init>",
+        "(Lokio/Source;Ljava/util/zip/Inflater;)V",
+        true,
+        okio_inflater_source_init
+    ),
+    ne!(
+        "Lokio/ForwardingSource;",
+        "<init>",
+        "(Lokio/Source;)V",
+        true,
+        okio_forwarding_source_init
+    ),
+    ne!(
+        "Lokio/ForwardingSource;",
+        "read",
+        "(Lokio/Buffer;J)J",
+        true,
+        okio_forwarding_source_read
     ),
     ne!(
         "Lokio/ByteStreams;",

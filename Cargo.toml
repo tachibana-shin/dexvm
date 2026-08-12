@@ -83,6 +83,9 @@ dom_query = { version = "0.28.0", optional = true }
 md-5 = "0.11.0"
 sha1 = "0.11.0"
 sha2 = "0.11.0"
+hmac = "0.13.0"
+pbkdf2 = "0.13.0"
+miniz_oxide = "0.8"
 aes = "0.8"
 base64 = "0.22"
 aes-gcm = "0.11.0"
@@ -93,6 +96,8 @@ rquickjs = { version = "0.12.2", optional = true }
 zune-png = { version = "0.5.2", default-features = false, optional = true }
 zune-jpeg = { version = "0.5.15", default-features = false, optional = true }
 raqote = { version = "0.8.5", optional = true }
+num-bigint = "0.5.1"
+num-traits = "0.2.19"
 
 [dev-dependencies]
 aes-gcm = "0.11.0"

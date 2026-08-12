@@ -15,6 +15,7 @@ mod number;
 mod object;
 mod reflect;
 mod short;
+mod soft_reference;
 mod string;
 mod stringbuilder;
 mod system;
@@ -49,4 +50,5 @@ pub(crate) const LANG_TABLE: &[&[NativeEntry]] = &[
     boolean::TABLE,
     float::TABLE,
     double::TABLE,
+    soft_reference::TABLE,
 ];

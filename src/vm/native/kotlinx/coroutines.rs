@@ -99,6 +99,28 @@ pub(crate) fn coroutines_launch_default(vm: &mut Vm, args: &[JValue]) -> R {
     );
     alloc(vm, "Lkotlinx/coroutines/Job;", Native::Opaque)
 }
+pub(crate) fn coroutines_supervisor_job_default(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Lkotlinx/coroutines/CompletableJob;", Native::Opaque)
+}
+pub(crate) fn coroutines_job_cancel_default(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+pub(crate) fn coroutines_is_active(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(1))
+}
+pub(crate) fn coroutines_get_immediate(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+pub(crate) fn coroutines_supervisor_scope(vm: &mut Vm, args: &[JValue]) -> R {
+    let scope = alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)?;
+    inv_virt(
+        vm,
+        args[0],
+        "invoke",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        &[scope, args[1]],
+    )
+}
 pub(crate) fn coroutines_scope(vm: &mut Vm, args: &[JValue]) -> R {
     let scope = alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)?;
     inv_virt(
@@ -171,4 +193,11 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlinx/coroutines/sync/Mutex;", "tryLock", "()Z", true, mutex_try_lock),
     ne!("Lkotlinx/coroutines/sync/Mutex;", "unlock", "()V", true, mutex_unlock),
     ne!("Lkotlinx/coroutines/sync/Mutex;", "isLocked", "()Z", true, mutex_is_locked),
+    ne!("Lkotlinx/coroutines/SupervisorKt;", "SupervisorJob$default", "(Lkotlinx/coroutines/Job;ILjava/lang/Object;)Lkotlinx/coroutines/CompletableJob;", false, coroutines_supervisor_job_default),
+    ne!("Lkotlinx/coroutines/SupervisorKt;", "supervisorScope", "(Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, coroutines_supervisor_scope),
+    ne!("Lkotlinx/coroutines/Job;", "cancel$default", "(Lkotlinx/coroutines/Job;Ljava/util/concurrent/CancellationException;ILjava/lang/Object;)V", false, coroutines_job_cancel_default),
+    ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "cancel$default", "(Lkotlinx/coroutines/CoroutineScope;Ljava/util/concurrent/CancellationException;ILjava/lang/Object;)V", false, coroutines_job_cancel_default),
+    ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "cancel$default", "(Lkotlinx/coroutines/CoroutineScope;Ljava/lang/Throwable;ILjava/lang/Object;)V", false, coroutines_job_cancel_default),
+    ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "isActive", "(Lkotlinx/coroutines/CoroutineScope;)Z", false, coroutines_is_active),
+    ne!("Lkotlinx/coroutines/MainCoroutineDispatcher;", "getImmediate", "()Lkotlinx/coroutines/MainCoroutineDispatcher;", true, coroutines_get_immediate),
 ];

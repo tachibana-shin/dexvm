@@ -57,6 +57,49 @@ pub(crate) fn string_init_bytes(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+/// `String(byte[] bytes, int offset, int length, Charset charset)`.
+pub(crate) fn string_init_bytes_range(vm: &mut Vm, args: &[JValue]) -> R {
+    let b = match payload(vm, args[1]) {
+        Some(Native::Array(ArrayData::Byte(bs))) => bs.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let off = int_of(vm, args[2]).max(0) as usize;
+    let len = int_of(vm, args[3]).max(0) as usize;
+    let end = off.saturating_add(len).min(b.len());
+    let slice = if off <= end { &b[off..end] } else { &[] };
+    let charset = jstr(vm, args[4]).ok().unwrap_or_default();
+    let s = decode_bytes(slice, &charset);
+    let Some(n) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    match n {
+        Native::Str(dst) => *dst = s,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
+/// `String(char[] value, int offset, int count)`.
+pub(crate) fn string_init_chars_range(vm: &mut Vm, args: &[JValue]) -> R {
+    let cs = match payload(vm, args[1]) {
+        Some(Native::Array(ArrayData::Char(cs))) => cs.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let off = int_of(vm, args[2]).max(0) as usize;
+    let len = int_of(vm, args[3]).max(0) as usize;
+    let end = off.saturating_add(len).min(cs.len());
+    let slice = if off <= end { &cs[off..end] } else { &[] };
+    let s = u16str(slice);
+    let Some(n) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    match n {
+        Native::Str(dst) => *dst = s,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
 pub(crate) fn decode_bytes(bs: &[i8], charset: &str) -> String {
     let up = charset.to_uppercase();
     if up.contains("8859") || up.contains("LATIN1") {
@@ -601,6 +644,20 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "([BLjava/nio/charset/Charset;)V",
         true,
         string_init_bytes
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "<init>",
+        "([BIILjava/nio/charset/Charset;)V",
+        true,
+        string_init_bytes_range
+    ),
+    ne!(
+        "Ljava/lang/String;",
+        "<init>",
+        "([CII)V",
+        true,
+        string_init_chars_range
     ),
     ne!("Ljava/lang/String;", "length", "()I", true, string_length),
     ne!(

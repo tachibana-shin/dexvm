@@ -292,6 +292,8 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         false,
         arrays_hash_code
     ),
+    ne!("Ljava/util/Arrays;", "hashCode", "([B)I", false, arrays_hash_code),
+    ne!("Ljava/util/Arrays;", "hashCode", "([I)I", false, arrays_hash_code),
     ne!(
         "Ljava/util/Arrays;",
         "fill",

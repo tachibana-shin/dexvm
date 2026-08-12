@@ -131,6 +131,60 @@ fn duration_nanos_impl(vm: &mut Vm, args: &[JValue]) -> R {
 fn duration_millis_impl(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Long(long_of(vm, args[0])))
 }
+/// Formats the millisecond raw value the way `Duration.toString()` renders
+/// multi-unit durations (e.g. "1h 5m 30s", "250ms", "1.5s").
+fn format_duration_millis(millis: i64) -> String {
+    if millis == 0 {
+        return "0s".to_string();
+    }
+    let neg = millis < 0;
+    let mut ms = millis.unsigned_abs();
+    let body = if ms < 1000 {
+        format!("{ms}ms")
+    } else {
+        let days = ms / 86_400_000;
+        ms %= 86_400_000;
+        let hours = ms / 3_600_000;
+        ms %= 3_600_000;
+        let minutes = ms / 60_000;
+        ms %= 60_000;
+        let seconds = ms / 1000;
+        let sub_ms = ms % 1000;
+        let mut parts = Vec::new();
+        if days > 0 {
+            parts.push(format!("{days}d"));
+        }
+        if hours > 0 {
+            parts.push(format!("{hours}h"));
+        }
+        if minutes > 0 {
+            parts.push(format!("{minutes}m"));
+        }
+        if seconds > 0 || sub_ms > 0 || parts.is_empty() {
+            if sub_ms > 0 {
+                let frac = format!("{sub_ms:03}");
+                let frac = frac.trim_end_matches('0');
+                parts.push(if frac.is_empty() {
+                    format!("{seconds}s")
+                } else {
+                    format!("{seconds}.{frac}s")
+                });
+            } else {
+                parts.push(format!("{seconds}s"));
+            }
+        }
+        parts.join(" ")
+    };
+    if neg {
+        format!("-{body}")
+    } else {
+        body
+    }
+}
+fn duration_to_string_impl(vm: &mut Vm, args: &[JValue]) -> R {
+    let millis = long_of(vm, args[0]);
+    Ok(new_str(vm, &format_duration_millis(millis)))
+}
 fn duration_compare_to(vm: &mut Vm, args: &[JValue]) -> R {
     let a = match payload(vm, args[0]) {
         Some(Native::Duration(raw)) => *raw,
@@ -248,5 +302,12 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/Object;)I",
         true,
         duration_compare_to
+    ),
+    ne!(
+        "Lkotlin/time/Duration;",
+        "toString-impl",
+        "(J)Ljava/lang/String;",
+        false,
+        duration_to_string_impl
     ),
 ];
