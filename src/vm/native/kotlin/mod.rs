@@ -167,6 +167,41 @@ pub(crate) fn regex_replace(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &re.replace_all(&text, repl.as_str())))
 }
 
+pub(crate) fn regex_replace_function(vm: &mut Vm, args: &[JValue]) -> R {
+    let re = match payload(vm, args[0]) {
+        Some(Native::Pattern { re, .. }) => re.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let text = charseq_of(vm, args[1])?;
+    let callback = args[2];
+    let mut out = String::with_capacity(text.len());
+    let mut cursor = 0;
+    for matched in re.find_iter(&text).flatten() {
+        out.push_str(&text[cursor..matched.start()]);
+        let match_obj = alloc(
+            vm,
+            "Lkotlin/text/MatcherMatchResult;",
+            Native::Matcher(MatcherState {
+                pattern: re.clone(),
+                text: text.clone(),
+                pos: matched.end(),
+                last: Some((matched.start(), matched.end())),
+            }),
+        )?;
+        let replacement = inv_virt(
+            vm,
+            callback,
+            "invoke",
+            "(Ljava/lang/Object;)Ljava/lang/Object;",
+            &[match_obj],
+        )?;
+        out.push_str(&charseq_of(vm, replacement)?);
+        cursor = matched.end();
+    }
+    out.push_str(&text[cursor..]);
+    Ok(new_str(vm, &out))
+}
+
 pub(crate) fn regex_matches(vm: &mut Vm, args: &[JValue]) -> R {
     let re = match payload(vm, args[0]) {
         Some(Native::Pattern { re, .. }) => re.clone(),
@@ -1111,6 +1146,50 @@ fn stringskt_substring_after_last_default(vm: &mut Vm, args: &[JValue]) -> R {
     ))
 }
 
+fn stringskt_last_index_of_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = charseq_of(vm, args[0])?;
+    let needle = charseq_of(vm, args[1])?;
+    let start = if int_of(vm, args[4]) & 4 != 0 {
+        text.len()
+    } else {
+        int_of(vm, args[2]).max(0) as usize
+    };
+    let hay = &text[..start.min(text.len())];
+    let found = if int_of(vm, args[3]) != 0 {
+        hay.to_lowercase().rfind(&needle.to_lowercase())
+    } else {
+        hay.rfind(&needle)
+    };
+    Ok(JValue::Int(found.map_or(-1, |i| i as i32)))
+}
+
+fn stringskt_trim_indent(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = jstr(vm, args[0])?;
+    let lines: Vec<&str> = text.lines().collect();
+    let nonblank: Vec<&str> = lines
+        .iter()
+        .copied()
+        .filter(|l| !l.trim().is_empty())
+        .collect();
+    let indent = nonblank
+        .iter()
+        .map(|l| l.chars().take_while(|c| c.is_whitespace()).count())
+        .min()
+        .unwrap_or(0);
+    let out = lines
+        .into_iter()
+        .map(|l| {
+            l.chars()
+                .skip(indent)
+                .collect::<String>()
+                .trim_end()
+                .to_string()
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    Ok(new_str(vm, &out))
+}
+
 fn stringskt_substring_after_last_char_default(vm: &mut Vm, args: &[JValue]) -> R {
     let value = jstr(vm, args[0])?;
     let delimiter = char::from_u32(int_of(vm, args[1]) as u32).unwrap_or('\0');
@@ -1831,6 +1910,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/Regex;", "<init>", "(Ljava/lang/String;)V", true, regex_init),
     ne!("Lkotlin/text/Regex;", "<init>", "(Ljava/lang/String;Lkotlin/text/RegexOption;)V", true, regex_init_option),
     ne!("Lkotlin/text/Regex;", "replace", "(Ljava/lang/CharSequence;Ljava/lang/String;)Ljava/lang/String;", true, regex_replace),
+    ne!("Lkotlin/text/Regex;", "replace", "(Ljava/lang/CharSequence;Lkotlin/jvm/functions/Function1;)Ljava/lang/String;", true, regex_replace_function),
     ne!("Lkotlin/text/Regex;", "matches", "(Ljava/lang/CharSequence;)Z", true, regex_matches),
     ne!("Lkotlin/text/Regex;", "matchEntire", "(Ljava/lang/CharSequence;)Lkotlin/text/MatchResult;", true, regex_match_entire),
     ne!("Lkotlin/text/Regex;", "containsMatchIn", "(Ljava/lang/CharSequence;)Z", true, regex_contains_match_in),
@@ -1925,6 +2005,8 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/StringsKt;", "substringBeforeLast$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_before_last_default),
     ne!("Lkotlin/text/StringsKt;", "substringAfterLast$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_after_last_default),
     ne!("Lkotlin/text/StringsKt;", "substringAfterLast$default", "(Ljava/lang/String;CLjava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_after_last_char_default),
+    ne!("Lkotlin/text/StringsKt;", "lastIndexOf$default", "(Ljava/lang/CharSequence;Ljava/lang/String;IZILjava/lang/Object;)I", false, stringskt_last_index_of_default),
+    ne!("Lkotlin/text/StringsKt;", "trimIndent", "(Ljava/lang/String;)Ljava/lang/String;", false, stringskt_trim_indent),
     ne!("Lkotlin/text/StringsKt;", "substringBefore$default", "(Ljava/lang/String;CLjava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_before_char_default),
     ne!("Lkotlin/text/StringsKt;", "equals", "(Ljava/lang/String;Ljava/lang/String;Z)Z", false, stringskt_equals),
     ne!("Lkotlin/text/StringsKt;", "indexOf$default", "(Ljava/lang/CharSequence;CIZILjava/lang/Object;)I", false, stringskt_index_of_char_default),
