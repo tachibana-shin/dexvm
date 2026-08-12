@@ -15,6 +15,41 @@ pub(crate) fn coroutines_dispatchers_io(vm: &mut Vm, _args: &[JValue]) -> R {
         Native::Opaque,
     )
 }
+pub(crate) fn coroutines_dispatchers_main(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Lkotlinx/coroutines/MainCoroutineDispatcher;",
+        Native::Opaque,
+    )
+}
+pub(crate) fn coroutines_run_blocking(vm: &mut Vm, args: &[JValue]) -> R {
+    inv_virt(
+        vm,
+        args[1],
+        "invoke",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        &[JValue::Null, JValue::Null],
+    )
+}
+pub(crate) fn coroutines_with_timeout(vm: &mut Vm, args: &[JValue]) -> R {
+    inv_virt(
+        vm,
+        args[1],
+        "invoke",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        &[JValue::Null, args[2]],
+    )
+}
+pub(crate) fn completable_deferred_default(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Lkotlinx/coroutines/CompletableDeferred;",
+        Native::Deferred {
+            value: JValue::Null,
+            error: JValue::Null,
+        },
+    )
+}
 pub(crate) fn mutex_default(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(
         vm,
@@ -120,6 +155,11 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "CoroutineScope", "(Lkotlin/coroutines/CoroutineContext;)Lkotlinx/coroutines/CoroutineScope;", false, coroutine_scope_create),
     ne!("Lkotlinx/coroutines/GlobalScope;", "getInstance", "()Lkotlinx/coroutines/GlobalScope;", false, coroutines_global_scope),
     ne!("Lkotlinx/coroutines/Dispatchers;", "getIO", "()Lkotlinx/coroutines/CoroutineDispatcher;", false, coroutines_dispatchers_io),
+    ne!("Lkotlinx/coroutines/Dispatchers;", "getMain", "()Lkotlinx/coroutines/MainCoroutineDispatcher;", false, coroutines_dispatchers_main),
+    ne!("Lkotlinx/coroutines/BuildersKt;", "runBlockingK", "(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;", false, coroutines_run_blocking),
+    ne!("Lkotlinx/coroutines/BuildersKt;", "runBlockingK$default", "(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Ljava/lang/Object;", false, coroutines_run_blocking),
+    ne!("Lkotlinx/coroutines/TimeoutKt;", "withTimeout-KLykuaI", "(JLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, coroutines_with_timeout),
+    ne!("Lkotlinx/coroutines/CompletableDeferredKt;", "CompletableDeferred$default", "(Lkotlinx/coroutines/Job;ILjava/lang/Object;)Lkotlinx/coroutines/CompletableDeferred;", false, completable_deferred_default),
     ne!("Lkotlinx/coroutines/BuildersKt;", "launch$default", "(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;", false, coroutines_launch_default),
     ne!("Lkotlinx/coroutines/BuildersKt;", "async$default", "(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Deferred;", false, coroutines_async_default),
     ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "coroutineScope", "(Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, coroutines_scope),

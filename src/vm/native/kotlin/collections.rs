@@ -65,4 +65,18 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         false,
         super::collections_remove_all
     ),
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "plus",
+        "(Ljava/lang/Iterable;Ljava/lang/Iterable;)Ljava/util/List;",
+        false,
+        super::collections_plus_iterable
+    ),
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "getLastIndex",
+        "(Ljava/util/List;)I",
+        false,
+        super::collections_get_last_index
+    ),
 ];

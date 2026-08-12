@@ -413,6 +413,10 @@ pub(crate) fn collections_plus_iterable(vm: &mut Vm, args: &[JValue]) -> R {
     items.extend(coll_elems(vm, args[1])?);
     list_alloc(vm, items)
 }
+pub(crate) fn collections_get_last_index(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = coll_elems(vm, args[0])?;
+    Ok(JValue::Int(values.len().saturating_sub(1) as i32))
+}
 
 pub(crate) fn collections_plus_obj(vm: &mut Vm, args: &[JValue]) -> R {
     let mut items = coll_elems(vm, args[0])?;
