@@ -1,0 +1,54 @@
+//! Kotlin collections bridge registrations.
+use crate::vm::native::*;
+
+pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "asSequence",
+        "(Ljava/lang/Iterable;)Lkotlin/sequences/Sequence;",
+        false,
+        super::sequence_as_sequence
+    ),
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "flatten",
+        "(Ljava/lang/Iterable;)Ljava/util/List;",
+        false,
+        super::collections_flatten
+    ),
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "toList",
+        "(Ljava/lang/Iterable;)Ljava/util/List;",
+        false,
+        super::collections_to_list_iterable
+    ),
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "sorted",
+        "(Ljava/lang/Iterable;)Ljava/util/List;",
+        false,
+        super::collections_sorted
+    ),
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "take",
+        "(Ljava/lang/Iterable;I)Ljava/util/List;",
+        false,
+        super::collections_take
+    ),
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "drop",
+        "(Ljava/lang/Iterable;I)Ljava/util/List;",
+        false,
+        super::collections_drop
+    ),
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "asReversed",
+        "(Ljava/util/List;)Ljava/util/List;",
+        false,
+        super::collections_as_reversed
+    ),
+];

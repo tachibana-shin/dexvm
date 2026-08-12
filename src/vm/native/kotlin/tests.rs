@@ -82,6 +82,27 @@ fn tupled_to_makes_pair() {
 }
 
 #[test]
+fn ranges_and_int_iterator_keep_state() {
+    with_vm(|vm| {
+        let range = rangeskt_until(vm, &[JValue::Int(2), JValue::Int(5)]).unwrap();
+        assert_eq!(int_of(int_range_get_first(vm, &[range]).unwrap()), 2);
+        assert_eq!(int_of(int_range_get_last(vm, &[range]).unwrap()), 4);
+
+        let iterator = alloc(
+            vm,
+            "Lkotlin/collections/IntIterator;",
+            Native::IntRange(2, 4),
+        )
+        .unwrap();
+        assert!(bool_of(int_iterator_has_next(vm, &[iterator]).unwrap()));
+        assert_eq!(int_of(int_iterator_next_int(vm, &[iterator]).unwrap()), 2);
+        assert_eq!(int_of(int_iterator_next_int(vm, &[iterator]).unwrap()), 3);
+        assert_eq!(int_of(int_iterator_next_int(vm, &[iterator]).unwrap()), 4);
+        assert!(!bool_of(int_iterator_has_next(vm, &[iterator]).unwrap()));
+    });
+}
+
+#[test]
 fn collections_basics() {
     with_vm(|vm| {
         // listOf() from a single element.
@@ -522,5 +543,38 @@ fn common_string_and_collection_bridges_are_real() {
         let items = coll_elems(vm, sorted).unwrap();
         let first = items[0];
         assert_eq!(jstr(vm, first).unwrap(), "a");
+    });
+}
+
+#[test]
+fn high_frequency_string_and_mutex_bridges_are_real() {
+    with_vm(|vm| {
+        let text = s(vm, "alpha");
+        let delim = s(vm, "ph");
+        let missing = s(vm, "none");
+        let out = stringskt_substring_after(vm, &[text, delim, missing]).unwrap();
+        assert_eq!(jstr(vm, out).unwrap(), "a");
+        let mutex = crate::vm::native::kotlinx::coroutines::mutex_default(
+            vm,
+            &[JValue::Int(0), JValue::Int(2), JValue::Null],
+        )
+        .unwrap();
+        assert_eq!(
+            crate::vm::native::kotlinx::coroutines::mutex_is_locked(vm, &[mutex]).unwrap(),
+            JValue::Int(0)
+        );
+        assert_eq!(
+            crate::vm::native::kotlinx::coroutines::mutex_try_lock(vm, &[mutex]).unwrap(),
+            JValue::Int(1)
+        );
+        assert_eq!(
+            crate::vm::native::kotlinx::coroutines::mutex_try_lock(vm, &[mutex]).unwrap(),
+            JValue::Int(0)
+        );
+        crate::vm::native::kotlinx::coroutines::mutex_unlock(vm, &[mutex]).unwrap();
+        assert_eq!(
+            crate::vm::native::kotlinx::coroutines::mutex_is_locked(vm, &[mutex]).unwrap(),
+            JValue::Int(0)
+        );
     });
 }

@@ -4,6 +4,26 @@
 
 use super::*;
 
+mod collections;
+mod ranges;
+mod sequences;
+mod tuples;
+pub(crate) use collections::TABLE as COLLECTIONS_TABLE;
+pub(crate) use ranges::TABLE as RANGES_TABLE;
+#[allow(unused_imports)]
+pub(crate) use ranges::{
+    int_iterator_has_next, int_iterator_init, int_iterator_next_int, int_range_get_first,
+    int_range_get_last, int_range_init, rangeskt_until,
+};
+pub(crate) use sequences::TABLE as SEQUENCES_TABLE;
+pub(crate) use tuples::TABLE as TUPLES_TABLE;
+#[allow(unused_imports)]
+pub(crate) use tuples::{
+    pair_get_first, pair_get_second, pair_init, triple_component1, triple_component2,
+    triple_component3, triple_get_first, triple_get_second, triple_get_third, triple_init,
+    tripled_to, tupled_to,
+};
+
 // lazy static materializers
 // ---------------------------------------------------------------------------
 
@@ -40,10 +60,6 @@ pub(crate) fn lazy_global_scope(vm: &mut Vm) -> JValue {
 
 pub(crate) fn lazy_result_companion(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lkotlin/Result$Companion;")
-}
-
-pub(crate) fn coroutine_scope_create(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)
 }
 
 fn enum_entries(vm: &mut Vm, args: &[JValue]) -> R {
@@ -601,75 +617,6 @@ pub(crate) fn intrinsics_check_not_null_parameter(vm: &mut Vm, args: &[JValue]) 
             format!("{name} must not be null"),
         )));
     }
-    Ok(JValue::Null)
-}
-
-// kotlin.Pair / TuplesKt
-// ---------------------------------------------------------------------------
-
-pub(crate) fn tupled_to(vm: &mut Vm, args: &[JValue]) -> R {
-    alloc(vm, "Lkotlin/Pair;", Native::Pair(args[0], args[1]))
-}
-
-pub(crate) fn pair_get_first(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::Pair(a, _)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    Ok(*a)
-}
-
-pub(crate) fn pair_get_second(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::Pair(_, b)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    Ok(*b)
-}
-
-pub(crate) fn pair_init(vm: &mut Vm, args: &[JValue]) -> R {
-    let this = args[0].as_obj();
-    vm.arena.objects[this as usize].native = Some(Native::Pair(args[1], args[2]));
-    Ok(JValue::Null)
-}
-
-pub(crate) fn tripled_to(vm: &mut Vm, args: &[JValue]) -> R {
-    alloc(
-        vm,
-        "Lkotlin/Triple;",
-        Native::Triple(args[0], args[1], args[2]),
-    )
-}
-
-fn triple_get(vm: &mut Vm, args: &[JValue], which: u8) -> R {
-    match payload(vm, args[0]) {
-        Some(Native::Triple(a, b, c)) => Ok(match which {
-            0 => *a,
-            1 => *b,
-            _ => *c,
-        }),
-        _ => Err(npe(vm)),
-    }
-}
-pub(crate) fn triple_get_first(vm: &mut Vm, args: &[JValue]) -> R {
-    triple_get(vm, args, 0)
-}
-pub(crate) fn triple_get_second(vm: &mut Vm, args: &[JValue]) -> R {
-    triple_get(vm, args, 1)
-}
-pub(crate) fn triple_get_third(vm: &mut Vm, args: &[JValue]) -> R {
-    triple_get(vm, args, 2)
-}
-pub(crate) fn triple_component1(vm: &mut Vm, args: &[JValue]) -> R {
-    triple_get_first(vm, args)
-}
-pub(crate) fn triple_component2(vm: &mut Vm, args: &[JValue]) -> R {
-    triple_get_second(vm, args)
-}
-pub(crate) fn triple_component3(vm: &mut Vm, args: &[JValue]) -> R {
-    triple_get_third(vm, args)
-}
-pub(crate) fn triple_init(vm: &mut Vm, args: &[JValue]) -> R {
-    vm.arena.objects[args[0].as_obj() as usize].native =
-        Some(Native::Triple(args[1], args[2], args[3]));
     Ok(JValue::Null)
 }
 
@@ -1286,14 +1233,6 @@ fn stringskt_index_of_string_default(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(found.map_or(-1, |index| index as i32)))
 }
 
-fn rangeskt_until(vm: &mut Vm, args: &[JValue]) -> R {
-    alloc(
-        vm,
-        "Lkotlin/ranges/IntRange;",
-        Native::IntRange(int_of(vm, args[0]), int_of(vm, args[1]).saturating_sub(1)),
-    )
-}
-
 fn rangeskt_coerce_at_least(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(args[0].as_int().max(args[1].as_int())))
 }
@@ -1432,77 +1371,6 @@ pub(crate) fn uri_get_host(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &host))
 }
 
-// kotlin.ranges.IntRange
-// ---------------------------------------------------------------------------
-
-pub(crate) fn int_range_init(vm: &mut Vm, args: &[JValue]) -> R {
-    let first = int_of(vm, args[1]);
-    let last = int_of(vm, args[2]);
-    let Some(n) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    match n {
-        Native::IntRange(dst_first, dst_last) => {
-            *dst_first = first;
-            *dst_last = last;
-        }
-        _ => return Err(npe(vm)),
-    }
-    Ok(JValue::Null)
-}
-
-pub(crate) fn int_range_get_first(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::IntRange(f, _)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    Ok(JValue::Int(*f))
-}
-
-pub(crate) fn int_range_get_last(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::IntRange(_, l)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    Ok(JValue::Int(*l))
-}
-
-// kotlin.collections.IntIterator
-// ---------------------------------------------------------------------------
-
-pub(crate) fn int_iterator_init(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(n) = payload_mut(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    match n {
-        Native::IntRange(f, l) => {
-            *f = 0;
-            *l = 0;
-        }
-        _ => return Err(npe(vm)),
-    }
-    Ok(JValue::Null)
-}
-
-pub(crate) fn int_iterator_next_int(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::IntRange(f, l)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    if f > l {
-        return Err(no_such_elem(vm));
-    }
-    let v = *f;
-    if let Some(Native::IntRange(f2, _)) = payload_mut(vm, args[0]) {
-        *f2 += 1;
-    }
-    Ok(JValue::Int(v))
-}
-
-pub(crate) fn int_iterator_has_next(vm: &mut Vm, args: &[JValue]) -> R {
-    let Some(Native::IntRange(f, l)) = payload(vm, args[0]) else {
-        return Err(npe(vm));
-    };
-    Ok(JValue::Int(i32::from(f <= l)))
-}
-
 // kotlin.comparisons.ComparisonsKt
 // ---------------------------------------------------------------------------
 
@@ -1557,6 +1425,18 @@ fn stringskt_contains_default(vm: &mut Vm, args: &[JValue]) -> R {
         haystack.to_lowercase().contains(&needle.to_lowercase())
     } else {
         haystack.contains(&needle)
+    };
+    Ok(JValue::Int(found as i32))
+}
+
+fn stringskt_contains_char_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = charseq_of(vm, args[0])?;
+    let ch = char::from_u32(args[1].as_int() as u32).unwrap_or('\u{fffd}');
+    let ignore = args[2].as_int() != 0 && args[3].as_int() & 4 == 0;
+    let found = if ignore {
+        text.to_lowercase().contains(ch.to_ascii_lowercase())
+    } else {
+        text.contains(ch)
     };
     Ok(JValue::Int(found as i32))
 }
@@ -1639,86 +1519,6 @@ fn stringskt_trim_start(vm: &mut Vm, args: &[JValue]) -> R {
     };
     let r = s.trim_start_matches(|c: char| trim.contains(&(c as u16)));
     alloc(vm, "Ljava/lang/String;", Native::Str(r.to_string()))
-}
-
-// kotlinx.coroutines compatibility: the VM is single-threaded, so launched
-// work runs to completion synchronously while preserving the observable API.
-pub(crate) fn coroutines_global_scope(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(vm, "Lkotlinx/coroutines/GlobalScope;", Native::Opaque)
-}
-pub(crate) fn coroutines_dispatchers_io(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(
-        vm,
-        "Lkotlinx/coroutines/CoroutineDispatcher;",
-        Native::Opaque,
-    )
-}
-pub(crate) fn coroutines_launch_default(vm: &mut Vm, args: &[JValue]) -> R {
-    let scope = args[0];
-    let block = args[3];
-    let _ = vm.invoke_virtual_args(
-        block,
-        "invoke",
-        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
-        vec![scope, JValue::Null],
-    );
-    // A launched coroutine reports failure to its Job/exception handler; it
-    // never throws synchronously into the caller of launch().
-    alloc(vm, "Lkotlinx/coroutines/Job;", Native::Opaque)
-}
-
-fn invoke_suspend_block(vm: &mut Vm, scope: JValue, block: JValue, continuation: JValue) -> R {
-    inv_virt(
-        vm,
-        block,
-        "invoke",
-        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
-        &[scope, continuation],
-    )
-}
-
-pub(crate) fn coroutines_scope(vm: &mut Vm, args: &[JValue]) -> R {
-    let scope = alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)?;
-    invoke_suspend_block(vm, scope, args[0], args[1])
-}
-
-pub(crate) fn coroutines_with_context(vm: &mut Vm, args: &[JValue]) -> R {
-    let scope = alloc(vm, "Lkotlinx/coroutines/CoroutineScope;", Native::Opaque)?;
-    invoke_suspend_block(vm, scope, args[1], args[2])
-}
-
-pub(crate) fn coroutines_async_default(vm: &mut Vm, args: &[JValue]) -> R {
-    let result = invoke_suspend_block(vm, args[0], args[3], JValue::Null);
-    let (value, error) = match result {
-        Ok(value) => (value, JValue::Null),
-        Err(NatErr::Throw(error)) => (JValue::Null, JValue::Obj(error)),
-        Err(error) => return Err(error),
-    };
-    alloc(
-        vm,
-        "Lkotlinx/coroutines/Deferred;",
-        Native::Deferred { value, error },
-    )
-}
-
-pub(crate) fn deferred_await(vm: &mut Vm, args: &[JValue]) -> R {
-    match payload(vm, args[0]) {
-        Some(Native::Deferred {
-            error: JValue::Obj(error),
-            ..
-        }) => Err(NatErr::Throw(*error)),
-        Some(Native::Deferred { value, .. }) => Ok(*value),
-        _ => Err(npe(vm)),
-    }
-}
-
-pub(crate) fn deferred_await_all(vm: &mut Vm, args: &[JValue]) -> R {
-    let deferreds = coll_elems(vm, args[0])?;
-    let mut values = Vec::with_capacity(deferreds.len());
-    for deferred in deferreds {
-        values.push(deferred_await(vm, &[deferred])?);
-    }
-    list_alloc(vm, values)
 }
 
 fn suspend_lambda_init(_vm: &mut Vm, _args: &[JValue]) -> R {
@@ -1908,6 +1708,17 @@ fn stringskt_substring_after_default(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Ljava/lang/String;", Native::Str(r))
 }
 
+fn stringskt_substring_after(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = charseq_of(vm, args[0])?;
+    let delim = charseq_of(vm, args[1])?;
+    let missing = charseq_of(vm, args[2])?;
+    let out = s
+        .find(&delim)
+        .map(|i| s[i + delim.len()..].to_string())
+        .unwrap_or(missing);
+    Ok(new_str(vm, &out))
+}
+
 fn regex_replace_case_insensitive(s: &str, from: &str, to: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut rest = s;
@@ -2030,8 +1841,6 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "last", "(Ljava/util/List;)Ljava/lang/Object;", false, collections_last),
     ne!("Lkotlin/collections/CollectionsKt;", "getOrNull", "(Ljava/util/List;I)Ljava/lang/Object;", false, collections_get_or_null),
     ne!("Lkotlin/collections/CollectionsKt;", "toMutableList", "(Ljava/util/Collection;)Ljava/util/List;", false, collections_to_mutable_list),
-    ne!("Lkotlin/collections/CollectionsKt;", "asSequence", "(Ljava/lang/Iterable;)Lkotlin/sequences/Sequence;", false, sequence_as_sequence),
-    ne!("Lkotlin/collections/CollectionsKt;", "flatten", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_flatten),
     ne!("Lkotlin/collections/CollectionsKt;", "addAll", "(Ljava/util/Collection;Ljava/lang/Iterable;)Z", false, collections_add_all),
     ne!("Lkotlin/collections/CollectionsKt;", "throwIndexOverflow", "()V", false, collections_throw_index_overflow),
     ne!("Lkotlin/collections/CollectionsKt;", "listOfNotNull", "(Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_not_null),
@@ -2040,9 +1849,6 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "filterNotNull", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_filter_not_null),
     ne!("Lkotlin/collections/CollectionsKt;", "lastOrNull", "(Ljava/util/List;)Ljava/lang/Object;", false, collections_last_or_null),
     ne!("Lkotlin/collections/CollectionsKt;", "sortedWith", "(Ljava/lang/Iterable;Ljava/util/Comparator;)Ljava/util/List;", false, collections_sorted_with),
-    ne!("Lkotlin/sequences/SequencesKt;", "map", "(Lkotlin/sequences/Sequence;Lkotlin/jvm/functions/Function1;)Lkotlin/sequences/Sequence;", false, sequence_map),
-    ne!("Lkotlin/sequences/SequencesKt;", "filter", "(Lkotlin/sequences/Sequence;Lkotlin/jvm/functions/Function1;)Lkotlin/sequences/Sequence;", false, sequence_filter),
-    ne!("Lkotlin/sequences/SequencesKt;", "toList", "(Lkotlin/sequences/Sequence;)Ljava/util/List;", false, sequence_to_list),
     ne!("Lkotlin/collections/SetsKt;", "setOf", "([Ljava/lang/Object;)Ljava/util/Set;", false, setskt_set_of),
     ne!("Lkotlin/collections/SetsKt;", "emptySet", "()Ljava/util/Set;", false, setskt_empty_set),
     ne!("Lkotlin/collections/SetsKt;", "plus", "(Ljava/util/Set;Ljava/lang/Object;)Ljava/util/Set;", false, setskt_plus),
@@ -2053,31 +1859,12 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/MapsKt;", "mapCapacity", "(I)I", false, mapskt_map_capacity),
     ne!("Lkotlin/collections/ArraysKt;", "plus", "([B[B)[B", false, arrayskt_plus_bytes),
     ne!("Lkotlin/collections/ArraysKt;", "contains", "([Ljava/lang/Object;Ljava/lang/Object;)Z", false, arrayskt_contains),
-    ne!("Lkotlin/collections/CollectionsKt;", "reversed", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_reversed),
-    ne!("Lkotlin/collections/CollectionsKt;", "toList", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_to_list_iterable),
-    ne!("Lkotlin/collections/CollectionsKt;", "sorted", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_sorted),
-    ne!("Lkotlin/collections/CollectionsKt;", "asReversed", "(Ljava/util/List;)Ljava/util/List;", false, collections_as_reversed),
-    ne!("Lkotlin/collections/CollectionsKt;", "take", "(Ljava/lang/Iterable;I)Ljava/util/List;", false, collections_take),
-    ne!("Lkotlin/collections/CollectionsKt;", "drop", "(Ljava/lang/Iterable;I)Ljava/util/List;", false, collections_drop),
     ne!("Lkotlin/text/StringsKt;", "startsWith$default", "(Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Z", false, stringskt_starts_with_default),
     ne!("Lkotlin/collections/CollectionsKt;", "collectionSizeOrDefault", "(Ljava/lang/Iterable;I)I", false, collections_size_or_default),
     ne!("Lkotlin/collections/CollectionsKt;", "joinToString$default", "(Ljava/lang/Iterable;Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;ILjava/lang/CharSequence;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/String;", false, collections_join_to_string_default),
+    ne!("Lkotlin/collections/CollectionsKt;", "joinTo$default", "(Ljava/lang/Iterable;Ljava/lang/Appendable;Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;ILjava/lang/CharSequence;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Appendable;", false, collections_join_to_string_default),
     ne!("Lkotlin/jvm/internal/Intrinsics;", "areEqual", "(Ljava/lang/Object;Ljava/lang/Object;)Z", false, intrinsics_are_equal),
     ne!("Lkotlin/jvm/internal/Intrinsics;", "checkNotNullParameter", "(Ljava/lang/Object;Ljava/lang/String;)V", false, intrinsics_check_not_null_parameter),
-    ne!("Lkotlin/Pair;", "getFirst", "()Ljava/lang/Object;", true, pair_get_first),
-    ne!("Lkotlin/Pair;", "getSecond", "()Ljava/lang/Object;", true, pair_get_second),
-    ne!("Lkotlin/Pair;", "component1", "()Ljava/lang/Object;", true, pair_get_first),
-    ne!("Lkotlin/Pair;", "component2", "()Ljava/lang/Object;", true, pair_get_second),
-    ne!("Lkotlin/Pair;", "<init>", "(Ljava/lang/Object;Ljava/lang/Object;)V", true, pair_init),
-    ne!("Lkotlin/TuplesKt;", "to", "(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;", false, tupled_to),
-    ne!("Lkotlin/TuplesKt;", "to", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Triple;", false, tripled_to),
-    ne!("Lkotlin/Triple;", "getFirst", "()Ljava/lang/Object;", true, triple_get_first),
-    ne!("Lkotlin/Triple;", "getSecond", "()Ljava/lang/Object;", true, triple_get_second),
-    ne!("Lkotlin/Triple;", "getThird", "()Ljava/lang/Object;", true, triple_get_third),
-    ne!("Lkotlin/Triple;", "component1", "()Ljava/lang/Object;", true, triple_component1),
-    ne!("Lkotlin/Triple;", "component2", "()Ljava/lang/Object;", true, triple_component2),
-    ne!("Lkotlin/Triple;", "component3", "()Ljava/lang/Object;", true, triple_component3),
-    ne!("Lkotlin/Triple;", "<init>", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V", true, triple_init),
     ne!("Lkotlin/Result;", "constructor-impl", "(Ljava/lang/Object;)Ljava/lang/Object;", false, result_constructor_impl),
     ne!("Lkotlin/Result;", "isFailure-impl", "(Ljava/lang/Object;)Z", false, result_is_failure_impl),
     ne!("Lkotlin/Result;", "exceptionOrNull-impl", "(Ljava/lang/Object;)Ljava/lang/Throwable;", false, result_exception_or_null),
@@ -2122,17 +1909,12 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/jvm/internal/Reflection;", "getOrCreateKotlinClass", "(Ljava/lang/Class;)Lkotlin/reflect/KClass;", false, kotlin_reflection_class),
     ne!("Lkotlin/jvm/internal/Reflection;", "typeOf", "(Ljava/lang/Class;)Lkotlin/reflect/KType;", false, kotlin_reflection_class),
     ne!("Lkotlin/text/MatcherMatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
-    ne!("Lkotlin/ranges/IntRange;", "<init>", "(II)V", true, int_range_init),
-    ne!("Lkotlin/ranges/RangesKt;", "until", "(II)Lkotlin/ranges/IntRange;", false, rangeskt_until),
-    ne!("Lkotlin/ranges/IntRange;", "getFirst", "()I", true, int_range_get_first),
-    ne!("Lkotlin/ranges/IntRange;", "getLast", "()I", true, int_range_get_last),
-    ne!("Lkotlin/collections/IntIterator;", "<init>", "()V", true, int_iterator_init),
-    ne!("Lkotlin/collections/IntIterator;", "nextInt", "()I", true, int_iterator_next_int),
-    ne!("Lkotlin/collections/IntIterator;", "hasNext", "()Z", true, int_iterator_has_next),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of),
     ne!("Lkotlin/jvm/internal/DefaultConstructorMarker;", "<init>", "()V", true, object_noop),
     ne!("Lkotlin/jvm/internal/Lambda;", "<init>", "(I)V", true, object_noop),
     ne!("Lkotlin/text/StringsKt;", "contains$default", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;ZILjava/lang/Object;)Z", false, stringskt_contains_default),
+    ne!("Lkotlin/text/StringsKt;", "contains$default", "(Ljava/lang/CharSequence;CZILjava/lang/Object;)Z", false, stringskt_contains_char_default),
+    ne!("Lkotlin/text/StringsKt;", "substringAfter", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;", false, stringskt_substring_after),
     ne!("Lkotlin/text/StringsKt;", "take", "(Ljava/lang/String;I)Ljava/lang/String;", false, stringskt_take),
     ne!("Lkotlin/text/StringsKt;", "padStart", "(Ljava/lang/String;IC)Ljava/lang/String;", false, stringskt_pad_start),
     ne!("Lkotlin/text/StringsKt;", "dropLast", "(Ljava/lang/String;I)Ljava/lang/String;", false, stringskt_drop_last),

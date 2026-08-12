@@ -234,6 +234,10 @@ pub(crate) fn native_tables() -> Vec<&'static [NativeEntry]> {
     let mut out: Vec<&'static [NativeEntry]> = Vec::new();
     java::java_tables(&mut out);
     out.push(kotlin::KOTLIN_TABLE);
+    out.push(kotlin::COLLECTIONS_TABLE);
+    out.push(kotlin::SEQUENCES_TABLE);
+    out.push(kotlin::RANGES_TABLE);
+    out.push(kotlin::TUPLES_TABLE);
     out.push(json::JSON_TABLE);
     #[cfg(feature = "quickjs")]
     out.push(quickjs::QUICKJS_TABLE);

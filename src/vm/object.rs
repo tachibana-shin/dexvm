@@ -224,6 +224,10 @@ pub enum Native {
     AtomicInt(i32),
     /// java.util.concurrent.CountDownLatch count.
     CountDownLatch(i32),
+    /// kotlinx.coroutines Mutex state; coroutines execute synchronously here.
+    Mutex {
+        locked: bool,
+    },
     /// java.time.LocalDate (days since epoch).
     LocalDay(u32),
     /// java.time.Instant / ZonedDateTime (epoch millis).
@@ -961,6 +965,7 @@ impl Native {
             | Native::AtomicBool(_)
             | Native::AtomicInt(_)
             | Native::CountDownLatch(_)
+            | Native::Mutex { .. }
             | Native::LocalDay(_)
             | Native::EpochMillis(_)
             | Native::SortSelection { .. }
