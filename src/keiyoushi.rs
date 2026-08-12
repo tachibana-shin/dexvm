@@ -583,6 +583,7 @@ impl Keiyoushi {
             thumbnail_url: m.thumbnail_url.clone(),
             url: m.url.clone(),
             update_strategy: JValue::Null,
+            memo: JValue::Null,
         };
         Ok(JValue::Obj(self.ctx.vm().arena.alloc(
             cid,
@@ -707,5 +708,6 @@ fn empty_chapter(url: String, name: String) -> Native {
         date_upload: 0,
         scanlator: String::new(),
         chapter_number: 0.0,
+        memo: JValue::Null,
     }
 }

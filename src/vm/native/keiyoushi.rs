@@ -490,6 +490,7 @@ pub(crate) fn empty_smanga() -> Native {
         thumbnail_url: String::new(),
         url: String::new(),
         update_strategy: JValue::Null,
+        memo: JValue::Null,
     }
 }
 
@@ -611,6 +612,21 @@ pub(crate) fn smanga_set_initialized(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+pub(crate) fn smanga_get_memo(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::SManga { memo, .. }) => Ok(*memo),
+        _ => Err(npe(vm)),
+    }
+}
+
+pub(crate) fn smanga_set_memo(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload_mut(vm, args[0]) {
+        Some(Native::SManga { memo, .. }) => *memo = args[1],
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
 // ---- SChapter ----
 
 pub(crate) fn empty_schapter() -> Native {
@@ -620,6 +636,7 @@ pub(crate) fn empty_schapter() -> Native {
         date_upload: 0,
         scanlator: String::new(),
         chapter_number: 0.0,
+        memo: JValue::Null,
     }
 }
 
@@ -695,6 +712,21 @@ pub(crate) fn schapter_set_chapter_number(vm: &mut Vm, args: &[JValue]) -> R {
     let v = float_of(vm, args[1]);
     match payload_mut(vm, args[0]) {
         Some(Native::SChapter { chapter_number, .. }) => *chapter_number = v,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
+pub(crate) fn schapter_get_memo(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::SChapter { memo, .. }) => Ok(*memo),
+        _ => Err(npe(vm)),
+    }
+}
+
+pub(crate) fn schapter_set_memo(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload_mut(vm, args[0]) {
+        Some(Native::SChapter { memo, .. }) => *memo = args[1],
         _ => return Err(npe(vm)),
     }
     Ok(JValue::Null)
@@ -1252,6 +1284,8 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "getUpdate_strategy", "()Leu/kanade/tachiyomi/source/model/UpdateStrategy;", true, smanga_get_update_strategy),
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "setUpdate_strategy", "(Leu/kanade/tachiyomi/source/model/UpdateStrategy;)V", true, smanga_set_update_strategy),
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "setInitialized", "(Z)V", true, smanga_set_initialized),
+    ne!("Leu/kanade/tachiyomi/source/model/SManga;", "getMemo", "()Lkotlinx/serialization/json/JsonObject;", true, smanga_get_memo),
+    ne!("Leu/kanade/tachiyomi/source/model/SManga;", "setMemo", "(Lkotlinx/serialization/json/JsonObject;)V", true, smanga_set_memo),
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "getUrlWithoutDomain", "()Ljava/lang/String;", true, smanga_get_url),
     ne!("Leu/kanade/tachiyomi/source/model/SManga$Companion;", "create", "()Leu/kanade/tachiyomi/source/model/SManga;", true, smanga_companion_create),
     ne!("Leu/kanade/tachiyomi/source/model/SManga$Companion;", "create", "()Leu/kanade/tachiyomi/source/model/SChapter;", true, smanga_companion_create),
@@ -1266,6 +1300,8 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "setChapter_number", "(F)V", true, schapter_set_chapter_number),
     ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "getScanlator", "()Ljava/lang/String;", true, schapter_get_scanlator),
     ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "setScanlator", "(Ljava/lang/String;)V", true, schapter_set_scanlator),
+    ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "getMemo", "()Lkotlinx/serialization/json/JsonObject;", true, schapter_get_memo),
+    ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "setMemo", "(Lkotlinx/serialization/json/JsonObject;)V", true, schapter_set_memo),
     ne!("Leu/kanade/tachiyomi/source/model/SChapter$Companion;", "create", "()Leu/kanade/tachiyomi/source/model/SChapter;", true, schapter_companion_create),
     ne!("Leu/kanade/tachiyomi/source/model/Page;", "<init>", "(ILjava/lang/String;Ljava/lang/String;Landroid/net/Uri;ILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, page_init),
     ne!("Leu/kanade/tachiyomi/source/model/Page;", "getUrl", "()Ljava/lang/String;", true, page_get_url),
@@ -1434,5 +1470,24 @@ mod tests {
         check_network_url(vm, "https://api.example/path").unwrap();
         assert!(check_network_url(vm, "https://api.example:8443/path").is_err());
         assert!(check_network_url(vm, "https://evil.example/path").is_err());
+    }
+
+    #[test]
+    fn manga_and_chapter_memo_round_trip() {
+        let data = std::fs::read("fixtures/classes.dex").unwrap();
+        let mut ctx = Context::new(&data).unwrap();
+        let vm = ctx.vm();
+        let manga = alloc(vm, SMANGA, empty_smanga()).unwrap();
+        let chapter = alloc(vm, SCHAPTER, empty_schapter()).unwrap();
+        let memo = alloc(
+            vm,
+            "Lkotlinx/serialization/json/JsonObject;",
+            Native::Json(crate::vm::object::JsonVal::Object(Vec::new())),
+        )
+        .unwrap();
+        smanga_set_memo(vm, &[manga, memo]).unwrap();
+        schapter_set_memo(vm, &[chapter, memo]).unwrap();
+        assert_eq!(smanga_get_memo(vm, &[manga]).unwrap(), memo);
+        assert_eq!(schapter_get_memo(vm, &[chapter]).unwrap(), memo);
     }
 }

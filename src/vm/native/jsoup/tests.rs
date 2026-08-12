@@ -104,7 +104,8 @@ fn document_get_element_by_id_returns_matching_element() {
         let element = document_get_element_by_id(vm, &[doc, id]).unwrap();
         assert!(!element.is_null());
         assert_eq!(s_of!(vm, element_tag_name(vm, &[element])), "div");
-        let missing = document_get_element_by_id(vm, &[doc, s(vm, "missing")]).unwrap();
+        let missing_id = s(vm, "missing");
+        let missing = document_get_element_by_id(vm, &[doc, missing_id]).unwrap();
         assert!(missing.is_null());
     });
 }

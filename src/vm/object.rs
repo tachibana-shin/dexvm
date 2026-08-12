@@ -543,6 +543,7 @@ pub enum Native {
         thumbnail_url: String,
         url: String,
         update_strategy: JValue,
+        memo: JValue,
     },
     /// eu.kanade.tachiyomi.source.model.SChapter.
     SChapter {
@@ -551,6 +552,7 @@ pub enum Native {
         date_upload: i64,
         scanlator: String,
         chapter_number: f32,
+        memo: JValue,
     },
     /// eu.kanade.tachiyomi.source.model.Page.
     SPPage {
@@ -838,8 +840,14 @@ impl Native {
             Native::RequestBuilder { body, .. } => push(body.as_ref(), out),
             Native::Response { request, .. } => push(Some(request), out),
             Native::SManga {
-                update_strategy, ..
-            } => push(Some(update_strategy), out),
+                update_strategy,
+                memo,
+                ..
+            } => {
+                push(Some(update_strategy), out);
+                push(Some(memo), out);
+            }
+            Native::SChapter { memo, .. } => push(Some(memo), out),
             Native::SMangasPage { mangas, .. } => push_all(mangas, out),
             Native::SMangaUpdate { manga, chapters } => {
                 push(Some(manga), out);
@@ -945,7 +953,6 @@ impl Native {
             | Native::AtomicInt(_)
             | Native::LocalDay(_)
             | Native::EpochMillis(_)
-            | Native::SChapter { .. }
             | Native::SortSelection { .. }
             | Native::SPPage { .. }
             | Native::Duration(_)
