@@ -1071,6 +1071,32 @@ pub(crate) fn filter_set_state(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+pub(crate) fn filter_select_set_state(vm: &mut Vm, args: &[JValue]) -> R {
+    let state = match payload(vm, args[1]) {
+        Some(Native::IntBox(v)) => *v,
+        _ => int_of(vm, args[1]),
+    };
+    match payload_mut(vm, args[0]) {
+        Some(Native::SFilter { state: slot, .. }) => *slot = state,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
+pub(crate) fn filter_checkbox_set_state(vm: &mut Vm, args: &[JValue]) -> R {
+    let checked = match payload(vm, args[1]) {
+        Some(Native::BoolBox(v)) => *v,
+        _ => int_of(vm, args[1]) != 0,
+    };
+    match payload_mut(vm, args[0]) {
+        Some(Native::SFilter {
+            is_checked: slot, ..
+        }) => *slot = checked,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
 pub(crate) fn filter_select_state_obj(vm: &mut Vm, args: &[JValue]) -> R {
     let state = match payload(vm, args[0]) {
         Some(Native::SFilter { state, .. }) => *state,
@@ -1343,6 +1369,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "<init>", "(Ljava/lang/String;[Ljava/lang/Object;IILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_select_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "getState", "()Ljava/lang/Object;", true, filter_select_state_obj),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "getValues", "()[Ljava/lang/Object;", true, filter_select_get_values),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$Select;", "setState", "(Ljava/lang/Object;)V", true, filter_select_set_state),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;", "<init>", "(IZ)V", true, sort_selection_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;", "getIndex", "()I", true, sort_selection_get_index),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;", "getAscending", "()Z", true, sort_selection_get_ascending),
@@ -1351,6 +1378,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "<init>", "(Ljava/lang/String;Z)V", true, filter_init_checked),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "<init>", "(Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_checkbox_init_synth),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "getState", "()Ljava/lang/Object;", true, filter_checkbox_state_obj),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "setState", "(Ljava/lang/Object;)V", true, filter_checkbox_set_state),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Group;", "<init>", "(Ljava/lang/String;Ljava/util/List;)V", true, filter_group_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Group;", "<init>", "(Ljava/lang/String;Ljava/util/List;IILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_group_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Group;", "getState", "()Ljava/lang/Object;", true, filter_group_state_obj),
@@ -1489,5 +1517,29 @@ mod tests {
         schapter_set_memo(vm, &[chapter, memo]).unwrap();
         assert_eq!(smanga_get_memo(vm, &[manga]).unwrap(), memo);
         assert_eq!(schapter_get_memo(vm, &[chapter]).unwrap(), memo);
+    }
+
+    #[test]
+    fn filter_subclass_states_are_mutable() {
+        let data = std::fs::read("fixtures/classes.dex").unwrap();
+        let mut ctx = Context::new(&data).unwrap();
+        let vm = ctx.vm();
+        let select = alloc(
+            vm,
+            "Leu/kanade/tachiyomi/source/model/Filter$Select;",
+            filter_new("x".into(), false, 0),
+        )
+        .unwrap();
+        filter_select_set_state(vm, &[select, JValue::Int(2)]).unwrap();
+        assert_eq!(filter_get_state(vm, &[select]).unwrap(), JValue::Int(2));
+        let check = alloc(
+            vm,
+            "Leu/kanade/tachiyomi/source/model/Filter$CheckBox;",
+            filter_new("x".into(), false, 0),
+        )
+        .unwrap();
+        filter_checkbox_set_state(vm, &[check, JValue::Int(1)]).unwrap();
+        let state = filter_checkbox_state_obj(vm, &[check]).unwrap();
+        assert!(bool_of(vm, state));
     }
 }

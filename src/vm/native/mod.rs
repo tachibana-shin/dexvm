@@ -96,7 +96,7 @@ pub const THROWABLE_CTORS: &[NativeEntry] = throwable_ctors_table![
 ];
 
 #[cfg(feature = "android")]
-mod android;
+pub(crate) mod android;
 #[cfg(feature = "android")]
 mod androidx;
 mod injekt;

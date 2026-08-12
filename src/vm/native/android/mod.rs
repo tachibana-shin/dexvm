@@ -191,7 +191,7 @@ fn load_shared_preferences(vm: &mut Vm) -> Result<(), NatErr> {
     Ok(())
 }
 
-fn persist_shared_preferences(
+pub(crate) fn persist_shared_preferences(
     path: &std::path::Path,
     prefs: &std::collections::HashMap<String, std::collections::HashMap<String, PreferenceValue>>,
 ) -> std::io::Result<()> {

@@ -17,7 +17,7 @@
 
 use std::rc::Rc;
 
-use crate::context::{Context, ContextError, SandboxOptions};
+use crate::context::{Context, ContextError, SandboxOptions, SettingDefinition, SettingValue};
 use crate::vm::error::JvmError;
 use crate::vm::native::keiyoushi::{FILTER, FILTER_LIST, SCHAPTER, SMANGA};
 use crate::vm::object::Native;
@@ -136,6 +136,33 @@ impl Keiyoushi {
     /// `SharedPreferences`. Without this, preferences remain in memory only.
     pub fn set_shared_preferences_path(&mut self, path: impl AsRef<std::path::Path>) {
         self.ctx.set_shared_preferences_path(path);
+    }
+
+    pub fn get_all_setting_definitions(&self) -> Vec<SettingDefinition> {
+        self.ctx.get_all_setting_definitions()
+    }
+
+    pub fn get_settings(
+        &mut self,
+        preference_file: &str,
+    ) -> std::collections::HashMap<String, SettingValue> {
+        self.ctx.get_settings(preference_file)
+    }
+
+    pub fn on_update_settings<F>(&mut self, callback: F)
+    where
+        F: Fn(&str, &SettingValue) + 'static,
+    {
+        self.ctx.on_update_settings(callback);
+    }
+
+    pub fn update_setting(
+        &mut self,
+        preference_file: &str,
+        key: &str,
+        value: SettingValue,
+    ) -> std::io::Result<()> {
+        self.ctx.update_setting(preference_file, key, value)
     }
 
     fn vm(&mut self) -> &mut Vm {

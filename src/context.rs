@@ -26,9 +26,23 @@ use std::path::Path;
 use crate::dex::DexFile;
 use crate::permission::{FilesystemPermission, NetworkPermission, Permission, ProcessPermission};
 use crate::vm::error::JvmError;
+pub use crate::vm::object::PreferenceValue as SettingValue;
+use crate::vm::object::{Native, PreferenceValue};
 use crate::vm::value::JValue;
 use crate::vm::{interpret, NativeEntry};
 use crate::Vm;
+
+/// Host-visible definition of an AndroidX preference declared by an extension.
+#[derive(Clone, Debug)]
+pub struct SettingDefinition {
+    pub key: Option<String>,
+    pub title: Option<String>,
+    pub summary: Option<String>,
+    pub default_value: JValue,
+    pub enabled: bool,
+    pub visible: bool,
+    pub children: Vec<SettingDefinition>,
+}
 
 /// Errors produced while constructing a [`Context`] from bytes or a file.
 #[derive(Debug)]
@@ -98,6 +112,7 @@ pub struct Context {
     /// `invoke` can dispatch further methods on it (like
     /// `d4rt_rs::Context::invoke` after `execute`).
     last_instance: Option<u32>,
+    settings_update: Option<std::rc::Rc<dyn Fn(&str, &PreferenceValue)>>,
 }
 
 type ApkContents = (Vec<Vec<u8>>, HashMap<String, Vec<u8>>);
@@ -203,6 +218,7 @@ impl Context {
         Ok(Context {
             vm,
             last_instance: None,
+            settings_update: None,
         })
     }
 
@@ -224,6 +240,133 @@ impl Context {
     /// denied afterwards.
     pub fn revoke(&mut self, p: &Permission) {
         self.vm.perms.revoke(p);
+    }
+
+    /// Returns all AndroidX preference definitions currently materialized by
+    /// the extension, including nested preference screens.
+    pub fn get_all_setting_definitions(&self) -> Vec<SettingDefinition> {
+        fn text(vm: &Vm, v: Option<JValue>) -> Option<String> {
+            let JValue::Obj(id) = v? else { return None };
+            match vm
+                .arena
+                .objects
+                .get(id as usize)
+                .and_then(|o| o.native.as_ref())
+            {
+                Some(Native::Str(s)) => Some(s.clone()),
+                _ => None,
+            }
+        }
+        fn walk(vm: &Vm, v: JValue) -> Option<SettingDefinition> {
+            match vm
+                .arena
+                .objects
+                .get(v.as_obj() as usize)
+                .and_then(|o| o.native.as_ref())
+            {
+                Some(Native::Preference {
+                    key,
+                    title,
+                    summary,
+                    default_value,
+                    enabled,
+                    visible,
+                }) => Some(SettingDefinition {
+                    key: text(vm, *key),
+                    title: text(vm, *title),
+                    summary: text(vm, *summary),
+                    default_value: *default_value,
+                    enabled: *enabled,
+                    visible: *visible,
+                    children: Vec::new(),
+                }),
+                Some(Native::PreferenceScreen { children, title }) => Some(SettingDefinition {
+                    key: None,
+                    title: text(vm, *title),
+                    summary: None,
+                    default_value: JValue::Null,
+                    enabled: true,
+                    visible: true,
+                    children: children.iter().filter_map(|c| walk(vm, *c)).collect(),
+                }),
+                _ => None,
+            }
+        }
+        let mut child_ids = std::collections::HashSet::new();
+        for object in &self.vm.arena.objects {
+            if let Some(Native::PreferenceScreen { children, .. }) = object.native.as_ref() {
+                child_ids.extend(children.iter().filter_map(|v| match v {
+                    JValue::Obj(id) => Some(*id),
+                    _ => None,
+                }));
+            }
+        }
+        self.vm
+            .arena
+            .objects
+            .iter()
+            .enumerate()
+            .filter(|(id, object)| {
+                !child_ids.contains(&(*id as u32))
+                    && matches!(
+                        object.native,
+                        Some(Native::PreferenceScreen { .. }) | Some(Native::Preference { .. })
+                    )
+            })
+            .filter_map(|(id, _)| walk(&self.vm, JValue::Obj(id as u32)))
+            .collect()
+    }
+
+    /// Returns persisted/in-memory values for named settings.
+    pub fn get_settings(
+        &mut self,
+        preference_file: &str,
+    ) -> std::collections::HashMap<String, PreferenceValue> {
+        self.vm
+            .shared_preferences
+            .get(preference_file)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    /// Registers the host callback invoked by [`Context::update_setting`].
+    pub fn on_update_settings<F>(&mut self, callback: F)
+    where
+        F: Fn(&str, &PreferenceValue) + 'static,
+    {
+        self.settings_update = Some(std::rc::Rc::new(callback));
+    }
+
+    /// Updates one setting through the same persistence path as Android
+    /// SharedPreferences and notifies the host callback.
+    pub fn update_setting(
+        &mut self,
+        preference_file: &str,
+        key: &str,
+        value: PreferenceValue,
+    ) -> std::io::Result<()> {
+        self.vm
+            .shared_preferences
+            .entry(preference_file.to_string())
+            .or_default()
+            .insert(key.to_string(), value);
+        if let Some(path) = self.vm.shared_preferences_path.clone() {
+            crate::vm::native::android::persist_shared_preferences(
+                &path,
+                &self.vm.shared_preferences,
+            )?;
+        }
+        if let Some(cb) = &self.settings_update {
+            if let Some(value) = self
+                .vm
+                .shared_preferences
+                .get(preference_file)
+                .and_then(|m| m.get(key))
+            {
+                cb(key, value);
+            }
+        }
+        Ok(())
     }
 
     /// Selects a host-owned persistence file for Android `SharedPreferences`.
