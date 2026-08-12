@@ -1,18 +1,18 @@
 use crate::vm::native::*;
 
 pub fn lazy_bool_true(vm: &mut Vm) -> JValue {
-    let class = vm
-        .ensure_class_by_desc("Ljava/lang/Boolean;")
-        .expect("Boolean shim");
+    let Ok(class) = vm.ensure_class_by_desc("Ljava/lang/Boolean;") else {
+        return JValue::Null;
+    };
     JValue::Obj(
         vm.arena
             .alloc(class, Vec::new(), Some(Native::BoolBox(true))),
     )
 }
 pub fn lazy_bool_false(vm: &mut Vm) -> JValue {
-    let class = vm
-        .ensure_class_by_desc("Ljava/lang/Boolean;")
-        .expect("Boolean shim");
+    let Ok(class) = vm.ensure_class_by_desc("Ljava/lang/Boolean;") else {
+        return JValue::Null;
+    };
     JValue::Obj(
         vm.arena
             .alloc(class, Vec::new(), Some(Native::BoolBox(false))),

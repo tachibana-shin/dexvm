@@ -207,14 +207,20 @@ static GLOBAL_NATIVES: std::sync::OnceLock<std::sync::RwLock<Vec<&'static Native
 /// ```
 pub fn register_global(table: &'static [NativeEntry]) {
     let lock = GLOBAL_NATIVES.get_or_init(Default::default);
-    lock.write().unwrap().extend(table.iter());
+    match lock.write() {
+        Ok(mut guard) => guard.extend(table.iter()),
+        Err(poisoned) => poisoned.into_inner().extend(table.iter()),
+    }
 }
 
 /// Read-only view of every globally registered native.
 pub fn global_native_entries() -> Vec<&'static NativeEntry> {
     GLOBAL_NATIVES
         .get()
-        .map_or_else(Vec::new, |l| l.read().unwrap().clone())
+        .map_or_else(Vec::new, |l| match l.read() {
+            Ok(guard) => guard.clone(),
+            Err(poisoned) => poisoned.into_inner().clone(),
+        })
 }
 
 /// Number of globally registered natives (introspection / tests).

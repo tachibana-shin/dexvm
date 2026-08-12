@@ -1,9 +1,9 @@
 use crate::vm::native::*;
 
 pub fn lazy_opaque_locale(vm: &mut Vm) -> JValue {
-    let class = vm
-        .ensure_class_by_desc("Ljava/util/Locale;")
-        .expect("Locale shim");
+    let Ok(class) = vm.ensure_class_by_desc("Ljava/util/Locale;") else {
+        return JValue::Null;
+    };
     JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(Native::Opaque)))
 }
 
@@ -11,9 +11,9 @@ pub fn lazy_opaque_locale(vm: &mut Vm) -> JValue {
 macro_rules! locale_const {
     ($name:ident, $tag:expr) => {
         pub fn $name(vm: &mut Vm) -> JValue {
-            let class = vm
-                .ensure_class_by_desc("Ljava/util/Locale;")
-                .expect("Locale shim");
+            let Ok(class) = vm.ensure_class_by_desc("Ljava/util/Locale;") else {
+                return JValue::Null;
+            };
             JValue::Obj(
                 vm.arena
                     .alloc(class, Vec::new(), Some(Native::Str($tag.into()))),

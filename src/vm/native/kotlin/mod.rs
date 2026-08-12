@@ -8,7 +8,9 @@ use super::*;
 // ---------------------------------------------------------------------------
 
 pub(crate) fn opaque_inst(vm: &mut Vm, desc: &str) -> JValue {
-    let class = vm.ensure_class_by_desc(desc).expect("kotlin shim");
+    let Ok(class) = vm.ensure_class_by_desc(desc) else {
+        return JValue::Null;
+    };
     JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(Native::Opaque)))
 }
 
@@ -179,6 +181,31 @@ pub(crate) fn regex_matches(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(i32::from(full)))
 }
 
+pub(crate) fn regex_match_entire(vm: &mut Vm, args: &[JValue]) -> R {
+    let re = match payload(vm, args[0]) {
+        Some(Native::Pattern { re, .. }) => re.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let text = charseq_of(vm, args[1])?;
+    let Some(m) = re.find(&text).ok().flatten() else {
+        return Ok(JValue::Null);
+    };
+    if m.start() != 0 || m.end() != text.len() {
+        return Ok(JValue::Null);
+    }
+    let end = m.end();
+    alloc(
+        vm,
+        "Lkotlin/text/MatcherMatchResult;",
+        Native::Matcher(MatcherState {
+            pattern: re,
+            text,
+            pos: end,
+            last: Some((0, end)),
+        }),
+    )
+}
+
 pub(crate) fn regex_contains_match_in(vm: &mut Vm, args: &[JValue]) -> R {
     let re = match payload(vm, args[0]) {
         Some(Native::Pattern { re, .. }) => re.clone(),
@@ -297,6 +324,21 @@ pub(crate) fn collections_reversed(vm: &mut Vm, args: &[JValue]) -> R {
     list_alloc(vm, items)
 }
 
+fn collections_as_reversed(vm: &mut Vm, args: &[JValue]) -> R {
+    collections_reversed(vm, args)
+}
+fn collections_take(vm: &mut Vm, args: &[JValue]) -> R {
+    let n = int_of(vm, args[1]).max(0) as usize;
+    let mut values = coll_elems(vm, args[0])?;
+    values.truncate(n);
+    list_alloc(vm, values)
+}
+fn collections_drop(vm: &mut Vm, args: &[JValue]) -> R {
+    let n = int_of(vm, args[1]).max(0) as usize;
+    let values = coll_elems(vm, args[0])?;
+    list_alloc(vm, values.into_iter().skip(n).collect())
+}
+
 pub(crate) fn collections_plus_iterable(vm: &mut Vm, args: &[JValue]) -> R {
     let mut items = coll_elems(vm, args[0])?;
     items.extend(coll_elems(vm, args[1])?);
@@ -355,6 +397,59 @@ pub(crate) fn collections_get_or_null(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn collections_to_mutable_list(vm: &mut Vm, args: &[JValue]) -> R {
     let items = coll_elems(vm, args[0])?;
     list_alloc(vm, items)
+}
+
+fn sequence_as_sequence(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = coll_elems(vm, args[0])?;
+    alloc(vm, "Lkotlin/sequences/Sequence;", Native::List(values))
+}
+
+fn sequence_to_list(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = coll_elems(vm, args[0])?;
+    list_alloc(vm, values)
+}
+
+fn sequence_map(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = coll_elems(vm, args[0])?;
+    let f = args[1];
+    let mut out = Vec::with_capacity(values.len());
+    for value in values {
+        out.push(inv_virt(
+            vm,
+            f,
+            "invoke",
+            "(Ljava/lang/Object;)Ljava/lang/Object;",
+            &[value],
+        )?);
+    }
+    alloc(vm, "Lkotlin/sequences/Sequence;", Native::List(out))
+}
+
+fn sequence_filter(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = coll_elems(vm, args[0])?;
+    let f = args[1];
+    let mut out = Vec::new();
+    for value in values {
+        let result = inv_virt(
+            vm,
+            f,
+            "invoke",
+            "(Ljava/lang/Object;)Ljava/lang/Object;",
+            &[value],
+        )?;
+        if int_of(vm, result) != 0 {
+            out.push(value);
+        }
+    }
+    alloc(vm, "Lkotlin/sequences/Sequence;", Native::List(out))
+}
+
+fn collections_flatten(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut out = Vec::new();
+    for value in coll_elems(vm, args[0])? {
+        out.extend(coll_elems(vm, value)?);
+    }
+    list_alloc(vm, out)
 }
 
 pub(crate) fn collections_add_all(vm: &mut Vm, args: &[JValue]) -> R {
@@ -1695,6 +1790,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/Regex;", "<init>", "(Ljava/lang/String;Lkotlin/text/RegexOption;)V", true, regex_init_option),
     ne!("Lkotlin/text/Regex;", "replace", "(Ljava/lang/CharSequence;Ljava/lang/String;)Ljava/lang/String;", true, regex_replace),
     ne!("Lkotlin/text/Regex;", "matches", "(Ljava/lang/CharSequence;)Z", true, regex_matches),
+    ne!("Lkotlin/text/Regex;", "matchEntire", "(Ljava/lang/CharSequence;)Lkotlin/text/MatchResult;", true, regex_match_entire),
     ne!("Lkotlin/text/Regex;", "containsMatchIn", "(Ljava/lang/CharSequence;)Z", true, regex_contains_match_in),
     ne!("Lkotlin/text/Regex;", "find$default", "(Lkotlin/text/Regex;Ljava/lang/CharSequence;IILjava/lang/Object;)Lkotlin/text/MatchResult;", false, regex_find_default),
     ne!("Lkotlin/text/Regex;", "findAll$default", "(Lkotlin/text/Regex;Ljava/lang/CharSequence;IILjava/lang/Object;)Lkotlin/sequences/Sequence;", false, regex_find_default),
@@ -1717,6 +1813,8 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "last", "(Ljava/util/List;)Ljava/lang/Object;", false, collections_last),
     ne!("Lkotlin/collections/CollectionsKt;", "getOrNull", "(Ljava/util/List;I)Ljava/lang/Object;", false, collections_get_or_null),
     ne!("Lkotlin/collections/CollectionsKt;", "toMutableList", "(Ljava/util/Collection;)Ljava/util/List;", false, collections_to_mutable_list),
+    ne!("Lkotlin/collections/CollectionsKt;", "asSequence", "(Ljava/lang/Iterable;)Lkotlin/sequences/Sequence;", false, sequence_as_sequence),
+    ne!("Lkotlin/collections/CollectionsKt;", "flatten", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_flatten),
     ne!("Lkotlin/collections/CollectionsKt;", "addAll", "(Ljava/util/Collection;Ljava/lang/Iterable;)Z", false, collections_add_all),
     ne!("Lkotlin/collections/CollectionsKt;", "throwIndexOverflow", "()V", false, collections_throw_index_overflow),
     ne!("Lkotlin/collections/CollectionsKt;", "listOfNotNull", "(Ljava/lang/Object;)Ljava/util/List;", false, collections_list_of_not_null),
@@ -1725,6 +1823,9 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "filterNotNull", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_filter_not_null),
     ne!("Lkotlin/collections/CollectionsKt;", "lastOrNull", "(Ljava/util/List;)Ljava/lang/Object;", false, collections_last_or_null),
     ne!("Lkotlin/collections/CollectionsKt;", "sortedWith", "(Ljava/lang/Iterable;Ljava/util/Comparator;)Ljava/util/List;", false, collections_sorted_with),
+    ne!("Lkotlin/sequences/SequencesKt;", "map", "(Lkotlin/sequences/Sequence;Lkotlin/jvm/functions/Function1;)Lkotlin/sequences/Sequence;", false, sequence_map),
+    ne!("Lkotlin/sequences/SequencesKt;", "filter", "(Lkotlin/sequences/Sequence;Lkotlin/jvm/functions/Function1;)Lkotlin/sequences/Sequence;", false, sequence_filter),
+    ne!("Lkotlin/sequences/SequencesKt;", "toList", "(Lkotlin/sequences/Sequence;)Ljava/util/List;", false, sequence_to_list),
     ne!("Lkotlin/collections/SetsKt;", "setOf", "([Ljava/lang/Object;)Ljava/util/Set;", false, setskt_set_of),
     ne!("Lkotlin/collections/SetsKt;", "emptySet", "()Ljava/util/Set;", false, setskt_empty_set),
     ne!("Lkotlin/collections/SetsKt;", "plus", "(Ljava/util/Set;Ljava/lang/Object;)Ljava/util/Set;", false, setskt_plus),
@@ -1736,6 +1837,9 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/ArraysKt;", "plus", "([B[B)[B", false, arrayskt_plus_bytes),
     ne!("Lkotlin/collections/ArraysKt;", "contains", "([Ljava/lang/Object;Ljava/lang/Object;)Z", false, arrayskt_contains),
     ne!("Lkotlin/collections/CollectionsKt;", "reversed", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_reversed),
+    ne!("Lkotlin/collections/CollectionsKt;", "asReversed", "(Ljava/util/List;)Ljava/util/List;", false, collections_as_reversed),
+    ne!("Lkotlin/collections/CollectionsKt;", "take", "(Ljava/lang/Iterable;I)Ljava/util/List;", false, collections_take),
+    ne!("Lkotlin/collections/CollectionsKt;", "drop", "(Ljava/lang/Iterable;I)Ljava/util/List;", false, collections_drop),
     ne!("Lkotlin/text/StringsKt;", "startsWith$default", "(Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Z", false, stringskt_starts_with_default),
     ne!("Lkotlin/collections/CollectionsKt;", "collectionSizeOrDefault", "(Ljava/lang/Iterable;I)I", false, collections_size_or_default),
     ne!("Lkotlin/collections/CollectionsKt;", "joinToString$default", "(Ljava/lang/Iterable;Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;ILjava/lang/CharSequence;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/String;", false, collections_join_to_string_default),

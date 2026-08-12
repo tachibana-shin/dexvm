@@ -21,7 +21,11 @@ fn bitmap_mut(vm: &mut Vm, v: JValue) -> Result<&mut Native, NatErr> {
     if !matches!(payload(vm, v), Some(Native::Bitmap { .. })) {
         return Err(npe(vm));
     }
-    Ok(payload_mut(vm, v).expect("payload checked"))
+    let err = npe(vm);
+    match payload_mut(vm, v) {
+        Some(payload) => Ok(payload),
+        None => Err(err),
+    }
 }
 
 fn bitmap_alloc(vm: &mut Vm, width: i32, height: i32, pixels: Vec<u32>) -> R {
@@ -605,7 +609,11 @@ fn paint_mut(vm: &mut Vm, v: JValue) -> Result<&mut Native, NatErr> {
     if !matches!(payload(vm, v), Some(Native::Paint { .. })) {
         return Err(npe(vm));
     }
-    Ok(payload_mut(vm, v).expect("payload checked"))
+    let err = npe(vm);
+    match payload_mut(vm, v) {
+        Some(payload) => Ok(payload),
+        None => Err(err),
+    }
 }
 
 pub(crate) fn paint_init(vm: &mut Vm, args: &[JValue]) -> R {
@@ -707,7 +715,11 @@ fn rect_mut(vm: &mut Vm, v: JValue) -> Result<&mut Native, NatErr> {
     if !matches!(payload(vm, v), Some(Native::Rect { .. })) {
         return Err(npe(vm));
     }
-    Ok(payload_mut(vm, v).expect("payload checked"))
+    let err = npe(vm);
+    match payload_mut(vm, v) {
+        Some(payload) => Ok(payload),
+        None => Err(err),
+    }
 }
 
 pub(crate) fn rect_init(vm: &mut Vm, args: &[JValue]) -> R {

@@ -105,7 +105,9 @@ impl<'a> PrefReader<'a> {
     }
 
     fn u32(&mut self) -> std::io::Result<u32> {
-        Ok(u32::from_le_bytes(self.take(4)?.try_into().unwrap()))
+        Ok(u32::from_le_bytes(
+            self.take(4)?.try_into().map_err(|_| pref_invalid())?,
+        ))
     }
 
     fn string(&mut self) -> std::io::Result<String> {
@@ -146,10 +148,14 @@ fn decode_shared_preferences(
                     _ => return Err(pref_invalid()),
                 }),
                 1 => PreferenceValue::String(reader.string()?),
-                2 => PreferenceValue::Int(i32::from_le_bytes(reader.take(4)?.try_into().unwrap())),
-                3 => PreferenceValue::Long(i64::from_le_bytes(reader.take(8)?.try_into().unwrap())),
+                2 => PreferenceValue::Int(i32::from_le_bytes(
+                    reader.take(4)?.try_into().map_err(|_| pref_invalid())?,
+                )),
+                3 => PreferenceValue::Long(i64::from_le_bytes(
+                    reader.take(8)?.try_into().map_err(|_| pref_invalid())?,
+                )),
                 4 => PreferenceValue::Float(f32::from_bits(u32::from_le_bytes(
-                    reader.take(4)?.try_into().unwrap(),
+                    reader.take(4)?.try_into().map_err(|_| pref_invalid())?,
                 ))),
                 _ => return Err(pref_invalid()),
             };
@@ -1186,8 +1192,14 @@ fn uri_builder_mut(vm: &mut Vm, v: JValue) -> Result<&mut Native, NatErr> {
     if vm.arena.get(id).is_none() {
         return Err(npe(vm));
     }
-    let o = vm.arena.get_mut(id).expect("arena slot checked");
-    Ok(o.native.as_mut().expect("payload just installed"))
+    let err = npe(vm);
+    let Some(o) = vm.arena.get_mut(id) else {
+        return Err(err);
+    };
+    match o.native.as_mut() {
+        Some(payload) => Ok(payload),
+        None => Err(err),
+    }
 }
 
 fn uri_builder_append_query(vm: &mut Vm, args: &[JValue]) -> R {

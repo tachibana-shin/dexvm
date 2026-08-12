@@ -100,7 +100,7 @@ fn push_frame(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<(
             None => {
                 let d =
                     Arc::new(crate::dex::insn::decode_all(&code.insns).map_err(JvmError::from)?);
-                m.insns.set(d.clone()).expect("decode race");
+                let _ = m.insns.set(d.clone());
                 d
             }
         };
@@ -172,7 +172,9 @@ impl Vm {
                     Flow::Ret(v) => match self.frames.last_mut() {
                         Some(top) => {
                             top.result = v;
-                            f = self.frames.pop().unwrap();
+                            f = self.frames.pop().ok_or_else(|| {
+                                JvmError::Fatal("empty frame stack on return".into())
+                            })?;
                         }
                         None => return Ok(v),
                     },
@@ -221,7 +223,13 @@ impl Vm {
                                         f.pending_exc = Some(JValue::Obj(ex));
                                         self.frames.push(f);
                                         match self.unwind()? {
-                                            true => f = self.frames.pop().unwrap(),
+                                            true => {
+                                                f = self.frames.pop().ok_or_else(|| {
+                                                    JvmError::Fatal(
+                                                        "empty frame stack after unwind".into(),
+                                                    )
+                                                })?
+                                            }
                                             false => {
                                                 let exc_cls = self
                                                     .arena
@@ -385,10 +393,12 @@ impl Vm {
                                                         for (i, fv) in o.fields.iter().enumerate() {
                                                             info!("DBG   c1.F[{i}] = {fv:?}");
                                                         }
-                                                        let ccls = self
-                                                            .classes
-                                                            .get(o.class as usize)
-                                                            .unwrap();
+                                                        let Some(ccls) =
+                                                            self.classes.get(o.class as usize)
+                                                        else {
+                                                            info!("DBG   c1-class-missing");
+                                                            continue;
+                                                        };
                                                         let names: Vec<&str> = ccls
                                                             .instance_fields
                                                             .iter()
@@ -409,7 +419,11 @@ impl Vm {
                     f.pending_exc = Some(ex);
                     self.frames.push(f);
                     match self.unwind()? {
-                        true => f = self.frames.pop().unwrap(),
+                        true => {
+                            f = self.frames.pop().ok_or_else(|| {
+                                JvmError::Fatal("empty frame stack after unwind".into())
+                            })?
+                        }
                         false => {
                             let o = match ex {
                                 JValue::Obj(o) => o,
@@ -499,7 +513,11 @@ impl Vm {
             match catch_addr {
                 Some(addr) => {
                     info!("DBG unwind catch @ {:04x}", addr);
-                    let f = self.frames.last_mut().expect("frame");
+                    let Some(f) = self.frames.last_mut() else {
+                        return Err(JvmError::Fatal(
+                            "empty frame stack while installing catch".into(),
+                        ));
+                    };
                     // f.pc is a code-unit address, not an instruction index;
                     // jump to the handler's exact address.
                     f.pc = addr as usize;

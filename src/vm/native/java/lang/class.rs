@@ -1,9 +1,9 @@
 use crate::vm::native::*;
 
 pub(crate) fn prim_class_obj(vm: &mut Vm, code: u8) -> JValue {
-    let class = vm
-        .ensure_class_by_desc("Ljava/lang/Class;")
-        .expect("Class shim");
+    let Ok(class) = vm.ensure_class_by_desc("Ljava/lang/Class;") else {
+        return JValue::Null;
+    };
     JValue::Obj(vm.arena.alloc(
         class,
         Vec::new(),

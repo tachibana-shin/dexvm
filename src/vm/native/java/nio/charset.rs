@@ -3,9 +3,9 @@
 use crate::vm::native::*;
 
 pub(crate) fn lazy_charset(vm: &mut Vm, name: &str) -> JValue {
-    let class = vm
-        .ensure_class_by_desc("Ljava/nio/charset/Charset;")
-        .expect("Charset shim");
+    let Ok(class) = vm.ensure_class_by_desc("Ljava/nio/charset/Charset;") else {
+        return JValue::Null;
+    };
     JValue::Obj(
         vm.arena
             .alloc(class, Vec::new(), Some(Native::Str(name.to_string()))),

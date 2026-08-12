@@ -48,9 +48,9 @@ pub(crate) fn ps_close(_vm: &mut Vm, _args: &[JValue]) -> R {
 }
 
 pub fn lazy_print_stream(vm: &mut Vm) -> JValue {
-    let class = vm
-        .ensure_class_by_desc("Ljava/io/PrintStream;")
-        .expect("PrintStream shim");
+    let Ok(class) = vm.ensure_class_by_desc("Ljava/io/PrintStream;") else {
+        return JValue::Null;
+    };
     JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(Native::PrintStream)))
 }
 

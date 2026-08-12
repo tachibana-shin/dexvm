@@ -1385,7 +1385,7 @@ impl Vm {
                         let d = Arc::new(
                             crate::dex::insn::decode_all(&code.insns).map_err(JvmError::from)?,
                         );
-                        m.insns.set(d.clone()).expect("decode race");
+                        let _ = m.insns.set(d.clone());
                         d
                     }
                 })
@@ -1407,7 +1407,8 @@ impl Vm {
         Ok(Target::Bytecode {
             class: found_class,
             slot,
-            decoded: decoded.unwrap(),
+            decoded: decoded
+                .ok_or_else(|| JvmError::Resolution("method has no decoded code".into()))?,
             code,
             ins_size,
             registers,
@@ -1608,13 +1609,11 @@ impl Vm {
             let dir = std::env::temp_dir().join(format!("dexvm-cache-{}-{n}", std::process::id()));
             self.cache_root = Some(dir.to_string_lossy().into_owned());
         }
-        self.cache_root.as_deref().unwrap()
+        self.cache_root.as_deref().unwrap_or("")
     }
 
     pub fn throwable_of(&mut self, class_desc: &str, message: impl Into<String>) -> u32 {
-        let class = self
-            .ensure_class_by_desc(class_desc)
-            .expect("shim throwable");
+        let class = self.ensure_class_by_desc(class_desc).unwrap_or(0);
         self.arena.alloc(
             class,
             Vec::new(),
@@ -1695,7 +1694,9 @@ impl Vm {
             if let Some((edx, elem)) = cl.array_elem {
                 // array targets
                 if is_target_array {
-                    let (tdx, t_elem) = self.classes[target as usize].array_elem.unwrap();
+                    let Some((tdx, t_elem)) = self.classes[target as usize].array_elem else {
+                        return Ok(false);
+                    };
                     let e_desc = self.dex_at(edx).type_descriptor(elem).to_string();
                     let t_desc = self.dex_at(tdx).type_descriptor(t_elem).to_string();
                     if e_desc == t_desc {

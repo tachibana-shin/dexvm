@@ -792,7 +792,7 @@ pub(crate) fn lazy_json_element_companion(vm: &mut Vm) -> JValue {
         "Lkotlinx/serialization/json/JsonElement$Companion;",
         Native::Opaque,
     )
-    .expect("JsonElement$Companion shim")
+    .unwrap_or(JValue::Null)
 }
 
 /// `OkioZstd.zstdDecompress(source)` / `zstdCompress(sink)` — identity: the
@@ -1134,7 +1134,7 @@ pub(crate) fn throw_missing_field(vm: &mut Vm, _args: &[JValue]) -> R {
 }
 
 fn lazy_primitive_serializer(vm: &mut Vm, desc: &str, kind: PrimitiveSerializerKind) -> JValue {
-    alloc(vm, desc, Native::PrimitiveSerializer(kind)).expect("primitive serializer shim")
+    alloc(vm, desc, Native::PrimitiveSerializer(kind)).unwrap_or(JValue::Null)
 }
 
 pub(crate) fn lazy_string_serializer(vm: &mut Vm) -> JValue {

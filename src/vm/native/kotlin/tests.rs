@@ -420,3 +420,43 @@ fn instant_parse_and_reflection_bridges_are_real() {
         );
     });
 }
+
+#[test]
+fn sequence_and_flatten_bridges_preserve_elements() {
+    with_vm(|vm| {
+        let a = s(vm, "a");
+        let b = s(vm, "b");
+        let inner1 = list_alloc(vm, vec![a]).unwrap();
+        let inner2 = list_alloc(vm, vec![b]).unwrap();
+        let nested = list_alloc(vm, vec![inner1, inner2]).unwrap();
+        let flat = collections_flatten(vm, &[nested]).unwrap();
+        let seq = sequence_as_sequence(vm, &[flat]).unwrap();
+        let list = sequence_to_list(vm, &[seq]).unwrap();
+        assert_eq!(coll_elems(vm, list).unwrap().len(), 2);
+    });
+}
+
+#[test]
+fn regex_match_entire_and_collection_slices_are_real() {
+    with_vm(|vm| {
+        let pattern = alloc(
+            vm,
+            "Lkotlin/text/Regex;",
+            Native::Pattern {
+                re: fancy_regex::Regex::new("a+").unwrap(),
+                source: "a+".into(),
+            },
+        )
+        .unwrap();
+        let text = s(vm, "aaa");
+        assert!(!regex_match_entire(vm, &[pattern, text])
+            .unwrap()
+            .is_null_ref());
+        let a = s(vm, "a");
+        let b = s(vm, "b");
+        let c = s(vm, "c");
+        let list = list_alloc(vm, vec![a, b, c]).unwrap();
+        let taken = collections_take(vm, &[list, JValue::Int(2)]).unwrap();
+        assert_eq!(coll_elems(vm, taken).unwrap().len(), 2);
+    });
+}
