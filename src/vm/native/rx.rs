@@ -77,70 +77,122 @@ fn rx_materialize(vm: &mut Vm, value: JValue) -> Result<(Vec<JValue>, JValue), N
     }
 
     for operator in operators {
-        if !error.is_null() {
-            break;
-        }
         match operator {
-            RxOperator::Map(callback) => {
-                let mut mapped = Vec::with_capacity(values.len());
-                for value in values {
+            RxOperator::OnErrorReturn(callback) => {
+                if !error.is_null() {
                     match inv_virt(
                         vm,
                         callback,
                         "call",
                         "(Ljava/lang/Object;)Ljava/lang/Object;",
-                        &[value],
+                        &[error],
                     ) {
-                        Ok(value) => mapped.push(value),
-                        Err(NatErr::Throw(thrown)) => {
-                            error = JValue::Obj(thrown);
-                            break;
+                        Ok(value) => {
+                            values = vec![value];
+                            error = JValue::Null;
                         }
+                        Err(NatErr::Throw(thrown)) => error = JValue::Obj(thrown),
                         Err(other) => return Err(other),
                     }
                 }
-                values = mapped;
             }
-            RxOperator::FlatMap(callback) => {
-                let mut flattened = Vec::new();
-                for value in values {
-                    let nested = match inv_virt(
+            RxOperator::OnErrorResumeNext(callback) => {
+                if !error.is_null() {
+                    match inv_virt(
                         vm,
                         callback,
                         "call",
                         "(Ljava/lang/Object;)Ljava/lang/Object;",
-                        &[value],
+                        &[error],
                     ) {
-                        Ok(nested) => nested,
-                        Err(NatErr::Throw(thrown)) => {
-                            error = JValue::Obj(thrown);
-                            break;
+                        Ok(nested) => {
+                            let (nested_values, nested_error) = rx_materialize(vm, nested)?;
+                            values = nested_values;
+                            error = nested_error;
                         }
-                        Err(other) => return Err(other),
-                    };
-                    let (nested_values, nested_error) = rx_materialize(vm, nested)?;
-                    if !nested_error.is_null() {
-                        error = nested_error;
-                        break;
-                    }
-                    flattened.extend(nested_values);
-                }
-                values = flattened;
-            }
-            RxOperator::DoOnNext(callback) => {
-                for value in &values {
-                    match inv_virt(vm, callback, "call", "(Ljava/lang/Object;)V", &[*value]) {
-                        Ok(_) => {}
-                        Err(NatErr::Throw(thrown)) => {
-                            error = JValue::Obj(thrown);
-                            break;
-                        }
+                        Err(NatErr::Throw(thrown)) => error = JValue::Obj(thrown),
                         Err(other) => return Err(other),
                     }
                 }
             }
-            RxOperator::ToList => {
-                values = vec![list_alloc(vm, values)?];
+            RxOperator::DoOnTerminate(callback) => {
+                match inv_virt(vm, callback, "run", "()V", &[]) {
+                    Ok(_) => {}
+                    Err(NatErr::Throw(thrown)) => error = JValue::Obj(thrown),
+                    Err(other) => return Err(other),
+                }
+            }
+            _ => {
+                if !error.is_null() {
+                    break;
+                }
+                match operator {
+                    RxOperator::Map(callback) => {
+                        let mut mapped = Vec::with_capacity(values.len());
+                        for value in values {
+                            match inv_virt(
+                                vm,
+                                callback,
+                                "call",
+                                "(Ljava/lang/Object;)Ljava/lang/Object;",
+                                &[value],
+                            ) {
+                                Ok(value) => mapped.push(value),
+                                Err(NatErr::Throw(thrown)) => {
+                                    error = JValue::Obj(thrown);
+                                    break;
+                                }
+                                Err(other) => return Err(other),
+                            }
+                        }
+                        values = mapped;
+                    }
+                    RxOperator::FlatMap(callback) => {
+                        let mut flattened = Vec::new();
+                        for value in values {
+                            let nested = match inv_virt(
+                                vm,
+                                callback,
+                                "call",
+                                "(Ljava/lang/Object;)Ljava/lang/Object;",
+                                &[value],
+                            ) {
+                                Ok(nested) => nested,
+                                Err(NatErr::Throw(thrown)) => {
+                                    error = JValue::Obj(thrown);
+                                    break;
+                                }
+                                Err(other) => return Err(other),
+                            };
+                            let (nested_values, nested_error) = rx_materialize(vm, nested)?;
+                            if !nested_error.is_null() {
+                                error = nested_error;
+                                break;
+                            }
+                            flattened.extend(nested_values);
+                        }
+                        values = flattened;
+                    }
+                    RxOperator::DoOnNext(callback) => {
+                        for value in &values {
+                            match inv_virt(vm, callback, "call", "(Ljava/lang/Object;)V", &[*value])
+                            {
+                                Ok(_) => {}
+                                Err(NatErr::Throw(thrown)) => {
+                                    error = JValue::Obj(thrown);
+                                    break;
+                                }
+                                Err(other) => return Err(other),
+                            }
+                        }
+                    }
+                    RxOperator::ToList => {
+                        values = vec![list_alloc(vm, values)?];
+                    }
+                    RxOperator::OnErrorReturn(_)
+                    | RxOperator::OnErrorResumeNext(_)
+                    | RxOperator::DoOnTerminate(_) => unreachable!("handled above"),
+                }
             }
         }
     }
@@ -191,6 +243,18 @@ fn observable_flat_map(vm: &mut Vm, args: &[JValue]) -> R {
     rx_with_operator(vm, args[0], RxOperator::FlatMap(args[1]))
 }
 
+fn observable_on_error_return(vm: &mut Vm, args: &[JValue]) -> R {
+    rx_with_operator(vm, args[0], RxOperator::OnErrorReturn(args[1]))
+}
+
+fn observable_on_error_resume(vm: &mut Vm, args: &[JValue]) -> R {
+    rx_with_operator(vm, args[0], RxOperator::OnErrorResumeNext(args[1]))
+}
+
+fn observable_do_on_terminate(vm: &mut Vm, args: &[JValue]) -> R {
+    rx_with_operator(vm, args[0], RxOperator::DoOnTerminate(args[1]))
+}
+
 fn observable_do_on_next(vm: &mut Vm, args: &[JValue]) -> R {
     rx_with_operator(vm, args[0], RxOperator::DoOnNext(args[1]))
 }
@@ -226,6 +290,196 @@ fn subscription_unsubscribe(_vm: &mut Vm, _args: &[JValue]) -> R {
 
 fn subscription_is_unsubscribed(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Int(0))
+}
+
+fn rx_terminal_err(error: JValue) -> Option<NatErr> {
+    if let JValue::Obj(thrown) = error {
+        Some(NatErr::Throw(thrown))
+    } else {
+        None
+    }
+}
+
+fn observable_subscribe(vm: &mut Vm, args: &[JValue]) -> R {
+    let (values, error) = rx_materialize(vm, args[0])?;
+    if let Some(err) = rx_terminal_err(error) {
+        inv_virt(
+            vm,
+            args[2],
+            "call",
+            "(Ljava/lang/Object;)V",
+            &[JValue::Null],
+        )
+        .map_err(|_| err)?;
+        return alloc(vm, "Lrx/Subscription;", Native::Opaque);
+    }
+    for value in values {
+        inv_virt(vm, args[1], "call", "(Ljava/lang/Object;)V", &[value])?;
+    }
+    alloc(vm, "Lrx/Subscription;", Native::Opaque)
+}
+
+fn blocking_subscribe(vm: &mut Vm, args: &[JValue]) -> R {
+    let (values, error) = rx_materialize(vm, args[0])?;
+    if let Some(err) = rx_terminal_err(error) {
+        inv_virt(
+            vm,
+            args[2],
+            "call",
+            "(Ljava/lang/Object;)V",
+            &[JValue::Null],
+        )
+        .map_err(|_| err)?;
+        return Ok(JValue::Null);
+    }
+    for value in values {
+        inv_virt(vm, args[1], "call", "(Ljava/lang/Object;)V", &[value])?;
+    }
+    Ok(JValue::Null)
+}
+
+fn observable_zip2(vm: &mut Vm, args: &[JValue]) -> R {
+    let (a_values, a_error) = rx_materialize(vm, args[0])?;
+    let (b_values, b_error) = rx_materialize(vm, args[1])?;
+    if let Some(err) = rx_terminal_err(a_error) {
+        return Err(err);
+    }
+    if let Some(err) = rx_terminal_err(b_error) {
+        return Err(err);
+    }
+    let len = a_values.len().min(b_values.len());
+    let mut values = Vec::with_capacity(len);
+    for i in 0..len {
+        match inv_virt(
+            vm,
+            args[2],
+            "call",
+            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+            &[a_values[i], b_values[i]],
+        ) {
+            Ok(value) => values.push(value),
+            Err(NatErr::Throw(thrown)) => return rx_error_value(vm, JValue::Obj(thrown)),
+            Err(other) => return Err(other),
+        }
+    }
+    alloc(
+        vm,
+        "Lrx/Observable;",
+        Native::RxObservable {
+            values,
+            error: JValue::Null,
+            callable: JValue::Null,
+            operators: Vec::new(),
+        },
+    )
+}
+
+fn observable_zip_n(vm: &mut Vm, args: &[JValue]) -> R {
+    let observables = coll_elems(vm, args[0])?;
+    let mut streams: Vec<Vec<JValue>> = Vec::with_capacity(observables.len());
+    for observable in observables {
+        let (values, error) = rx_materialize(vm, observable)?;
+        if let Some(err) = rx_terminal_err(error) {
+            return Err(err);
+        }
+        streams.push(values);
+    }
+    let len = streams.iter().map(Vec::len).min().unwrap_or(0);
+    let mut values = Vec::with_capacity(len);
+    for i in 0..len {
+        let row: Vec<JValue> = streams.iter().map(|s| s[i]).collect();
+        let row = alloc_arr(vm, "Ljava/lang/Object;", row.len(), move || {
+            ArrayData::Obj(row)
+        })?;
+        match inv_virt(
+            vm,
+            args[1],
+            "call",
+            "([Ljava/lang/Object;)Ljava/lang/Object;",
+            &[row],
+        ) {
+            Ok(value) => values.push(value),
+            Err(NatErr::Throw(thrown)) => return rx_error_value(vm, JValue::Obj(thrown)),
+            Err(other) => return Err(other),
+        }
+    }
+    alloc(
+        vm,
+        "Lrx/Observable;",
+        Native::RxObservable {
+            values,
+            error: JValue::Null,
+            callable: JValue::Null,
+            operators: Vec::new(),
+        },
+    )
+}
+
+fn observable_combine_latest(vm: &mut Vm, args: &[JValue]) -> R {
+    let (a_values, a_error) = rx_materialize(vm, args[0])?;
+    let (b_values, b_error) = rx_materialize(vm, args[1])?;
+    if let Some(err) = rx_terminal_err(a_error) {
+        return Err(err);
+    }
+    if let Some(err) = rx_terminal_err(b_error) {
+        return Err(err);
+    }
+    let (Some(a_last), Some(b_last)) = (a_values.last().copied(), b_values.last().copied()) else {
+        return rx_just_value(vm, JValue::Null);
+    };
+    match inv_virt(
+        vm,
+        args[2],
+        "call",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        &[a_last, b_last],
+    ) {
+        Ok(value) => rx_just_value(vm, value),
+        Err(NatErr::Throw(thrown)) => rx_error_value(vm, JValue::Obj(thrown)),
+        Err(other) => Err(other),
+    }
+}
+
+fn observable_concat(vm: &mut Vm, args: &[JValue]) -> R {
+    let observables = coll_elems(vm, args[0])?;
+    let mut values = Vec::new();
+    for observable in observables {
+        let (nested_values, error) = rx_materialize(vm, observable)?;
+        if let Some(err) = rx_terminal_err(error) {
+            return Err(err);
+        }
+        values.extend(nested_values);
+    }
+    alloc(
+        vm,
+        "Lrx/Observable;",
+        Native::RxObservable {
+            values,
+            error: JValue::Null,
+            callable: JValue::Null,
+            operators: Vec::new(),
+        },
+    )
+}
+
+fn single_from_callable(vm: &mut Vm, args: &[JValue]) -> R {
+    rx_alloc(
+        vm,
+        "Lrx/Single;",
+        (Vec::new(), JValue::Null, args[0], Vec::new()),
+    )
+}
+
+fn single_identity(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+
+fn single_subscribe(vm: &mut Vm, args: &[JValue]) -> R {
+    let (_values, error) = rx_materialize(vm, args[0])?;
+    if let Some(err) = rx_terminal_err(error) {
+        return Err(err);
+    }
+    alloc(vm, "Lrx/Subscription;", Native::Opaque)
 }
 
 pub(crate) const RX_TABLE: &[NativeEntry] = &[
@@ -347,6 +601,104 @@ pub(crate) const RX_TABLE: &[NativeEntry] = &[
         "()Z",
         true,
         subscription_is_unsubscribed
+    ),
+    ne!(
+        "Lrx/Observable;",
+        "subscribe",
+        "(Lrx/functions/Action1;Lrx/functions/Action1;)Lrx/Subscription;",
+        true,
+        observable_subscribe
+    ),
+    ne!(
+        "Lrx/observables/BlockingObservable;",
+        "subscribe",
+        "(Lrx/functions/Action1;Lrx/functions/Action1;)V",
+        true,
+        blocking_subscribe
+    ),
+    ne!(
+        "Lrx/Observable;",
+        "zip",
+        "(Lrx/Observable;Lrx/Observable;Lrx/functions/Func2;)Lrx/Observable;",
+        false,
+        observable_zip2
+    ),
+    ne!(
+        "Lrx/Observable;",
+        "zip",
+        "(Ljava/lang/Iterable;Lrx/functions/FuncN;)Lrx/Observable;",
+        false,
+        observable_zip_n
+    ),
+    ne!(
+        "Lrx/Observable;",
+        "combineLatest",
+        "(Lrx/Observable;Lrx/Observable;Lrx/functions/Func2;)Lrx/Observable;",
+        false,
+        observable_combine_latest
+    ),
+    ne!(
+        "Lrx/Observable;",
+        "concat",
+        "(Ljava/lang/Iterable;)Lrx/Observable;",
+        false,
+        observable_concat
+    ),
+    ne!(
+        "Lrx/Observable;",
+        "onErrorReturn",
+        "(Lrx/functions/Func1;)Lrx/Observable;",
+        true,
+        observable_on_error_return
+    ),
+    ne!(
+        "Lrx/Observable;",
+        "onErrorResumeNext",
+        "(Lrx/functions/Func1;)Lrx/Observable;",
+        true,
+        observable_on_error_resume
+    ),
+    ne!(
+        "Lrx/Observable;",
+        "doOnTerminate",
+        "(Lrx/functions/Action0;)Lrx/Observable;",
+        true,
+        observable_do_on_terminate
+    ),
+    ne!(
+        "Lrx/Observable;",
+        "flatMap",
+        "(Lrx/functions/Func1;I)Lrx/Observable;",
+        true,
+        observable_flat_map
+    ),
+    ne!(
+        "Lrx/Single;",
+        "fromCallable",
+        "(Ljava/util/concurrent/Callable;)Lrx/Single;",
+        false,
+        single_from_callable
+    ),
+    ne!(
+        "Lrx/Single;",
+        "observeOn",
+        "(Lrx/Scheduler;)Lrx/Single;",
+        true,
+        single_identity
+    ),
+    ne!(
+        "Lrx/Single;",
+        "subscribeOn",
+        "(Lrx/Scheduler;)Lrx/Single;",
+        true,
+        single_identity
+    ),
+    ne!(
+        "Lrx/Single;",
+        "subscribe",
+        "()Lrx/Subscription;",
+        true,
+        single_subscribe
     ),
 ];
 

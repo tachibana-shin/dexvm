@@ -135,6 +135,13 @@ pub struct Vm {
     pub array_classes: HashMap<(u32, u32), u32>,
     #[cfg(feature = "tachiyomi")]
     pub http: Option<native::keiyoushi::HttpCall>,
+    /// Host callback resolving per-host request headers (User-Agent and
+    /// Cookie) from a host-owned store. Called right before each HTTP
+    /// request with the lowercase host of the request URL (the same string
+    /// `reqwest::Url::host_str()` yields); the returned values are injected
+    /// as headers only when the request does not already set them.
+    #[cfg(feature = "tachiyomi")]
+    pub host_headers: Option<native::keiyoushi::HostHeaderFn>,
     /// Real host directory backing `Context.getCacheDir()` (created on first
     /// use so extension cache logic runs against a genuine filesystem).
     pub cache_root: Option<String>,
@@ -202,6 +209,8 @@ impl Vm {
             shared_preferences_loaded: false,
             #[cfg(feature = "tachiyomi")]
             http: None,
+            #[cfg(feature = "tachiyomi")]
+            host_headers: None,
             host_natives: Vec::new(),
             perms: crate::permission::Permissions::new(),
         };

@@ -2041,6 +2041,1564 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         &[],
         0
     ),
+    // audit gap shim classes (kotlin)
+    #[cfg(feature = "kotlin")]
+    shim!("Lkotlin/ExceptionsKt;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/NotImplementedError;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!("Lkotlin/Triple;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "kotlin")]
+    shim!("Lkotlin/UByteArray;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "kotlin")]
+    shim!("Lkotlin/UIntArray;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "kotlin")]
+    shim!("Lkotlin/ULong;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "kotlin")]
+    shim!("Lkotlin/UnsignedKt;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/collections/ArrayDeque;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/collections/CharIterator;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/collections/GroupingKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/collections/IndexedValue;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/concurrent/ThreadsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/coroutines/jvm/internal/DebugProbesKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/coroutines/jvm/internal/RestrictedSuspendLambda;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/internal/ProgressionUtilKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/io/ByteStreamsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/io/TextStreamsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jdk7/AutoCloseableKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/functions/Function3;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/functions/Function4;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/CollectionToArray;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/FunctionReferenceImpl;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/MutablePropertyReference1Impl;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/PropertyReference0Impl;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/PropertyReference1Impl;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/Ref$BooleanRef;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/Ref$FloatRef;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/Ref$IntRef;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/Ref$LongRef;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/Ref$ObjectRef;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/Reflection;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/SpreadBuilder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!("Lkotlin/math/MathKt;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "kotlin")]
+    shim!("Lkotlin/random/Random;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/random/Random$Default;",
+        Some("Lkotlin/random/Random;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/random/RandomKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/random/URandomKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/ranges/CharRange;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/ranges/IntProgression;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/ranges/LongRange;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/reflect/KClass;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/reflect/KProperty;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/reflect/KType;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/reflect/KTypeProjection$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/sequences/Sequence;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/sequences/SequenceScope;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/sequences/SequencesKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/HexExtensionsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/HexFormat$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/HexFormat$BytesHexFormat$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/HexFormat$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/MatchGroup;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/MatchGroupCollection;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/MatchResult$Destructured;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/Regex$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/UStringsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/time/Clock$System;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/time/Instant$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!("Lkotlin/time/Instant;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/time/jdk8/InstantConversionsJDK8Kt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    // audit gap shim classes (android)
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/app/ActivityManager;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/app/ActivityManager$MemoryInfo;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/content/ComponentName;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/content/res/Resources;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/Bitmap;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/Bitmap$CompressFormat;",
+        Some("Ljava/lang/Enum;"),
+        &[],
+        0,
+        [
+            sdef!("JPEG", "I", ShimValue::Const(JValue::Int(0))),
+            sdef!("PNG", "I", ShimValue::Const(JValue::Int(1))),
+            sdef!("WEBP", "I", ShimValue::Const(JValue::Int(2))),
+            sdef!("WEBP_LOSSY", "I", ShimValue::Const(JValue::Int(3))),
+            sdef!("WEBP_LOSSLESS", "I", ShimValue::Const(JValue::Int(4))),
+        ]
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/Bitmap$Config;",
+        Some("Ljava/lang/Enum;"),
+        &[],
+        0,
+        [
+            sdef!("ARGB_8888", "I", ShimValue::Const(JValue::Int(0))),
+            sdef!("ALPHA_8", "I", ShimValue::Const(JValue::Int(1))),
+            sdef!("RGB_565", "I", ShimValue::Const(JValue::Int(2))),
+            sdef!("ARGB_4444", "I", ShimValue::Const(JValue::Int(3))),
+            sdef!("HARDWARE", "I", ShimValue::Const(JValue::Int(4))),
+        ]
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/BitmapFactory;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/BitmapFactory$Options;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/Canvas;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/ImageDecoder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/Paint;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/Paint$Style;",
+        Some("Ljava/lang/Enum;"),
+        &[],
+        0,
+        [
+            sdef!("FILL", "I", ShimValue::Const(JValue::Int(0))),
+            sdef!("STROKE", "I", ShimValue::Const(JValue::Int(1))),
+            sdef!("FILL_AND_STROKE", "I", ShimValue::Const(JValue::Int(2))),
+        ]
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/Rect;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/Typeface;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/pdf/PdfRenderer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/graphics/pdf/PdfRenderer$Page;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/icu/text/BreakIterator;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/icu/text/Collator;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/icu/text/Normalizer2;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/icu/text/RuleBasedCollator;",
+        Some("Landroid/icu/text/Collator;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/icu/text/SearchIterator;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/icu/text/StringSearch;",
+        Some("Landroid/icu/text/SearchIterator;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/net/Uri$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!("Landroid/os/Handler;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "android")]
+    shim!("Landroid/os/Looper;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/os/ParcelFileDescriptor;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!("Landroid/text/Html;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "android")]
+    shim!("Landroid/text/Layout;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/text/SpannableString;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/text/StaticLayout;",
+        Some("Landroid/text/Layout;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/text/StaticLayout$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/text/TextPaint;",
+        Some("Landroid/graphics/Paint;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/text/method/LinkMovementMethod;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/text/util/Linkify;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/util/Base64InputStream;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/util/JsonReader;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/util/LruCache;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/view/View$MeasureSpec;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!("Landroid/view/View;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/view/ViewGroup;",
+        Some("Landroid/view/View;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/view/ViewGroup$LayoutParams;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/ConsoleMessage$MessageLevel;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/ConsoleMessage;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/RenderProcessGoneDetail;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/SslErrorHandler;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/URLUtil;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/WebChromeClient;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/WebResourceRequest;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/WebResourceResponse;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/WebSettings;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/WebView;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/webkit/WebViewClient;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/widget/EditText;",
+        Some("Landroid/widget/TextView;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroid/widget/TextView;",
+        Some("Landroid/view/View;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!("Landroid/widget/Toast;", Some("Ljava/lang/Object;"), &[], 0),
+    // audit gap shim classes (androidx)
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroidx/preference/CheckBoxPreference;",
+        Some("Landroidx/preference/Preference;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroidx/preference/EditTextPreference;",
+        Some("Landroidx/preference/Preference;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroidx/preference/ListPreference;",
+        Some("Landroidx/preference/Preference;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroidx/preference/MultiSelectListPreference;",
+        Some("Landroidx/preference/Preference;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "android")]
+    shim!(
+        "Landroidx/preference/Preference$OnPreferenceChangeListener;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    // audit gap shim classes (okhttp)
+    #[cfg(feature = "okhttp")]
+    shim!("Lokhttp3/Cache;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokhttp3/Cookie;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/Cookie$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/CookieJar;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokhttp3/Credentials;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokhttp3/Dispatcher;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokhttp3/Dns;", None, &[], ACC_INTERFACE | ACC_ABSTRACT),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/Headers$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/MultipartBody$Builder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/ResponseBody$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokhttp3/internal/_UtilCommonKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    // audit gap shim classes (okio)
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokio/ByteString$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!(
+        "Lokio/ForwardingSource;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokio/InflaterSource;", Some("Ljava/lang/Object;"), &[], 0),
+    // audit gap shim classes (jsoup)
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/helper/Validate;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/nodes/Attribute;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/nodes/Attributes;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/nodes/Entities;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!("Lorg/jsoup/nodes/Node;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/nodes/TextNode;",
+        Some("Lorg/jsoup/nodes/Node;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/parser/Parser;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!("Lorg/jsoup/parser/Tag;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/safety/Safelist;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/select/Collector;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/select/Evaluator$Class;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/select/Evaluator$Id;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/select/Evaluator$Tag;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "jsoup")]
+    shim!(
+        "Lorg/jsoup/select/QueryParser;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    // audit gap shim classes (tachiyomi)
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Leu/kanade/tachiyomi/AppInfo;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Leu/kanade/tachiyomi/network/HttpException;",
+        Some("Ljava/lang/Exception;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!("Lrx/Single;", Some("Ljava/lang/Object;"), &[], 0),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Ltachiyomi/decoder/ImageDecoder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/BinaryFormat;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/ContextualSerializer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/PolymorphicSerializer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/SealedClassSerializer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/SerializationException;",
+        Some("Ljava/lang/IllegalArgumentException;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/descriptors/SerialDescriptorsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/EnumsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/InlineClassDescriptor;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/LinkedHashMapSerializer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/LinkedHashSetSerializer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/ObjectSerializer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/PairSerializer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/ReferenceArraySerializer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/Json$Default;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonArray$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonArrayBuilder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonBuilder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonClassDiscriminator;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonNames;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonObject$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonTransformingSerializer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JvmStreamsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/modules/PolymorphicModuleBuilder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/modules/SerializersModuleBuilder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/modules/SerializersModuleKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/protobuf/ProtoNumber;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/coroutines/CancellableContinuationImpl;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/coroutines/CompletableDeferred;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/coroutines/CompletableDeferredKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/coroutines/CompletableJob;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/coroutines/DelayKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/coroutines/MainCoroutineDispatcher;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/coroutines/SupervisorKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/coroutines/TimeoutKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/coroutines/sync/Mutex;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/coroutines/sync/MutexKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    // audit gap shim classes (java)
+    shim!("Ljava/net/InetAddress;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Ljava/net/URL;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Ljava/net/URLDecoder;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Ljava/net/URLEncoder;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Ljava/net/UnknownHostException;",
+        Some("Ljava/io/IOException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/concurrent/CountDownLatch;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/concurrent/Semaphore;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/time/LocalDateTime;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/time/OffsetDateTime;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/time/ZonedDateTime;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/time/chrono/ChronoLocalDateTime;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/time/format/DateTimeFormatterBuilder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/zip/GZIPInputStream;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/zip/Inflater;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/zip/ZipEntry;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/zip/ZipInputStream;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/io/BufferedReader;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/io/EOFException;",
+        Some("Ljava/io/IOException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/io/FileNotFoundException;",
+        Some("Ljava/io/IOException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/io/FileOutputStream;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!("Ljava/nio/Buffer;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Ljava/nio/ByteBuffer;", Some("Ljava/nio/Buffer;"), &[], 0),
+    shim!("Ljava/nio/CharBuffer;", Some("Ljava/nio/Buffer;"), &[], 0),
+    shim!(
+        "Ljava/nio/charset/CharsetDecoder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/nio/charset/CharsetEncoder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/Base64$Decoder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/Base64$Encoder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!("Ljava/util/Base64;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Ljava/util/GregorianCalendar;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!("Ljava/util/TreeMap;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Ljava/util/UUID;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Ljava/math/BigDecimal;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Ljava/math/BigInteger;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Ljava/lang/ref/SoftReference;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/DigestException;",
+        Some("Ljava/lang/Exception;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/InvalidParameterException;",
+        Some("Ljava/lang/IllegalArgumentException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/KeyFactory;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/KeyPair;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/KeyPairGenerator;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/MessageDigestSpi;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/spec/PKCS8EncodedKeySpec;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/spec/RSAKeyGenParameterSpec;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/security/spec/X509EncodedKeySpec;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!("Ljava/lang/Runtime;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Ljava/lang/StringBuffer;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/ThreadLocal;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/reflect/Array;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/lang/reflect/Method;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/concurrent/atomic/AtomicReference;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/util/concurrent/atomic/AtomicReferenceArray;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/text/DecimalFormat;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/text/DecimalFormatSymbols;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!("Ljava/text/Format;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Ljava/text/Normalizer;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Ljava/text/StringCharacterIterator;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljavax/crypto/CipherInputStream;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!("Ljavax/crypto/Mac;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Ljavax/crypto/SecretKeyFactory;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljavax/crypto/ShortBufferException;",
+        Some("Ljava/lang/Exception;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljavax/crypto/spec/OAEPParameterSpec;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljavax/crypto/spec/PBEKeySpec;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    // audit gap shim classes (plain)
+    shim!("Lorg/json/JSONArray;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!("Lorg/json/JSONObject;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lorg/json/JSONException;",
+        Some("Ljava/lang/Exception;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Lapp/cash/quickjs/QuickJs;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljavax/net/ssl/SSLContext;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljavax/net/ssl/SSLSocketFactory;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!("Lrx/Subscription;", Some("Ljava/lang/Object;"), &[], 0),
 ];
 
 #[derive(Debug, Clone, Default)]

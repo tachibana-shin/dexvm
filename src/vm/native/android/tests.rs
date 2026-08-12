@@ -129,6 +129,7 @@ fn file_operations_enforce_scoped_permissions() {
 fn file_table_marks_create_temp_file_static() {
     let entry = crate::vm::native::java::FILE_TABLE
         .iter()
+        .flat_map(|t| t.iter())
         .find(|e| e.class == "Ljava/io/File;" && e.name == "createTempFile")
         .unwrap();
     assert!(!entry.instance);

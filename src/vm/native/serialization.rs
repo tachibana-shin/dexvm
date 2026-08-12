@@ -802,6 +802,16 @@ pub(crate) fn zstd_identity(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
+pub(crate) fn image_decoder_get_dimension(vm: &mut Vm, _args: &[JValue]) -> R {
+    let _ = vm;
+    log::warn!("tachiyomi.decoder.ImageDecoder is a stub; returning 0");
+    Ok(JValue::Int(0))
+}
+
+pub(crate) fn image_decoder_recycle(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
 // ---------------------------------------------------------------------------
 // StreamingJsonDecoder (Decoder / CompositeDecoder)
 // ---------------------------------------------------------------------------
@@ -1234,6 +1244,519 @@ pub(crate) fn array_list_serializer_deserialize(vm: &mut Vm, args: &[JValue]) ->
 }
 
 // ---------------------------------------------------------------------------
+// serializer construction / JsonElement builders
+// ---------------------------------------------------------------------------
+
+/// Shared no-op `<init>` for serializer shim classes that only carry the
+/// serializer object around (the real dex bytecode drives the encode/decode).
+fn serializer_opaque_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::Opaque);
+    Ok(JValue::Null)
+}
+
+/// `JsonObject$Companion.serializer()` / `JsonArray$Companion.serializer()`
+/// — the JsonElement serializer marker (decode/encode return the tree node).
+fn json_element_serializer_marker(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Lkotlinx/serialization/DeserializationStrategy;",
+        Native::JsonElementSerializer,
+    )
+}
+
+/// `JsonNames.names()` — annotation alternatives; none by default.
+fn json_names_names(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc_empty_arr(vm, "Ljava/lang/String;")
+}
+
+/// `BinaryFormat.getSerializersModule()` / `JsonBuilder.getSerializersModule()`
+/// / `SerializersModuleBuilder.build()` — the module is opaque.
+fn serializers_module_alloc(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Lkotlinx/serialization/modules/SerializersModule;",
+        Native::Opaque,
+    )
+}
+
+/// `SerializersModuleKt.plus(a, b)` — module composition is a no-op.
+fn serializers_module_plus(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+
+/// `JsonBuilder.set*(...)` — builder configuration is not tracked.
+fn json_builder_set(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
+/// `JsonKt.Json$default(json, block, mask, marker)` — runs the builder block
+/// over a fresh `JsonBuilder` and returns the original Json.
+fn json_builder_default(vm: &mut Vm, args: &[JValue]) -> R {
+    if int_of(vm, args[2]) & 0x2 == 0 {
+        let builder = alloc(
+            vm,
+            "Lkotlinx/serialization/json/JsonBuilder;",
+            Native::Opaque,
+        )?;
+        invoke_function1(vm, args[1], builder)?;
+    }
+    Ok(args[0])
+}
+
+/// `ProtoNumber.number()` — protobuf field annotation; 0 by default.
+fn proto_number_number(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(0))
+}
+
+/// `JsonClassDiscriminator.discriminator()` — kotlinx default discriminator.
+fn json_class_discriminator(vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(new_str(vm, "type"))
+}
+
+/// `SerialDescriptorsKt.PrimitiveSerialDescriptor(name, kind)`.
+fn primitive_serial_descriptor(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[0]).unwrap_or_default();
+    alloc(
+        vm,
+        "Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;",
+        Native::SerialDescriptor {
+            name,
+            elements: Vec::new(),
+        },
+    )
+}
+
+/// `SerialDescriptorsKt.buildClassSerialDescriptor$default(...)` — element
+/// configuration is driven by the generated serializer's addElement calls.
+fn build_class_descriptor_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[0]).unwrap_or_default();
+    alloc(
+        vm,
+        "Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;",
+        Native::SerialDescriptor {
+            name,
+            elements: Vec::new(),
+        },
+    )
+}
+
+/// `InlineClassDescriptor.<init>(name, serializer)`.
+fn inline_class_descriptor_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[1]).unwrap_or_default();
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::SerialDescriptor {
+        name,
+        elements: Vec::new(),
+    });
+    Ok(JValue::Null)
+}
+
+/// `InlineClassDescriptor.addElement(name, isInline)`.
+fn inline_class_descriptor_add_element(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[1]).unwrap_or_default();
+    let Some(Native::SerialDescriptor { elements, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    elements.push(name);
+    Ok(JValue::Null)
+}
+
+/// `ArrayListSerializer.getDescriptor()`.
+fn array_list_serializer_descriptor(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;",
+        Native::SerialDescriptor {
+            name: "kotlin.collections.ArrayList".into(),
+            elements: Vec::new(),
+        },
+    )
+}
+
+/// `BuiltinSerializersKt.ListSerializer(child)`.
+fn list_serializer(vm: &mut Vm, args: &[JValue]) -> R {
+    let child = args[0];
+    alloc(
+        vm,
+        "Lkotlinx/serialization/internal/ArrayListSerializer;",
+        Native::ArrayListSerializer { child },
+    )
+}
+
+/// `BuiltinSerializersKt.MapSerializer(k, v)`.
+fn map_serializer(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Lkotlinx/serialization/internal/LinkedHashMapSerializer;",
+        Native::Opaque,
+    )
+}
+
+/// `BuiltinSerializersKt.serializer(StringCompanionObject)`.
+fn string_serializer_of(vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(lazy_primitive_serializer(
+        vm,
+        "Lkotlinx/serialization/internal/StringSerializer;",
+        PrimitiveSerializerKind::String,
+    ))
+}
+
+/// `EnumsKt.createSimpleEnumSerializer` / `createAnnotatedEnumSerializer`.
+fn enum_serializer_create(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Lkotlinx/serialization/KSerializer;", Native::Opaque)
+}
+
+/// Invokes a `Function1` with one argument (unit lambdas like
+/// `JsonObjectBuilder.() -> Unit` compile to Function1).
+fn invoke_function1(vm: &mut Vm, f: JValue, arg: JValue) -> R {
+    if f.is_null_ref() {
+        return Ok(JValue::Null);
+    }
+    inv_virt(
+        vm,
+        f,
+        "invoke",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        &[arg],
+    )
+}
+
+/// `JsonArrayBuilder.<init>()`.
+fn json_array_builder_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[this as usize].native = Some(Native::Json(JsonVal::Array(Vec::new())));
+    Ok(JValue::Null)
+}
+
+/// `JsonArrayBuilder.add(element)Z` — appends and always returns true.
+fn json_array_builder_add(vm: &mut Vm, args: &[JValue]) -> R {
+    let element = match payload(vm, args[1]) {
+        Some(Native::Json(value)) => value.clone(),
+        _ => return Err(iae(vm, "JsonArrayBuilder value is not a JsonElement")),
+    };
+    match payload_mut(vm, args[0]) {
+        Some(Native::Json(JsonVal::Array(values))) => values.push(element),
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Int(1))
+}
+
+/// `JsonArrayBuilder.build()`.
+fn json_array_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
+    let array = match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Array(values))) => JsonVal::Array(values.clone()),
+        _ => return Err(npe(vm)),
+    };
+    alloc_json_node(vm, &array)
+}
+
+/// `JsonElementBuildersKt.add(builder, String)Z`.
+fn json_array_add_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = jstr(vm, args[1])?;
+    let node = alloc_json_node(vm, &JsonVal::Str(value))?;
+    json_array_builder_add(vm, &[args[0], node])?;
+    Ok(JValue::Int(1))
+}
+
+/// `JsonElementBuildersKt.addAllStrings(builder, collection)Z`.
+fn json_array_add_all_strings(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = coll_elems(vm, args[1])?;
+    for item in items {
+        let value = jstr(vm, item)?;
+        let node = alloc_json_node(vm, &JsonVal::Str(value))?;
+        json_array_builder_add(vm, &[args[0], node])?;
+    }
+    Ok(JValue::Int(1))
+}
+
+/// `JsonElementBuildersKt.addJsonObject(builder, block)Z`.
+fn json_array_add_json_object(vm: &mut Vm, args: &[JValue]) -> R {
+    let builder = alloc(
+        vm,
+        "Lkotlinx/serialization/json/JsonObjectBuilder;",
+        Native::Json(JsonVal::Object(Vec::new())),
+    )?;
+    invoke_function1(vm, args[1], builder)?;
+    let object = json_object_builder_build(vm, &[builder])?;
+    json_array_builder_add(vm, &[args[0], object])?;
+    Ok(JValue::Int(1))
+}
+
+/// `JsonElementBuildersKt.putJsonObject(builder, key, block)`.
+fn json_builder_put_json_object(vm: &mut Vm, args: &[JValue]) -> R {
+    let builder = alloc(
+        vm,
+        "Lkotlinx/serialization/json/JsonObjectBuilder;",
+        Native::Json(JsonVal::Object(Vec::new())),
+    )?;
+    invoke_function1(vm, args[2], builder)?;
+    let object = json_object_builder_build(vm, &[builder])?;
+    json_object_builder_put(vm, &[args[0], args[1], object])?;
+    Ok(object)
+}
+
+/// `JsonElementBuildersKt.putJsonArray(builder, key, block)`.
+fn json_builder_put_json_array(vm: &mut Vm, args: &[JValue]) -> R {
+    let builder = alloc(
+        vm,
+        "Lkotlinx/serialization/json/JsonArrayBuilder;",
+        Native::Json(JsonVal::Array(Vec::new())),
+    )?;
+    invoke_function1(vm, args[2], builder)?;
+    let array = json_array_builder_build(vm, &[builder])?;
+    json_object_builder_put(vm, &[args[0], args[1], array])?;
+    Ok(array)
+}
+
+/// `JsonElementBuildersKt.put(builder, key, Boolean)`.
+fn json_builder_put_bool(vm: &mut Vm, args: &[JValue]) -> R {
+    let element = alloc_json_node(vm, &JsonVal::Bool(bool_of(vm, args[2])))?;
+    json_object_builder_put(vm, &[args[0], args[1], element])?;
+    Ok(element)
+}
+
+/// `JsonElementBuildersKt.put(builder, key, null)`.
+fn json_builder_put_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let element = alloc_json_node(vm, &JsonVal::Null)?;
+    json_object_builder_put(vm, &[args[0], args[1], element])?;
+    Ok(element)
+}
+
+/// `BinaryFormat.decodeFromByteArray(strategy, bytes)`.
+fn binary_format_decode_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = bytes_of(vm, args[2]).ok_or_else(|| npe(vm))?;
+    let text = String::from_utf8_lossy(&bytes);
+    let val =
+        parse_json(&text).map_err(|e| nat_fatal(JvmError::Resolution(format!("json: {e}"))))?;
+    let node = alloc_json_node(vm, &val)?;
+    run_serializer(vm, args[1], node)
+}
+
+/// `BinaryFormat.encodeToByteArray(strategy, value)`.
+fn binary_format_encode_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = run_serializer_encode(vm, args[1], args[2])?;
+    let text = jsonval_to_json(&value);
+    let data = text
+        .into_bytes()
+        .into_iter()
+        .map(|b| b as i8)
+        .collect::<Vec<_>>();
+    alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))
+}
+
+/// `JvmStreamsKt.decodeFromStream(json, strategy, stream)` — reads the
+/// ByteArrayInputStream payload to the end and decodes it.
+fn jvm_streams_decode(vm: &mut Vm, args: &[JValue]) -> R {
+    let (bytes, pos) = match payload(vm, args[2]) {
+        Some(Native::ByteArrayInputStream { bytes, pos }) => (bytes.clone(), *pos),
+        _ => return Err(npe(vm)),
+    };
+    let text = String::from_utf8_lossy(&bytes[pos..]);
+    let val =
+        parse_json(&text).map_err(|e| nat_fatal(JvmError::Resolution(format!("json: {e}"))))?;
+    let node = alloc_json_node(vm, &val)?;
+    run_serializer(vm, args[1], node)
+}
+
+// ---------------------------------------------------------------------------
+// JsonObject / JsonArray collection surface
+// ---------------------------------------------------------------------------
+
+/// `JsonObject.size()`.
+fn json_object_size(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Object(entries))) => Ok(JValue::Int(entries.len() as i32)),
+        _ => Err(npe(vm)),
+    }
+}
+
+/// `JsonObject.isEmpty()`.
+fn json_object_is_empty(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Object(entries))) => {
+            Ok(JValue::Int(i32::from(entries.is_empty())))
+        }
+        _ => Err(npe(vm)),
+    }
+}
+
+/// `JsonArray.isEmpty()`.
+fn json_array_is_empty(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Array(values))) => Ok(JValue::Int(i32::from(values.is_empty()))),
+        _ => Err(npe(vm)),
+    }
+}
+
+/// `JsonObject.entrySet()` — a Set of Map.Entry backed by a HashMap.
+fn json_object_entry_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let entries = match payload(vm, args[0]) {
+        Some(Native::Json(JsonVal::Object(entries))) => entries.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let mut map_entries = Vec::with_capacity(entries.len());
+    for (key, value) in entries {
+        map_entries.push((new_str(vm, &key), alloc_json_node(vm, &value)?));
+    }
+    let map = alloc(vm, "Ljava/util/HashMap;", Native::Map(map_entries.clone()))?;
+    let JValue::Obj(mid) = map else {
+        return Err(npe(vm));
+    };
+    let mut items = Vec::with_capacity(map_entries.len());
+    for idx in 0..map_entries.len() {
+        items.push(alloc(
+            vm,
+            "Ljava/util/Map$Entry;",
+            Native::MapEntry { map: mid, idx },
+        )?);
+    }
+    alloc(vm, "Ljava/util/HashSet;", Native::Set(items))
+}
+
+// ---------------------------------------------------------------------------
+// JsonPrimitive accessors
+// ---------------------------------------------------------------------------
+
+fn json_primitive_value(vm: &mut Vm, args: &[JValue]) -> Result<JsonVal, NatErr> {
+    match payload(vm, args[0]) {
+        Some(Native::Json(value)) => Ok(value.clone()),
+        _ => Err(npe(vm)),
+    }
+}
+
+/// `JsonElementKt.getInt(primitive)`.
+fn json_primitive_int(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(match json_primitive_value(vm, args)? {
+        JsonVal::Int(i) => i as i32,
+        JsonVal::Double(d) => d as i32,
+        JsonVal::Bool(b) => i32::from(b),
+        JsonVal::Str(s) => s.trim().parse().unwrap_or_default(),
+        _ => 0,
+    }))
+}
+
+/// `JsonElementKt.getIntOrNull(primitive)`.
+fn json_primitive_int_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let n = match json_primitive_value(vm, args)? {
+        JsonVal::Int(i) => Some(i as i32),
+        JsonVal::Double(d) => Some(d as i32),
+        JsonVal::Str(s) => s.trim().parse().ok(),
+        _ => None,
+    };
+    match n {
+        Some(n) => boxed(vm, "Ljava/lang/Integer;", Native::IntBox(n)),
+        None => Ok(JValue::Null),
+    }
+}
+
+/// `JsonElementKt.getLong(primitive)`.
+fn json_primitive_long(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Long(match json_primitive_value(vm, args)? {
+        JsonVal::Int(i) => i,
+        JsonVal::Double(d) => d as i64,
+        JsonVal::Bool(b) => i64::from(b),
+        JsonVal::Str(s) => s.trim().parse().unwrap_or_default(),
+        _ => 0,
+    }))
+}
+
+/// `JsonElementKt.getLongOrNull(primitive)`.
+fn json_primitive_long_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let n = match json_primitive_value(vm, args)? {
+        JsonVal::Int(i) => Some(i),
+        JsonVal::Double(d) => Some(d as i64),
+        JsonVal::Str(s) => s.trim().parse().ok(),
+        _ => None,
+    };
+    match n {
+        Some(n) => boxed(vm, "Ljava/lang/Long;", Native::LongBox(n)),
+        None => Ok(JValue::Null),
+    }
+}
+
+/// `JsonElementKt.getFloat(primitive)`.
+fn json_primitive_float(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Float(match json_primitive_value(vm, args)? {
+        JsonVal::Double(d) => d as f32,
+        JsonVal::Int(i) => i as f32,
+        JsonVal::Str(s) => s.trim().parse().unwrap_or_default(),
+        _ => 0.0,
+    }))
+}
+
+/// `JsonElementKt.getFloatOrNull(primitive)`.
+fn json_primitive_float_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let n = match json_primitive_value(vm, args)? {
+        JsonVal::Double(d) => Some(d as f32),
+        JsonVal::Int(i) => Some(i as f32),
+        JsonVal::Str(s) => s.trim().parse().ok(),
+        _ => None,
+    };
+    match n {
+        Some(n) => boxed(vm, "Ljava/lang/Float;", Native::FloatBox(n)),
+        None => Ok(JValue::Null),
+    }
+}
+
+/// `JsonElementKt.getDouble(primitive)`.
+fn json_primitive_double(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Double(match json_primitive_value(vm, args)? {
+        JsonVal::Double(d) => d,
+        JsonVal::Int(i) => i as f64,
+        JsonVal::Str(s) => s.trim().parse().unwrap_or_default(),
+        _ => 0.0,
+    }))
+}
+
+/// `JsonElementKt.getBoolean(primitive)`.
+fn json_primitive_bool(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(match json_primitive_value(vm, args)? {
+        JsonVal::Bool(b) => i32::from(b),
+        JsonVal::Str(s) => i32::from(!matches!(s.trim(), "false" | "0" | "")),
+        _ => 0,
+    }))
+}
+
+/// `JsonElementKt.getBooleanOrNull(primitive)`.
+fn json_primitive_bool_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let b = match json_primitive_value(vm, args)? {
+        JsonVal::Bool(b) => Some(b),
+        JsonVal::Str(s) => match s.trim() {
+            "true" => Some(true),
+            "false" => Some(false),
+            _ => None,
+        },
+        _ => None,
+    };
+    match b {
+        Some(b) => boxed(vm, "Ljava/lang/Boolean;", Native::BoolBox(b)),
+        None => Ok(JValue::Null),
+    }
+}
+
+/// `JsonElementKt.JsonPrimitive(Boolean)`.
+fn json_primitive_of_bool(vm: &mut Vm, args: &[JValue]) -> R {
+    alloc_json_node(vm, &JsonVal::Bool(bool_of(vm, args[0])))
+}
+
+/// `JsonElementKt.JsonPrimitive(Number)`.
+fn json_primitive_of_number(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = to_string_of(vm, args[0])?;
+    let value = text
+        .parse::<i64>()
+        .map(JsonVal::Int)
+        .unwrap_or_else(|_| JsonVal::Double(text.parse().unwrap_or(0.0)));
+    alloc_json_node(vm, &value)
+}
+
+// ---------------------------------------------------------------------------
 // natives table
 // ---------------------------------------------------------------------------
 
@@ -1640,6 +2163,81 @@ pub(crate) const SERIALIZATION_TABLE: &[NativeEntry] = &[
         true,
         descriptor_init_placeholder
     ),
+    ne!("Lkotlinx/serialization/internal/LinkedHashMapSerializer;", "<init>", "(Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/json/JsonObject$Companion;", "serializer", "()Lkotlinx/serialization/KSerializer;", true, json_element_serializer_marker),
+    ne!("Lkotlinx/serialization/json/JsonArray$Companion;", "serializer", "()Lkotlinx/serialization/KSerializer;", true, json_element_serializer_marker),
+    ne!("Lkotlinx/serialization/json/JsonNames;", "names", "()[Ljava/lang/String;", true, json_names_names),
+    ne!("Lkotlinx/serialization/BinaryFormat;", "getSerializersModule", "()Lkotlinx/serialization/modules/SerializersModule;", true, serializers_module_alloc),
+    ne!("Lkotlinx/serialization/BinaryFormat;", "decodeFromByteArray", "(Lkotlinx/serialization/DeserializationStrategy;[B)Ljava/lang/Object;", true, binary_format_decode_bytes),
+    ne!("Lkotlinx/serialization/BinaryFormat;", "encodeToByteArray", "(Lkotlinx/serialization/SerializationStrategy;Ljava/lang/Object;)[B", true, binary_format_encode_bytes),
+    ne!("Lkotlinx/serialization/json/JsonTransformingSerializer;", "<init>", "(Lkotlinx/serialization/KSerializer;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/internal/PairSerializer;", "<init>", "(Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/json/JsonArrayBuilder;", "<init>", "()V", true, json_array_builder_init),
+    ne!("Lkotlinx/serialization/json/JsonArrayBuilder;", "build", "()Lkotlinx/serialization/json/JsonArray;", true, json_array_builder_build),
+    ne!("Lkotlinx/serialization/json/JsonArrayBuilder;", "add", "(Lkotlinx/serialization/json/JsonElement;)Z", true, json_array_builder_add),
+    ne!("Lkotlinx/serialization/protobuf/ProtoNumber;", "number", "()I", true, proto_number_number),
+    ne!("Lkotlinx/serialization/internal/ReferenceArraySerializer;", "<init>", "(Lkotlin/reflect/KClass;Lkotlinx/serialization/KSerializer;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/json/JsonKt;", "Json$default", "(Lkotlinx/serialization/json/Json;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkotlinx/serialization/json/Json;", false, json_builder_default),
+    ne!("Lkotlinx/serialization/json/JsonBuilder;", "setIgnoreUnknownKeys", "(Z)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/json/JsonBuilder;", "setLenient", "(Z)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/json/JsonBuilder;", "setEncodeDefaults", "(Z)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/json/JsonBuilder;", "setExplicitNulls", "(Z)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/json/JsonBuilder;", "setSerializersModule", "(Lkotlinx/serialization/modules/SerializersModule;)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/json/JsonBuilder;", "setAllowSpecialFloatingPointValues", "(Z)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/json/JsonBuilder;", "setPrettyPrint", "(Z)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/json/JsonBuilder;", "setAllowTrailingComma", "(Z)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/json/JsonBuilder;", "setUseArrayPolymorphism", "(Z)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/json/JsonBuilder;", "getSerializersModule", "()Lkotlinx/serialization/modules/SerializersModule;", true, serializers_module_alloc),
+    ne!("Lkotlinx/serialization/json/JvmStreamsKt;", "decodeFromStream", "(Lkotlinx/serialization/json/Json;Lkotlinx/serialization/DeserializationStrategy;Ljava/io/InputStream;)Ljava/lang/Object;", false, jvm_streams_decode),
+    ne!("Lkotlinx/serialization/descriptors/SerialDescriptorsKt;", "PrimitiveSerialDescriptor", "(Ljava/lang/String;Lkotlinx/serialization/descriptors/PrimitiveKind;)Lkotlinx/serialization/descriptors/SerialDescriptor;", false, primitive_serial_descriptor),
+    ne!("Lkotlinx/serialization/descriptors/SerialDescriptorsKt;", "buildClassSerialDescriptor$default", "(Ljava/lang/String;[Lkotlinx/serialization/descriptors/SerialDescriptor;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkotlinx/serialization/descriptors/SerialDescriptor;", false, build_class_descriptor_default),
+    ne!("Lkotlinx/serialization/SealedClassSerializer;", "<init>", "(Ljava/lang/String;Lkotlin/reflect/KClass;[Lkotlin/reflect/KClass;[Lkotlinx/serialization/KSerializer;[Ljava/lang/annotation/Annotation;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/internal/ObjectSerializer;", "<init>", "(Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/annotation/Annotation;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/internal/EnumsKt;", "createSimpleEnumSerializer", "(Ljava/lang/String;[Ljava/lang/Enum;)Lkotlinx/serialization/KSerializer;", false, enum_serializer_create),
+    ne!("Lkotlinx/serialization/internal/EnumsKt;", "createAnnotatedEnumSerializer", "(Ljava/lang/String;[Ljava/lang/Enum;[Ljava/lang/String;[[Ljava/lang/annotation/Annotation;[Ljava/lang/annotation/Annotation;)Lkotlinx/serialization/KSerializer;", false, enum_serializer_create),
+    ne!("Lkotlinx/serialization/internal/LinkedHashSetSerializer;", "<init>", "(Lkotlinx/serialization/KSerializer;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/modules/PolymorphicModuleBuilder;", "<init>", "(Lkotlin/reflect/KClass;Lkotlinx/serialization/KSerializer;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/modules/PolymorphicModuleBuilder;", "subclass", "(Lkotlin/reflect/KClass;Lkotlinx/serialization/KSerializer;)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/modules/PolymorphicModuleBuilder;", "buildTo", "(Lkotlinx/serialization/modules/SerializersModuleBuilder;)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/modules/PolymorphicModuleBuilder;", "defaultDeserializer", "(Lkotlin/jvm/functions/Function1;)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/ContextualSerializer;", "<init>", "(Lkotlin/reflect/KClass;Lkotlinx/serialization/KSerializer;[Lkotlinx/serialization/KSerializer;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/json/Json$Default;", "parseToJsonElement", "(Ljava/lang/String;)Lkotlinx/serialization/json/JsonElement;", true, json_parse_to_element),
+    ne!("Lkotlinx/serialization/modules/SerializersModuleBuilder;", "<init>", "()V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/modules/SerializersModuleBuilder;", "build", "()Lkotlinx/serialization/modules/SerializersModule;", true, serializers_module_alloc),
+    ne!("Lkotlinx/serialization/modules/SerializersModuleBuilder;", "contextual", "(Lkotlin/reflect/KClass;Lkotlin/jvm/functions/Function1;)V", true, json_builder_set),
+    ne!("Lkotlinx/serialization/modules/SerializersModuleKt;", "plus", "(Lkotlinx/serialization/modules/SerializersModule;Lkotlinx/serialization/modules/SerializersModule;)Lkotlinx/serialization/modules/SerializersModule;", false, serializers_module_plus),
+    ne!("Lkotlinx/serialization/internal/InlineClassDescriptor;", "<init>", "(Ljava/lang/String;Lkotlinx/serialization/internal/GeneratedSerializer;)V", true, inline_class_descriptor_init),
+    ne!("Lkotlinx/serialization/internal/InlineClassDescriptor;", "addElement", "(Ljava/lang/String;Z)V", true, inline_class_descriptor_add_element),
+    ne!("Lkotlinx/serialization/PolymorphicSerializer;", "<init>", "(Lkotlin/reflect/KClass;[Ljava/lang/annotation/Annotation;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/SerializationException;", "<init>", "(Ljava/lang/String;)V", true, serializer_opaque_init),
+    ne!("Lkotlinx/serialization/json/JsonClassDiscriminator;", "discriminator", "()Ljava/lang/String;", true, json_class_discriminator),
+    ne!("Lkotlinx/serialization/json/JsonElementBuildersKt;", "putJsonObject", "(Lkotlinx/serialization/json/JsonObjectBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lkotlinx/serialization/json/JsonElement;", false, json_builder_put_json_object),
+    ne!("Lkotlinx/serialization/json/JsonElementBuildersKt;", "putJsonArray", "(Lkotlinx/serialization/json/JsonObjectBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lkotlinx/serialization/json/JsonElement;", false, json_builder_put_json_array),
+    ne!("Lkotlinx/serialization/json/JsonElementBuildersKt;", "add", "(Lkotlinx/serialization/json/JsonArrayBuilder;Ljava/lang/String;)Z", false, json_array_add_string),
+    ne!("Lkotlinx/serialization/json/JsonElementBuildersKt;", "addAllStrings", "(Lkotlinx/serialization/json/JsonArrayBuilder;Ljava/util/Collection;)Z", false, json_array_add_all_strings),
+    ne!("Lkotlinx/serialization/json/JsonElementBuildersKt;", "addJsonObject", "(Lkotlinx/serialization/json/JsonArrayBuilder;Lkotlin/jvm/functions/Function1;)Z", false, json_array_add_json_object),
+    ne!("Lkotlinx/serialization/json/JsonElementBuildersKt;", "put", "(Lkotlinx/serialization/json/JsonObjectBuilder;Ljava/lang/String;Ljava/lang/Boolean;)Lkotlinx/serialization/json/JsonElement;", false, json_builder_put_bool),
+    ne!("Lkotlinx/serialization/json/JsonElementBuildersKt;", "put", "(Lkotlinx/serialization/json/JsonObjectBuilder;Ljava/lang/String;Ljava/lang/Void;)Lkotlinx/serialization/json/JsonElement;", false, json_builder_put_null),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "getInt", "(Lkotlinx/serialization/json/JsonPrimitive;)I", false, json_primitive_int),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "getIntOrNull", "(Lkotlinx/serialization/json/JsonPrimitive;)Ljava/lang/Integer;", false, json_primitive_int_or_null),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "getLong", "(Lkotlinx/serialization/json/JsonPrimitive;)J", false, json_primitive_long),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "getLongOrNull", "(Lkotlinx/serialization/json/JsonPrimitive;)Ljava/lang/Long;", false, json_primitive_long_or_null),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "getFloat", "(Lkotlinx/serialization/json/JsonPrimitive;)F", false, json_primitive_float),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "getFloatOrNull", "(Lkotlinx/serialization/json/JsonPrimitive;)Ljava/lang/Float;", false, json_primitive_float_or_null),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "getDouble", "(Lkotlinx/serialization/json/JsonPrimitive;)D", false, json_primitive_double),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "getBoolean", "(Lkotlinx/serialization/json/JsonPrimitive;)Z", false, json_primitive_bool),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "getBooleanOrNull", "(Lkotlinx/serialization/json/JsonPrimitive;)Ljava/lang/Boolean;", false, json_primitive_bool_or_null),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "JsonPrimitive", "(Ljava/lang/Boolean;)Lkotlinx/serialization/json/JsonPrimitive;", false, json_primitive_of_bool),
+    ne!("Lkotlinx/serialization/json/JsonElementKt;", "JsonPrimitive", "(Ljava/lang/Number;)Lkotlinx/serialization/json/JsonPrimitive;", false, json_primitive_of_number),
+    ne!("Lkotlinx/serialization/json/JsonObject;", "entrySet", "()Ljava/util/Set;", true, json_object_entry_set),
+    ne!("Lkotlinx/serialization/json/JsonObject;", "size", "()I", true, json_object_size),
+    ne!("Lkotlinx/serialization/json/JsonObject;", "isEmpty", "()Z", true, json_object_is_empty),
+    ne!("Lkotlinx/serialization/json/JsonArray;", "isEmpty", "()Z", true, json_array_is_empty),
+    ne!("Lkotlinx/serialization/internal/ArrayListSerializer;", "getDescriptor", "()Lkotlinx/serialization/descriptors/SerialDescriptor;", true, array_list_serializer_descriptor),
+    ne!("Lkotlinx/serialization/builtins/BuiltinSerializersKt;", "ListSerializer", "(Lkotlinx/serialization/KSerializer;)Lkotlinx/serialization/KSerializer;", false, list_serializer),
+    ne!("Lkotlinx/serialization/builtins/BuiltinSerializersKt;", "MapSerializer", "(Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;)Lkotlinx/serialization/KSerializer;", false, map_serializer),
+    ne!("Lkotlinx/serialization/builtins/BuiltinSerializersKt;", "serializer", "(Lkotlin/jvm/internal/StringCompanionObject;)Lkotlinx/serialization/KSerializer;", false, string_serializer_of),
+    ne!("Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;", "pushClassAnnotation", "(Ljava/lang/annotation/Annotation;)V", true, descriptor_push_annotation),
 ];
 
 /// `UnknownFieldException.<init>(index)` — allocated but never thrown in the

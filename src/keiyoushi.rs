@@ -121,6 +121,17 @@ impl Keiyoushi {
         self.ctx.set_http(move |r| f(r));
     }
 
+    /// Host-owned per-host header resolver (User-Agent + Cookie). The
+    /// callback gets the lowercase request host (like
+    /// `reqwest::Url::host_str()`); returned values are injected when the
+    /// request does not set them itself.
+    pub fn set_host_headers<F>(&mut self, f: F)
+    where
+        F: Fn(&str) -> (Option<String>, Option<String>) + 'static,
+    {
+        self.ctx.set_host_headers(f);
+    }
+
     /// Selects the host-owned file used to persist Android
     /// `SharedPreferences`. Without this, preferences remain in memory only.
     pub fn set_shared_preferences_path(&mut self, path: impl AsRef<std::path::Path>) {

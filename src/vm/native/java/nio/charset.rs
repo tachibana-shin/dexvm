@@ -1,3 +1,5 @@
+//! java.nio.charset.Charset host shims.
+
 use crate::vm::native::*;
 
 pub(crate) fn lazy_charset(vm: &mut Vm, name: &str) -> JValue {
@@ -19,7 +21,6 @@ pub fn lazy_charset_iso(vm: &mut Vm) -> JValue {
 pub fn lazy_charset_ascii(vm: &mut Vm) -> JValue {
     lazy_charset(vm, "US-ASCII")
 }
-// java.nio.charset.Charset host shims.
 
 // java.nio.charset.Charset
 // ---------------------------------------------------------------------------

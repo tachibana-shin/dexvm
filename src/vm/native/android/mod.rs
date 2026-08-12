@@ -6,6 +6,8 @@ use base64::Engine as _;
 use super::*;
 use crate::permission::{FilesystemPermission, Permission};
 
+pub(crate) mod graphics;
+
 // ---------------------------------------------------------------------------
 // android framework
 // ---------------------------------------------------------------------------
@@ -853,6 +855,630 @@ fn base64_encode_to_string(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &wrapped))
 }
 
+/// `Base64.decode(byte[], int) -> [B`: byte-input sibling of `base64_decode`.
+fn base64_decode_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = bytes_of(vm, args[0]).ok_or_else(|| npe(vm))?;
+    let flags = int_of(vm, args[1]);
+    let trimmed: Vec<u8> = bytes
+        .iter()
+        .copied()
+        .filter(|b| !b.is_ascii_whitespace())
+        .collect();
+    let unpadded = trimmed.len() - trimmed.iter().rev().take_while(|&&b| b == b'=').count();
+    let decoded = if flags & 8 != 0 {
+        URL_SAFE
+            .decode(&trimmed)
+            .or_else(|_| URL_SAFE_NO_PAD.decode(&trimmed[..unpadded]))
+    } else {
+        STANDARD
+            .decode(&trimmed)
+            .or_else(|_| STANDARD_NO_PAD.decode(&trimmed[..unpadded]))
+    }
+    .map_err(|_| iae(vm, "Base64 decode failed"))?;
+    let data = decoded.into_iter().map(|b| b as i8).collect::<Vec<_>>();
+    alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))
+}
+
+/// `Base64.encode(byte[], int) -> [B`: byte-output sibling of
+/// `base64_encode_to_string` with the same flag semantics.
+fn base64_encode_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = bytes_of(vm, args[0]).ok_or_else(|| npe(vm))?;
+    let flags = int_of(vm, args[1]);
+    let url_safe = flags & 8 != 0;
+    let no_padding = flags & 1 != 0;
+    let raw = match (url_safe, no_padding) {
+        (false, false) => STANDARD.encode(bytes),
+        (false, true) => STANDARD_NO_PAD.encode(bytes),
+        (true, false) => URL_SAFE.encode(bytes),
+        (true, true) => URL_SAFE_NO_PAD.encode(bytes),
+    };
+    let wrapped = if flags & 2 != 0 || raw.is_empty() {
+        raw.into_bytes()
+    } else {
+        let newline: &[u8] = if flags & 4 != 0 { b"\r\n" } else { b"\n" };
+        let mut out: Vec<u8> = raw.as_bytes().chunks(76).collect::<Vec<_>>().join(newline);
+        out.extend_from_slice(newline);
+        out
+    };
+    let data = wrapped.into_iter().map(|b| b as i8).collect::<Vec<_>>();
+    alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))
+}
+
+// ---------------------------------------------------------------------------
+// android.widget / android.view stubs (headless host: UI never renders)
+// ---------------------------------------------------------------------------
+
+/// Generic void / constructor no-op for UI and framework objects.
+fn ui_noop(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
+/// Generic `0`-returning stub for getters without host state.
+fn ui_zero(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(0))
+}
+
+/// Generic `false`-returning stub for boolean getters.
+fn ui_false(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(0))
+}
+
+/// Generic null-returning stub for object getters.
+fn ui_null(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
+/// Generic empty-string stub for string getters.
+fn ui_empty_string(vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(new_str(vm, ""))
+}
+
+/// Identity stub: a dead view's root view is itself.
+fn view_self(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+
+/// `View.post(Runnable)` / `Handler.post(Runnable)` / `Handler.postDelayed`:
+/// the host runs the runnable synchronously (there is no UI thread).
+fn runnable_post(vm: &mut Vm, args: &[JValue]) -> R {
+    if args[1].is_null() {
+        return Err(npe(vm));
+    }
+    inv_virt(vm, args[1], "run", "()V", &[])?;
+    Ok(JValue::Int(1))
+}
+
+/// `View$MeasureSpec.makeMeasureSpec(size, mode)`: real packed value.
+fn measure_spec_make(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(int_of(vm, args[0]) + int_of(vm, args[1])))
+}
+
+/// `Toast.makeText(Context, CharSequence, int) -> Toast`.
+fn toast_make_text(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/widget/Toast;", Native::Opaque)
+}
+
+fn toast_show(_vm: &mut Vm, _args: &[JValue]) -> R {
+    log::warn!("Toast.show is a no-op on the headless host");
+    Ok(JValue::Null)
+}
+
+// ---------------------------------------------------------------------------
+// android.os / Looper / Handler
+// ---------------------------------------------------------------------------
+
+/// `Looper.getMainLooper()` / `Looper.myLooper()`.
+fn looper_instance(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/os/Looper;", Native::Opaque)
+}
+
+/// `ParcelFileDescriptor.open(File, int)`: opaque handle (pdf renderers are
+/// stubbed anyway).
+fn parcel_fd_open(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/os/ParcelFileDescriptor;", Native::Opaque)
+}
+
+// ---------------------------------------------------------------------------
+// android.webkit stubs (no real webview on the host)
+// ---------------------------------------------------------------------------
+
+const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 DexVM/0.1";
+
+fn webview_init(_vm: &mut Vm, _args: &[JValue]) -> R {
+    log::warn!("WebView is not implemented on the headless host");
+    Ok(JValue::Null)
+}
+
+fn webview_load_url(vm: &mut Vm, args: &[JValue]) -> R {
+    let url = jstr(vm, args[1]).unwrap_or_default();
+    log::warn!("WebView.loadUrl is a no-op on the headless host (url={url})");
+    Ok(JValue::Null)
+}
+
+fn webview_load_data(vm: &mut Vm, args: &[JValue]) -> R {
+    let data = jstr(vm, args[1]).unwrap_or_default();
+    log::warn!(
+        "WebView.loadDataWithBaseURL is a no-op on the headless host (len={})",
+        data.len()
+    );
+    Ok(JValue::Null)
+}
+
+fn webview_evaluate_js(_vm: &mut Vm, _args: &[JValue]) -> R {
+    log::warn!("WebView.evaluateJavascript is a no-op on the headless host");
+    Ok(JValue::Null)
+}
+
+fn webview_add_js_interface(_vm: &mut Vm, _args: &[JValue]) -> R {
+    log::warn!("WebView.addJavascriptInterface is a no-op on the headless host");
+    Ok(JValue::Null)
+}
+
+/// `WebView.getSettings() -> WebSettings`.
+fn web_settings_instance(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/webkit/WebSettings;", Native::Opaque)
+}
+
+/// `WebSettings.getUserAgentString()` / `getDefaultUserAgent(Context)`.
+fn default_user_agent(vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(new_str(vm, DEFAULT_USER_AGENT))
+}
+
+/// `WebResourceRequest.getRequestHeaders() -> Map`.
+fn web_request_headers(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Ljava/util/HashMap;", Native::Map(Vec::new()))
+}
+
+/// `ConsoleMessage$MessageLevel.values()`: the real five levels.
+fn console_message_level_values(vm: &mut Vm, _args: &[JValue]) -> R {
+    let levels = [
+        ("DEBUG", 0),
+        ("ERROR", 1),
+        ("WARNING", 2),
+        ("LOG", 3),
+        ("TIP", 4),
+    ];
+    let values = levels
+        .iter()
+        .map(|(name, ordinal)| {
+            alloc(
+                vm,
+                "Landroid/webkit/ConsoleMessage$MessageLevel;",
+                Native::Enum {
+                    name: (*name).to_string(),
+                    ordinal: *ordinal,
+                },
+            )
+        })
+        .collect::<Result<Vec<_>, NatErr>>()?;
+    alloc_arr(
+        vm,
+        "Landroid/webkit/ConsoleMessage$MessageLevel;",
+        values.len(),
+        move || ArrayData::Obj(values),
+    )
+}
+
+/// `URLUtil.isValidUrl(String)`: scheme prefix check.
+fn url_util_valid_url(vm: &mut Vm, args: &[JValue]) -> R {
+    let url = jstr(vm, args[0]).unwrap_or_default().to_ascii_lowercase();
+    let valid = ["http://", "https://", "file://", "content://", "ftp://"]
+        .iter()
+        .any(|prefix| url.starts_with(prefix));
+    Ok(JValue::Int(i32::from(valid)))
+}
+
+/// `CookieManager.getInstance() -> CookieManager`.
+fn cookie_manager_instance(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/webkit/CookieManager;", Native::Opaque)
+}
+
+fn cookie_manager_set(_vm: &mut Vm, _args: &[JValue]) -> R {
+    log::warn!("CookieManager has no cookie store on the headless host");
+    Ok(JValue::Null)
+}
+
+fn cookie_manager_get(_vm: &mut Vm, _args: &[JValue]) -> R {
+    log::warn!("CookieManager.getCookie returns null on the headless host");
+    Ok(JValue::Null)
+}
+
+// ---------------------------------------------------------------------------
+// android.net.Uri real bridge
+// ---------------------------------------------------------------------------
+
+/// Percent-encode like `Uri.encode`: everything but letters, digits and
+/// `-_.!~*'()` becomes %XX.
+fn uri_encode_impl(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for &b in s.as_bytes() {
+        if b.is_ascii_alphanumeric() || b"-_.!~*'()".contains(&b) {
+            out.push(b as char);
+        } else {
+            out.push('%');
+            out.push_str(&format!("{b:02X}"));
+        }
+    }
+    out
+}
+
+fn percent_decode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        let hex = |b: u8| match b {
+            b'0'..=b'9' => Some(b - b'0'),
+            b'a'..=b'f' => Some(b - b'a' + 10),
+            b'A'..=b'F' => Some(b - b'A' + 10),
+            _ => None,
+        };
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            if let (Some(hi), Some(lo)) = (hex(bytes[i + 1]), hex(bytes[i + 2])) {
+                out.push(hi * 16 + lo);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+fn uri_string_of(vm: &mut Vm, v: JValue) -> Result<String, NatErr> {
+    match payload(vm, v) {
+        Some(Native::URI(s)) => Ok(s.clone()),
+        _ => Err(npe(vm)),
+    }
+}
+
+/// Mutable access to a `Uri$Builder`'s accumulated string; fresh objects
+/// (plain `new-instance`) get an empty payload on first use.
+fn uri_builder_mut(vm: &mut Vm, v: JValue) -> Result<&mut Native, NatErr> {
+    let JValue::Obj(id) = v else {
+        return Err(npe(vm));
+    };
+    let has = vm
+        .arena
+        .get(id)
+        .is_some_and(|o| matches!(o.native.as_ref(), Some(Native::URI(_))));
+    if !has {
+        let Some(o) = vm.arena.get_mut(id) else {
+            return Err(npe(vm));
+        };
+        o.native = Some(Native::URI(String::new()));
+    }
+    if vm.arena.get(id).is_none() {
+        return Err(npe(vm));
+    }
+    let o = vm.arena.get_mut(id).expect("arena slot checked");
+    Ok(o.native.as_mut().expect("payload just installed"))
+}
+
+fn uri_builder_append_query(vm: &mut Vm, args: &[JValue]) -> R {
+    let key = uri_encode_impl(&jstr(vm, args[1])?);
+    let value = uri_encode_impl(&jstr(vm, args[2])?);
+    let Native::URI(s) = uri_builder_mut(vm, args[0])? else {
+        unreachable!("payload installed by uri_builder_mut")
+    };
+    if s.contains('?') {
+        s.push('&');
+    } else {
+        s.push('?');
+    }
+    s.push_str(&key);
+    s.push('=');
+    s.push_str(&value);
+    Ok(args[0])
+}
+
+fn uri_builder_append_segment(vm: &mut Vm, args: &[JValue], encoded: bool) -> R {
+    let segment = jstr(vm, args[1])?;
+    let segment = if encoded {
+        segment
+    } else {
+        uri_encode_impl(&segment)
+    };
+    let Native::URI(s) = uri_builder_mut(vm, args[0])? else {
+        unreachable!("payload installed by uri_builder_mut")
+    };
+    if !s.is_empty() && !s.ends_with('/') {
+        s.push('/');
+    }
+    s.push_str(&segment);
+    Ok(args[0])
+}
+
+fn uri_builder_append_path(vm: &mut Vm, args: &[JValue]) -> R {
+    uri_builder_append_segment(vm, args, false)
+}
+
+fn uri_builder_append_encoded_path(vm: &mut Vm, args: &[JValue]) -> R {
+    uri_builder_append_segment(vm, args, true)
+}
+
+fn uri_builder_fragment(vm: &mut Vm, args: &[JValue]) -> R {
+    let fragment = uri_encode_impl(&jstr(vm, args[1])?);
+    let Native::URI(s) = uri_builder_mut(vm, args[0])? else {
+        unreachable!("payload installed by uri_builder_mut")
+    };
+    if let Some(idx) = s.find('#') {
+        s.truncate(idx);
+    }
+    s.push('#');
+    s.push_str(&fragment);
+    Ok(args[0])
+}
+
+fn uri_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = uri_string_of(vm, args[0])?;
+    alloc(vm, "Landroid/net/Uri;", Native::URI(s))
+}
+
+fn uri_builder_to_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = uri_string_of(vm, args[0])?;
+    Ok(new_str(vm, &s))
+}
+
+/// `Uri.parse(String) -> Uri`.
+fn uri_parse(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    alloc(vm, "Landroid/net/Uri;", Native::URI(s))
+}
+
+fn uri_build_upon(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = uri_string_of(vm, args[0])?;
+    alloc(vm, "Landroid/net/Uri$Builder;", Native::URI(s))
+}
+
+/// `Uri.encode(String) -> String`.
+fn uri_encode(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    Ok(new_str(vm, &uri_encode_impl(&s)))
+}
+
+struct UriParts {
+    host: Option<String>,
+    path: String,
+    query: Option<String>,
+}
+
+fn uri_parts_of(vm: &mut Vm, v: JValue) -> Result<UriParts, NatErr> {
+    let s = uri_string_of(vm, v)?;
+    let before_fragment = s.split_once('#').map_or(&*s, |(a, _)| a);
+    let (before_query, query) = match before_fragment.split_once('?') {
+        Some((a, b)) => (a, Some(b.to_string())),
+        None => (before_fragment, None),
+    };
+    let rest = before_query
+        .split_once(':')
+        .map_or(before_query, |(_, b)| b);
+    let (host, path) = match rest.strip_prefix("//") {
+        Some(r) => match r.split_once('/') {
+            Some((h, p)) => (Some(h.to_string()), format!("/{p}")),
+            None => (Some(r.to_string()), String::new()),
+        },
+        None => (None, rest.to_string()),
+    };
+    Ok(UriParts { host, path, query })
+}
+
+fn uri_get_host(vm: &mut Vm, args: &[JValue]) -> R {
+    match uri_parts_of(vm, args[0])?.host {
+        Some(host) => Ok(new_str(vm, &host)),
+        None => Ok(JValue::Null),
+    }
+}
+
+fn uri_get_path(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = uri_parts_of(vm, args[0])?.path;
+    Ok(new_str(vm, &percent_decode(&path)))
+}
+
+fn uri_get_encoded_path(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = uri_parts_of(vm, args[0])?.path;
+    Ok(new_str(vm, &path))
+}
+
+fn uri_get_encoded_query(vm: &mut Vm, args: &[JValue]) -> R {
+    match uri_parts_of(vm, args[0])?.query {
+        Some(query) => Ok(new_str(vm, &query)),
+        None => Ok(JValue::Null),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// android.content leftovers
+// ---------------------------------------------------------------------------
+
+/// `SharedPreferences$Editor.putStringSet`: stored as a '\n'-joined string
+/// (the host preference store has no set type).
+fn editor_put_string_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = coll_elems(vm, args[2])?
+        .into_iter()
+        .map(|v| jstr(vm, v))
+        .collect::<Result<Vec<_>, NatErr>>()?
+        .join("\n");
+    editor_put(vm, args, PreferenceValue::String(values))
+}
+
+/// `ContextWrapper.getExternalCacheDir() -> File`: a real per-VM host dir.
+fn context_wrapper_external_cache_dir(vm: &mut Vm, _args: &[JValue]) -> R {
+    let path = std::path::Path::new(vm.cache_root_path())
+        .join("external")
+        .to_string_lossy()
+        .into_owned();
+    alloc(vm, "Ljava/io/File;", Native::File { path })
+}
+
+fn context_wrapper_application_info(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/content/pm/ApplicationInfo;", Native::Opaque)
+}
+
+fn context_wrapper_system_service(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
+fn intent_add_flags(vm: &mut Vm, args: &[JValue]) -> R {
+    intent_native(vm, args[0])?;
+    Ok(args[0])
+}
+
+fn intent_set_component(vm: &mut Vm, args: &[JValue]) -> R {
+    intent_native(vm, args[0])?;
+    Ok(args[0])
+}
+
+// ---------------------------------------------------------------------------
+// android.util extras
+// ---------------------------------------------------------------------------
+
+/// `Base64InputStream.<init>`: the decode stream is not implemented.
+fn base64_input_stream_init(_vm: &mut Vm, _args: &[JValue]) -> R {
+    log::warn!("Base64InputStream is not implemented on the host; it reads nothing");
+    Ok(JValue::Null)
+}
+
+/// `JsonReader` is a streaming parser over a `Reader`; the host has no real
+/// reader bridge, so the reader starts empty (hasNext() == false).
+fn json_reader_init(_vm: &mut Vm, _args: &[JValue]) -> R {
+    log::warn!("android.util.JsonReader is not implemented on the host; the reader starts empty");
+    Ok(JValue::Null)
+}
+
+fn json_reader_has_next(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(0))
+}
+
+fn json_reader_noop(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
+/// `JsonReader.nextString()` / `nextName()`: no tokens on an empty reader.
+fn json_reader_null(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
+fn json_reader_next_double(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Double(f64::NAN))
+}
+
+// ---------------------------------------------------------------------------
+// android.content.res / android.app stubs
+// ---------------------------------------------------------------------------
+
+fn resources_system(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/content/res/Resources;", Native::Opaque)
+}
+
+fn resources_display_metrics(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/util/DisplayMetrics;", Native::Opaque)
+}
+
+// ---------------------------------------------------------------------------
+// android.text stubs
+// ---------------------------------------------------------------------------
+
+/// `Html.fromHtml(String, int)`: returns the tag-stripped text as a String.
+fn html_from_html(vm: &mut Vm, args: &[JValue]) -> R {
+    let html = jstr(vm, args[0])?;
+    let mut out = String::with_capacity(html.len());
+    let mut in_tag = false;
+    for c in html.chars() {
+        match c {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => out.push(c),
+            _ => {}
+        }
+    }
+    let text = out
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&nbsp;", " ");
+    Ok(new_str(vm, &text))
+}
+
+/// Chained `StaticLayout$Builder` setters: keep the builder payload as-is.
+fn static_layout_builder_set(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+
+/// `StaticLayout$Builder.obtain(CharSequence, int, int, TextPaint, int)`:
+/// a fresh opaque builder (the host renders no text).
+fn static_layout_builder_obtain_cs(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/text/StaticLayout$Builder;", Native::Opaque)
+}
+
+fn link_movement_method_instance(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Landroid/text/method/LinkMovementMethod;",
+        Native::Opaque,
+    )
+}
+
+// ---------------------------------------------------------------------------
+// android.graphics leftovers (not in graphics.rs)
+// ---------------------------------------------------------------------------
+
+fn typeface_create_from_file(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/graphics/Typeface;", Native::Opaque)
+}
+
+fn image_decoder_create_source(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/graphics/ImageDecoder$Source;", Native::Opaque)
+}
+
+fn pdf_renderer_open_page(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(
+        vm,
+        "Landroid/graphics/pdf/PdfRenderer$Page;",
+        Native::Opaque,
+    )
+}
+
+// ---------------------------------------------------------------------------
+// android.icu.text stubs
+// ---------------------------------------------------------------------------
+
+fn break_iterator_instance(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/icu/text/BreakIterator;", Native::Opaque)
+}
+
+/// `BreakIterator.first()`: text boundaries are not computed; 0 = start.
+fn break_iterator_first(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(0))
+}
+
+/// `BreakIterator.next()`: no boundary past the start (DONE = -1).
+fn break_iterator_next(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(-1))
+}
+
+fn collator_instance(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/icu/text/Collator;", Native::Opaque)
+}
+
+fn normalizer2_instance(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Landroid/icu/text/Normalizer2;", Native::Opaque)
+}
+
+/// `Normalizer2.normalize(CharSequence)`: without normalization, identity.
+fn normalizer2_normalize(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[1])?;
+    Ok(new_str(vm, &s))
+}
+
+/// `SearchIterator.first()` / `next()`: no matches ever (DONE = -1).
+fn search_iterator_done(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(-1))
+}
+
 // ---------------------------------------------------------------------------
 // android native table
 // ---------------------------------------------------------------------------
@@ -1109,6 +1735,1171 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "()J",
         false,
         elpased_realtime
+    ),
+    // ---- android.widget / android.view ----
+    ne!(
+        "Landroid/widget/TextView;",
+        "addTextChangedListener",
+        "(Landroid/text/TextWatcher;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/widget/TextView;",
+        "setHint",
+        "(Ljava/lang/CharSequence;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/widget/TextView;",
+        "setHorizontallyScrolling",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/widget/TextView;",
+        "setInputType",
+        "(I)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/widget/TextView;",
+        "getError",
+        "()Ljava/lang/CharSequence;",
+        true,
+        ui_null
+    ),
+    ne!(
+        "Landroid/widget/TextView;",
+        "setError",
+        "(Ljava/lang/CharSequence;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/widget/TextView;",
+        "setMovementMethod",
+        "(Landroid/text/method/MovementMethod;)V",
+        true,
+        ui_noop
+    ),
+    ne!("Landroid/widget/EditText;", "selectAll", "()V", true, ui_noop),
+    ne!(
+        "Landroid/view/View;",
+        "findViewById",
+        "(I)Landroid/view/View;",
+        true,
+        ui_null
+    ),
+    ne!(
+        "Landroid/view/View;",
+        "getRootView",
+        "()Landroid/view/View;",
+        true,
+        view_self
+    ),
+    ne!(
+        "Landroid/view/View;",
+        "setEnabled",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/view/View;",
+        "post",
+        "(Ljava/lang/Runnable;)Z",
+        true,
+        runnable_post
+    ),
+    ne!(
+        "Landroid/view/View;",
+        "layout",
+        "(IIII)V",
+        true,
+        ui_noop
+    ),
+    ne!("Landroid/view/View;", "measure", "(II)V", true, ui_noop),
+    ne!(
+        "Landroid/view/View;",
+        "getParent",
+        "()Landroid/view/ViewParent;",
+        true,
+        ui_null
+    ),
+    ne!(
+        "Landroid/view/ViewGroup;",
+        "getChildCount",
+        "()I",
+        true,
+        ui_zero
+    ),
+    ne!(
+        "Landroid/view/ViewGroup;",
+        "getChildAt",
+        "(I)Landroid/view/View;",
+        true,
+        ui_null
+    ),
+    ne!(
+        "Landroid/view/ViewGroup$LayoutParams;",
+        "<init>",
+        "(II)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/view/View$MeasureSpec;",
+        "makeMeasureSpec",
+        "(II)I",
+        false,
+        measure_spec_make
+    ),
+    ne!(
+        "Landroid/widget/Toast;",
+        "makeText",
+        "(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;",
+        false,
+        toast_make_text
+    ),
+    ne!("Landroid/widget/Toast;", "show", "()V", true, toast_show),
+    // ---- android.os ----
+    ne!(
+        "Landroid/os/Looper;",
+        "getMainLooper",
+        "()Landroid/os/Looper;",
+        false,
+        looper_instance
+    ),
+    ne!(
+        "Landroid/os/Looper;",
+        "myLooper",
+        "()Landroid/os/Looper;",
+        false,
+        looper_instance
+    ),
+    ne!(
+        "Landroid/os/Handler;",
+        "<init>",
+        "(Landroid/os/Looper;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/os/Handler;",
+        "post",
+        "(Ljava/lang/Runnable;)Z",
+        true,
+        runnable_post
+    ),
+    ne!(
+        "Landroid/os/Handler;",
+        "postDelayed",
+        "(Ljava/lang/Runnable;J)Z",
+        true,
+        runnable_post
+    ),
+    ne!(
+        "Landroid/os/Handler;",
+        "removeCallbacks",
+        "(Ljava/lang/Runnable;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/os/ParcelFileDescriptor;",
+        "open",
+        "(Ljava/io/File;I)Landroid/os/ParcelFileDescriptor;",
+        false,
+        parcel_fd_open
+    ),
+    // ---- android.webkit ----
+    ne!(
+        "Landroid/webkit/WebView;",
+        "<init>",
+        "(Landroid/content/Context;)V",
+        true,
+        webview_init
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "getSettings",
+        "()Landroid/webkit/WebSettings;",
+        true,
+        web_settings_instance
+    ),
+    ne!("Landroid/webkit/WebView;", "destroy", "()V", true, ui_noop),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "stopLoading",
+        "()V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "evaluateJavascript",
+        "(Ljava/lang/String;Landroid/webkit/ValueCallback;)V",
+        true,
+        webview_evaluate_js
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "loadDataWithBaseURL",
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
+        true,
+        webview_load_data
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "loadUrl",
+        "(Ljava/lang/String;)V",
+        true,
+        webview_load_url
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "loadUrl",
+        "(Ljava/lang/String;Ljava/util/Map;)V",
+        true,
+        webview_load_url
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "addJavascriptInterface",
+        "(Ljava/lang/Object;Ljava/lang/String;)V",
+        true,
+        webview_add_js_interface
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "removeJavascriptInterface",
+        "(Ljava/lang/String;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "setWebViewClient",
+        "(Landroid/webkit/WebViewClient;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "setWebChromeClient",
+        "(Landroid/webkit/WebChromeClient;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "setLayoutParams",
+        "(Landroid/view/ViewGroup$LayoutParams;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "setLayerType",
+        "(ILandroid/graphics/Paint;)V",
+        true,
+        ui_noop
+    ),
+    ne!("Landroid/webkit/WebView;", "onResume", "()V", true, ui_noop),
+    ne!(
+        "Landroid/webkit/WebView;",
+        "resumeTimers",
+        "()V",
+        false,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebViewClient;",
+        "<init>",
+        "()V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebViewClient;",
+        "shouldInterceptRequest",
+        "(Landroid/webkit/WebView;Landroid/webkit/WebResourceRequest;)Landroid/webkit/WebResourceResponse;",
+        true,
+        ui_null
+    ),
+    ne!(
+        "Landroid/webkit/WebViewClient;",
+        "onPageFinished",
+        "(Landroid/webkit/WebView;Ljava/lang/String;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebViewClient;",
+        "onPageStarted",
+        "(Landroid/webkit/WebView;Ljava/lang/String;Landroid/graphics/Bitmap;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebChromeClient;",
+        "<init>",
+        "()V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "setJavaScriptEnabled",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "setDomStorageEnabled",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "setBlockNetworkImage",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "setUserAgentString",
+        "(Ljava/lang/String;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "setLoadWithOverviewMode",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "setUseWideViewPort",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "setDatabaseEnabled",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "setBlockNetworkLoads",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "setLoadsImagesAutomatically",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "getUserAgentString",
+        "()Ljava/lang/String;",
+        true,
+        default_user_agent
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "getBlockNetworkImage",
+        "()Z",
+        true,
+        ui_false
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "getDomStorageEnabled",
+        "()Z",
+        true,
+        ui_false
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "getJavaScriptEnabled",
+        "()Z",
+        true,
+        ui_false
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "getLoadWithOverviewMode",
+        "()Z",
+        true,
+        ui_false
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "getUseWideViewPort",
+        "()Z",
+        true,
+        ui_false
+    ),
+    ne!(
+        "Landroid/webkit/WebSettings;",
+        "getDefaultUserAgent",
+        "(Landroid/content/Context;)Ljava/lang/String;",
+        false,
+        default_user_agent
+    ),
+    ne!(
+        "Landroid/webkit/ConsoleMessage$MessageLevel;",
+        "values",
+        "()[Landroid/webkit/ConsoleMessage$MessageLevel;",
+        false,
+        console_message_level_values
+    ),
+    ne!(
+        "Landroid/webkit/ConsoleMessage;",
+        "lineNumber",
+        "()I",
+        true,
+        ui_zero
+    ),
+    ne!(
+        "Landroid/webkit/ConsoleMessage;",
+        "message",
+        "()Ljava/lang/String;",
+        true,
+        ui_empty_string
+    ),
+    ne!(
+        "Landroid/webkit/ConsoleMessage;",
+        "messageLevel",
+        "()Landroid/webkit/ConsoleMessage$MessageLevel;",
+        true,
+        ui_null
+    ),
+    ne!(
+        "Landroid/webkit/ConsoleMessage;",
+        "sourceId",
+        "()Ljava/lang/String;",
+        true,
+        ui_empty_string
+    ),
+    ne!(
+        "Landroid/webkit/RenderProcessGoneDetail;",
+        "didCrash",
+        "()Z",
+        true,
+        ui_false
+    ),
+    ne!(
+        "Landroid/webkit/WebResourceRequest;",
+        "getUrl",
+        "()Landroid/net/Uri;",
+        true,
+        ui_null
+    ),
+    ne!(
+        "Landroid/webkit/WebResourceRequest;",
+        "getRequestHeaders",
+        "()Ljava/util/Map;",
+        true,
+        web_request_headers
+    ),
+    ne!(
+        "Landroid/webkit/WebResourceRequest;",
+        "getMethod",
+        "()Ljava/lang/String;",
+        true,
+        ui_empty_string
+    ),
+    ne!(
+        "Landroid/webkit/WebResourceRequest;",
+        "isForMainFrame",
+        "()Z",
+        true,
+        ui_false
+    ),
+    ne!(
+        "Landroid/webkit/WebResourceResponse;",
+        "<init>",
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/io/InputStream;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebResourceResponse;",
+        "<init>",
+        "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/Map;Ljava/io/InputStream;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/WebResourceResponse;",
+        "getStatusCode",
+        "()I",
+        true,
+        ui_zero
+    ),
+    ne!(
+        "Landroid/webkit/SslErrorHandler;",
+        "proceed",
+        "()V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/webkit/URLUtil;",
+        "isValidUrl",
+        "(Ljava/lang/String;)Z",
+        false,
+        url_util_valid_url
+    ),
+    ne!(
+        "Landroid/webkit/CookieManager;",
+        "getInstance",
+        "()Landroid/webkit/CookieManager;",
+        false,
+        cookie_manager_instance
+    ),
+    ne!(
+        "Landroid/webkit/CookieManager;",
+        "setCookie",
+        "(Ljava/lang/String;Ljava/lang/String;)V",
+        true,
+        cookie_manager_set
+    ),
+    ne!(
+        "Landroid/webkit/CookieManager;",
+        "getCookie",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        true,
+        cookie_manager_get
+    ),
+    ne!(
+        "Landroid/webkit/CookieManager;",
+        "setAcceptCookie",
+        "(Z)V",
+        true,
+        cookie_manager_set
+    ),
+    ne!(
+        "Landroid/webkit/CookieManager;",
+        "setAcceptThirdPartyCookies",
+        "(Landroid/webkit/WebView;Z)V",
+        true,
+        cookie_manager_set
+    ),
+    // ---- android.text ----
+    ne!(
+        "Landroid/text/Html;",
+        "fromHtml",
+        "(Ljava/lang/String;I)Landroid/text/Spanned;",
+        false,
+        html_from_html
+    ),
+    ne!(
+        "Landroid/text/StaticLayout;",
+        "getLineCount",
+        "()I",
+        true,
+        ui_zero
+    ),
+    ne!("Landroid/text/Layout;", "getHeight", "()I", true, ui_zero),
+    ne!(
+        "Landroid/text/StaticLayout$Builder;",
+        "setBreakStrategy",
+        "(I)Landroid/text/StaticLayout$Builder;",
+        true,
+        static_layout_builder_set
+    ),
+    ne!(
+        "Landroid/text/StaticLayout$Builder;",
+        "setHyphenationFrequency",
+        "(I)Landroid/text/StaticLayout$Builder;",
+        true,
+        static_layout_builder_set
+    ),
+    ne!(
+        "Landroid/text/StaticLayout$Builder;",
+        "setAlignment",
+        "(Landroid/text/Layout$Alignment;)Landroid/text/StaticLayout$Builder;",
+        true,
+        static_layout_builder_set
+    ),
+    ne!(
+        "Landroid/text/StaticLayout$Builder;",
+        "setIncludePad",
+        "(Z)Landroid/text/StaticLayout$Builder;",
+        true,
+        static_layout_builder_set
+    ),
+    ne!(
+        "Landroid/text/SpannableString;",
+        "<init>",
+        "(Ljava/lang/CharSequence;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/text/method/LinkMovementMethod;",
+        "getInstance",
+        "()Landroid/text/method/MovementMethod;",
+        false,
+        link_movement_method_instance
+    ),
+    ne!(
+        "Landroid/text/util/Linkify;",
+        "addLinks",
+        "(Landroid/text/Spannable;I)Z",
+        false,
+        ui_false
+    ),
+    // ---- android.net.Uri ----
+    ne!(
+        "Landroid/net/Uri;",
+        "encode",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        false,
+        uri_encode
+    ),
+    ne!(
+        "Landroid/net/Uri;",
+        "parse",
+        "(Ljava/lang/String;)Landroid/net/Uri;",
+        false,
+        uri_parse
+    ),
+    ne!(
+        "Landroid/net/Uri;",
+        "buildUpon",
+        "()Landroid/net/Uri$Builder;",
+        true,
+        uri_build_upon
+    ),
+    ne!(
+        "Landroid/net/Uri;",
+        "getHost",
+        "()Ljava/lang/String;",
+        true,
+        uri_get_host
+    ),
+    ne!(
+        "Landroid/net/Uri;",
+        "getPath",
+        "()Ljava/lang/String;",
+        true,
+        uri_get_path
+    ),
+    ne!(
+        "Landroid/net/Uri;",
+        "getEncodedPath",
+        "()Ljava/lang/String;",
+        true,
+        uri_get_encoded_path
+    ),
+    ne!(
+        "Landroid/net/Uri;",
+        "getEncodedQuery",
+        "()Ljava/lang/String;",
+        true,
+        uri_get_encoded_query
+    ),
+    ne!(
+        "Landroid/net/Uri$Builder;",
+        "appendQueryParameter",
+        "(Ljava/lang/String;Ljava/lang/String;)Landroid/net/Uri$Builder;",
+        true,
+        uri_builder_append_query
+    ),
+    ne!(
+        "Landroid/net/Uri$Builder;",
+        "appendPath",
+        "(Ljava/lang/String;)Landroid/net/Uri$Builder;",
+        true,
+        uri_builder_append_path
+    ),
+    ne!(
+        "Landroid/net/Uri$Builder;",
+        "appendEncodedPath",
+        "(Ljava/lang/String;)Landroid/net/Uri$Builder;",
+        true,
+        uri_builder_append_encoded_path
+    ),
+    ne!(
+        "Landroid/net/Uri$Builder;",
+        "fragment",
+        "(Ljava/lang/String;)Landroid/net/Uri$Builder;",
+        true,
+        uri_builder_fragment
+    ),
+    ne!(
+        "Landroid/net/Uri$Builder;",
+        "build",
+        "()Landroid/net/Uri;",
+        true,
+        uri_builder_build
+    ),
+    ne!(
+        "Landroid/net/Uri$Builder;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        uri_builder_to_string
+    ),
+    // ---- android.content ----
+    ne!(
+        "Landroid/content/SharedPreferences$Editor;",
+        "putStringSet",
+        "(Ljava/lang/String;Ljava/util/Set;)Landroid/content/SharedPreferences$Editor;",
+        true,
+        editor_put_string_set
+    ),
+    ne!(
+        "Landroid/content/ComponentName;",
+        "<init>",
+        "(Landroid/content/Context;Ljava/lang/String;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/content/ContextWrapper;",
+        "getExternalCacheDir",
+        "()Ljava/io/File;",
+        true,
+        context_wrapper_external_cache_dir
+    ),
+    ne!(
+        "Landroid/content/ContextWrapper;",
+        "getApplicationInfo",
+        "()Landroid/content/pm/ApplicationInfo;",
+        true,
+        context_wrapper_application_info
+    ),
+    ne!(
+        "Landroid/content/ContextWrapper;",
+        "getSystemService",
+        "(Ljava/lang/String;)Ljava/lang/Object;",
+        true,
+        context_wrapper_system_service
+    ),
+    ne!(
+        "Landroid/content/Intent;",
+        "addFlags",
+        "(I)Landroid/content/Intent;",
+        true,
+        intent_add_flags
+    ),
+    ne!(
+        "Landroid/content/Intent;",
+        "setComponent",
+        "(Landroid/content/ComponentName;)Landroid/content/Intent;",
+        true,
+        intent_set_component
+    ),
+    // ---- android.util ----
+    ne!(
+        "Landroid/util/Log;",
+        "e",
+        "(Ljava/lang/String;Ljava/lang/String;)I",
+        false,
+        log_error
+    ),
+    ne!(
+        "Landroid/util/Log;",
+        "d",
+        "(Ljava/lang/String;Ljava/lang/String;)I",
+        false,
+        log_error
+    ),
+    ne!(
+        "Landroid/util/Log;",
+        "d",
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I",
+        false,
+        log_error
+    ),
+    ne!(
+        "Landroid/util/Log;",
+        "wtf",
+        "(Ljava/lang/String;Ljava/lang/String;)I",
+        false,
+        log_error
+    ),
+    ne!(
+        "Landroid/util/Log;",
+        "println",
+        "(ILjava/lang/String;Ljava/lang/String;)I",
+        false,
+        log_error
+    ),
+    ne!(
+        "Landroid/util/Base64;",
+        "decode",
+        "([BI)[B",
+        false,
+        base64_decode_bytes
+    ),
+    ne!(
+        "Landroid/util/Base64;",
+        "encode",
+        "([BI)[B",
+        false,
+        base64_encode_bytes
+    ),
+    ne!(
+        "Landroid/util/Base64InputStream;",
+        "<init>",
+        "(Ljava/io/InputStream;I)V",
+        true,
+        base64_input_stream_init
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "<init>",
+        "(Ljava/io/Reader;)V",
+        true,
+        json_reader_init
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "hasNext",
+        "()Z",
+        true,
+        json_reader_has_next
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "nextString",
+        "()Ljava/lang/String;",
+        true,
+        json_reader_null
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "nextName",
+        "()Ljava/lang/String;",
+        true,
+        json_reader_null
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "peek",
+        "()Landroid/util/JsonToken;",
+        true,
+        json_reader_null
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "nextDouble",
+        "()D",
+        true,
+        json_reader_next_double
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "nextNull",
+        "()V",
+        true,
+        json_reader_noop
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "beginArray",
+        "()V",
+        true,
+        json_reader_noop
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "beginObject",
+        "()V",
+        true,
+        json_reader_noop
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "endArray",
+        "()V",
+        true,
+        json_reader_noop
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "endObject",
+        "()V",
+        true,
+        json_reader_noop
+    ),
+    ne!(
+        "Landroid/util/JsonReader;",
+        "skipValue",
+        "()V",
+        true,
+        json_reader_noop
+    ),
+    ne!(
+        "Landroid/util/LruCache;",
+        "<init>",
+        "(I)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/util/LruCache;",
+        "get",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        ui_null
+    ),
+    // ---- android.content.res / android.app ----
+    ne!(
+        "Landroid/content/res/Resources;",
+        "getSystem",
+        "()Landroid/content/res/Resources;",
+        false,
+        resources_system
+    ),
+    ne!(
+        "Landroid/content/res/Resources;",
+        "getDisplayMetrics",
+        "()Landroid/util/DisplayMetrics;",
+        true,
+        resources_display_metrics
+    ),
+    ne!(
+        "Landroid/app/ActivityManager$MemoryInfo;",
+        "<init>",
+        "()V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/app/ActivityManager;",
+        "getMemoryInfo",
+        "(Landroid/app/ActivityManager$MemoryInfo;)V",
+        true,
+        ui_noop
+    ),
+    // ---- android.graphics leftovers ----
+    ne!(
+        "Landroid/graphics/Typeface;",
+        "createFromFile",
+        "(Ljava/io/File;)Landroid/graphics/Typeface;",
+        false,
+        typeface_create_from_file
+    ),
+    ne!(
+        "Landroid/graphics/ImageDecoder;",
+        "createSource",
+        "([B)Landroid/graphics/ImageDecoder$Source;",
+        false,
+        image_decoder_create_source
+    ),
+    ne!(
+        "Landroid/graphics/ImageDecoder;",
+        "setAllocator",
+        "(I)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/graphics/pdf/PdfRenderer;",
+        "<init>",
+        "(Landroid/os/ParcelFileDescriptor;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/graphics/pdf/PdfRenderer;",
+        "getPageCount",
+        "()I",
+        true,
+        ui_zero
+    ),
+    ne!(
+        "Landroid/graphics/pdf/PdfRenderer;",
+        "openPage",
+        "(I)Landroid/graphics/pdf/PdfRenderer$Page;",
+        true,
+        pdf_renderer_open_page
+    ),
+    ne!(
+        "Landroid/graphics/pdf/PdfRenderer$Page;",
+        "getWidth",
+        "()I",
+        true,
+        ui_zero
+    ),
+    ne!(
+        "Landroid/graphics/pdf/PdfRenderer$Page;",
+        "getHeight",
+        "()I",
+        true,
+        ui_zero
+    ),
+    // ---- android.icu.text ----
+    ne!(
+        "Landroid/icu/text/BreakIterator;",
+        "getCharacterInstance",
+        "()Landroid/icu/text/BreakIterator;",
+        false,
+        break_iterator_instance
+    ),
+    ne!(
+        "Landroid/icu/text/BreakIterator;",
+        "getWordInstance",
+        "()Landroid/icu/text/BreakIterator;",
+        false,
+        break_iterator_instance
+    ),
+    ne!(
+        "Landroid/icu/text/BreakIterator;",
+        "first",
+        "()I",
+        true,
+        break_iterator_first
+    ),
+    ne!(
+        "Landroid/icu/text/BreakIterator;",
+        "next",
+        "()I",
+        true,
+        break_iterator_next
+    ),
+    ne!(
+        "Landroid/icu/text/BreakIterator;",
+        "getRuleStatus",
+        "()I",
+        true,
+        ui_zero
+    ),
+    ne!(
+        "Landroid/icu/text/BreakIterator;",
+        "setText",
+        "(Ljava/text/CharacterIterator;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/icu/text/Collator;",
+        "getInstance",
+        "()Landroid/icu/text/Collator;",
+        false,
+        collator_instance
+    ),
+    ne!(
+        "Landroid/icu/text/RuleBasedCollator;",
+        "setCaseLevel",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/icu/text/RuleBasedCollator;",
+        "setDecomposition",
+        "(I)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/icu/text/RuleBasedCollator;",
+        "setStrength",
+        "(I)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/icu/text/Normalizer2;",
+        "getNFKCCasefoldInstance",
+        "()Landroid/icu/text/Normalizer2;",
+        false,
+        normalizer2_instance
+    ),
+    ne!(
+        "Landroid/icu/text/Normalizer2;",
+        "normalize",
+        "(Ljava/lang/CharSequence;)Ljava/lang/String;",
+        true,
+        normalizer2_normalize
+    ),
+    ne!(
+        "Landroid/icu/text/SearchIterator;",
+        "first",
+        "()I",
+        true,
+        search_iterator_done
+    ),
+    ne!(
+        "Landroid/icu/text/SearchIterator;",
+        "next",
+        "()I",
+        true,
+        search_iterator_done
+    ),
+    ne!(
+        "Landroid/icu/text/SearchIterator;",
+        "getMatchedText",
+        "()Ljava/lang/String;",
+        true,
+        ui_null
+    ),
+    ne!(
+        "Landroid/icu/text/SearchIterator;",
+        "setOverlapping",
+        "(Z)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/icu/text/StringSearch;",
+        "<init>",
+        "(Ljava/lang/String;Ljava/text/CharacterIterator;Landroid/icu/text/RuleBasedCollator;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/icu/text/StringSearch;",
+        "setPattern",
+        "(Ljava/lang/String;)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/icu/text/StringSearch;",
+        "setTarget",
+        "(Ljava/text/CharacterIterator;)V",
+        true,
+        ui_noop
+    ),
+    // ---- android.text java.lang.CharSequence variants ----
+    ne!(
+        "Landroid/text/StaticLayout;",
+        "<init>",
+        "(Ljava/lang/CharSequence;Landroid/text/TextPaint;ILandroid/text/Layout$Alignment;FFZ)V",
+        true,
+        ui_noop
+    ),
+    ne!(
+        "Landroid/text/StaticLayout$Builder;",
+        "obtain",
+        "(Ljava/lang/CharSequence;IILandroid/text/TextPaint;I)Landroid/text/StaticLayout$Builder;",
+        false,
+        static_layout_builder_obtain_cs
     ),
 ];
 

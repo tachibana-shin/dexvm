@@ -159,6 +159,11 @@ pub(crate) fn check_network_url(vm: &mut Vm, url: &str) -> Result<(), NatErr> {
 #[allow(dead_code)]
 pub(crate) type HttpCall = Rc<dyn Fn(&HttpData) -> HttpResp>;
 
+/// Per-host header resolver: given the lowercase request host, returns an
+/// optional User-Agent and Cookie header value (see
+/// [`Context::set_host_headers`](crate::Context::set_host_headers)).
+pub(crate) type HostHeaderFn = Rc<dyn Fn(&str) -> (Option<String>, Option<String>)>;
+
 pub(crate) fn _http_client(vm: &mut Vm) -> Option<HttpCall> {
     vm.http.clone()
 }
@@ -1382,6 +1387,27 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
         "(Lokio/Sink;)Lokio/Sink;",
         false,
         crate::vm::native::serialization::zstd_identity
+    ),
+    ne!(
+        "Ltachiyomi/decoder/ImageDecoder;",
+        "getWidth",
+        "()I",
+        true,
+        crate::vm::native::serialization::image_decoder_get_dimension
+    ),
+    ne!(
+        "Ltachiyomi/decoder/ImageDecoder;",
+        "getHeight",
+        "()I",
+        true,
+        crate::vm::native::serialization::image_decoder_get_dimension
+    ),
+    ne!(
+        "Ltachiyomi/decoder/ImageDecoder;",
+        "recycle",
+        "()V",
+        true,
+        crate::vm::native::serialization::image_decoder_recycle
     ),
 ];
 

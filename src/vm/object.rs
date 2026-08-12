@@ -10,6 +10,9 @@ pub enum RxOperator {
     FlatMap(JValue),
     DoOnNext(JValue),
     ToList,
+    OnErrorReturn(JValue),
+    OnErrorResumeNext(JValue),
+    DoOnTerminate(JValue),
 }
 
 #[derive(Debug, Clone)]
@@ -361,6 +364,44 @@ pub enum Native {
         intent: JValue,
         finished: bool,
     },
+    /// android.graphics.Bitmap: ARGB 32-bit pixel buffer.
+    Bitmap {
+        width: i32,
+        height: i32,
+        pixels: Vec<u32>,
+    },
+    /// android.graphics.Canvas: destination bitmap (arena id).
+    Canvas {
+        bitmap: u32,
+    },
+    /// android.graphics.Paint drawing state.
+    Paint {
+        color: i32,
+        text_size: f32,
+        stroke_width: f32,
+        style: i32,
+    },
+    /// android.graphics.Rect (integer bounds).
+    Rect {
+        left: i32,
+        top: i32,
+        right: i32,
+        bottom: i32,
+    },
+    /// android.graphics.RectF (float bounds).
+    RectF {
+        left: f32,
+        top: f32,
+        right: f32,
+        bottom: f32,
+    },
+    /// org.json.JSONObject: insertion-ordered key/value pairs.
+    JsonObj(Vec<(String, JValue)>),
+    /// org.json.JSONArray: indexed values.
+    JsonArr(Vec<JValue>),
+    /// app.cash.quickjs.QuickJs host engine (real QuickJS via rquickjs).
+    #[cfg(feature = "quickjs")]
+    QuickJs(std::rc::Rc<QuickJsHost>),
     /// java.io.File: real host path. Every `File` method operates on the
     /// actual filesystem (mkdirs/exists/lastModified/resolve/...).
     File {
@@ -452,7 +493,8 @@ pub enum Native {
     Timeout {
         millis: i64,
     },
-    /// okhttp3.Cookie.
+    /// okhttp3.Cookie (name/value only; attributes and persistence are
+    /// handled by the host header resolver).
     Cookie {
         name: String,
         value: String,
@@ -573,6 +615,17 @@ pub enum Native {
     PrimitiveSerializer(PrimitiveSerializerKind),
 }
 
+/// app.cash.quickjs.QuickJs host state: one rquickjs runtime/context plus the
+/// compiled-script token registry (`compile` returns the token; `execute`
+/// replays the stored source since QuickJS bytecode export is not exposed).
+#[cfg(feature = "quickjs")]
+pub struct QuickJsHost {
+    pub rt: std::rc::Rc<rquickjs::Runtime>,
+    pub ctx: std::rc::Rc<rquickjs::Context>,
+    pub next: std::cell::RefCell<u64>,
+    pub scripts: std::cell::RefCell<std::collections::HashMap<Vec<u8>, (String, String)>>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ClassOrPrim {
     Class(u32),
@@ -689,7 +742,10 @@ impl Native {
                     match operator {
                         RxOperator::Map(callback)
                         | RxOperator::FlatMap(callback)
-                        | RxOperator::DoOnNext(callback) => push(Some(callback), out),
+                        | RxOperator::DoOnNext(callback)
+                        | RxOperator::OnErrorReturn(callback)
+                        | RxOperator::OnErrorResumeNext(callback)
+                        | RxOperator::DoOnTerminate(callback) => push(Some(callback), out),
                         RxOperator::ToList => {}
                     }
                 }
@@ -784,6 +840,15 @@ impl Native {
                 }
             }
             Native::Activity { intent, .. } => push(Some(intent), out),
+            Native::Canvas { bitmap } => out.push(*bitmap),
+            Native::JsonObj(pairs) => {
+                for (_, value) in pairs {
+                    push(Some(value), out);
+                }
+            }
+            Native::JsonArr(items) => push_all(items, out),
+            #[cfg(feature = "quickjs")]
+            Native::QuickJs(_) => {}
             #[cfg(feature = "jsoup")]
             Native::JsoupDoc(_) => {}
             #[cfg(feature = "jsoup")]
@@ -817,6 +882,10 @@ impl Native {
             | Native::Opaque
             | Native::SharedPreferences(_)
             | Native::SharedPreferencesEditor { .. }
+            | Native::Bitmap { .. }
+            | Native::Paint { .. }
+            | Native::Rect { .. }
+            | Native::RectF { .. }
             | Native::File { .. }
             | Native::TimeZone(_)
             | Native::DateFormatter { .. }

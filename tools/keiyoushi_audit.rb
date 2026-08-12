@@ -140,9 +140,11 @@ end
 class DexcliAudit
   COUNT = /^\s{2}([a-z-]+):\s+(\d+)\s*$/
   GAP = /^\s+\[([^,\]]+), x(\d+)\]\s+(.+?)->([^\(]+)(\(.*)$/
+  NE_CLASS = /ne!\s*\(\s*"([^";]+;)"\s*,\s*"/
 
   def initialize(dexcli)
     @dexcli = dexcli
+    @bridge_index = build_bridge_index
   end
 
   def run(extension, apk_path)
@@ -183,34 +185,39 @@ class DexcliAudit
 
   private
 
-  def bridge_file(class_name)
-    case class_name
-    when %r{^Ljava/([^;]+);$}
-      parts = Regexp.last_match(1).split("/")
-      class_file = parts.pop.split("$").first.downcase
-      package = parts
-      candidate = File.join("src/vm/native/java", *package, "#{class_file}.rs")
-      family = File.join("src/vm/native/java", "#{package.first}.rs")
-      if File.file?(candidate)
-        candidate
-      elsif File.file?(family)
-        family
-      else
-        File.join("src/vm/native/java", *package, "mod.rs")
+  # Build a class descriptor -> bridge file index by scanning every *.rs
+  # under src/vm/native/ for its ne!(...) table registrations. Replaces the
+  # previous hardcoded set of files, so new per-class leaf files (java/io/,
+  # java/time/, ...) are picked up automatically.
+  def build_bridge_index
+    index = {}
+    Dir.glob(File.join("src/vm/native", "**", "*.rs")).sort.each do |path|
+      File.read(path).scan(/ne!\s*\(\s*"([^";]+;)"\s*,\s*"/).each do |descriptor|
+        index[descriptor.first] ||= path
       end
-    when /^Ljavax\/crypto\// then "src/vm/native/java/javax_crypto.rs"
-    when /^Lkotlinx\/serialization\// then "src/vm/native/serialization.rs"
-    when /^Lkotlinx\/coroutines\// then "src/vm/native/kotlinx/coroutines.rs"
-    when /^Lkotlin\// then "src/vm/native/kotlin/mod.rs"
-    when /^Lorg\/jsoup\// then "src/vm/native/jsoup/mod.rs"
-    when /^Lokhttp3\// then "src/vm/native/okhttp/mod.rs"
-    when /^Lokio\// then "src/vm/native/okio.rs"
-    when /^Landroidx\/preference\// then "src/vm/native/androidx/preference.rs"
-    when /^Landroid\// then "src/vm/native/android/mod.rs"
-    when /^Leu\/kanade\/tachiyomi\// then "src/vm/native/keiyoushi.rs"
-    when /^Luy\/kohesive\/injekt\// then "src/vm/native/injekt/mod.rs"
-    else "src/vm/native/mod.rs"
     end
+    index
+  end
+
+  def bridge_file(class_name)
+    @bridge_index[class_name] || fallback_bridge_file(class_name)
+  end
+
+  # Classes without native tables (pure shims, e.g. Ljava/math/BigDecimal;)
+  # have no ne! registration; walk up the package chain to the nearest
+  # existing mod.rs so the report still points into the tree.
+  def fallback_bridge_file(class_name)
+    parts = class_name.match(%r{^Ljava/([^;]+);$})&.captures&.first&.split("/")
+    return "src/vm/native/mod.rs" unless parts
+
+    parts.pop
+    until parts.empty?
+      candidate = File.join("src/vm/native/java", *parts, "mod.rs")
+      return candidate if File.file?(candidate)
+
+      parts.pop
+    end
+    "src/vm/native/mod.rs"
   end
 end
 

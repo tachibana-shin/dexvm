@@ -411,6 +411,31 @@ impl Context {
         self.vm.http = Some(std::rc::Rc::new(f));
     }
 
+    /// Registers a host-owned per-host header resolver, e.g. one backed by
+    /// a global cookie/User-Agent store:
+    ///
+    /// ```
+    /// use dexvm::Context;
+    /// # fn register(mut ctx: Context) {
+    /// ctx.set_host_headers(|host| {
+    ///     let cookie = format!("session=abc"); // store.get_cookies_for_domain(host)
+    ///     (Some("dexvm/0.1".into()), Some(cookie))
+    /// });
+    /// # }
+    /// ```
+    ///
+    /// The callback receives the lowercase host of the request URL (the
+    /// same value `reqwest::Url::host_str()` yields) and returns an optional
+    /// User-Agent and Cookie header value. Headers are injected into the
+    /// outgoing request only when it does not already set them itself.
+    #[cfg(feature = "tachiyomi")]
+    pub fn set_host_headers<F>(&mut self, f: F)
+    where
+        F: Fn(&str) -> (Option<String>, Option<String>) + 'static,
+    {
+        self.vm.host_headers = Some(std::rc::Rc::new(f));
+    }
+
     /// Access to the underlying VM for advanced use (registering natives
     /// that need to call back into dex code, checking permissions, etc.).
     pub fn vm(&mut self) -> &mut Vm {

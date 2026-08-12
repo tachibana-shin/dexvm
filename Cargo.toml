@@ -9,7 +9,7 @@ readme = "README.md"
 license = "Apache-2.0"
 
 [features]
-default = ["java", "kotlin", "injekt", "jsoup", "android", "okhttp", "tachiyomi"]
+default = ["java", "kotlin", "injekt", "jsoup", "android", "okhttp", "tachiyomi", "quickjs"]
 # Java standard library host shims (java.*)
 java = []
 # Kotlin stdlib host shims (kotlin.*)
@@ -19,13 +19,15 @@ injekt = []
 # org.jsoup host shims (parsed via dom_query)
 jsoup = ["dep:dom_query"]
 # host shim classes for the Android framework (android.*)
-android = []
+android = ["dep:png", "dep:zune-png", "dep:zune-jpeg"]
 # host shim classes for OkHttp (okhttp3.*)
-okhttp = []
+okhttp = ["dep:reqwest"]
+# app.cash.quickjs host shims (real QuickJS via rquickjs)
+quickjs = ["dep:rquickjs"]
 # host shim classes for the mihon extension API (eu.kanade.tachiyomi.source.*)
 tachiyomi = []
 # compat alias: full mihon/keiyoushi source pipeline (the `keiyoushi` bridge)
-keiyoushi = ["tachiyomi", "kotlin", "injekt", "jsoup", "android", "okhttp"]
+keiyoushi = ["tachiyomi", "kotlin", "injekt", "jsoup", "android", "okhttp", "quickjs"]
 
 [lib]
 name = "dexvm"
@@ -85,6 +87,12 @@ aes = "0.8"
 base64 = "0.22"
 aes-gcm = "0.10"
 log = "0.4"
+png = { version = "0.17", optional = true }
+serde_json = { version = "1.0.151", features = ["preserve_order"] }
+rquickjs = { version = "0.12.2", optional = true }
+zune-png = { version = "0.5.2", default-features = false, optional = true }
+zune-jpeg = { version = "0.5.15", default-features = false, optional = true }
+reqwest = { version = "0.13.4", default-features = false, features = ["cookies"], optional = true }
 
 [dev-dependencies]
 aes-gcm = "0.10"

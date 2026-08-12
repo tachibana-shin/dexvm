@@ -92,6 +92,7 @@ pub const THROWABLE_CTORS: &[NativeEntry] = throwable_ctors_table![
     "Ljava/net/MalformedURLException;",
     "Ljava/lang/InterruptedException;",
     "Ljava/lang/SecurityException;",
+    "Lorg/json/JSONException;",
 ];
 
 #[cfg(feature = "android")]
@@ -100,6 +101,7 @@ mod android;
 mod androidx;
 mod injekt;
 mod java;
+mod json;
 #[cfg(feature = "jsoup")]
 pub(crate) mod jsoup;
 #[cfg(feature = "tachiyomi")]
@@ -110,6 +112,8 @@ mod kotlinx;
 pub(crate) mod okhttp;
 #[cfg(feature = "okhttp")]
 mod okio;
+#[cfg(feature = "quickjs")]
+mod quickjs;
 #[cfg(feature = "tachiyomi")]
 mod rx;
 #[cfg(feature = "tachiyomi")]
@@ -224,6 +228,9 @@ pub(crate) fn native_tables() -> Vec<&'static [NativeEntry]> {
     let mut out: Vec<&'static [NativeEntry]> = Vec::new();
     java::java_tables(&mut out);
     out.push(kotlin::KOTLIN_TABLE);
+    out.push(json::JSON_TABLE);
+    #[cfg(feature = "quickjs")]
+    out.push(quickjs::QUICKJS_TABLE);
     out.push(kotlinx::coroutines::TABLE);
     out.push(injekt::INJEKT_TABLE);
     #[cfg(feature = "okhttp")]
@@ -234,6 +241,8 @@ pub(crate) fn native_tables() -> Vec<&'static [NativeEntry]> {
     out.push(jsoup::JSOUP_TABLE);
     #[cfg(feature = "android")]
     out.push(android::ANDROID_TABLE);
+    #[cfg(feature = "android")]
+    out.push(android::graphics::GRAPHICS_TABLE);
     #[cfg(feature = "android")]
     out.push(androidx::preference::TABLE);
     #[cfg(feature = "tachiyomi")]

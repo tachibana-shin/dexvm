@@ -1,4 +1,4 @@
-//! java.net host shims.
+//! java.net.URI host shims.
 
 use crate::vm::native::*;
 

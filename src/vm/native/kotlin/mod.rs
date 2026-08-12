@@ -1421,6 +1421,48 @@ fn ubyte_constructor_impl(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
+// kotlin.io.TextStreamsKt.readText(Reader) — drains the Reader through
+// repeated virtual `read([CII)I` calls (any Reader the VM can invoke),
+// assembling the chars into one String. A null reader is raised as an
+// IllegalStateException (kotlin.UninitializedPropertyAccessException is
+// not a registered shim, so this is its closest registered sibling).
+fn textstreamskt_read_text(vm: &mut Vm, args: &[JValue]) -> R {
+    let reader = args[0];
+    if reader.is_null() {
+        return Err(NatErr::Throw(vm.throwable_of(
+            "Ljava/lang/IllegalStateException;",
+            "Uninitialized property access: null Reader in readText",
+        )));
+    }
+    const CAP: i32 = 4096;
+    if let Some(Native::Reader(text)) = payload(vm, reader) {
+        return alloc(vm, "Ljava/lang/String;", Native::Str(text.clone()));
+    }
+    let buf = alloc_arr(vm, "C", CAP as usize, || {
+        ArrayData::Char(vec![0u16; CAP as usize])
+    })?;
+    let mut out: Vec<u16> = Vec::new();
+    loop {
+        let n = vm
+            .invoke_virtual_args(
+                reader,
+                "read",
+                "([CII)I",
+                vec![buf, JValue::Int(0), JValue::Int(CAP)],
+            )
+            .map_err(nat_fatal)?;
+        let n = int_of(vm, n);
+        if n <= 0 {
+            break;
+        }
+        if let Some(Native::Array(ArrayData::Char(chars))) = payload(vm, buf) {
+            out.extend_from_slice(&chars[..n as usize]);
+        }
+    }
+    let s = String::from_utf16_lossy(&out);
+    alloc(vm, "Ljava/lang/String;", Native::Str(s))
+}
+
 // kotlin.io.CloseableKt.closeFinally(source, cause). With a primary failure,
 // a close failure is suppressed; otherwise it propagates.
 fn closeablekt_close_finally(vm: &mut Vm, args: &[JValue]) -> R {
@@ -1669,6 +1711,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/UInt;", "constructor-impl", "(I)I", false, uint_constructor_impl),
     ne!("Lkotlin/UByte;", "constructor-impl", "(B)B", false, ubyte_constructor_impl),
     ne!("Lkotlin/io/CloseableKt;", "closeFinally", "(Ljava/io/Closeable;Ljava/lang/Throwable;)V", false, closeablekt_close_finally),
+    ne!("Lkotlin/io/TextStreamsKt;", "readText", "(Ljava/io/Reader;)Ljava/lang/String;", false, textstreamskt_read_text),
     ne!("Lkotlin/text/StringsKt;", "substringAfter$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;", false, stringskt_substring_after_default),
     ne!("Lkotlin/text/StringsKt;", "trim", "(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;", false, stringskt_trim),
     ne!("Lkotlin/time/Duration;", "minus-LRDsOJo", "(JJ)J", false, keiyoushi_duration_minus),

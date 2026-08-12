@@ -1,0 +1,62 @@
+//! java.time.LocalDate host shims. Dates are dd/MM/yyyy, carrying days
+//! since epoch.
+
+use crate::vm::native::*;
+
+/// LocalDate.parse(str, dtf) -> LocalDate carrying days-since-epoch.
+pub(crate) fn localdate_parse(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = jstr(vm, args[0])?;
+    let days = parse_ddmmyyyy(&text)
+        .map_err(|_| NatErr::Throw(vm.err_iae(format!("unparseable date: {text}"))))?;
+    alloc(vm, "Ljava/time/LocalDate;", Native::LocalDay(days))
+}
+
+pub(crate) fn localdate_at_start_of_day(vm: &mut Vm, args: &[JValue]) -> R {
+    let days = match payload(vm, args[0]) {
+        Some(Native::LocalDay(d)) => *d,
+        _ => return Err(npe(vm)),
+    };
+    // fixed +07:00 offset for the HCM zone the extensions use
+    let millis = i64::from(days) * 86_400_000 - 7 * 3_600_000;
+    alloc(vm, "Ljava/time/ZonedDateTime;", Native::EpochMillis(millis))
+}
+
+/// days since 1970-01-01 for a dd/MM/yyyy string.
+fn parse_ddmmyyyy(s: &str) -> Result<u32, ()> {
+    let parts: Vec<&str> = s.trim().split('/').collect();
+    if parts.len() != 3 {
+        return Err(());
+    }
+    let (d, m, y): (u32, u32, i64) = (
+        parts[0].parse().map_err(|_| ())?,
+        parts[1].parse().map_err(|_| ())?,
+        parts[2].parse().map_err(|_| ())?,
+    );
+    if !(1..=31).contains(&d) || !(1..=12).contains(&m) {
+        return Err(());
+    }
+    let (y0, m0) = if m < 3 { (y - 1, m + 9) } else { (y, m - 3) };
+    let era = if y0 >= 0 { y0 / 400 } else { (y0 - 399) / 400 };
+    let yoe = y0 - era * 400;
+    let doy = i64::from(153 * m0 + 2) / 5 + i64::from(d) - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    Ok((era * 146_097 + doe) as u32)
+}
+
+/// Native methods for Ljava/time/LocalDate;
+pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/time/LocalDate;",
+        "parse",
+        "(Ljava/lang/CharSequence;Ljava/time/format/DateTimeFormatter;)Ljava/time/LocalDate;",
+        false,
+        localdate_parse
+    ),
+    ne!(
+        "Ljava/time/LocalDate;",
+        "atStartOfDay",
+        "(Ljava/time/ZoneId;)Ljava/time/ZonedDateTime;",
+        true,
+        localdate_at_start_of_day
+    ),
+];
