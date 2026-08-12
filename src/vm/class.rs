@@ -3481,6 +3481,30 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!("Ljava/nio/ByteBuffer;", Some("Ljava/nio/Buffer;"), &[], 0),
     shim!("Ljava/nio/CharBuffer;", Some("Ljava/nio/Buffer;"), &[], 0),
     shim!(
+        "Ljava/nio/BufferUnderflowException;",
+        Some("Ljava/lang/RuntimeException;"),
+        &[],
+        0
+    ),
+    shim!(
+        "Ljava/nio/ByteOrder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [
+            sdef!(
+                "BIG_ENDIAN",
+                "Ljava/nio/ByteOrder;",
+                ShimValue::Lazy(native::lazy_big_endian)
+            ),
+            sdef!(
+                "LITTLE_ENDIAN",
+                "Ljava/nio/ByteOrder;",
+                ShimValue::Lazy(native::lazy_little_endian)
+            ),
+        ]
+    ),
+    shim!(
         "Ljava/nio/charset/CharsetDecoder;",
         Some("Ljava/lang/Object;"),
         &[],
@@ -3626,6 +3650,34 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     ),
     shim!("Ljava/text/Format;", Some("Ljava/lang/Object;"), &[], 0),
     shim!("Ljava/text/Normalizer;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Ljava/text/Normalizer$Form;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [
+            sdef!(
+                "NFC",
+                "Ljava/text/Normalizer$Form;",
+                ShimValue::Lazy(native::lazy_form_nfc)
+            ),
+            sdef!(
+                "NFD",
+                "Ljava/text/Normalizer$Form;",
+                ShimValue::Lazy(native::lazy_form_nfd)
+            ),
+            sdef!(
+                "NFKC",
+                "Ljava/text/Normalizer$Form;",
+                ShimValue::Lazy(native::lazy_form_nfkc)
+            ),
+            sdef!(
+                "NFKD",
+                "Ljava/text/Normalizer$Form;",
+                ShimValue::Lazy(native::lazy_form_nfkd)
+            ),
+        ]
+    ),
     shim!(
         "Ljava/text/StringCharacterIterator;",
         Some("Ljava/lang/Object;"),

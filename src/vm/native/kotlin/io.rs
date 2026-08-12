@@ -41,6 +41,33 @@ fn read_text(vm: &mut Vm, args: &[JValue]) -> R {
     )
 }
 
+/// Reads every remaining byte from any of our eager, in-memory
+/// `InputStream`-shaped payloads (no real streaming — everything is
+/// already buffered).
+fn stream_bytes_of(vm: &Vm, v: JValue) -> Option<Vec<u8>> {
+    match payload(vm, v) {
+        Some(Native::ByteArrayInputStream { bytes, pos }) => Some(bytes[*pos..].to_vec()),
+        Some(Native::Str(s)) => Some(s.as_bytes().to_vec()),
+        _ => None,
+    }
+}
+
+fn read_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = stream_bytes_of(vm, args[0]).ok_or_else(|| npe(vm))?;
+    let data: Vec<i8> = bytes.iter().map(|&b| b as i8).collect();
+    alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))
+}
+
+fn copy_to_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = stream_bytes_of(vm, args[0]).ok_or_else(|| npe(vm))?;
+    let n = bytes.len() as i64;
+    let data: Vec<i8> = bytes.iter().map(|&b| b as i8).collect();
+    let arr = alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))?;
+    vm.invoke_virtual_args(args[1], "write", "([B)V", vec![arr])
+        .map_err(nat_fatal)?;
+    Ok(JValue::Long(n))
+}
+
 fn close_finally(vm: &mut Vm, args: &[JValue]) -> R {
     if args[0].is_null() {
         return Ok(JValue::Null);
@@ -69,5 +96,19 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/io/Reader;)Ljava/lang/String;",
         false,
         read_text
+    ),
+    ne!(
+        "Lkotlin/io/ByteStreamsKt;",
+        "readBytes",
+        "(Ljava/io/InputStream;)[B",
+        false,
+        read_bytes
+    ),
+    ne!(
+        "Lkotlin/io/ByteStreamsKt;",
+        "copyTo$default",
+        "(Ljava/io/InputStream;Ljava/io/OutputStream;IILjava/lang/Object;)J",
+        false,
+        copy_to_default
     ),
 ];

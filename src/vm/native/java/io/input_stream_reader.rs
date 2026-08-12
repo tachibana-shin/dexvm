@@ -20,10 +20,19 @@ fn input_stream_reader_init(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
-pub(crate) const TABLE: &[NativeEntry] = &[ne!(
-    "Ljava/io/InputStreamReader;",
-    "<init>",
-    "(Ljava/io/InputStream;Ljava/lang/String;)V",
-    true,
-    input_stream_reader_init
-)];
+pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/io/InputStreamReader;",
+        "<init>",
+        "(Ljava/io/InputStream;Ljava/lang/String;)V",
+        true,
+        input_stream_reader_init
+    ),
+    ne!(
+        "Ljava/io/InputStreamReader;",
+        "<init>",
+        "(Ljava/io/InputStream;Ljava/nio/charset/Charset;)V",
+        true,
+        input_stream_reader_init
+    ),
+];

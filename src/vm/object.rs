@@ -354,6 +354,13 @@ pub enum Native {
     },
     /// java.math.BigInteger: arbitrary-precision signed integer.
     BigInt(num_bigint::BigInt),
+    /// java.nio.ByteBuffer: backing bytes plus a read/write cursor.
+    ByteBuffer {
+        data: Vec<u8>,
+        pos: usize,
+        limit: usize,
+        big_endian: bool,
+    },
     /// java.io.PrintStream (writes to the VM output sink).
     PrintStream,
     /// java.util.Random (xorshift64*).
@@ -996,6 +1003,7 @@ impl Native {
             | Native::Mac { .. }
             | Native::Inflater { .. }
             | Native::BigInt(_)
+            | Native::ByteBuffer { .. }
             | Native::PrintStream
             | Native::Random(_)
             | Native::Date(_)

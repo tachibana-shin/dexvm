@@ -17,6 +17,15 @@ require "time"
 require "uri"
 require "yaml"
 
+# The Rust source tree under src/vm/native/ legitimately contains UTF-8
+# (em-dashes, non-ASCII identifiers in doc comments, etc.). Ruby's default
+# external encoding tracks the shell locale, so under a non-UTF-8 locale
+# (LANG=C, no locale set, ...) File.read tags strings as US-ASCII and any
+# scan/parse over them raises ArgumentError. Force UTF-8 everywhere so the
+# audit runs the same regardless of the invoking shell's locale.
+Encoding.default_external = Encoding::UTF_8
+Encoding.default_internal = Encoding::UTF_8
+
 DEFAULT_INDEX = "https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.json"
 DEFAULT_CACHE = "target/keiyoushi-audit"
 ACTIONABLE = %w[missing-class missing-method static-mismatch unsupported-jni].freeze
@@ -192,7 +201,7 @@ class DexcliAudit
   def build_bridge_index
     index = {}
     Dir.glob(File.join("src/vm/native", "**", "*.rs")).sort.each do |path|
-      File.read(path).scan(NE_CLASS).each do |descriptor|
+      File.read(path).scrub.scan(NE_CLASS).each do |descriptor|
         index[descriptor.first] ||= path
       end
     end

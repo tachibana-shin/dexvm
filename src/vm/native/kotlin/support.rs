@@ -62,6 +62,18 @@ pub(super) fn exceptions_stack_trace_to_string(vm: &mut Vm, args: &[JValue]) -> 
 pub(super) fn exceptions_add_suppressed(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
+/// `thread(start, isDaemon, contextClassLoader, name, priority, block)`:
+/// this VM has no real concurrency, so a "started" thread just runs its
+/// block synchronously (and any exception it throws is swallowed, matching
+/// a real thread's uncaught-exception-terminates-just-that-thread behavior).
+pub(super) fn threads_kt_thread_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let start = args.first().map(|v| v.as_int() != 0).unwrap_or(true);
+    let block = args[5];
+    if start && !block.is_null() {
+        let _ = vm.invoke_virtual_args(block, "invoke", "()Ljava/lang/Object;", vec![]);
+    }
+    alloc(vm, "Ljava/lang/Thread;", Native::Opaque)
+}
 pub(super) fn coroutines_suspended(vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(opaque_inst(vm, "Ljava/lang/Object;"))
 }
@@ -111,6 +123,7 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/reflect/KTypeProjection$Companion;", "invariant", "(Lkotlin/reflect/KType;)Lkotlin/reflect/KTypeProjection;", true, kotlin_type_projection_invariant),
     ne!("Lkotlin/ExceptionsKt;", "stackTraceToString", "(Ljava/lang/Throwable;)Ljava/lang/String;", false, exceptions_stack_trace_to_string),
     ne!("Lkotlin/ExceptionsKt;", "addSuppressed", "(Ljava/lang/Throwable;Ljava/lang/Throwable;)V", false, exceptions_add_suppressed),
+    ne!("Lkotlin/concurrent/ThreadsKt;", "thread$default", "(ZZLjava/lang/ClassLoader;Ljava/lang/String;ILkotlin/jvm/functions/Function0;ILjava/lang/Object;)Ljava/lang/Thread;", false, threads_kt_thread_default),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of3),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "compareValues", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)I", false, comparisons_compare_values),

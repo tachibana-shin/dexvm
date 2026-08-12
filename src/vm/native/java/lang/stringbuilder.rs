@@ -59,6 +59,22 @@ pub(crate) fn sb_append_charseq(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
+pub(crate) fn sb_append_charseq_range(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = if args[1].is_null() {
+        "null".to_string()
+    } else {
+        charseq_of(vm, args[1])?
+    };
+    let start = int_of(vm, args[2]).max(0) as usize;
+    let end = (int_of(vm, args[3]).max(0) as usize).min(s.chars().count());
+    let slice: String = s.chars().skip(start).take(end.saturating_sub(start)).collect();
+    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    dst.push_str(&slice);
+    Ok(args[0])
+}
+
 pub(crate) fn sb_append_obj(vm: &mut Vm, args: &[JValue]) -> R {
     let s = to_string_of(vm, args[1])?;
     let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
@@ -269,6 +285,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/CharSequence;)Ljava/lang/StringBuilder;",
         true,
         sb_append_charseq
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(Ljava/lang/CharSequence;II)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_charseq_range
     ),
     ne!(
         "Ljava/lang/StringBuilder;",

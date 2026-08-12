@@ -393,6 +393,61 @@ fn okio_buffer_write(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
+fn okio_buffer_write_all(vm: &mut Vm, args: &[JValue]) -> R {
+    let source = okio_bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
+    let n = source.len() as i64;
+    match payload_mut(vm, args[0]) {
+        Some(Native::OkioBuf { bytes, .. }) => bytes.extend_from_slice(&source),
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Long(n))
+}
+
+fn okio_buffer_read_into(vm: &mut Vm, args: &[JValue]) -> R {
+    let want = long_of(vm, args[2]).max(0) as usize;
+    let chunk = match payload_mut(vm, args[1]) {
+        Some(Native::OkioBuf { bytes, pos }) => {
+            let n = (bytes.len() - *pos).min(want);
+            let chunk = bytes[*pos..*pos + n].to_vec();
+            *pos += n;
+            chunk
+        }
+        _ => return Err(npe(vm)),
+    };
+    if chunk.is_empty() {
+        return Ok(JValue::Long(-1));
+    }
+    let n = chunk.len() as i64;
+    match payload_mut(vm, args[0]) {
+        Some(Native::OkioBuf { bytes, .. }) => bytes.extend_from_slice(&chunk),
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Long(n))
+}
+
+fn okio_buffer_write_byte(vm: &mut Vm, args: &[JValue]) -> R {
+    let b = int_of(vm, args[1]) as u8;
+    match payload_mut(vm, args[0]) {
+        Some(Native::OkioBuf { bytes, .. }) => bytes.push(b),
+        _ => return Err(npe(vm)),
+    }
+    Ok(args[0])
+}
+
+fn okio_buffer_read_byte(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::OkioBuf { bytes, pos }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    if *pos >= bytes.len() {
+        return Err(NatErr::Throw(
+            vm.throwable_of("Ljava/io/EOFException;", "end of buffer"),
+        ));
+    }
+    let b = bytes[*pos];
+    *pos += 1;
+    Ok(JValue::Int(b as i8 as i32))
+}
+
 fn okio_buffer_output_stream(vm: &mut Vm, args: &[JValue]) -> R {
     let buffer = args[0].as_obj();
     alloc(
@@ -501,6 +556,10 @@ pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
         true,
         okio_forwarding_source_read
     ),
+    ne!("Lokio/Buffer;", "writeAll", "(Lokio/Source;)J", true, okio_buffer_write_all),
+    ne!("Lokio/Buffer;", "read", "(Lokio/Buffer;J)J", true, okio_buffer_read_into),
+    ne!("Lokio/Buffer;", "writeByte", "(I)Lokio/Buffer;", true, okio_buffer_write_byte),
+    ne!("Lokio/Buffer;", "readByte", "()B", true, okio_buffer_read_byte),
     ne!(
         "Lokio/ByteStreams;",
         "source",

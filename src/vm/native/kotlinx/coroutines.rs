@@ -99,6 +99,11 @@ pub(crate) fn coroutines_launch_default(vm: &mut Vm, args: &[JValue]) -> R {
     );
     alloc(vm, "Lkotlinx/coroutines/Job;", Native::Opaque)
 }
+/// `delay(millis, continuation)`: this VM runs coroutines synchronously, so
+/// there's nothing to actually suspend for — just resume immediately.
+pub(crate) fn coroutines_delay(vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(lazy_unit_instance(vm))
+}
 pub(crate) fn coroutines_supervisor_job_default(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(vm, "Lkotlinx/coroutines/CompletableJob;", Native::Opaque)
 }
@@ -200,4 +205,6 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "cancel$default", "(Lkotlinx/coroutines/CoroutineScope;Ljava/lang/Throwable;ILjava/lang/Object;)V", false, coroutines_job_cancel_default),
     ne!("Lkotlinx/coroutines/CoroutineScopeKt;", "isActive", "(Lkotlinx/coroutines/CoroutineScope;)Z", false, coroutines_is_active),
     ne!("Lkotlinx/coroutines/MainCoroutineDispatcher;", "getImmediate", "()Lkotlinx/coroutines/MainCoroutineDispatcher;", true, coroutines_get_immediate),
+    ne!("Lkotlinx/coroutines/DelayKt;", "delay", "(JLkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, coroutines_delay),
+    ne!("Lkotlinx/coroutines/DelayKt;", "delay-VtjQ1oo", "(JLkotlin/coroutines/Continuation;)Ljava/lang/Object;", false, coroutines_delay),
 ];

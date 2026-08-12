@@ -248,6 +248,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         kotlin_instant_parse_or_null
     ),
     ne!(
+        "Lkotlin/time/Instant$Companion;",
+        "parse",
+        "(Ljava/lang/CharSequence;)Lkotlin/time/Instant;",
+        true,
+        kotlin_instant_parse_or_null
+    ),
+    ne!(
         "Lkotlin/time/Duration;",
         "minus-LRDsOJo",
         "(JJ)J",
