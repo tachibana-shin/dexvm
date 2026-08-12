@@ -373,6 +373,8 @@ pub enum Native {
     /// android.graphics.Canvas: destination bitmap (arena id).
     Canvas {
         bitmap: u32,
+        transform: [f32; 6],
+        stack: Vec<[f32; 6]>,
     },
     /// android.graphics.Paint drawing state.
     Paint {
@@ -850,7 +852,7 @@ impl Native {
                 }
             }
             Native::Activity { intent, .. } => push(Some(intent), out),
-            Native::Canvas { bitmap } => out.push(*bitmap),
+            Native::Canvas { bitmap, .. } => out.push(*bitmap),
             Native::JsonObj(pairs) => {
                 for (_, value) in pairs {
                     push(Some(value), out);

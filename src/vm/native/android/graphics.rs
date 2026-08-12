@@ -400,7 +400,7 @@ fn decode_bitmap_bytes(vm: &mut Vm, bytes: &[u8]) -> R {
 }
 fn canvas_bitmap_id(vm: &mut Vm, v: JValue) -> Result<u32, NatErr> {
     match payload(vm, v) {
-        Some(Native::Canvas { bitmap }) => Ok(*bitmap),
+        Some(Native::Canvas { bitmap, .. }) => Ok(*bitmap),
         _ => Err(npe(vm)),
     }
 }
@@ -410,10 +410,14 @@ pub(crate) fn canvas_init(vm: &mut Vm, args: &[JValue]) -> R {
         JValue::Obj(id) => id,
         _ => return Err(npe(vm)),
     };
-    let Some(Native::Canvas { bitmap: slot }) = payload_mut(vm, args[0]) else {
+    let Some(JValue::Obj(this)) = args.first().copied() else {
         return Err(npe(vm));
     };
-    *slot = bitmap;
+    vm.arena.objects[this as usize].native = Some(Native::Canvas {
+        bitmap,
+        transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+        stack: Vec::new(),
+    });
     Ok(JValue::Null)
 }
 
@@ -523,28 +527,77 @@ pub(crate) fn canvas_draw_bitmap_xy(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn canvas_draw_color(vm: &mut Vm, args: &[JValue]) -> R {
     let color = int_of(vm, args[1]) as u32;
     let canvas_id = canvas_bitmap_id(vm, args[0])?;
-    let Native::Bitmap { pixels, .. } = bitmap_mut(vm, JValue::Obj(canvas_id))? else {
-        unreachable!("payload checked")
+    let (width, height, _) = bitmap_parts(vm, JValue::Obj(canvas_id))?;
+    let mut target = raqote::DrawTarget::new(width, height);
+    let rgba = raqote::SolidSource {
+        r: (color >> 16) as u8,
+        g: (color >> 8) as u8,
+        b: color as u8,
+        a: (color >> 24) as u8,
     };
-    pixels.fill(color);
+    target.clear(rgba);
+    let Native::Bitmap { pixels, .. } = bitmap_mut(vm, JValue::Obj(canvas_id))? else {
+        unreachable!()
+    };
+    pixels.copy_from_slice(target.get_data());
     Ok(JValue::Null)
-}
-
-pub(crate) fn canvas_save(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Int(1))
 }
 
 pub(crate) fn canvas_noop(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+pub(crate) fn canvas_save(_vm: &mut Vm, _args: &[JValue]) -> R {
+    let vm = _vm;
+    let Some(Native::Canvas {
+        transform, stack, ..
+    }) = payload_mut(vm, _args[0])
+    else {
+        return Err(npe(vm));
+    };
+    stack.push(*transform);
+    Ok(JValue::Int(stack.len() as i32))
+}
+
+pub(crate) fn canvas_restore(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Canvas {
+        transform, stack, ..
+    }) = payload_mut(vm, args[0])
+    else {
+        return Err(npe(vm));
+    };
+    if let Some(saved) = stack.pop() {
+        *transform = saved;
+    }
+    Ok(JValue::Null)
+}
+
 pub(crate) fn canvas_translate(vm: &mut Vm, args: &[JValue]) -> R {
     let dx = float_of(vm, args[1]);
     let dy = float_of(vm, args[2]);
-    let Some(Native::Canvas { bitmap }) = payload_mut(vm, args[0]) else {
+    let Some(Native::Canvas { transform, .. }) = payload_mut(vm, args[0]) else {
         return Err(npe(vm));
     };
-    let _ = (dx, dy, bitmap);
+    transform[4] += transform[0] * dx + transform[2] * dy;
+    transform[5] += transform[1] * dx + transform[3] * dy;
+    Ok(JValue::Null)
+}
+
+pub(crate) fn canvas_rotate(vm: &mut Vm, args: &[JValue]) -> R {
+    let radians = float_of(vm, args[1]).to_radians();
+    let (sin, cos) = radians.sin_cos();
+    let Some(Native::Canvas { transform, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    let [a, b, c, d, tx, ty] = *transform;
+    *transform = [
+        a * cos + c * sin,
+        b * cos + d * sin,
+        c * cos - a * sin,
+        d * cos - b * sin,
+        tx,
+        ty,
+    ];
     Ok(JValue::Null)
 }
 
@@ -868,7 +921,7 @@ pub(crate) const GRAPHICS_TABLE: &[NativeEntry] = &[
         true,
         canvas_save
     ),
-    ne!("Landroid/graphics/Canvas;", "restore", "()V", true, canvas_noop),
+    ne!("Landroid/graphics/Canvas;", "restore", "()V", true, canvas_restore),
     ne!(
         "Landroid/graphics/Canvas;",
         "translate",
@@ -876,7 +929,7 @@ pub(crate) const GRAPHICS_TABLE: &[NativeEntry] = &[
         true,
         canvas_translate
     ),
-    ne!("Landroid/graphics/Canvas;", "rotate", "(F)V", true, canvas_noop),
+    ne!("Landroid/graphics/Canvas;", "rotate", "(F)V", true, canvas_rotate),
     ne!("Landroid/graphics/Paint;", "<init>", "()V", true, paint_init),
     ne!(
         "Landroid/graphics/Paint;",
@@ -977,7 +1030,7 @@ pub(crate) const GRAPHICS_TABLE: &[NativeEntry] = &[
         "<init>",
         "()V",
         true,
-        canvas_noop
+        canvas_rotate
     ),
     ne!(
         "Landroid/graphics/pdf/PdfRenderer$Page;",

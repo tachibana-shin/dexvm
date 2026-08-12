@@ -19,9 +19,9 @@ injekt = []
 # org.jsoup host shims (parsed via dom_query)
 jsoup = ["dep:dom_query"]
 # host shim classes for the Android framework (android.*)
-android = ["dep:png", "dep:zune-png", "dep:zune-jpeg"]
+android = ["dep:png", "dep:zune-png", "dep:zune-jpeg", "dep:raqote"]
 # host shim classes for OkHttp (okhttp3.*)
-okhttp = ["dep:reqwest"]
+okhttp = []
 # app.cash.quickjs host shims (real QuickJS via rquickjs)
 quickjs = ["dep:rquickjs"]
 # host shim classes for the mihon extension API (eu.kanade.tachiyomi.source.*)
@@ -80,21 +80,21 @@ required-features = ["injekt"]
 fancy-regex = "0.19.0"
 zip = "8.6.0"
 dom_query = { version = "0.28.0", optional = true }
-md-5 = "0.10"
-sha1 = "0.10"
-sha2 = "0.10"
+md-5 = "0.11.0"
+sha1 = "0.11.0"
+sha2 = "0.11.0"
 aes = "0.8"
 base64 = "0.22"
-aes-gcm = "0.10"
+aes-gcm = "0.11.0"
 log = "0.4"
 png = { version = "0.17", optional = true }
 serde_json = { version = "1.0.151", features = ["preserve_order"] }
 rquickjs = { version = "0.12.2", optional = true }
 zune-png = { version = "0.5.2", default-features = false, optional = true }
 zune-jpeg = { version = "0.5.15", default-features = false, optional = true }
-reqwest = { version = "0.13.4", default-features = false, features = ["cookies"], optional = true }
+raqote = { version = "0.8.5", optional = true }
 
 [dev-dependencies]
-aes-gcm = "0.10"
+aes-gcm = "0.11.0"
 ureq = "3.4.0"
 env_logger = "0.11"
