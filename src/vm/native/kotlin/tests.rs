@@ -460,3 +460,16 @@ fn regex_match_entire_and_collection_slices_are_real() {
         assert_eq!(coll_elems(vm, taken).unwrap().len(), 2);
     });
 }
+
+#[test]
+fn triple_bridge_keeps_all_three_values() {
+    with_vm(|vm| {
+        let a = s(vm, "a");
+        let b = s(vm, "b");
+        let c = s(vm, "c");
+        let t = tripled_to(vm, &[a, b, c]).unwrap();
+        assert_eq!(triple_get_first(vm, &[t]).unwrap(), a);
+        assert_eq!(triple_get_second(vm, &[t]).unwrap(), b);
+        assert_eq!(triple_get_third(vm, &[t]).unwrap(), c);
+    });
+}

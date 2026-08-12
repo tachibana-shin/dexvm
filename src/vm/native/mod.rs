@@ -552,6 +552,7 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             }
             "Ljava/util/concurrent/atomic/AtomicBoolean;" => Some(Native::AtomicBool(false)),
             "Ljava/util/concurrent/atomic/AtomicInteger;" => Some(Native::AtomicInt(0)),
+            "Ljava/util/concurrent/CountDownLatch;" => Some(Native::CountDownLatch(0)),
             "Ljava/time/LocalDate;" => Some(Native::LocalDay(0)),
             "Ljava/time/ZonedDateTime;" | "Ljava/time/Instant;" => Some(Native::EpochMillis(0)),
             "Ljava/time/ZoneId;" => Some(Native::Opaque),

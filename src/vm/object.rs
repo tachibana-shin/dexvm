@@ -222,6 +222,8 @@ pub enum Native {
     AtomicBool(bool),
     /// java.util.concurrent.atomic.AtomicInteger.
     AtomicInt(i32),
+    /// java.util.concurrent.CountDownLatch count.
+    CountDownLatch(i32),
     /// java.time.LocalDate (days since epoch).
     LocalDay(u32),
     /// java.time.Instant / ZonedDateTime (epoch millis).
@@ -611,6 +613,8 @@ pub enum Native {
     Lazy(JValue),
     /// kotlin Pair (two elements).
     Pair(JValue, JValue),
+    /// kotlin Triple (three elements).
+    Triple(JValue, JValue, JValue),
     /// kotlin.ranges.IntRange (current, last) — the cursor doubles as iterator
     /// position for IntIterator subclasses.
     IntRange(i32, i32),
@@ -805,6 +809,11 @@ impl Native {
                 push(Some(a), out);
                 push(Some(b), out);
             }
+            Native::Triple(a, b, c) => {
+                push(Some(a), out);
+                push(Some(b), out);
+                push(Some(c), out);
+            }
             Native::OkHttpBuilder {
                 interceptors,
                 network_interceptors,
@@ -951,6 +960,7 @@ impl Native {
             | Native::Field { .. }
             | Native::AtomicBool(_)
             | Native::AtomicInt(_)
+            | Native::CountDownLatch(_)
             | Native::LocalDay(_)
             | Native::EpochMillis(_)
             | Native::SortSelection { .. }

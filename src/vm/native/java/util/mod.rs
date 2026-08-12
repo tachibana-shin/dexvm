@@ -7,6 +7,7 @@ mod atomic;
 mod calendar;
 mod collections;
 mod condition;
+mod count_down_latch;
 mod date;
 mod hashmap;
 mod hashset;
@@ -80,6 +81,7 @@ pub(crate) const UTIL_TABLE: &[&[NativeEntry]] = &[
     arrays::TABLE,
     atomic::TABLE,
     calendar::TABLE,
+    count_down_latch::TABLE,
     collections::TABLE,
     hashmap::CHM_TABLE,
     condition::TABLE,
