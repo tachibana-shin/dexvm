@@ -192,7 +192,7 @@ class DexcliAudit
   def build_bridge_index
     index = {}
     Dir.glob(File.join("src/vm/native", "**", "*.rs")).sort.each do |path|
-      File.read(path).scan(/ne!\s*\(\s*"([^";]+;)"\s*,\s*"/).each do |descriptor|
+      File.read(path).scan(NE_CLASS).each do |descriptor|
         index[descriptor.first] ||= path
       end
     end
@@ -203,19 +203,17 @@ class DexcliAudit
     @bridge_index[class_name] || fallback_bridge_file(class_name)
   end
 
-  # Classes without native tables (pure shims, e.g. Ljava/math/BigDecimal;)
-  # have no ne! registration; walk up the package chain to the nearest
+  # Classes without native tables (pure shims, e.g. Ljava/math/BigInteger;)
+  # have no ne! registration; walk the package chain up to the nearest
   # existing mod.rs so the report still points into the tree.
   def fallback_bridge_file(class_name)
-    parts = class_name.match(%r{^Ljava/([^;]+);$})&.captures&.first&.split("/")
-    return "src/vm/native/mod.rs" unless parts
+    descriptor = class_name[/^L([^;]+);$/, 1]
+    return "src/vm/native/mod.rs" unless descriptor
 
-    parts.pop
-    until parts.empty?
-      candidate = File.join("src/vm/native/java", *parts, "mod.rs")
+    parts = descriptor.split("/")
+    (1..parts.length).reverse_each do |length|
+      candidate = File.join("src/vm/native", *parts.first(length), "mod.rs")
       return candidate if File.file?(candidate)
-
-      parts.pop
     end
     "src/vm/native/mod.rs"
   end
