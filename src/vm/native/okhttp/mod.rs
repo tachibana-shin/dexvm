@@ -107,7 +107,9 @@ pub(crate) fn request_builder_headers(vm: &mut Vm, args: &[JValue]) -> R {
 /// `Cache-Control` header the interceptor chain sees on the final request.
 pub(crate) fn request_builder_cache_control(vm: &mut Vm, args: &[JValue]) -> R {
     let (max_age, no_cache) = match payload(vm, args[1]) {
-        Some(Native::CacheControl { max_age, no_cache }) => (*max_age, *no_cache),
+        Some(Native::CacheControl {
+            max_age, no_cache, ..
+        }) => (*max_age, *no_cache),
         _ => return Err(npe(vm)),
     };
     let mut hdr = String::new();
@@ -735,6 +737,14 @@ pub(crate) fn cache_control_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
             no_cache: match payload(vm, args[0]) {
                 Some(Native::CacheControlBuilder { no_cache, .. }) => *no_cache,
                 _ => return Err(npe(vm)),
+            },
+            no_store: match payload(vm, args[0]) {
+                Some(Native::CacheControlBuilder { no_store, .. }) => *no_store,
+                _ => false,
+            },
+            max_stale: match payload(vm, args[0]) {
+                Some(Native::CacheControlBuilder { max_stale, .. }) => *max_stale,
+                _ => 0,
             },
         },
     )
@@ -1969,10 +1979,6 @@ pub(crate) fn request_body_write_to(vm: &mut Vm, args: &[JValue]) -> R {
 pub(crate) fn request_body_companion_create_bytes(vm: &mut Vm, args: &[JValue]) -> R {
     let bytes = bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
     alloc(vm, "Lokhttp3/RequestBody;", Native::RespBody(bytes))
-}
-
-pub(crate) fn cache_control_builder_noop(_vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(args[0])
 }
 
 pub(crate) fn cache_control_builder_no_cache(vm: &mut Vm, args: &[JValue]) -> R {

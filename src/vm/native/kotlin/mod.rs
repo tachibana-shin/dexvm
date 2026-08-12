@@ -1092,6 +1092,33 @@ pub(crate) fn match_result_get_value(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &s))
 }
 
+pub(crate) fn kotlin_instant_to_epoch_millis(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::EpochMillis(m)) => Ok(JValue::Long(*m)),
+        _ => Err(npe(vm)),
+    }
+}
+
+pub(crate) fn kotlin_instant_now(vm: &mut Vm, _args: &[JValue]) -> R {
+    let millis = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|_| iae(vm, "clock before epoch"))?
+        .as_millis() as i64;
+    alloc(vm, "Lkotlin/time/Instant;", Native::EpochMillis(millis))
+}
+
+pub(crate) fn kotlin_instant_minus(vm: &mut Vm, args: &[JValue]) -> R {
+    let base = match payload(vm, args[0]) {
+        Some(Native::EpochMillis(m)) => *m,
+        _ => return Err(npe(vm)),
+    };
+    alloc(
+        vm,
+        "Lkotlin/time/Instant;",
+        Native::EpochMillis(base.saturating_sub(long_of(vm, args[1]))),
+    )
+}
+
 // java.net.URI
 // ---------------------------------------------------------------------------
 
@@ -1687,6 +1714,9 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/ranges/RangesKt;", "coerceIn", "(III)I", false, rangeskt_coerce_in),
     ne!("Lkotlin/ranges/RangesKt;", "coerceAtLeast", "(II)I", false, rangeskt_coerce_at_least),
     ne!("Lkotlin/text/MatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
+    ne!("Lkotlin/time/Instant;", "toEpochMilliseconds", "()J", true, kotlin_instant_to_epoch_millis),
+    ne!("Lkotlin/time/Instant;", "minus-LRDsOJo", "(J)Lkotlin/time/Instant;", true, kotlin_instant_minus),
+    ne!("Lkotlin/time/Clock$System;", "now", "()Lkotlin/time/Instant;", false, kotlin_instant_now),
     ne!("Lkotlin/text/MatcherMatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
     ne!("Lkotlin/ranges/IntRange;", "<init>", "(II)V", true, int_range_init),
     ne!("Lkotlin/ranges/RangesKt;", "until", "(II)Lkotlin/ranges/IntRange;", false, rangeskt_until),

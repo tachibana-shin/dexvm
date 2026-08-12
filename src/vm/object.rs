@@ -876,14 +876,14 @@ impl Native {
                 default_value,
                 ..
             } => {
-                push(*key, out);
-                push(*title, out);
-                push(*summary, out);
-                push(Some(*default_value), out);
+                push(key.as_ref(), out);
+                push(title.as_ref(), out);
+                push(summary.as_ref(), out);
+                push(Some(default_value), out);
             }
             Native::PreferenceScreen { children, title } => {
                 push_all(children, out);
-                push(*title, out);
+                push(title.as_ref(), out);
             }
             Native::Canvas { bitmap, .. } => out.push(*bitmap),
             Native::JsonObj(pairs) => {
