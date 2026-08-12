@@ -234,6 +234,53 @@ pub(crate) fn sb_set_length(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+pub(crate) fn sb_append_code_point(vm: &mut Vm, args: &[JValue]) -> R {
+    let cp = int_of(vm, args[1]) as u32;
+    let c = char::from_u32(cp).unwrap_or('\u{fffd}');
+    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    dst.push(c);
+    Ok(args[0])
+}
+
+pub(crate) fn sb_insert_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let idx = int_of(vm, args[1]).max(0) as usize;
+    let s = jstr(vm, args[2])?;
+    let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    let byte_idx = dst
+        .char_indices()
+        .nth(idx)
+        .map(|(i, _)| i)
+        .unwrap_or(dst.len());
+    dst.insert_str(byte_idx, &s);
+    Ok(args[0])
+}
+
+pub(crate) fn sb_get_chars(vm: &mut Vm, args: &[JValue]) -> R {
+    let start = int_of(vm, args[1]).max(0) as usize;
+    let end = int_of(vm, args[2]).max(0) as usize;
+    let dst_begin = int_of(vm, args[4]).max(0) as usize;
+    let src: Vec<char> = match payload(vm, args[0]) {
+        Some(Native::StringBuilder(s)) => s.chars().collect(),
+        _ => return Err(npe(vm)),
+    };
+    if end > src.len() || start > end {
+        return Err(sioobe(vm, "getChars index out of range"));
+    }
+    let slice = &src[start..end];
+    if let Some(Native::Array(ArrayData::Char(dst))) = payload_mut(vm, args[3]) {
+        for (i, c) in slice.iter().enumerate() {
+            if dst_begin + i < dst.len() {
+                dst[dst_begin + i] = *c as u16;
+            }
+        }
+    }
+    Ok(JValue::Null)
+}
+
 pub(crate) fn sb_capacity(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Int(0))
 }
@@ -363,6 +410,7 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         true,
         sb_length
     ),
+    ne!("Ljava/lang/StringBuffer;", "length", "()I", true, sb_length),
     ne!(
         "Ljava/lang/StringBuilder;",
         "charAt",
@@ -411,5 +459,40 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/String;I)I",
         true,
         sb_index_of
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "appendCodePoint",
+        "(I)Ljava/lang/StringBuilder;",
+        true,
+        sb_append_code_point
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "insert",
+        "(ILjava/lang/String;)Ljava/lang/StringBuilder;",
+        true,
+        sb_insert_string
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "getChars",
+        "(II[CI)V",
+        true,
+        sb_get_chars
+    ),
+    ne!(
+        "Ljava/lang/StringBuffer;",
+        "getChars",
+        "(II[CI)V",
+        true,
+        sb_get_chars
+    ),
+    ne!(
+        "Ljava/lang/StringBuilder;",
+        "append",
+        "(Ljava/lang/CharSequence;)Ljava/lang/Appendable;",
+        true,
+        sb_append_charseq
     ),
 ];

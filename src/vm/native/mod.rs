@@ -470,7 +470,9 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
     fn default_payload_desc(desc: &str) -> Option<Native> {
         match desc {
             "Ljava/lang/String;" => Some(Native::Str(String::new())),
-            "Ljava/lang/StringBuilder;" => Some(Native::StringBuilder(String::new())),
+            "Ljava/lang/StringBuilder;" | "Ljava/lang/StringBuffer;" => {
+                Some(Native::StringBuilder(String::new()))
+            }
             "Ljava/lang/Integer;" => Some(Native::IntBox(0)),
             "Ljava/lang/Long;" => Some(Native::LongBox(0)),
             "Ljava/lang/Short;" => Some(Native::ShortBox(0)),
@@ -500,6 +502,9 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
                 })
             }
             "Ljava/util/ArrayDeque;" => Some(Native::ArrayDeque(Vec::new())),
+            "Ljava/lang/ThreadLocal;" | "Ljava/util/concurrent/atomic/AtomicReference;" => {
+                Some(Native::Lazy(JValue::Null))
+            }
             "Lkotlin/ranges/IntRange;" => Some(Native::IntRange(0, 0)),
             "Lkotlin/ranges/IntProgression;" => Some(Native::IntProgression(0, 0, 1)),
             "Lkotlin/ranges/CharRange;" => Some(Native::CharRange(0, 0)),
@@ -549,7 +554,7 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             })),
             "Ljava/util/Random;" => Some(Native::Random(0)),
             "Ljava/util/Date;" => Some(Native::Date(0)),
-            "Ljava/util/Calendar;" => Some(Native::Calendar(0)),
+            "Ljava/util/Calendar;" | "Ljava/util/GregorianCalendar;" => Some(Native::Calendar(0)),
             "Ljava/text/SimpleDateFormat;" | "Ljava/time/format/DateTimeFormatterBuilder;" => {
                 Some(Native::DateFormatter {
                     pattern: String::new(),
@@ -586,6 +591,7 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             "Ljava/util/concurrent/atomic/AtomicBoolean;" => Some(Native::AtomicBool(false)),
             "Ljava/util/concurrent/atomic/AtomicInteger;" => Some(Native::AtomicInt(0)),
             "Ljava/util/concurrent/CountDownLatch;" => Some(Native::CountDownLatch(0)),
+            "Ljava/util/concurrent/Semaphore;" => Some(Native::Semaphore(0)),
             "Ljava/time/LocalDate;" => Some(Native::LocalDay(0)),
             "Ljava/time/ZonedDateTime;" | "Ljava/time/Instant;" => Some(Native::EpochMillis(0)),
             "Ljava/time/ZoneId;" => Some(Native::Opaque),

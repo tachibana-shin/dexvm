@@ -1254,6 +1254,39 @@ pub(super) fn mapskt_sorted_map_of(vm: &mut Vm, args: &[JValue]) -> R {
 // kotlin.collections.ArrayDeque audit-gap bridges
 // ---------------------------------------------------------------------------
 
+pub(super) fn arraydeque_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = if args.len() > 1 && !args[1].is_null() {
+        coll_elems(vm, args[1]).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    let JValue::Obj(id) = args[0] else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[id as usize].native = Some(Native::ArrayDeque(items));
+    Ok(JValue::Null)
+}
+pub(super) fn arraydeque_first_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::ArrayDeque(items)) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    Ok(items.first().copied().unwrap_or(JValue::Null))
+}
+pub(super) fn arraydeque_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let i = int_of(vm, args[1]);
+    let value = args[2];
+    let Some(Native::ArrayDeque(items)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    match items.get_mut(i as usize) {
+        Some(slot) => {
+            let old = *slot;
+            *slot = value;
+            Ok(old)
+        }
+        None => Err(ioobe(vm, i)),
+    }
+}
 pub(super) fn arraydeque_is_empty(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::ArrayDeque(items)) = payload(vm, args[0]) else {
         return Err(npe(vm));
@@ -1521,6 +1554,11 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/MapsKt;", "toSortedMap", "(Ljava/util/Map;)Ljava/util/SortedMap;", false, mapskt_to_mutable_map),
     ne!("Lkotlin/collections/MapsKt;", "linkedMapOf", "([Lkotlin/Pair;)Ljava/util/LinkedHashMap;", false, mapskt_map_of),
     ne!("Lkotlin/collections/MapsKt;", "hashMapOf", "([Lkotlin/Pair;)Ljava/util/HashMap;", false, mapskt_map_of),
+    ne!("Lkotlin/collections/ArrayDeque;", "<init>", "()V", true, arraydeque_init),
+    ne!("Lkotlin/collections/ArrayDeque;", "<init>", "(I)V", true, arraydeque_init),
+    ne!("Lkotlin/collections/ArrayDeque;", "<init>", "(Ljava/util/Collection;)V", true, arraydeque_init),
+    ne!("Lkotlin/collections/ArrayDeque;", "firstOrNull", "()Ljava/lang/Object;", true, arraydeque_first_or_null),
+    ne!("Lkotlin/collections/ArrayDeque;", "set", "(ILjava/lang/Object;)Ljava/lang/Object;", true, arraydeque_set),
     ne!("Lkotlin/collections/ArrayDeque;", "isEmpty", "()Z", true, arraydeque_is_empty),
     ne!("Lkotlin/collections/ArrayDeque;", "addLast", "(Ljava/lang/Object;)V", true, arraydeque_add_last),
     ne!("Lkotlin/collections/ArrayDeque;", "add", "(Ljava/lang/Object;)Z", true, arraydeque_add),

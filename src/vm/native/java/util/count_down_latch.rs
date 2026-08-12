@@ -28,6 +28,33 @@ pub(crate) fn latch_await(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
+pub(crate) fn semaphore_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let permits = int_of(vm, args[1]);
+    let Some(Native::Semaphore(slot)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *slot = permits;
+    Ok(JValue::Null)
+}
+pub(crate) fn semaphore_release(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Semaphore(slot)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *slot += 1;
+    Ok(JValue::Null)
+}
+pub(crate) fn semaphore_try_acquire(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Semaphore(slot)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    if *slot > 0 {
+        *slot -= 1;
+        Ok(JValue::Int(1))
+    } else {
+        Ok(JValue::Int(0))
+    }
+}
+
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
         "Ljava/util/concurrent/CountDownLatch;",
@@ -56,5 +83,33 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(JLjava/util/concurrent/TimeUnit;)Z",
         true,
         latch_await
+    ),
+    ne!(
+        "Ljava/util/concurrent/Semaphore;",
+        "<init>",
+        "(I)V",
+        true,
+        semaphore_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/Semaphore;",
+        "release",
+        "()V",
+        true,
+        semaphore_release
+    ),
+    ne!(
+        "Ljava/util/concurrent/Semaphore;",
+        "tryAcquire",
+        "(JLjava/util/concurrent/TimeUnit;)Z",
+        true,
+        semaphore_try_acquire
+    ),
+    ne!(
+        "Ljava/util/concurrent/Semaphore;",
+        "tryAcquire",
+        "()Z",
+        true,
+        semaphore_try_acquire
     ),
 ];

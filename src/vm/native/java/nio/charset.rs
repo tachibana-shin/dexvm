@@ -76,6 +76,22 @@ pub(crate) fn charset_is_supported(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(i32::from(normalize_charset(&name).is_some())))
 }
 
+pub(crate) fn charset_new_decoder(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[0]).unwrap_or_default();
+    alloc(vm, "Ljava/nio/charset/CharsetDecoder;", Native::Str(name))
+}
+pub(crate) fn charset_new_encoder(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[0]).unwrap_or_default();
+    alloc(vm, "Ljava/nio/charset/CharsetEncoder;", Native::Str(name))
+}
+pub(crate) fn codec_charset(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = match payload(vm, args[0]) {
+        Some(Native::Str(s)) => s.clone(),
+        _ => return Err(npe(vm)),
+    };
+    alloc(vm, "Ljava/nio/charset/Charset;", Native::Str(name))
+}
+
 /// Native methods for Ljava/nio/charset/Charset;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
@@ -133,5 +149,33 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/String;)Z",
         false,
         charset_is_supported
+    ),
+    ne!(
+        "Ljava/nio/charset/Charset;",
+        "newDecoder",
+        "()Ljava/nio/charset/CharsetDecoder;",
+        true,
+        charset_new_decoder
+    ),
+    ne!(
+        "Ljava/nio/charset/Charset;",
+        "newEncoder",
+        "()Ljava/nio/charset/CharsetEncoder;",
+        true,
+        charset_new_encoder
+    ),
+    ne!(
+        "Ljava/nio/charset/CharsetDecoder;",
+        "charset",
+        "()Ljava/nio/charset/Charset;",
+        true,
+        codec_charset
+    ),
+    ne!(
+        "Ljava/nio/charset/CharsetEncoder;",
+        "charset",
+        "()Ljava/nio/charset/Charset;",
+        true,
+        codec_charset
     ),
 ];

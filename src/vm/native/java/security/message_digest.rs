@@ -73,6 +73,24 @@ pub(crate) fn md_get_instance(vm: &mut Vm, args: &[JValue]) -> R {
     )
 }
 
+pub(crate) fn md_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = jstr(vm, args[1])?;
+    let algo = algo_code(&name).ok_or_else(|| {
+        iae(
+            vm,
+            format!("Invalid algorithm {name}, expected MD5, SHA-1, SHA-256, SHA-384 or SHA-512"),
+        )
+    })?;
+    let JValue::Obj(id) = args[0] else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[id as usize].native = Some(Native::MessageDigest {
+        algo,
+        buf: Vec::new(),
+    });
+    Ok(JValue::Null)
+}
+
 pub(crate) fn md_update(vm: &mut Vm, args: &[JValue]) -> R {
     let input = bytes_of_jvalue(vm, args[1]).ok_or_else(|| npe(vm))?;
     let Some(Native::MessageDigest { buf, .. }) = payload_mut(vm, args[0]) else {
@@ -181,6 +199,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/String;)Ljava/security/MessageDigest;",
         false,
         md_get_instance
+    ),
+    ne!(
+        "Ljava/security/MessageDigest;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        md_init
     ),
     ne!(
         "Ljava/security/MessageDigest;",

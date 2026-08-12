@@ -352,8 +352,27 @@ pub enum Native {
         output: Option<Vec<u8>>,
         out_pos: usize,
     },
+    /// java.util.concurrent.Semaphore: available permit count. This VM is
+    /// single-threaded, so acquire/tryAcquire never actually block.
+    Semaphore(i32),
+    /// java.util.zip.ZipInputStream: eagerly-extracted (name, content)
+    /// entries plus a cursor for `getNextEntry`.
+    ZipReader {
+        entries: Vec<(String, Vec<u8>)>,
+        idx: i32,
+    },
+    /// java.util.zip.ZipEntry: just its name (index into the ZipReader that
+    /// produced it isn't tracked — good enough for the metadata-only
+    /// getName/getNextEntry usage seen in practice).
+    ZipEntryName(String),
     /// java.math.BigInteger: arbitrary-precision signed integer.
     BigInt(num_bigint::BigInt),
+    /// java.math.BigDecimal: unscaled value + scale (the standard Java
+    /// representation).
+    BigDecimal {
+        unscaled: num_bigint::BigInt,
+        scale: i32,
+    },
     /// java.nio.ByteBuffer: backing bytes plus a read/write cursor.
     ByteBuffer {
         data: Vec<u8>,
@@ -1002,7 +1021,11 @@ impl Native {
             | Native::PbeKeySpec { .. }
             | Native::Mac { .. }
             | Native::Inflater { .. }
+            | Native::Semaphore(_)
+            | Native::ZipReader { .. }
+            | Native::ZipEntryName(_)
             | Native::BigInt(_)
+            | Native::BigDecimal { .. }
             | Native::ByteBuffer { .. }
             | Native::PrintStream
             | Native::Random(_)

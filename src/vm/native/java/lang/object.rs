@@ -35,6 +35,20 @@ pub(crate) fn object_to_string(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &format!("{name}@{:x}", recv)))
 }
 
+pub(crate) fn thread_local_get(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Lazy(v)) => Ok(*v),
+        _ => Err(npe(vm)),
+    }
+}
+pub(crate) fn thread_local_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Lazy(dst)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *dst = args[1];
+    Ok(JValue::Null)
+}
+
 pub(crate) fn object_clone(vm: &mut Vm, args: &[JValue]) -> R {
     let recv = args[0].as_obj();
     let class = obj_class(vm, recv);
@@ -88,5 +102,19 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "()Ljava/lang/Object;",
         true,
         object_clone
+    ),
+    ne!(
+        "Ljava/lang/ThreadLocal;",
+        "get",
+        "()Ljava/lang/Object;",
+        true,
+        thread_local_get
+    ),
+    ne!(
+        "Ljava/lang/ThreadLocal;",
+        "set",
+        "(Ljava/lang/Object;)V",
+        true,
+        thread_local_set
     ),
 ];

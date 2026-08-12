@@ -147,4 +147,25 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         false,
         locale_for_language_tag
     ),
+    ne!(
+        "Ljava/util/Locale;",
+        "getDisplayLanguage",
+        "()Ljava/lang/String;",
+        true,
+        locale_get_language
+    ),
+    ne!(
+        "Ljava/util/Locale;",
+        "getDisplayLanguage",
+        "(Ljava/util/Locale;)Ljava/lang/String;",
+        true,
+        locale_get_language
+    ),
+    ne!(
+        "Ljava/util/Locale;",
+        "getDisplayName",
+        "(Ljava/util/Locale;)Ljava/lang/String;",
+        true,
+        locale_to_string
+    ),
 ];

@@ -17,6 +17,7 @@ pub(crate) fn output_stream_append(vm: &mut Vm, stream: JValue, bytes: &[u8]) ->
     } else {
         match payload_mut(vm, stream) {
             Some(Native::ByteArrayOutputStream(output)) => output.extend_from_slice(bytes),
+            Some(Native::OkioSink { bytes: output, .. }) => output.extend_from_slice(bytes),
             _ => return Err(npe(vm)),
         }
     }

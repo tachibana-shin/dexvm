@@ -4,6 +4,7 @@ mod arraydeque;
 mod arraylist;
 mod arrays;
 mod atomic;
+mod base64;
 mod calendar;
 mod collections;
 mod condition;
@@ -25,6 +26,7 @@ mod regex;
 mod resourcebundle;
 mod timezone;
 mod uuid;
+mod zip_stream;
 
 pub(crate) use arraylist::*;
 pub(crate) use hashmap::*;
@@ -142,6 +144,7 @@ pub(crate) const UTIL_TABLE: &[&[NativeEntry]] = &[
     arraylist::COW_TABLE,
     arrays::TABLE,
     atomic::TABLE,
+    base64::TABLE,
     calendar::TABLE,
     count_down_latch::TABLE,
     collections::TABLE,
@@ -166,4 +169,5 @@ pub(crate) const UTIL_TABLE: &[&[NativeEntry]] = &[
     regex::pattern::TABLE,
     timezone::TABLE,
     uuid::TABLE,
+    zip_stream::TABLE,
 ];

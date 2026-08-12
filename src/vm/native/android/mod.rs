@@ -756,6 +756,85 @@ fn check_file_write(vm: &mut Vm, path: &str) -> Result<(), NatErr> {
     )
 }
 
+/// `FileOutputStream(File)`: permission-checked, truncates/creates the file
+/// immediately (matching real semantics), then buffers writes the same way
+/// okio's file sink does — reusing its `flush`/`close` natives.
+pub(crate) fn file_output_stream_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[1])?;
+    check_file_write(vm, &path)?;
+    std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(&path)
+        .map_err(|e| fnf(vm, e.to_string()))?;
+    let JValue::Obj(id) = args[0] else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[id as usize].native = Some(Native::OkioSink {
+        path,
+        bytes: Vec::new(),
+        flushed: 0,
+        closed: false,
+    });
+    Ok(JValue::Null)
+}
+
+/// `FileOutputStream.flush()`: appends whatever hasn't been written yet.
+pub(crate) fn file_output_stream_flush(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::OkioSink {
+        path,
+        bytes,
+        flushed,
+        closed,
+    }) = payload(vm, args[0])
+    else {
+        return Ok(JValue::Null);
+    };
+    let (path, pending, start, closed) = (path.clone(), bytes.clone(), *flushed, *closed);
+    if closed || start >= pending.len() {
+        return Ok(JValue::Null);
+    }
+    check_file_write(vm, &path)?;
+    use std::io::Write as _;
+    let mut file = std::fs::OpenOptions::new()
+        .append(true)
+        .open(&path)
+        .map_err(|e| fnf(vm, e.to_string()))?;
+    file.write_all(&pending[start..])
+        .map_err(|e| ioe(vm, e.to_string()))?;
+    if let Some(Native::OkioSink { flushed, .. }) = payload_mut(vm, args[0]) {
+        *flushed = pending.len();
+    }
+    Ok(JValue::Null)
+}
+
+/// `FileOutputStream.close()`: flush, then mark closed.
+pub(crate) fn file_output_stream_close(vm: &mut Vm, args: &[JValue]) -> R {
+    file_output_stream_flush(vm, args)?;
+    if let Some(Native::OkioSink { closed, .. }) = payload_mut(vm, args[0]) {
+        *closed = true;
+    }
+    Ok(JValue::Null)
+}
+
+/// `File.listFiles() -> File[]`: real directory listing.
+pub(crate) fn file_list_files(vm: &mut Vm, args: &[JValue]) -> R {
+    let path = file_path(vm, args[0])?;
+    check_file_read(vm, &path)?;
+    let Ok(entries) = std::fs::read_dir(&path) else {
+        return Ok(JValue::Null);
+    };
+    let mut items = Vec::new();
+    for entry in entries.flatten() {
+        let p = entry.path().to_string_lossy().into_owned();
+        items.push(alloc(vm, "Ljava/io/File;", Native::File { path: p })?);
+    }
+    alloc_arr(vm, "Ljava/io/File;", items.len(), move || {
+        ArrayData::Obj(items)
+    })
+}
+
 /// `File.mkdirs() -> boolean`: really creates the directory tree.
 pub(crate) fn file_mkdirs(vm: &mut Vm, args: &[JValue]) -> R {
     let path = file_path(vm, args[0])?;
@@ -903,6 +982,20 @@ pub(crate) fn file_create_temp_file(vm: &mut Vm, args: &[JValue]) -> R {
     let prefix = jstr(vm, args[0]).unwrap_or_default();
     let suffix = jstr(vm, args[1]).unwrap_or_default();
     let dir = file_path(vm, args[2])?;
+    check_file_write(vm, &dir)?;
+    let path = match tempfile_in(&dir, &prefix, &suffix) {
+        Ok(p) => p,
+        Err(_) => return Err(fnf(vm, "createTempFile failed")),
+    };
+    alloc(vm, "Ljava/io/File;", Native::File { path })
+}
+
+/// `File.createTempFile(prefix, suffix) -> File`: 2-arg overload, using the
+/// process's system temp directory.
+pub(crate) fn file_create_temp_file_default_dir(vm: &mut Vm, args: &[JValue]) -> R {
+    let prefix = jstr(vm, args[0]).unwrap_or_default();
+    let suffix = jstr(vm, args[1]).unwrap_or_default();
+    let dir = std::env::temp_dir().to_string_lossy().into_owned();
     check_file_write(vm, &dir)?;
     let path = match tempfile_in(&dir, &prefix, &suffix) {
         Ok(p) => p,

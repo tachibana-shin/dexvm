@@ -133,6 +133,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ),
     ne!(
         "Ljava/io/File;",
+        "createTempFile",
+        "(Ljava/lang/String;Ljava/lang/String;)Ljava/io/File;",
+        false,
+        crate::vm::native::android::file_create_temp_file_default_dir
+    ),
+    ne!(
+        "Ljava/io/File;",
         "renameTo",
         "(Ljava/io/File;)Z",
         true,
@@ -144,5 +151,54 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/io/File;Ljava/lang/String;)Ljava/io/File;",
         false,
         crate::vm::native::android::fileskt_resolve
+    ),
+    ne!(
+        "Ljava/io/File;",
+        "listFiles",
+        "()[Ljava/io/File;",
+        true,
+        crate::vm::native::android::file_list_files
+    ),
+    ne!(
+        "Ljava/io/FileOutputStream;",
+        "<init>",
+        "(Ljava/io/File;)V",
+        true,
+        crate::vm::native::android::file_output_stream_init
+    ),
+    ne!(
+        "Ljava/io/FileOutputStream;",
+        "write",
+        "([B)V",
+        true,
+        crate::vm::native::output_stream_write_bytes
+    ),
+    ne!(
+        "Ljava/io/FileOutputStream;",
+        "write",
+        "([BII)V",
+        true,
+        crate::vm::native::output_stream_write_range
+    ),
+    ne!(
+        "Ljava/io/FileOutputStream;",
+        "write",
+        "(I)V",
+        true,
+        crate::vm::native::output_stream_write_byte
+    ),
+    ne!(
+        "Ljava/io/FileOutputStream;",
+        "flush",
+        "()V",
+        true,
+        crate::vm::native::android::file_output_stream_flush
+    ),
+    ne!(
+        "Ljava/io/FileOutputStream;",
+        "close",
+        "()V",
+        true,
+        crate::vm::native::android::file_output_stream_close
     ),
 ];

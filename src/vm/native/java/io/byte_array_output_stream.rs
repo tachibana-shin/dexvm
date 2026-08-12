@@ -21,6 +21,16 @@ fn byte_array_output_stream_to_bytes(vm: &mut Vm, args: &[JValue]) -> R {
     alloc_arr(vm, "B", data.len(), move || ArrayData::Byte(data))
 }
 
+fn byte_array_output_stream_to_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let bytes = match payload(vm, args[0]) {
+        Some(Native::ByteArrayOutputStream(bytes)) => bytes.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let charset = jstr(vm, args[1]).unwrap_or_default();
+    let data: Vec<i8> = bytes.iter().map(|&b| b as i8).collect();
+    Ok(new_str(vm, &decode_bytes(&data, &charset)))
+}
+
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
         "Ljava/io/ByteArrayOutputStream;",
@@ -49,5 +59,12 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "()[B",
         true,
         byte_array_output_stream_to_bytes
+    ),
+    ne!(
+        "Ljava/io/ByteArrayOutputStream;",
+        "toString",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        true,
+        byte_array_output_stream_to_string
     ),
 ];

@@ -78,6 +78,14 @@ fn calendar_get_instance(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(vm, "Ljava/util/Calendar;", Native::Calendar(now_millis()))
 }
 
+fn gregorian_calendar_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let JValue::Obj(id) = args[0] else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[id as usize].native = Some(Native::Calendar(now_millis()));
+    Ok(JValue::Null)
+}
+
 fn calendar_get_time_in_millis(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Long(calendar_millis(vm, args[0])?))
 }
@@ -292,6 +300,27 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(IILjava/util/Locale;)Ljava/lang/String;",
         true,
         calendar_get_display_name
+    ),
+    ne!(
+        "Ljava/util/GregorianCalendar;",
+        "<init>",
+        "()V",
+        true,
+        gregorian_calendar_init
+    ),
+    ne!(
+        "Ljava/util/GregorianCalendar;",
+        "<init>",
+        "(Ljava/util/TimeZone;)V",
+        true,
+        gregorian_calendar_init
+    ),
+    ne!(
+        "Ljava/util/GregorianCalendar;",
+        "add",
+        "(II)V",
+        true,
+        calendar_add
     ),
 ];
 

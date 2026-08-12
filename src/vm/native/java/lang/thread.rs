@@ -275,6 +275,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         true,
         thread_is_interrupted
     ),
+    ne!(
+        "Ljava/lang/Thread;",
+        "getStackTrace",
+        "()[Ljava/lang/StackTraceElement;",
+        true,
+        crate::vm::native::throwable_get_stack_trace
+    ),
 ];
 
 #[cfg(test)]

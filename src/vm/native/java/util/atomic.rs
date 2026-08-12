@@ -3,6 +3,89 @@
 
 use crate::vm::native::*;
 
+pub(crate) fn atomic_ref_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let v = args.get(1).copied().unwrap_or(JValue::Null);
+    let Some(Native::Lazy(slot)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *slot = v;
+    Ok(JValue::Null)
+}
+pub(crate) fn atomic_ref_get(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Lazy(v)) => Ok(*v),
+        _ => Err(npe(vm)),
+    }
+}
+pub(crate) fn atomic_ref_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Lazy(slot)) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *slot = args[1];
+    Ok(JValue::Null)
+}
+
+pub(crate) fn atomic_ref_array_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let n = int_of(vm, args[1]).max(0) as usize;
+    let JValue::Obj(id) = args[0] else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[id as usize].native =
+        Some(Native::Array(ArrayData::Obj(vec![JValue::Null; n])));
+    Ok(JValue::Null)
+}
+pub(crate) fn atomic_ref_array_get(vm: &mut Vm, args: &[JValue]) -> R {
+    let i = int_of(vm, args[1]);
+    let Some(Native::Array(ArrayData::Obj(v))) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    match v.get(i as usize) {
+        Some(&x) => Ok(x),
+        None => Err(ioobe(vm, i)),
+    }
+}
+pub(crate) fn atomic_ref_array_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let i = int_of(vm, args[1]).max(0) as usize;
+    let value = args[2];
+    let Some(Native::Array(ArrayData::Obj(v))) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    if i >= v.len() {
+        return Err(ioobe(vm, i as i32));
+    }
+    v[i] = value;
+    Ok(JValue::Null)
+}
+pub(crate) fn atomic_ref_array_get_and_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let i = int_of(vm, args[1]).max(0) as usize;
+    let value = args[2];
+    let Some(Native::Array(ArrayData::Obj(v))) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    if i >= v.len() {
+        return Err(ioobe(vm, i as i32));
+    }
+    let old = v[i];
+    v[i] = value;
+    Ok(old)
+}
+pub(crate) fn atomic_ref_array_cas(vm: &mut Vm, args: &[JValue]) -> R {
+    let i = int_of(vm, args[1]).max(0) as usize;
+    let expect = args[2];
+    let update = args[3];
+    let Some(Native::Array(ArrayData::Obj(v))) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    match v.get_mut(i) {
+        Some(slot) if *slot == expect => {
+            *slot = update;
+            Ok(JValue::Int(1))
+        }
+        Some(_) => Ok(JValue::Int(0)),
+        None => Err(ioobe(vm, i as i32)),
+    }
+}
+
 pub(crate) fn atomic_bool_init(vm: &mut Vm, args: &[JValue]) -> R {
     let v = if args.len() > 1 && args[1].as_int() != 0 {
         JValue::Int(1)
@@ -146,6 +229,69 @@ pub(crate) fn atomic_int_tostring(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/util/concurrent/atomic/AtomicReference;",
+        "<init>",
+        "(Ljava/lang/Object;)V",
+        true,
+        atomic_ref_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/atomic/AtomicReference;",
+        "<init>",
+        "()V",
+        true,
+        atomic_ref_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/atomic/AtomicReference;",
+        "get",
+        "()Ljava/lang/Object;",
+        true,
+        atomic_ref_get
+    ),
+    ne!(
+        "Ljava/util/concurrent/atomic/AtomicReference;",
+        "set",
+        "(Ljava/lang/Object;)V",
+        true,
+        atomic_ref_set
+    ),
+    ne!(
+        "Ljava/util/concurrent/atomic/AtomicReferenceArray;",
+        "<init>",
+        "(I)V",
+        true,
+        atomic_ref_array_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/atomic/AtomicReferenceArray;",
+        "get",
+        "(I)Ljava/lang/Object;",
+        true,
+        atomic_ref_array_get
+    ),
+    ne!(
+        "Ljava/util/concurrent/atomic/AtomicReferenceArray;",
+        "set",
+        "(ILjava/lang/Object;)V",
+        true,
+        atomic_ref_array_set
+    ),
+    ne!(
+        "Ljava/util/concurrent/atomic/AtomicReferenceArray;",
+        "getAndSet",
+        "(ILjava/lang/Object;)Ljava/lang/Object;",
+        true,
+        atomic_ref_array_get_and_set
+    ),
+    ne!(
+        "Ljava/util/concurrent/atomic/AtomicReferenceArray;",
+        "compareAndSet",
+        "(ILjava/lang/Object;Ljava/lang/Object;)Z",
+        true,
+        atomic_ref_array_cas
+    ),
     ne!(
         "Ljava/util/concurrent/atomic/AtomicBoolean;",
         "<init>",

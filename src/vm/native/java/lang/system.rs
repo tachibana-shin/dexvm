@@ -18,6 +18,14 @@ pub(crate) fn sys_nano_time(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Long(n))
 }
 
+pub(crate) fn runtime_get_runtime(vm: &mut Vm, _args: &[JValue]) -> R {
+    alloc(vm, "Ljava/lang/Runtime;", Native::Opaque)
+}
+
+pub(crate) fn runtime_available_processors(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Int(std::thread::available_parallelism().map_or(1, |n| n.get() as i32)))
+}
+
 pub(crate) fn arrcopy_into(
     src: &ArrayData,
     sp: usize,
@@ -301,6 +309,20 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "()Ljava/lang/String;",
         false,
         sys_line_separator
+    ),
+    ne!(
+        "Ljava/lang/Runtime;",
+        "getRuntime",
+        "()Ljava/lang/Runtime;",
+        false,
+        runtime_get_runtime
+    ),
+    ne!(
+        "Ljava/lang/Runtime;",
+        "availableProcessors",
+        "()I",
+        true,
+        runtime_available_processors
     ),
 ];
 

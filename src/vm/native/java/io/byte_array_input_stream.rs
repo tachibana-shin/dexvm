@@ -87,6 +87,17 @@ pub(crate) fn bais_close(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+pub(crate) fn bais_read_n_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let n = int_of(vm, args[1]).max(0) as usize;
+    let Some(Native::ByteArrayInputStream { bytes, pos }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    let take = n.min(bytes.len() - *pos);
+    let chunk: Vec<i8> = bytes[*pos..*pos + take].iter().map(|&b| b as i8).collect();
+    *pos += take;
+    alloc_arr(vm, "B", chunk.len(), move || ArrayData::Byte(chunk))
+}
+
 pub(crate) fn bais_skip(vm: &mut Vm, args: &[JValue]) -> R {
     let n = long_of(vm, args[1]).max(0) as usize;
     let Some(Native::ByteArrayInputStream { bytes, pos }) = payload_mut(vm, args[0]) else {
@@ -171,4 +182,11 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         bais_available
     ),
     ne!("Ljava/io/InputStream;", "skip", "(J)J", true, bais_skip),
+    ne!(
+        "Ljava/io/InputStream;",
+        "readNBytes",
+        "(I)[B",
+        true,
+        bais_read_n_bytes
+    ),
 ];

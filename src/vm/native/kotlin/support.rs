@@ -25,6 +25,9 @@ pub(super) fn boxing_box_int(vm: &mut Vm, args: &[JValue]) -> R {
 pub(super) fn boxing_identity(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
+pub(super) fn boxing_box_double(vm: &mut Vm, args: &[JValue]) -> R {
+    boxed(vm, "Ljava/lang/Double;", Native::DoubleBox(double_of(vm, args[0])))
+}
 pub(super) fn kotlin_random_default_next_int(vm: &mut Vm, args: &[JValue]) -> R {
     let first = if args.len() >= 2 && matches!(args[0], JValue::Obj(_)) {
         1
@@ -48,6 +51,15 @@ pub(super) fn kotlin_random_default_next_int(vm: &mut Vm, args: &[JValue]) -> R 
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| d.subsec_nanos());
     Ok(JValue::Int(from + (seed % (until - from) as u32) as i32))
+}
+pub(super) fn kotlin_random_next_double(_vm: &mut Vm, _args: &[JValue]) -> R {
+    let seed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.subsec_nanos());
+    Ok(JValue::Double(f64::from(seed % 1_000_000) / 1_000_000.0))
+}
+pub(super) fn kotlin_random_kt_random(vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(opaque_inst(vm, "Lkotlin/random/Random;"))
 }
 pub(super) fn kotlin_reflection_class(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
@@ -73,6 +85,15 @@ pub(super) fn threads_kt_thread_default(vm: &mut Vm, args: &[JValue]) -> R {
         let _ = vm.invoke_virtual_args(block, "invoke", "()Ljava/lang/Object;", vec![]);
     }
     alloc(vm, "Ljava/lang/Thread;", Native::Opaque)
+}
+pub(super) fn mathkt_round_to_int_double(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(double_of(vm, args[0]).round() as i32))
+}
+pub(super) fn mathkt_round_to_int_float(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(float_of(vm, args[0]).round() as i32))
+}
+pub(super) fn mathkt_round_to_long_double(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Long(double_of(vm, args[0]).round() as i64))
 }
 pub(super) fn coroutines_suspended(vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(opaque_inst(vm, "Ljava/lang/Object;"))
@@ -116,6 +137,9 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxFloat", "(F)Ljava/lang/Float;", false, boxing_identity),
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxLong", "(J)Ljava/lang/Long;", false, boxing_identity),
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxChar", "(C)Ljava/lang/Character;", false, boxing_identity),
+    ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxDouble", "(D)Ljava/lang/Double;", false, boxing_box_double),
+    ne!("Lkotlin/random/Random$Default;", "nextDouble", "()D", true, kotlin_random_next_double),
+    ne!("Lkotlin/random/RandomKt;", "Random", "(J)Lkotlin/random/Random;", false, kotlin_random_kt_random),
     ne!("Lkotlin/jvm/internal/Reflection;", "getOrCreateKotlinClass", "(Ljava/lang/Class;)Lkotlin/reflect/KClass;", false, kotlin_reflection_class),
     ne!("Lkotlin/jvm/internal/Reflection;", "typeOf", "(Ljava/lang/Class;)Lkotlin/reflect/KType;", false, kotlin_reflection_class),
     ne!("Lkotlin/jvm/internal/Reflection;", "typeOf", "(Ljava/lang/Class;Lkotlin/reflect/KTypeProjection;)Lkotlin/reflect/KType;", false, kotlin_reflection_class),
@@ -124,6 +148,9 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/ExceptionsKt;", "stackTraceToString", "(Ljava/lang/Throwable;)Ljava/lang/String;", false, exceptions_stack_trace_to_string),
     ne!("Lkotlin/ExceptionsKt;", "addSuppressed", "(Ljava/lang/Throwable;Ljava/lang/Throwable;)V", false, exceptions_add_suppressed),
     ne!("Lkotlin/concurrent/ThreadsKt;", "thread$default", "(ZZLjava/lang/ClassLoader;Ljava/lang/String;ILkotlin/jvm/functions/Function0;ILjava/lang/Object;)Ljava/lang/Thread;", false, threads_kt_thread_default),
+    ne!("Lkotlin/math/MathKt;", "roundToInt", "(D)I", false, mathkt_round_to_int_double),
+    ne!("Lkotlin/math/MathKt;", "roundToInt", "(F)I", false, mathkt_round_to_int_float),
+    ne!("Lkotlin/math/MathKt;", "roundToLong", "(D)J", false, mathkt_round_to_long_double),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of3),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "compareValues", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)I", false, comparisons_compare_values),

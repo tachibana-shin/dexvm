@@ -1522,6 +1522,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;", "getIndex", "()I", true, sort_selection_get_index),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;", "getAscending", "()Z", true, sort_selection_get_ascending),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort;", "<init>", "(Ljava/lang/String;[Ljava/lang/String;Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;)V", true, filter_sort_init),
+    ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort;", "<init>", "(Ljava/lang/String;[Ljava/lang/String;Leu/kanade/tachiyomi/source/model/Filter$Sort$Selection;ILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_sort_init),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$Sort;", "getState", "()Ljava/lang/Object;", true, filter_sort_get_state),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "<init>", "(Ljava/lang/String;Z)V", true, filter_init_checked),
     ne!("Leu/kanade/tachiyomi/source/model/Filter$CheckBox;", "<init>", "(Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, filter_checkbox_init_synth),
@@ -1547,6 +1548,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "setUrlWithoutDomain", "(Leu/kanade/tachiyomi/source/model/SManga;Ljava/lang/String;)V", true, http_source_set_url_no_domain_manga),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "setUrlWithoutDomain", "(Leu/kanade/tachiyomi/source/model/SChapter;Ljava/lang/String;)V", true, http_source_set_url_no_domain_chapter),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "mangaDetailsRequest", "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;", true, http_source_manga_details_request),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "relatedMangaListRequest", "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;", true, http_source_manga_details_request),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "chapterListRequest", "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;", true, http_source_chapter_list_request),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "pageListRequest", "(Leu/kanade/tachiyomi/source/model/SChapter;)Lokhttp3/Request;", true, http_source_page_list_request),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getMangaUrl", "(Leu/kanade/tachiyomi/source/model/SManga;)Ljava/lang/String;", true, http_source_get_manga_url),
@@ -1563,6 +1565,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getClient", "()Lokhttp3/OkHttpClient;", true, network_helper_get_client),
     ne!("Leu/kanade/tachiyomi/network/NetworkHelper;", "getClient", "()Lokhttp3/OkHttpClient;", true, network_helper_get_client),
     ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "POST$default", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/RequestBody;Lokhttp3/CacheControl;ILjava/lang/Object;)Lokhttp3/Request;", false, requests_kt_post_default),
+    ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "POST", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/RequestBody;Lokhttp3/CacheControl;)Lokhttp3/Request;", false, requests_kt_post_default),
     ne!(
         "Leu/kanade/tachiyomi/util/JsoupExtensionsKt;",
         "asJsoup$default",
@@ -1686,7 +1689,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
         "Leu/kanade/tachiyomi/AppInfo;",
         "getVersionName",
         "()Ljava/lang/String;",
-        false,
+        true,
         app_info_get_version_name
     ),
     ne!(

@@ -57,6 +57,21 @@ pub(crate) fn tinit_str_cause(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
 
+pub(crate) fn tinit_index(vm: &mut Vm, args: &[JValue]) -> R {
+    let index = int_of(vm, args[1]);
+    let Some(n) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    match n {
+        Native::Throwable { message, cause } => {
+            *message = Some(format!("String index out of range: {index}"));
+            *cause = JValue::Null;
+        }
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
 pub(crate) fn tinit_cause(vm: &mut Vm, args: &[JValue]) -> R {
     let cause = args[1];
     let Some(n) = payload_mut(vm, args[0]) else {
@@ -146,6 +161,13 @@ pub(crate) fn throwable_get_stack_trace(vm: &mut Vm, _args: &[JValue]) -> R {
 
 /// Native methods for Ljava/lang/Throwable;
 pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/lang/StringIndexOutOfBoundsException;",
+        "<init>",
+        "(I)V",
+        true,
+        tinit_index
+    ),
     ne!(
         "Ljava/lang/Throwable;",
         "getMessage",
