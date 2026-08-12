@@ -484,6 +484,8 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             "Lokhttp3/CacheControl$Builder;" => Some(Native::CacheControlBuilder {
                 max_age: 0,
                 no_cache: false,
+                no_store: false,
+                max_stale: 0,
             }),
             "Lokhttp3/Request$Builder;" => Some(Native::RequestBuilder {
                 url: String::new(),

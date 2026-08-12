@@ -1230,6 +1230,8 @@ pub(crate) fn requests_kt_post_default(vm: &mut Vm, args: &[JValue]) -> R {
 // ---------------------------------------------------------------------------
 
 pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
+    ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "GET", "(Ljava/lang/String;Lokhttp3/Headers;Lokhttp3/CacheControl;)Lokhttp3/Request;", false, requests_kt_get_default),
+    ne!("Leu/kanade/tachiyomi/network/RequestsKt;", "GET", "(Lokhttp3/HttpUrl;Lokhttp3/Headers;Lokhttp3/CacheControl;)Lokhttp3/Request;", false, requests_kt_get_default),
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "<init>", "()V", true, smanga_init),
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "getTitle", "()Ljava/lang/String;", true, smanga_get_title),
     ne!("Leu/kanade/tachiyomi/source/model/SManga;", "setTitle", "(Ljava/lang/String;)V", true, smanga_set_title),

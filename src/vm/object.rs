@@ -364,6 +364,19 @@ pub enum Native {
         intent: JValue,
         finished: bool,
     },
+    /// AndroidX Preference state used by headless settings screens.
+    Preference {
+        key: Option<JValue>,
+        title: Option<JValue>,
+        summary: Option<JValue>,
+        default_value: JValue,
+        enabled: bool,
+        visible: bool,
+    },
+    PreferenceScreen {
+        children: Vec<JValue>,
+        title: Option<JValue>,
+    },
     /// android.graphics.Bitmap: ARGB 32-bit pixel buffer.
     Bitmap {
         width: i32,
@@ -469,11 +482,15 @@ pub enum Native {
     CacheControl {
         max_age: i64,
         no_cache: bool,
+        no_store: bool,
+        max_stale: i64,
     },
     /// okhttp3.CacheControl$Builder (chained `maxAge(...)` before `build()`).
     CacheControlBuilder {
         max_age: i64,
         no_cache: bool,
+        no_store: bool,
+        max_stale: i64,
     },
     /// okhttp cache lifecycle state (disk cache itself is intentionally host-owned).
     Cache {
@@ -852,6 +869,22 @@ impl Native {
                 }
             }
             Native::Activity { intent, .. } => push(Some(intent), out),
+            Native::Preference {
+                key,
+                title,
+                summary,
+                default_value,
+                ..
+            } => {
+                push(*key, out);
+                push(*title, out);
+                push(*summary, out);
+                push(Some(*default_value), out);
+            }
+            Native::PreferenceScreen { children, title } => {
+                push_all(children, out);
+                push(*title, out);
+            }
             Native::Canvas { bitmap, .. } => out.push(*bitmap),
             Native::JsonObj(pairs) => {
                 for (_, value) in pairs {

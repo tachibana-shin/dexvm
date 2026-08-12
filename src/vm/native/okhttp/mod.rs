@@ -674,7 +674,18 @@ pub(crate) fn request_cache_control(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(
         vm,
         "Lokhttp3/CacheControl;",
-        Native::CacheControl { max_age, no_cache },
+        Native::CacheControl {
+            max_age,
+            no_cache,
+            no_store: match payload(vm, args[0]) {
+                Some(Native::CacheControlBuilder { no_store, .. }) => *no_store,
+                _ => false,
+            },
+            max_stale: match payload(vm, args[0]) {
+                Some(Native::CacheControlBuilder { max_stale, .. }) => *max_stale,
+                _ => 0,
+            },
+        },
     )
 }
 
@@ -1972,6 +1983,23 @@ pub(crate) fn cache_control_builder_no_cache(vm: &mut Vm, args: &[JValue]) -> R 
     Ok(args[0])
 }
 
+pub(crate) fn cache_control_builder_no_store(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload_mut(vm, args[0]) {
+        Some(Native::CacheControlBuilder { no_store, .. }) => *no_store = true,
+        _ => return Err(npe(vm)),
+    }
+    Ok(args[0])
+}
+
+pub(crate) fn cache_control_builder_max_stale(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = long_of(vm, args[1]).max(0);
+    match payload_mut(vm, args[0]) {
+        Some(Native::CacheControlBuilder { max_stale, .. }) => *max_stale = value,
+        _ => return Err(npe(vm)),
+    }
+    Ok(args[0])
+}
+
 pub(crate) fn cache_init(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(JValue::Obj(this)) = args.first().copied() else {
         return Err(npe(vm));
@@ -2670,10 +2698,10 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/RequestBody;", "contentLength", "()J", true, request_body_content_length),
     ne!("Lokhttp3/RequestBody;", "contentType", "()Lokhttp3/MediaType;", true, request_body_content_type),
     ne!("Lokhttp3/RequestBody;", "writeTo", "(Lokio/BufferedSink;)V", true, request_body_write_to),
-    ne!("Lokhttp3/CacheControl$Builder;", "maxStale-LRDsOJo", "(J)Lokhttp3/CacheControl$Builder;", true, cache_control_builder_noop),
-    ne!("Lokhttp3/CacheControl$Builder;", "maxStale", "(ILjava/util/concurrent/TimeUnit;)Lokhttp3/CacheControl$Builder;", true, cache_control_builder_noop),
+    ne!("Lokhttp3/CacheControl$Builder;", "maxStale-LRDsOJo", "(J)Lokhttp3/CacheControl$Builder;", true, cache_control_builder_max_stale),
+    ne!("Lokhttp3/CacheControl$Builder;", "maxStale", "(ILjava/util/concurrent/TimeUnit;)Lokhttp3/CacheControl$Builder;", true, cache_control_builder_max_stale),
     ne!("Lokhttp3/CacheControl$Builder;", "noCache", "()Lokhttp3/CacheControl$Builder;", true, cache_control_builder_no_cache),
-    ne!("Lokhttp3/CacheControl$Builder;", "noStore", "()Lokhttp3/CacheControl$Builder;", true, cache_control_builder_noop),
+    ne!("Lokhttp3/CacheControl$Builder;", "noStore", "()Lokhttp3/CacheControl$Builder;", true, cache_control_builder_no_store),
 ];
 
 #[cfg(test)]

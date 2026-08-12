@@ -98,9 +98,12 @@ fn shared_preferences_persist_without_guest_filesystem_permission() {
 #[test]
 fn androidx_preferences_stub() {
     with_vm(|vm| {
-        // Preference.<init> / setKey are no-ops; prefs() returns a Context.
-        assert!(prefs_obj(vm, &[]).unwrap().is_null());
-        assert!(prefs_set(vm, &[]).unwrap().is_null());
+        let pref = alloc(vm, "Landroidx/preference/Preference;", Native::Opaque).unwrap();
+        assert!(prefs_obj(vm, &[pref]).unwrap().is_null());
+        assert!(prefs_set(vm, &[pref, vm.alloc_string("key")])
+            .unwrap()
+            .is_null());
+        assert!(matches!(payload(vm, pref), Some(Native::Preference { .. })));
         let ctx = prefs_ctx(vm, &[]).unwrap();
         assert!(matches!(payload(vm, ctx), Some(Native::Opaque)));
     });

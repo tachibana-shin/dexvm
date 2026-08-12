@@ -415,7 +415,27 @@ pub(crate) fn editor_commit(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(1))
 }
 
-pub(crate) fn prefs_obj(_vm: &mut Vm, _args: &[JValue]) -> R {
+pub(crate) fn prefs_obj(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(JValue::Obj(this)) = args.first().copied() else {
+        return Err(npe(vm));
+    };
+    let desc = vm.str_of(vm.classes[vm.arena.objects[this as usize].class as usize].descriptor);
+    vm.arena.objects[this as usize].native =
+        Some(if desc == "Landroidx/preference/PreferenceScreen;" {
+            Native::PreferenceScreen {
+                children: Vec::new(),
+                title: None,
+            }
+        } else {
+            Native::Preference {
+                key: None,
+                title: None,
+                summary: None,
+                default_value: JValue::Null,
+                enabled: true,
+                visible: true,
+            }
+        });
     Ok(JValue::Null)
 }
 
@@ -427,8 +447,22 @@ pub(crate) fn prefs_ctx(vm: &mut Vm, _args: &[JValue]) -> R {
 pub(crate) fn log_error(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Int(0))
 }
-pub(crate) fn prefs_set(_vm: &mut Vm, _args: &[JValue]) -> R {
+pub(crate) fn prefs_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Preference { default_value, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    if let Some(value) = args.get(1) {
+        *default_value = *value;
+    }
     Ok(JValue::Null)
+}
+
+pub(crate) fn prefs_add_preference(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::PreferenceScreen { children, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    children.push(args[1]);
+    Ok(JValue::Int(1))
 }
 
 /// `Context.getCacheDir() -> File` backed by a real per-VM host directory
