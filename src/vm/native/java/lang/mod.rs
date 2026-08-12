@@ -24,7 +24,6 @@ mod throwable;
 pub(crate) use boolean::*;
 pub(crate) use class::*;
 pub(crate) use integer::*;
-pub(crate) use object::*;
 pub(crate) use string::*;
 pub(crate) use throwable::*;
 

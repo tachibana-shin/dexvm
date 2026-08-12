@@ -51,10 +51,6 @@ pub(crate) fn object_clone(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
-pub(crate) fn object_noop(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
-}
-
 /// Native methods for Ljava/lang/Object;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Ljava/lang/Object;", "<init>", "()V", true, object_init),
