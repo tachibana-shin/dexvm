@@ -103,6 +103,21 @@ fn ranges_and_int_iterator_keep_state() {
 }
 
 #[test]
+fn high_frequency_kotlin_helpers_have_real_results() {
+    with_vm(|vm| {
+        assert_eq!(
+            int_of(charskt_check_radix(vm, &[JValue::Int(16)]).unwrap()),
+            16
+        );
+        let value = kotlin_random_default_next_int(vm, &[JValue::Int(3), JValue::Int(9)]).unwrap();
+        assert!((3..9).contains(&int_of(value)));
+        let token = s(vm, "token");
+        let err = intrinsics_throw_uninitialized(vm, &[token]);
+        assert!(matches!(err, Err(NatErr::Throw(_))));
+    });
+}
+
+#[test]
 fn collections_basics() {
     with_vm(|vm| {
         // listOf() from a single element.

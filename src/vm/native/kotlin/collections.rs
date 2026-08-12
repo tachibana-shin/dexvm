@@ -51,4 +51,18 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         false,
         super::collections_as_reversed
     ),
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "reversed",
+        "(Ljava/lang/Iterable;)Ljava/util/List;",
+        false,
+        super::collections_reversed
+    ),
+    ne!(
+        "Lkotlin/collections/CollectionsKt;",
+        "removeAll",
+        "(Ljava/util/List;Lkotlin/jvm/functions/Function1;)Z",
+        false,
+        super::collections_remove_all
+    ),
 ];
