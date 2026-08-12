@@ -475,168 +475,168 @@ pub(crate) const JSON_TABLE: &[NativeEntry] = &[
         "Lorg/json/JSONObject;",
         "get",
         "(Ljava/lang/String;)Ljava/lang/Object;",
-        false,
+        true,
         json_get
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "getString",
         "(Ljava/lang/String;)Ljava/lang/String;",
-        false,
+        true,
         json_get_string
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "getJSONObject",
         "(Ljava/lang/String;)Lorg/json/JSONObject;",
-        false,
+        true,
         json_get_obj
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "getJSONArray",
         "(Ljava/lang/String;)Lorg/json/JSONArray;",
-        false,
+        true,
         json_get_obj
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "getLong",
         "(Ljava/lang/String;)J",
-        false,
+        true,
         json_get_long
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "getInt",
         "(Ljava/lang/String;)I",
-        false,
+        true,
         json_get_int
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "getBoolean",
         "(Ljava/lang/String;)Z",
-        false,
+        true,
         json_get_bool
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "has",
         "(Ljava/lang/String;)Z",
-        false,
+        true,
         json_has
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "keys",
         "()Ljava/util/Iterator;",
-        false,
+        true,
         json_keys
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "put",
         "(Ljava/lang/String;Ljava/lang/Object;)Lorg/json/JSONObject;",
-        false,
+        true,
         json_put_obj
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "put",
         "(Ljava/lang/String;I)Lorg/json/JSONObject;",
-        false,
+        true,
         json_put_prim
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "put",
         "(Ljava/lang/String;J)Lorg/json/JSONObject;",
-        false,
+        true,
         json_put_prim
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "put",
         "(Ljava/lang/String;D)Lorg/json/JSONObject;",
-        false,
+        true,
         json_put_prim
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "put",
         "(Ljava/lang/String;Z)Lorg/json/JSONObject;",
-        false,
+        true,
         json_put_bool
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "optString",
         "(Ljava/lang/String;)Ljava/lang/String;",
-        false,
+        true,
         json_opt_string
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "optString",
         "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
-        false,
+        true,
         json_opt_string
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "optLong",
         "(Ljava/lang/String;)J",
-        false,
+        true,
         json_opt_long
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "optLong",
         "(Ljava/lang/String;J)J",
-        false,
+        true,
         json_opt_long
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "optInt",
         "(Ljava/lang/String;)I",
-        false,
+        true,
         json_opt_int
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "optInt",
         "(Ljava/lang/String;I)I",
-        false,
+        true,
         json_opt_int
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "optJSONObject",
         "(Ljava/lang/String;)Lorg/json/JSONObject;",
-        false,
+        true,
         json_opt_obj
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "optJSONArray",
         "(Ljava/lang/String;)Lorg/json/JSONArray;",
-        false,
+        true,
         json_opt_obj
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "remove",
         "(Ljava/lang/String;)Ljava/lang/Object;",
-        false,
+        true,
         json_get
     ),
     ne!(
         "Lorg/json/JSONObject;",
         "toString",
         "()Ljava/lang/String;",
-        false,
+        true,
         json_obj_to_string
     ),
     ne!(
@@ -664,63 +664,63 @@ pub(crate) const JSON_TABLE: &[NativeEntry] = &[
         "Lorg/json/JSONArray;",
         "length",
         "()I",
-        false,
+        true,
         json_array_length
     ),
     ne!(
         "Lorg/json/JSONArray;",
         "get",
         "(I)Ljava/lang/Object;",
-        false,
+        true,
         json_array_get
     ),
     ne!(
         "Lorg/json/JSONArray;",
         "getString",
         "(I)Ljava/lang/String;",
-        false,
+        true,
         json_array_get_string
     ),
     ne!(
         "Lorg/json/JSONArray;",
         "getJSONObject",
         "(I)Lorg/json/JSONObject;",
-        false,
+        true,
         json_array_get_obj
     ),
     ne!(
         "Lorg/json/JSONArray;",
         "getJSONArray",
         "(I)Lorg/json/JSONArray;",
-        false,
+        true,
         json_array_get_obj
     ),
     ne!(
         "Lorg/json/JSONArray;",
         "put",
         "(Ljava/lang/Object;)Lorg/json/JSONArray;",
-        false,
+        true,
         json_array_put
     ),
     ne!(
         "Lorg/json/JSONArray;",
         "put",
         "(I)Lorg/json/JSONArray;",
-        false,
+        true,
         json_array_put
     ),
     ne!(
         "Lorg/json/JSONArray;",
         "opt",
         "(I)Ljava/lang/Object;",
-        false,
+        true,
         json_array_get
     ),
     ne!(
         "Lorg/json/JSONArray;",
         "toString",
         "()Ljava/lang/String;",
-        false,
+        true,
         json_array_to_string
     ),
 ];

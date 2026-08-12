@@ -44,6 +44,39 @@ fn ctor_noop(_vm: &mut Vm, _args: &[JValue]) -> R {
 fn null_out(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
+fn collection_to_array(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = coll_elems(vm, args[0])?;
+    alloc_arr(vm, "Ljava/lang/Object;", items.len(), move || {
+        ArrayData::Obj(items)
+    })
+}
+fn collection_to_array_typed(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = coll_elems(vm, args[0])?;
+    let dest = match payload_mut(vm, args[1]) {
+        Some(Native::Array(ArrayData::Obj(slots))) => slots,
+        _ => return Err(npe(vm)),
+    };
+    for (slot, value) in dest.iter_mut().zip(items) {
+        *slot = value;
+    }
+    Ok(args[1])
+}
+fn close_finally(vm: &mut Vm, args: &[JValue]) -> R {
+    if args[0].is_null() {
+        return Ok(JValue::Null);
+    }
+    let result = vm
+        .invoke_virtual_args(args[0], "close", "()V", vec![])
+        .map_err(nat_fatal);
+    if args[1].is_null() {
+        result
+    } else {
+        Ok(JValue::Null)
+    }
+}
+fn intrinsics_compare(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(args[0].as_int().cmp(&args[1].as_int()) as i32))
+}
 
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
@@ -101,5 +134,68 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/Object;)Ljava/lang/Object;",
         false,
         null_out
+    ),
+    ne!(
+        "Lkotlin/jvm/internal/MutablePropertyReference1Impl;",
+        "<init>",
+        "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;I)V",
+        true,
+        ctor_noop
+    ),
+    ne!(
+        "Lkotlin/jvm/internal/PropertyReference1Impl;",
+        "<init>",
+        "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;I)V",
+        true,
+        ctor_noop
+    ),
+    ne!(
+        "Lkotlin/jvm/internal/PropertyReference0Impl;",
+        "<init>",
+        "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;I)V",
+        true,
+        ctor_noop
+    ),
+    ne!(
+        "Lkotlin/jvm/internal/FunctionReferenceImpl;",
+        "<init>",
+        "(ILjava/lang/Class;Ljava/lang/String;Ljava/lang/String;I)V",
+        true,
+        ctor_noop
+    ),
+    ne!(
+        "Lkotlin/jvm/internal/CollectionToArray;",
+        "toArray",
+        "(Ljava/util/Collection;)[Ljava/lang/Object;",
+        false,
+        collection_to_array
+    ),
+    ne!(
+        "Lkotlin/jvm/internal/CollectionToArray;",
+        "toArray",
+        "(Ljava/util/Collection;[Ljava/lang/Object;)[Ljava/lang/Object;",
+        false,
+        collection_to_array_typed
+    ),
+    ne!(
+        "Lkotlin/coroutines/jvm/internal/RestrictedSuspendLambda;",
+        "<init>",
+        "(ILkotlin/coroutines/Continuation;)V",
+        true,
+        ctor_noop
+    ),
+    ne!(
+        "Lkotlin/jvm/internal/Intrinsics;",
+        "compare",
+        "(II)I",
+        false,
+        intrinsics_compare
+    ),
+    ne!(
+        "Lkotlin/jdk7/AutoCloseableKt;",
+        "closeFinally",
+        "(Ljava/lang/AutoCloseable;Ljava/lang/Throwable;)V",
+        false,
+        close_finally
     ),
 ];

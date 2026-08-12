@@ -182,6 +182,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ),
     ne!(
         "Ljava/lang/Float;",
+        "hashCode",
+        "(F)I",
+        false,
+        float_hash_code
+    ),
+    ne!(
+        "Ljava/lang/Float;",
         "toString",
         "()Ljava/lang/String;",
         true,

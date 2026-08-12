@@ -403,6 +403,48 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ),
 ];
 
+/// Fallback for classes that extend `AbstractMap` directly (or via a
+/// concrete Map that doesn't override these) and still carry a `Native::Map`
+/// payload from their own `<init>`.
+pub(crate) const ABSTRACT_MAP_TABLE: &[NativeEntry] = &[
+    ne!("Ljava/util/AbstractMap;", "size", "()I", true, map_size),
+    ne!(
+        "Ljava/util/AbstractMap;",
+        "isEmpty",
+        "()Z",
+        true,
+        map_is_empty
+    ),
+    ne!(
+        "Ljava/util/AbstractMap;",
+        "get",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_get
+    ),
+    ne!(
+        "Ljava/util/AbstractMap;",
+        "put",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_put
+    ),
+    ne!(
+        "Ljava/util/AbstractMap;",
+        "containsKey",
+        "(Ljava/lang/Object;)Z",
+        true,
+        map_contains_key
+    ),
+    ne!(
+        "Ljava/util/AbstractMap;",
+        "remove",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        true,
+        map_remove
+    ),
+];
+
 /// Same API surface for java.util.concurrent.ConcurrentHashMap.
 pub(crate) const CHM_TABLE: &[NativeEntry] = &[
     ne!(

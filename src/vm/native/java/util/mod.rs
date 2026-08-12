@@ -74,16 +74,77 @@ pub(crate) fn set_alloc(vm: &mut Vm, items: Vec<JValue>) -> Result<JValue, NatEr
     alloc(vm, "Ljava/util/HashSet;", Native::Set(items))
 }
 
+// ---------------------------------------------------------------------------
+// AbstractCollection / AbstractMap: dispatch by backing payload so a List-
+// or Set-shaped shim class that falls through to the shared Abstract*
+// superclass still resolves to the right concrete implementation.
+// ---------------------------------------------------------------------------
+
+pub(crate) fn coll_generic_add(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Set(_)) => set_add(vm, args),
+        _ => list_add(vm, args),
+    }
+}
+
+pub(crate) fn coll_generic_remove(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Set(_)) => set_remove(vm, args),
+        _ => list_remove_obj(vm, args),
+    }
+}
+
+pub(crate) fn coll_generic_clear(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Set(_)) => set_clear(vm, args),
+        _ => list_clear(vm, args),
+    }
+}
+
+pub(crate) fn coll_generic_contains(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Set(_)) => set_contains(vm, args),
+        _ => list_contains(vm, args),
+    }
+}
+
+pub(crate) fn coll_generic_add_all(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Set(_)) => set_add_all(vm, args),
+        _ => list_add_all(vm, args),
+    }
+}
+
+pub(crate) fn coll_generic_contains_all(vm: &mut Vm, args: &[JValue]) -> R {
+    let needle = coll_elems(vm, args[1])?;
+    let haystack = coll_elems(vm, args[0])?;
+    for n in needle {
+        let mut found = false;
+        for h in &haystack {
+            if java_equals(vm, *h, n)? {
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            return Ok(JValue::Int(0));
+        }
+    }
+    Ok(JValue::Int(1))
+}
+
 /// All java.util native tables, grouped for `register`.
 pub(crate) const UTIL_TABLE: &[&[NativeEntry]] = &[
     arraydeque::TABLE,
     arraylist::TABLE,
+    arraylist::COW_TABLE,
     arrays::TABLE,
     atomic::TABLE,
     calendar::TABLE,
     count_down_latch::TABLE,
     collections::TABLE,
     hashmap::CHM_TABLE,
+    hashmap::ABSTRACT_MAP_TABLE,
     condition::TABLE,
     date::TABLE,
     hashmap::TABLE,

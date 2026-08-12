@@ -183,6 +183,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ),
     ne!(
         "Ljava/lang/Double;",
+        "hashCode",
+        "(D)I",
+        false,
+        double_hash_code
+    ),
+    ne!(
+        "Ljava/lang/Double;",
         "toString",
         "()Ljava/lang/String;",
         true,

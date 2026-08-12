@@ -2641,7 +2641,7 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/Dispatcher;", "setMaxRequests", "(I)V", true, dispatcher_set_max_requests),
     ne!("Lokhttp3/Dispatcher;", "setMaxRequestsPerHost", "(I)V", true, dispatcher_set_max_requests_per_host),
     ne!("Lokhttp3/Dns;", "lookup", "(Ljava/lang/String;)Ljava/util/List;", true, dns_lookup),
-    ne!("Lokhttp3/internal/_UtilCommonKt;", "closeQuietly", "(Ljava/io/Closeable;)V", true, close_quietly),
+    ne!("Lokhttp3/internal/_UtilCommonKt;", "closeQuietly", "(Ljava/io/Closeable;)V", false, close_quietly),
     ne!("Lokhttp3/OkHttpClient;", "cookieJar", "()Lokhttp3/CookieJar;", true, okhttp_client_cookie_jar),
     ne!("Lokhttp3/OkHttpClient;", "interceptors", "()Ljava/util/List;", true, okhttp_client_interceptors),
     ne!("Lokhttp3/OkHttpClient$Builder;", "readTimeout-LRDsOJo", "(J)Lokhttp3/OkHttpClient$Builder;", true, okhttp_builder_self),

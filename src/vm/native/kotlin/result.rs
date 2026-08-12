@@ -29,6 +29,15 @@ fn throw_on_failure(vm: &mut Vm, args: &[JValue]) -> R {
     }
     Ok(JValue::Null)
 }
+fn is_success_impl(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(i32::from(!matches!(
+        payload(vm, args[0]),
+        Some(Native::ResultFailure(_))
+    ))))
+}
+fn identity(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
         "Lkotlin/Result;",
@@ -64,5 +73,26 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/Object;)V",
         false,
         throw_on_failure
+    ),
+    ne!(
+        "Lkotlin/Result;",
+        "isSuccess-impl",
+        "(Ljava/lang/Object;)Z",
+        false,
+        is_success_impl
+    ),
+    ne!(
+        "Lkotlin/Result;",
+        "box-impl",
+        "(Ljava/lang/Object;)Lkotlin/Result;",
+        false,
+        identity
+    ),
+    ne!(
+        "Lkotlin/Result;",
+        "unbox-impl",
+        "()Ljava/lang/Object;",
+        true,
+        identity
     ),
 ];

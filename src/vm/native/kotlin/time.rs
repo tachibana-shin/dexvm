@@ -183,7 +183,7 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "Lkotlin/time/Clock$System;",
         "now",
         "()Lkotlin/time/Instant;",
-        false,
+        true,
         kotlin_instant_now
     ),
     ne!(

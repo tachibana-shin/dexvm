@@ -18,6 +18,14 @@ fn number_double_value(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Double(double_of(vm, args[0])))
 }
 
+fn number_byte_value(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(int_of(vm, args[0]) as i8 as i32))
+}
+
+fn number_short_value(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(int_of(vm, args[0]) as i16 as i32))
+}
+
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
         "Ljava/lang/Number;",
@@ -46,6 +54,20 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "()D",
         true,
         number_double_value
+    ),
+    ne!(
+        "Ljava/lang/Number;",
+        "byteValue",
+        "()B",
+        true,
+        number_byte_value
+    ),
+    ne!(
+        "Ljava/lang/Number;",
+        "shortValue",
+        "()S",
+        true,
+        number_short_value
     ),
 ];
 

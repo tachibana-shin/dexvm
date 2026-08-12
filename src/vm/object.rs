@@ -378,6 +378,8 @@ pub enum Native {
         default_value: JValue,
         enabled: bool,
         visible: bool,
+        entries: Vec<JValue>,
+        entry_values: Vec<JValue>,
     },
     PreferenceScreen {
         children: Vec<JValue>,
@@ -622,6 +624,18 @@ pub enum Native {
     /// kotlin.ranges.IntRange (current, last) — the cursor doubles as iterator
     /// position for IntIterator subclasses.
     IntRange(i32, i32),
+    /// kotlin.ranges.IntProgression (first, last, step).
+    IntProgression(i32, i32, i32),
+    /// kotlin.ranges.CharRange (first, last), chars as u16 code units.
+    CharRange(i32, i32),
+    /// kotlin.ranges.LongRange (first, last).
+    LongRange(i64, i64),
+    /// kotlin.text.HexFormat (and its Builder — the builder mutates the
+    /// same state until `build()` snapshots it).
+    HexFormat(HexFormatState),
+    /// kotlin.text.HexFormat$BytesHexFormat$Builder — holds a reference to
+    /// the outer Builder/HexFormat so its setters mutate the shared state.
+    HexFormatBytesBuilder(JValue),
     /// Array descriptor stored on a Class instance of an array type.
     ArrayDesc(ArrayData),
     /// kotlinx.serialization JsonElement tree node (JsonObject/JsonArray/
@@ -709,6 +723,15 @@ pub struct MatcherState {
     pub pos: usize,
     /// (start, end) of the most recent find()/matches().
     pub last: Option<(usize, usize)>,
+}
+
+/// kotlin.text.HexFormat configuration. The `BytesHexFormat$Builder` shares
+/// the same state struct; the prefix/separator live in the byte sub-format.
+#[derive(Clone)]
+pub struct HexFormatState {
+    pub uppercase: bool,
+    pub byte_prefix: String,
+    pub byte_separator: String,
 }
 
 /// A heap object. `class` is a class id; `fields` holds interpreted fields by
@@ -813,6 +836,8 @@ impl Native {
                 push(Some(a), out);
                 push(Some(b), out);
             }
+            Native::HexFormat(_) => {}
+            Native::HexFormatBytesBuilder(parent) => push(Some(parent), out),
             Native::Triple(a, b, c) => {
                 push(Some(a), out);
                 push(Some(b), out);
@@ -895,12 +920,16 @@ impl Native {
                 title,
                 summary,
                 default_value,
+                entries,
+                entry_values,
                 ..
             } => {
                 push(key.as_ref(), out);
                 push(title.as_ref(), out);
                 push(summary.as_ref(), out);
                 push(Some(default_value), out);
+                push_all(entries, out);
+                push_all(entry_values, out);
             }
             Native::PreferenceScreen { children, title } => {
                 push_all(children, out);
@@ -972,6 +1001,9 @@ impl Native {
             | Native::SPPage { .. }
             | Native::Duration(_)
             | Native::IntRange(..)
+            | Native::IntProgression(..)
+            | Native::CharRange(..)
+            | Native::LongRange(..)
             | Native::ArrayDesc(_)
             | Native::RespBody(_)
             | Native::ByteArrayInputStream { .. }

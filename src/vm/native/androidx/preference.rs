@@ -57,14 +57,42 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "setEntries",
         "([Ljava/lang/CharSequence;)V",
         true,
-        crate::vm::native::android::prefs_set
+        crate::vm::native::android::prefs_set_entries
     ),
     ne!(
         "Landroidx/preference/ListPreference;",
         "setEntryValues",
         "([Ljava/lang/CharSequence;)V",
         true,
-        crate::vm::native::android::prefs_set
+        crate::vm::native::android::prefs_set_entry_values
+    ),
+    ne!(
+        "Landroidx/preference/ListPreference;",
+        "getEntries",
+        "()[Ljava/lang/CharSequence;",
+        true,
+        crate::vm::native::android::prefs_get_entries
+    ),
+    ne!(
+        "Landroidx/preference/ListPreference;",
+        "getEntryValues",
+        "()[Ljava/lang/CharSequence;",
+        true,
+        crate::vm::native::android::prefs_get_entry_values
+    ),
+    ne!(
+        "Landroidx/preference/ListPreference;",
+        "getKey",
+        "()Ljava/lang/String;",
+        true,
+        crate::vm::native::android::prefs_get_key
+    ),
+    ne!(
+        "Landroidx/preference/ListPreference;",
+        "findIndexOfValue",
+        "(Ljava/lang/String;)I",
+        true,
+        crate::vm::native::android::prefs_find_index_of_value
     ),
     ne!(
         "Landroidx/preference/ListPreference;",
@@ -78,12 +106,89 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "setEntries",
         "([Ljava/lang/CharSequence;)V",
         true,
-        crate::vm::native::android::prefs_set
+        crate::vm::native::android::prefs_set_entries
     ),
     ne!(
         "Landroidx/preference/MultiSelectListPreference;",
         "setEntryValues",
         "([Ljava/lang/CharSequence;)V",
+        true,
+        crate::vm::native::android::prefs_set_entry_values
+    ),
+    ne!(
+        "Landroidx/preference/MultiSelectListPreference;",
+        "getEntries",
+        "()[Ljava/lang/CharSequence;",
+        true,
+        crate::vm::native::android::prefs_get_entries
+    ),
+    ne!(
+        "Landroidx/preference/MultiSelectListPreference;",
+        "getEntryValues",
+        "()[Ljava/lang/CharSequence;",
+        true,
+        crate::vm::native::android::prefs_get_entry_values
+    ),
+    ne!(
+        "Landroidx/preference/MultiSelectListPreference;",
+        "setOnPreferenceChangeListener",
+        "(Landroidx/preference/Preference$OnPreferenceChangeListener;)V",
+        true,
+        crate::vm::native::android::prefs_set
+    ),
+    ne!(
+        "Landroidx/preference/MultiSelectListPreference;",
+        "setEnabled",
+        "(Z)V",
+        true,
+        crate::vm::native::android::prefs_set_enabled
+    ),
+    ne!(
+        "Landroidx/preference/MultiSelectListPreference;",
+        "setDialogTitle",
+        "(Ljava/lang/CharSequence;)V",
+        true,
+        crate::vm::native::android::prefs_set
+    ),
+    ne!(
+        "Landroidx/preference/CheckBoxPreference;",
+        "setOnPreferenceChangeListener",
+        "(Landroidx/preference/Preference$OnPreferenceChangeListener;)V",
+        true,
+        crate::vm::native::android::prefs_set
+    ),
+    ne!(
+        "Landroidx/preference/CheckBoxPreference;",
+        "setVisible",
+        "(Z)V",
+        true,
+        crate::vm::native::android::prefs_set_visible
+    ),
+    ne!(
+        "Landroidx/preference/CheckBoxPreference;",
+        "getKey",
+        "()Ljava/lang/String;",
+        true,
+        crate::vm::native::android::prefs_get_key
+    ),
+    ne!(
+        "Landroidx/preference/EditTextPreference;",
+        "getKey",
+        "()Ljava/lang/String;",
+        true,
+        crate::vm::native::android::prefs_get_key
+    ),
+    ne!(
+        "Landroidx/preference/EditTextPreference;",
+        "setOnPreferenceClickListener",
+        "(Landroidx/preference/Preference$OnPreferenceClickListener;)V",
+        true,
+        crate::vm::native::android::prefs_set
+    ),
+    ne!(
+        "Landroidx/preference/Preference;",
+        "setOnPreferenceChangeListener",
+        "(Landroidx/preference/Preference$OnPreferenceChangeListener;)V",
         true,
         crate::vm::native::android::prefs_set
     ),
@@ -120,7 +225,7 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "setKey",
         "(Ljava/lang/String;)V",
         true,
-        crate::vm::native::android::prefs_set
+        crate::vm::native::android::prefs_set_key
     ),
     ne!(
         "Landroidx/preference/Preference;",
@@ -176,7 +281,7 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "setKey",
         "(Ljava/lang/String;)V",
         true,
-        crate::vm::native::android::prefs_set
+        crate::vm::native::android::prefs_set_key
     ),
     ne!(
         "Landroidx/preference/SwitchPreferenceCompat;",
@@ -198,5 +303,19 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/Object;)V",
         true,
         crate::vm::native::android::prefs_set
+    ),
+    ne!(
+        "Landroidx/preference/SwitchPreferenceCompat;",
+        "setEnabled",
+        "(Z)V",
+        true,
+        crate::vm::native::android::prefs_set_enabled
+    ),
+    ne!(
+        "Landroidx/preference/SwitchPreferenceCompat;",
+        "setVisible",
+        "(Z)V",
+        true,
+        crate::vm::native::android::prefs_set_visible
     ),
 ];

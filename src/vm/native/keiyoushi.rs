@@ -787,6 +787,15 @@ pub(crate) fn page_get_index(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
+pub(crate) fn page_set_image_url(vm: &mut Vm, args: &[JValue]) -> R {
+    let url = jstr(vm, args[1]).unwrap_or_default();
+    match payload_mut(vm, args[0]) {
+        Some(Native::SPPage { image_url, .. }) => *image_url = url,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
 // ---- MangasPage / FilterList ----
 
 pub(crate) fn mangas_page_init(vm: &mut Vm, args: &[JValue]) -> R {
@@ -824,6 +833,28 @@ pub(crate) fn mangas_page_has_next(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::SMangasPage { has_next, .. }) => Ok(JValue::Int(i32::from(*has_next))),
         _ => Err(npe(vm)),
     }
+}
+
+pub(crate) fn mangas_page_copy_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let (orig_mangas, orig_next) = match payload(vm, args[0]) {
+        Some(Native::SMangasPage { mangas, has_next }) => (mangas.clone(), *has_next),
+        _ => return Err(npe(vm)),
+    };
+    let mask = int_of(vm, args[3]);
+    let mangas = if mask & 1 != 0 {
+        orig_mangas
+    } else {
+        match payload(vm, args[1]) {
+            Some(Native::List(items)) => items.clone(),
+            _ => Vec::new(),
+        }
+    };
+    let has_next = if mask & 2 != 0 { orig_next } else { bool_of(vm, args[2]) };
+    alloc(
+        vm,
+        "Leu/kanade/tachiyomi/source/model/MangasPage;",
+        Native::SMangasPage { mangas, has_next },
+    )
 }
 
 fn smanga_update_init(vm: &mut Vm, args: &[JValue]) -> R {
@@ -1221,6 +1252,79 @@ pub(crate) fn filter_tristate_is_included(vm: &mut Vm, args: &[JValue]) -> R {
     }
 }
 
+pub(crate) fn filter_tristate_is_ignored(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::SFilter { state, .. }) => Ok(JValue::Int(i32::from(state == &0))),
+        _ => Err(npe(vm)),
+    }
+}
+
+pub(crate) fn filter_sort_set_state(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = args[1];
+    match payload_mut(vm, args[0]) {
+        Some(Native::SFilter { children, .. }) => {
+            if children.is_empty() {
+                children.push(value);
+            } else {
+                children[0] = value;
+            }
+        }
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
+pub(crate) fn filter_text_set_state(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = jstr(vm, args[1]).unwrap_or_default();
+    match payload_mut(vm, args[0]) {
+        Some(Native::SFilter { text_value, .. }) => *text_value = text,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
+pub(crate) fn filter_list_get_at(vm: &mut Vm, args: &[JValue]) -> R {
+    let i = int_of(vm, args[1]);
+    let items = match payload(vm, args[0]) {
+        Some(Native::SFilterList(items)) => items.clone(),
+        _ => return Err(npe(vm)),
+    };
+    match items.get(i as usize) {
+        Some(v) => Ok(*v),
+        None => Err(ioobe(vm, i)),
+    }
+}
+
+fn filter_sort_get_values(vm: &mut Vm, args: &[JValue]) -> R {
+    let options = match payload(vm, args[0]) {
+        Some(Native::SFilter { options, .. }) => options.clone(),
+        _ => return Err(npe(vm)),
+    };
+    alloc_arr(vm, "Ljava/lang/String;", options.len(), move || {
+        ArrayData::Obj(options)
+    })
+}
+
+pub(crate) fn app_info_get_version_name(vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(new_str(vm, "1.4.0"))
+}
+
+pub(crate) fn http_exception_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let code = int_of(vm, args[1]);
+    let msg = format!("HTTP error {code}");
+    let Some(n) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    match n {
+        Native::Throwable { message, cause } => {
+            *message = Some(msg);
+            *cause = JValue::Null;
+        }
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
 fn filter_tristate_state_obj(vm: &mut Vm, args: &[JValue]) -> R {
     let state = filter_get_state(vm, args)?;
     box_int_value(vm, "Ljava/lang/Integer;", state)
@@ -1330,6 +1434,8 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/SChapter;", "setMemo", "(Lkotlinx/serialization/json/JsonObject;)V", true, schapter_set_memo),
     ne!("Leu/kanade/tachiyomi/source/model/SChapter$Companion;", "create", "()Leu/kanade/tachiyomi/source/model/SChapter;", true, schapter_companion_create),
     ne!("Leu/kanade/tachiyomi/source/model/Page;", "<init>", "(ILjava/lang/String;Ljava/lang/String;Landroid/net/Uri;ILkotlin/jvm/internal/DefaultConstructorMarker;)V", true, page_init),
+    ne!("Leu/kanade/tachiyomi/source/model/Page;", "<init>", "(ILjava/lang/String;Ljava/lang/String;Landroid/net/Uri;)V", true, page_init),
+    ne!("Leu/kanade/tachiyomi/source/model/Page;", "setImageUrl", "(Ljava/lang/String;)V", true, page_set_image_url),
     ne!("Leu/kanade/tachiyomi/source/model/Page;", "getUrl", "()Ljava/lang/String;", true, page_get_url),
     ne!("Leu/kanade/tachiyomi/source/model/Page;", "getName", "()Ljava/lang/String;", true, page_get_name),
     ne!("Leu/kanade/tachiyomi/source/model/Page;", "getImageUrl", "()Ljava/lang/String;", true, page_get_image_url),
@@ -1337,6 +1443,7 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "<init>", "(Ljava/util/List;Z)V", true, mangas_page_init),
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "getMangas", "()Ljava/util/List;", true, mangas_page_get_mangas),
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "hasNextPage", "()Z", true, mangas_page_has_next),
+    ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "copy$default", "(Leu/kanade/tachiyomi/source/model/MangasPage;Ljava/util/List;ZILjava/lang/Object;)Leu/kanade/tachiyomi/source/model/MangasPage;", false, mangas_page_copy_default),
     ne!("Leu/kanade/tachiyomi/source/model/MangasPage;", "getHasNextPage", "()Z", true, mangas_page_has_next),
     ne!("Leu/kanade/tachiyomi/source/model/SMangaUpdate;", "<init>", "(Leu/kanade/tachiyomi/source/model/SManga;Ljava/util/List;)V", true, smanga_update_init),
     ne!("Leu/kanade/tachiyomi/source/model/SMangaUpdate;", "getManga", "()Leu/kanade/tachiyomi/source/model/SManga;", true, smanga_update_get_manga),
@@ -1474,6 +1581,76 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
         "()V",
         true,
         crate::vm::native::serialization::image_decoder_recycle
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/source/model/Filter$TriState;",
+        "isIgnored",
+        "()Z",
+        true,
+        filter_tristate_is_ignored
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/source/model/Filter$TriState;",
+        "setState",
+        "(Ljava/lang/Object;)V",
+        true,
+        filter_select_set_state
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/source/model/Filter$Sort;",
+        "setState",
+        "(Ljava/lang/Object;)V",
+        true,
+        filter_sort_set_state
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/source/model/Filter$Sort;",
+        "getValues",
+        "()[Ljava/lang/String;",
+        true,
+        filter_sort_get_values
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/source/model/Filter$Text;",
+        "setState",
+        "(Ljava/lang/Object;)V",
+        true,
+        filter_text_set_state
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/source/model/Filter;",
+        "getState",
+        "()Ljava/lang/Object;",
+        true,
+        filter_tristate_state_obj
+    ),
+    ne!(
+        FILTER_LIST,
+        "getList",
+        "()Ljava/util/List;",
+        true,
+        filter_list_get_filters
+    ),
+    ne!(
+        FILTER_LIST,
+        "get",
+        "(I)Leu/kanade/tachiyomi/source/model/Filter;",
+        true,
+        filter_list_get_at
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/AppInfo;",
+        "getVersionName",
+        "()Ljava/lang/String;",
+        false,
+        app_info_get_version_name
+    ),
+    ne!(
+        "Leu/kanade/tachiyomi/network/HttpException;",
+        "<init>",
+        "(I)V",
+        true,
+        http_exception_init
     ),
 ];
 

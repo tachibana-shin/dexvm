@@ -129,6 +129,46 @@ pub(crate) fn integer_signum(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(int_of(vm, args[0]).signum()))
 }
 
+pub(crate) fn integer_compare_unsigned(vm: &mut Vm, args: &[JValue]) -> R {
+    let a = int_of(vm, args[0]) as u32;
+    let b = int_of(vm, args[1]) as u32;
+    Ok(JValue::Int(a.cmp(&b) as i32))
+}
+
+pub(crate) fn integer_remainder_unsigned(vm: &mut Vm, args: &[JValue]) -> R {
+    let a = int_of(vm, args[0]) as u32;
+    let b = int_of(vm, args[1]) as u32;
+    Ok(JValue::Int((a % b) as i32))
+}
+
+pub(crate) fn integer_divide_unsigned(vm: &mut Vm, args: &[JValue]) -> R {
+    let a = int_of(vm, args[0]) as u32;
+    let b = int_of(vm, args[1]) as u32;
+    Ok(JValue::Int((a / b) as i32))
+}
+
+pub(crate) fn integer_rotate_left(vm: &mut Vm, args: &[JValue]) -> R {
+    let v = int_of(vm, args[0]) as u32;
+    let d = int_of(vm, args[1]);
+    Ok(JValue::Int(v.rotate_left(d.rem_euclid(32) as u32) as i32))
+}
+
+pub(crate) fn integer_rotate_right(vm: &mut Vm, args: &[JValue]) -> R {
+    let v = int_of(vm, args[0]) as u32;
+    let d = int_of(vm, args[1]);
+    Ok(JValue::Int(v.rotate_right(d.rem_euclid(32) as u32) as i32))
+}
+
+pub(crate) fn integer_to_unsigned_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let v = int_of(vm, args[0]) as u32;
+    Ok(new_str(vm, &v.to_string()))
+}
+
+pub(crate) fn integer_to_unsigned_long(vm: &mut Vm, args: &[JValue]) -> R {
+    let v = int_of(vm, args[0]) as u32;
+    Ok(JValue::Long(i64::from(v)))
+}
+
 /// Native methods for Ljava/lang/Integer;
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
@@ -305,5 +345,54 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/Object;)I",
         true,
         integer_compare_to
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "compareUnsigned",
+        "(II)I",
+        false,
+        integer_compare_unsigned
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "remainderUnsigned",
+        "(II)I",
+        false,
+        integer_remainder_unsigned
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "divideUnsigned",
+        "(II)I",
+        false,
+        integer_divide_unsigned
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "rotateLeft",
+        "(II)I",
+        false,
+        integer_rotate_left
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "rotateRight",
+        "(II)I",
+        false,
+        integer_rotate_right
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "toUnsignedString",
+        "(I)Ljava/lang/String;",
+        false,
+        integer_to_unsigned_string
+    ),
+    ne!(
+        "Ljava/lang/Integer;",
+        "toUnsignedLong",
+        "(I)J",
+        false,
+        integer_to_unsigned_long
     ),
 ];

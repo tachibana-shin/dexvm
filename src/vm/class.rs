@@ -1601,7 +1601,12 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         "Lkotlin/text/Regex;",
         Some("Ljava/lang/Object;"),
         &["Ljava/io/Serializable;"],
-        0
+        0,
+        [sdef!(
+            "Companion",
+            "Lkotlin/text/Regex$Companion;",
+            ShimValue::Lazy(native::lazy_regex_companion)
+        )]
     ),
     shim!(
         "Lkotlin/collections/CollectionsKt;",
@@ -1617,7 +1622,7 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     ),
     shim!(
         "Lkotlin/ranges/IntRange;",
-        Some("Ljava/lang/Object;"),
+        Some("Lkotlin/ranges/IntProgression;"),
         &[],
         0
     ),
@@ -2277,6 +2282,13 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     ),
     #[cfg(feature = "kotlin")]
     shim!(
+        "Lkotlin/ranges/ClosedRange;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
         "Lkotlin/ranges/LongRange;",
         Some("Ljava/lang/Object;"),
         &[],
@@ -2334,6 +2346,25 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "kotlin")]
     shim!(
         "Lkotlin/text/HexExtensionsKt;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/HexFormat;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "Companion",
+            "Lkotlin/text/HexFormat$Companion;",
+            ShimValue::Lazy(native::lazy_hex_format_companion)
+        )]
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/text/HexFormat$BytesHexFormat;",
         Some("Ljava/lang/Object;"),
         &[],
         0
@@ -3326,6 +3357,66 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     ),
     shim!(
         "Ljava/time/chrono/ChronoLocalDateTime;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/time/temporal/ChronoUnit;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [
+            sdef!(
+                "MILLIS",
+                "Ljava/time/temporal/ChronoUnit;",
+                ShimValue::Lazy(native::lazy_chrono_unit_millis)
+            ),
+            sdef!(
+                "SECONDS",
+                "Ljava/time/temporal/ChronoUnit;",
+                ShimValue::Lazy(native::lazy_chrono_unit_seconds)
+            ),
+            sdef!(
+                "MINUTES",
+                "Ljava/time/temporal/ChronoUnit;",
+                ShimValue::Lazy(native::lazy_chrono_unit_minutes)
+            ),
+            sdef!(
+                "HOURS",
+                "Ljava/time/temporal/ChronoUnit;",
+                ShimValue::Lazy(native::lazy_chrono_unit_hours)
+            ),
+            sdef!(
+                "DAYS",
+                "Ljava/time/temporal/ChronoUnit;",
+                ShimValue::Lazy(native::lazy_chrono_unit_days)
+            ),
+            sdef!(
+                "WEEKS",
+                "Ljava/time/temporal/ChronoUnit;",
+                ShimValue::Lazy(native::lazy_chrono_unit_weeks)
+            ),
+            sdef!(
+                "MONTHS",
+                "Ljava/time/temporal/ChronoUnit;",
+                ShimValue::Lazy(native::lazy_chrono_unit_months)
+            ),
+            sdef!(
+                "YEARS",
+                "Ljava/time/temporal/ChronoUnit;",
+                ShimValue::Lazy(native::lazy_chrono_unit_years)
+            ),
+        ]
+    ),
+    shim!(
+        "Ljava/time/temporal/TemporalUnit;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    shim!(
+        "Ljava/time/temporal/TemporalField;",
         None,
         &[],
         ACC_INTERFACE | ACC_ABSTRACT

@@ -14,7 +14,7 @@ pub(crate) use ::fancy_regex::Regex;
 
 pub(crate) use crate::dex::insn::InvokeKind;
 pub(crate) use crate::vm::error::JvmError;
-pub(crate) use crate::vm::object::{ArrayData, ClassOrPrim, IterKind, MatcherState, Native};
+pub(crate) use crate::vm::object::{ArrayData, ClassOrPrim, HexFormatState, IterKind, MatcherState, Native};
 #[cfg(feature = "tachiyomi")]
 pub(crate) use crate::vm::object::{JsonVal, PrimitiveSerializerKind};
 #[cfg(feature = "android")]
@@ -479,7 +479,9 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             "Ljava/lang/Boolean;" => Some(Native::BoolBox(false)),
             "Ljava/lang/Float;" => Some(Native::FloatBox(0.0)),
             "Ljava/lang/Double;" => Some(Native::DoubleBox(0.0)),
-            "Ljava/util/ArrayList;" => Some(Native::List(Vec::new())),
+            "Ljava/util/ArrayList;" | "Ljava/util/concurrent/CopyOnWriteArrayList;" => {
+                Some(Native::List(Vec::new()))
+            }
             "Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;" => {
                 Some(Native::SerialDescriptor {
                     name: String::new(),
@@ -498,6 +500,17 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
                 })
             }
             "Ljava/util/ArrayDeque;" => Some(Native::ArrayDeque(Vec::new())),
+            "Lkotlin/ranges/IntRange;" => Some(Native::IntRange(0, 0)),
+            "Lkotlin/ranges/IntProgression;" => Some(Native::IntProgression(0, 0, 1)),
+            "Lkotlin/ranges/CharRange;" => Some(Native::CharRange(0, 0)),
+            "Lkotlin/ranges/LongRange;" => Some(Native::LongRange(0, 0)),
+            "Lkotlin/text/HexFormat;" | "Lkotlin/text/HexFormat$Builder;" => {
+                Some(Native::HexFormat(HexFormatState {
+                    uppercase: false,
+                    byte_prefix: String::new(),
+                    byte_separator: String::new(),
+                }))
+            }
             "Lokhttp3/FormBody$Builder;" => Some(Native::FormBody(Vec::new())),
             "Lokhttp3/CacheControl$Builder;" => Some(Native::CacheControlBuilder {
                 max_age: 0,
@@ -531,10 +544,12 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             "Ljava/util/Random;" => Some(Native::Random(0)),
             "Ljava/util/Date;" => Some(Native::Date(0)),
             "Ljava/util/Calendar;" => Some(Native::Calendar(0)),
-            "Ljava/text/SimpleDateFormat;" => Some(Native::DateFormatter {
-                pattern: String::new(),
-                zone: String::new(),
-            }),
+            "Ljava/text/SimpleDateFormat;" | "Ljava/time/format/DateTimeFormatterBuilder;" => {
+                Some(Native::DateFormatter {
+                    pattern: String::new(),
+                    zone: String::new(),
+                })
+            }
             "Ljava/text/ParsePosition;" => Some(Native::ParsePosition(0)),
             "Ljava/util/Locale;" => Some(Native::Opaque),
             "Ljava/io/PrintStream;" => Some(Native::PrintStream),

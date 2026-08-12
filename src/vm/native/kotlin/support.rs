@@ -26,10 +26,17 @@ pub(super) fn boxing_identity(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 pub(super) fn kotlin_random_default_next_int(vm: &mut Vm, args: &[JValue]) -> R {
-    let (from, until) = if args.len() >= 2 {
-        (args[0].as_int(), args[1].as_int())
+    let first = if args.len() >= 2 && matches!(args[0], JValue::Obj(_)) {
+        1
     } else {
-        (0, args[0].as_int())
+        0
+    };
+    let (from, until) = if args.len() >= first + 2 {
+        (args[first].as_int(), args[first + 1].as_int())
+    } else if args.len() >= first + 1 {
+        (0, args[first].as_int())
+    } else {
+        (0, 1)
     };
     if until <= from {
         return Err(NatErr::Throw(vm.throwable_of(
@@ -44,6 +51,16 @@ pub(super) fn kotlin_random_default_next_int(vm: &mut Vm, args: &[JValue]) -> R 
 }
 pub(super) fn kotlin_reflection_class(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
+}
+pub(super) fn kotlin_type_projection_invariant(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+pub(super) fn exceptions_stack_trace_to_string(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = to_string_of(vm, args[0])?;
+    Ok(new_str(vm, &s))
+}
+pub(super) fn exceptions_add_suppressed(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
 }
 pub(super) fn coroutines_suspended(vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(opaque_inst(vm, "Ljava/lang/Object;"))
@@ -89,11 +106,18 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxChar", "(C)Ljava/lang/Character;", false, boxing_identity),
     ne!("Lkotlin/jvm/internal/Reflection;", "getOrCreateKotlinClass", "(Ljava/lang/Class;)Lkotlin/reflect/KClass;", false, kotlin_reflection_class),
     ne!("Lkotlin/jvm/internal/Reflection;", "typeOf", "(Ljava/lang/Class;)Lkotlin/reflect/KType;", false, kotlin_reflection_class),
+    ne!("Lkotlin/jvm/internal/Reflection;", "typeOf", "(Ljava/lang/Class;Lkotlin/reflect/KTypeProjection;)Lkotlin/reflect/KType;", false, kotlin_reflection_class),
+    ne!("Lkotlin/jvm/internal/Reflection;", "nullableTypeOf", "(Ljava/lang/Class;)Lkotlin/reflect/KType;", false, kotlin_reflection_class),
+    ne!("Lkotlin/reflect/KTypeProjection$Companion;", "invariant", "(Lkotlin/reflect/KType;)Lkotlin/reflect/KTypeProjection;", true, kotlin_type_projection_invariant),
+    ne!("Lkotlin/ExceptionsKt;", "stackTraceToString", "(Ljava/lang/Throwable;)Ljava/lang/String;", false, exceptions_stack_trace_to_string),
+    ne!("Lkotlin/ExceptionsKt;", "addSuppressed", "(Ljava/lang/Throwable;Ljava/lang/Throwable;)V", false, exceptions_add_suppressed),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of3),
     ne!("Lkotlin/comparisons/ComparisonsKt;", "compareValues", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)I", false, comparisons_compare_values),
-    ne!("Lkotlin/random/Random$Default;", "nextInt", "(I)I", false, kotlin_random_default_next_int),
-    ne!("Lkotlin/random/Random$Default;", "nextInt", "(II)I", false, kotlin_random_default_next_int),
+    ne!("Lkotlin/random/Random;", "nextInt", "(I)I", true, kotlin_random_default_next_int),
+    ne!("Lkotlin/random/Random;", "nextInt", "(II)I", true, kotlin_random_default_next_int),
+    ne!("Lkotlin/random/Random$Default;", "nextInt", "(I)I", true, kotlin_random_default_next_int),
+    ne!("Lkotlin/random/Random$Default;", "nextInt", "(II)I", true, kotlin_random_default_next_int),
     ne!("Lkotlin/jvm/internal/DefaultConstructorMarker;", "<init>", "()V", true, object_noop),
     ne!("Lkotlin/jvm/internal/Lambda;", "<init>", "(I)V", true, object_noop),
     ne!("Lkotlin/jvm/internal/FunctionReferenceImpl;", "<init>", "(ILjava/lang/Object;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;I)V", true, object_noop),

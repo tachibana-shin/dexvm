@@ -97,6 +97,13 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ),
     ne!(
         "Ljava/lang/Short;",
+        "hashCode",
+        "(S)I",
+        false,
+        integer_hash_code
+    ),
+    ne!(
+        "Ljava/lang/Short;",
         "toString",
         "()Ljava/lang/String;",
         true,

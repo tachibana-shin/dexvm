@@ -1,6 +1,7 @@
 //! java.time.LocalDate host shims. Dates are dd/MM/yyyy, carrying days
 //! since epoch.
 
+use super::super::civil::{civil_from_days, days_from_civil, DAY_MS};
 use crate::vm::native::*;
 
 /// LocalDate.parse(str, dtf) -> LocalDate carrying days-since-epoch.
@@ -19,6 +20,60 @@ pub(crate) fn localdate_at_start_of_day(vm: &mut Vm, args: &[JValue]) -> R {
     // fixed +07:00 offset for the HCM zone the extensions use
     let millis = i64::from(days) * 86_400_000 - 7 * 3_600_000;
     alloc(vm, "Ljava/time/ZonedDateTime;", Native::EpochMillis(millis))
+}
+
+pub(crate) fn localdate_now(vm: &mut Vm, _args: &[JValue]) -> R {
+    let days = now_millis().div_euclid(DAY_MS) as u32;
+    alloc(vm, "Ljava/time/LocalDate;", Native::LocalDay(days))
+}
+
+pub(crate) fn localdate_of(vm: &mut Vm, args: &[JValue]) -> R {
+    let y = int_of(vm, args[0]);
+    let m = int_of(vm, args[1]);
+    let d = int_of(vm, args[2]);
+    let days = days_from_civil(y, m, d) as u32;
+    alloc(vm, "Ljava/time/LocalDate;", Native::LocalDay(days))
+}
+
+pub(crate) fn localdate_parse_iso(vm: &mut Vm, args: &[JValue]) -> R {
+    let text = charseq_of(vm, args[0])?;
+    let parts: Vec<&str> = text.trim().split('-').collect();
+    let (Some(y), Some(m), Some(d)) = (
+        parts.first().and_then(|p| p.parse::<i32>().ok()),
+        parts.get(1).and_then(|p| p.parse::<i32>().ok()),
+        parts.get(2).and_then(|p| p.parse::<i32>().ok()),
+    ) else {
+        return Err(NatErr::Throw(vm.err_iae(format!("unparseable date: {text}"))));
+    };
+    let days = days_from_civil(y, m, d) as u32;
+    alloc(vm, "Ljava/time/LocalDate;", Native::LocalDay(days))
+}
+
+pub(crate) fn localdate_minus_days(vm: &mut Vm, args: &[JValue]) -> R {
+    let days = match payload(vm, args[0]) {
+        Some(Native::LocalDay(d)) => *d,
+        _ => return Err(npe(vm)),
+    };
+    let amount = long_of(vm, args[1]);
+    let new_days = (i64::from(days) - amount).max(0) as u32;
+    alloc(vm, "Ljava/time/LocalDate;", Native::LocalDay(new_days))
+}
+
+pub(crate) fn localdate_get_year(vm: &mut Vm, args: &[JValue]) -> R {
+    let days = match payload(vm, args[0]) {
+        Some(Native::LocalDay(d)) => *d,
+        _ => return Err(npe(vm)),
+    };
+    Ok(JValue::Int(civil_from_days(i64::from(days)).0))
+}
+
+pub(crate) fn localdate_at_start_of_day_noarg(vm: &mut Vm, args: &[JValue]) -> R {
+    let days = match payload(vm, args[0]) {
+        Some(Native::LocalDay(d)) => *d,
+        _ => return Err(npe(vm)),
+    };
+    let millis = i64::from(days) * DAY_MS;
+    alloc(vm, "Ljava/time/LocalDateTime;", Native::EpochMillis(millis))
 }
 
 /// days since 1970-01-01 for a dd/MM/yyyy string.
@@ -58,5 +113,54 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/time/ZoneId;)Ljava/time/ZonedDateTime;",
         true,
         localdate_at_start_of_day
+    ),
+    ne!(
+        "Ljava/time/LocalDate;",
+        "atStartOfDay",
+        "()Ljava/time/LocalDateTime;",
+        true,
+        localdate_at_start_of_day_noarg
+    ),
+    ne!(
+        "Ljava/time/LocalDate;",
+        "now",
+        "()Ljava/time/LocalDate;",
+        false,
+        localdate_now
+    ),
+    ne!(
+        "Ljava/time/LocalDate;",
+        "now",
+        "(Ljava/time/ZoneId;)Ljava/time/LocalDate;",
+        false,
+        localdate_now
+    ),
+    ne!(
+        "Ljava/time/LocalDate;",
+        "of",
+        "(III)Ljava/time/LocalDate;",
+        false,
+        localdate_of
+    ),
+    ne!(
+        "Ljava/time/LocalDate;",
+        "parse",
+        "(Ljava/lang/CharSequence;)Ljava/time/LocalDate;",
+        false,
+        localdate_parse_iso
+    ),
+    ne!(
+        "Ljava/time/LocalDate;",
+        "minusDays",
+        "(J)Ljava/time/LocalDate;",
+        true,
+        localdate_minus_days
+    ),
+    ne!(
+        "Ljava/time/LocalDate;",
+        "getYear",
+        "()I",
+        true,
+        localdate_get_year
     ),
 ];

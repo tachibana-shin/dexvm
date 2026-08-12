@@ -209,6 +209,33 @@ pub(crate) fn list_iterator(vm: &mut Vm, args: &[JValue]) -> R {
     )
 }
 
+pub(crate) fn list_iterator_at(vm: &mut Vm, args: &[JValue]) -> R {
+    let list = args[0].as_obj();
+    let idx = int_of(vm, args[1]).max(0) as usize;
+    alloc(
+        vm,
+        "Ljava/util/ListIterator;",
+        Native::Iter(IterKind::List { list, idx }),
+    )
+}
+
+pub(crate) fn list_sublist(vm: &mut Vm, args: &[JValue]) -> R {
+    let from = int_of(vm, args[1]);
+    let to = int_of(vm, args[2]);
+    let Some(Native::List(items)) = payload(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    if from < 0 || to < from || to as usize > items.len() {
+        return Err(ioobe(vm, to));
+    }
+    let slice = items[from as usize..to as usize].to_vec();
+    list_alloc(vm, slice)
+}
+
+pub(crate) fn list_ensure_capacity(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+
 pub(crate) fn list_to_array(vm: &mut Vm, args: &[JValue]) -> R {
     let items = match payload(vm, args[0]) {
         Some(Native::List(items)) => items.clone(),
@@ -416,6 +443,62 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         true,
         list_get
     ),
+    ne!(
+        "Ljava/util/AbstractList;",
+        "remove",
+        "(I)Ljava/lang/Object;",
+        true,
+        list_remove_at
+    ),
+    ne!(
+        "Ljava/util/AbstractList;",
+        "subList",
+        "(II)Ljava/util/List;",
+        true,
+        list_sublist
+    ),
+    ne!(
+        "Ljava/util/AbstractCollection;",
+        "add",
+        "(Ljava/lang/Object;)Z",
+        true,
+        coll_generic_add
+    ),
+    ne!(
+        "Ljava/util/AbstractCollection;",
+        "remove",
+        "(Ljava/lang/Object;)Z",
+        true,
+        coll_generic_remove
+    ),
+    ne!(
+        "Ljava/util/AbstractCollection;",
+        "clear",
+        "()V",
+        true,
+        coll_generic_clear
+    ),
+    ne!(
+        "Ljava/util/AbstractCollection;",
+        "contains",
+        "(Ljava/lang/Object;)Z",
+        true,
+        coll_generic_contains
+    ),
+    ne!(
+        "Ljava/util/AbstractCollection;",
+        "containsAll",
+        "(Ljava/util/Collection;)Z",
+        true,
+        coll_generic_contains_all
+    ),
+    ne!(
+        "Ljava/util/AbstractCollection;",
+        "addAll",
+        "(Ljava/util/Collection;)Z",
+        true,
+        coll_generic_add_all
+    ),
     ne!("Ljava/util/ArrayList;", "<init>", "()V", true, list_init),
     ne!("Ljava/util/ArrayList;", "<init>", "(I)V", true, list_init),
     ne!(
@@ -513,6 +596,27 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ),
     ne!(
         "Ljava/util/ArrayList;",
+        "listIterator",
+        "(I)Ljava/util/ListIterator;",
+        true,
+        list_iterator_at
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "subList",
+        "(II)Ljava/util/List;",
+        true,
+        list_sublist
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
+        "ensureCapacity",
+        "(I)V",
+        true,
+        list_ensure_capacity
+    ),
+    ne!(
+        "Ljava/util/ArrayList;",
         "toArray",
         "()[Ljava/lang/Object;",
         true,
@@ -566,5 +670,130 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/util/Comparator;)V",
         true,
         list_sort_cmp
+    ),
+];
+
+/// java.util.concurrent.CopyOnWriteArrayList: extends Object directly (not
+/// ArrayList), so it needs its own entries even though they share the same
+/// `Native::List`-backed implementations.
+pub(crate) const COW_TABLE: &[NativeEntry] = &[
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "<init>",
+        "()V",
+        true,
+        list_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "<init>",
+        "(Ljava/util/Collection;)V",
+        true,
+        list_init
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "size",
+        "()I",
+        true,
+        list_size
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "isEmpty",
+        "()Z",
+        true,
+        list_is_empty
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "get",
+        "(I)Ljava/lang/Object;",
+        true,
+        list_get
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "set",
+        "(ILjava/lang/Object;)Ljava/lang/Object;",
+        true,
+        list_set
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "add",
+        "(Ljava/lang/Object;)Z",
+        true,
+        list_add
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "add",
+        "(ILjava/lang/Object;)V",
+        true,
+        list_add_at
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "remove",
+        "(I)Ljava/lang/Object;",
+        true,
+        list_remove_at
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "remove",
+        "(Ljava/lang/Object;)Z",
+        true,
+        list_remove_obj
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "clear",
+        "()V",
+        true,
+        list_clear
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "contains",
+        "(Ljava/lang/Object;)Z",
+        true,
+        list_contains
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "indexOf",
+        "(Ljava/lang/Object;)I",
+        true,
+        list_index_of
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "iterator",
+        "()Ljava/util/Iterator;",
+        true,
+        list_iterator
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "toArray",
+        "()[Ljava/lang/Object;",
+        true,
+        list_to_array
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "addAll",
+        "(Ljava/util/Collection;)Z",
+        true,
+        list_add_all
+    ),
+    ne!(
+        "Ljava/util/concurrent/CopyOnWriteArrayList;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        list_to_string
     ),
 ];

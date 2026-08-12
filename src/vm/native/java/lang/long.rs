@@ -48,6 +48,18 @@ pub(crate) fn long_hash_code(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int((l ^ (l >> 32)) as i32))
 }
 
+pub(crate) fn long_rotate_left(vm: &mut Vm, args: &[JValue]) -> R {
+    let v = long_of(vm, args[0]) as u64;
+    let d = int_of(vm, args[1]);
+    Ok(JValue::Long(v.rotate_left(d.rem_euclid(64) as u32) as i64))
+}
+
+pub(crate) fn long_rotate_right(vm: &mut Vm, args: &[JValue]) -> R {
+    let v = long_of(vm, args[0]) as u64;
+    let d = int_of(vm, args[1]);
+    Ok(JValue::Long(v.rotate_right(d.rem_euclid(64) as u32) as i64))
+}
+
 pub(crate) fn long_to_string(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(new_str(vm, &long_of(vm, args[0]).to_string()))
 }
@@ -203,6 +215,27 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         long_equals
     ),
     ne!("Ljava/lang/Long;", "hashCode", "()I", true, long_hash_code),
+    ne!(
+        "Ljava/lang/Long;",
+        "hashCode",
+        "(J)I",
+        false,
+        long_hash_code
+    ),
+    ne!(
+        "Ljava/lang/Long;",
+        "rotateLeft",
+        "(JI)J",
+        false,
+        long_rotate_left
+    ),
+    ne!(
+        "Ljava/lang/Long;",
+        "rotateRight",
+        "(JI)J",
+        false,
+        long_rotate_right
+    ),
     ne!(
         "Ljava/lang/Long;",
         "toString",

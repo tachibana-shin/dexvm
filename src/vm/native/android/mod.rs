@@ -440,6 +440,8 @@ pub(crate) fn prefs_obj(vm: &mut Vm, args: &[JValue]) -> R {
                 default_value: JValue::Null,
                 enabled: true,
                 visible: true,
+                entries: Vec::new(),
+                entry_values: Vec::new(),
             }
         });
     Ok(JValue::Null)
@@ -469,6 +471,98 @@ pub(crate) fn prefs_add_preference(vm: &mut Vm, args: &[JValue]) -> R {
     };
     children.push(args[1]);
     Ok(JValue::Int(1))
+}
+
+pub(crate) fn prefs_set_key(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Preference { key, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *key = args.get(1).copied();
+    Ok(JValue::Null)
+}
+
+pub(crate) fn prefs_get_key(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload(vm, args[0]) {
+        Some(Native::Preference { key, .. }) => Ok(key.unwrap_or(JValue::Null)),
+        _ => Err(npe(vm)),
+    }
+}
+
+pub(crate) fn prefs_set_enabled(vm: &mut Vm, args: &[JValue]) -> R {
+    let flag = args.get(1).map(|v| v.as_int() != 0).unwrap_or(true);
+    let Some(Native::Preference { enabled, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *enabled = flag;
+    Ok(JValue::Null)
+}
+
+pub(crate) fn prefs_set_visible(vm: &mut Vm, args: &[JValue]) -> R {
+    let flag = args.get(1).map(|v| v.as_int() != 0).unwrap_or(true);
+    let Some(Native::Preference { visible, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *visible = flag;
+    Ok(JValue::Null)
+}
+
+fn array_elems(vm: &Vm, v: JValue) -> Vec<JValue> {
+    match payload(vm, v) {
+        Some(Native::Array(ArrayData::Obj(items))) => items.clone(),
+        _ => Vec::new(),
+    }
+}
+
+pub(crate) fn prefs_set_entries(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = args.get(1).map(|v| array_elems(vm, *v)).unwrap_or_default();
+    let Some(Native::Preference { entries, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *entries = items;
+    Ok(JValue::Null)
+}
+
+pub(crate) fn prefs_set_entry_values(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = args.get(1).map(|v| array_elems(vm, *v)).unwrap_or_default();
+    let Some(Native::Preference { entry_values, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *entry_values = items;
+    Ok(JValue::Null)
+}
+
+pub(crate) fn prefs_get_entries(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = match payload(vm, args[0]) {
+        Some(Native::Preference { entries, .. }) => entries.clone(),
+        _ => return Err(npe(vm)),
+    };
+    alloc_arr(vm, "Ljava/lang/CharSequence;", items.len(), move || {
+        ArrayData::Obj(items)
+    })
+}
+
+pub(crate) fn prefs_get_entry_values(vm: &mut Vm, args: &[JValue]) -> R {
+    let items = match payload(vm, args[0]) {
+        Some(Native::Preference { entry_values, .. }) => entry_values.clone(),
+        _ => return Err(npe(vm)),
+    };
+    alloc_arr(vm, "Ljava/lang/CharSequence;", items.len(), move || {
+        ArrayData::Obj(items)
+    })
+}
+
+pub(crate) fn prefs_find_index_of_value(vm: &mut Vm, args: &[JValue]) -> R {
+    let target = jstr(vm, args[1]).unwrap_or_default();
+    let items = match payload(vm, args[0]) {
+        Some(Native::Preference { entry_values, .. }) => entry_values.clone(),
+        _ => return Err(npe(vm)),
+    };
+    for (i, v) in items.iter().enumerate() {
+        if jstr(vm, *v).unwrap_or_default() == target {
+            return Ok(JValue::Int(i as i32));
+        }
+    }
+    Ok(JValue::Int(-1))
 }
 
 /// `Context.getCacheDir() -> File` backed by a real per-VM host directory
@@ -2060,7 +2154,7 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "Landroid/webkit/WebView;",
         "resumeTimers",
         "()V",
-        false,
+        true,
         ui_noop
     ),
     ne!(

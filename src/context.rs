@@ -271,6 +271,7 @@ impl Context {
                     default_value,
                     enabled,
                     visible,
+                    ..
                 }) => Some(SettingDefinition {
                     key: text(vm, *key),
                     title: text(vm, *title),
