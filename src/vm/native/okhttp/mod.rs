@@ -708,8 +708,19 @@ pub(crate) fn cache_control_no_cache(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 /// `CacheControl$Builder.<init>()` — fresh builder, max-age in seconds.
-pub(crate) fn cache_control_builder_init(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
+pub(crate) fn cache_control_builder_init(vm: &mut Vm, args: &[JValue]) -> R {
+    let state = Native::CacheControlBuilder {
+        max_age: -1,
+        no_cache: false,
+        no_store: false,
+        max_stale: -1,
+    };
+    if let Some(JValue::Obj(this)) = args.first().copied() {
+        vm.arena.objects[this as usize].native = Some(state);
+        Ok(JValue::Null)
+    } else {
+        alloc(vm, "Lokhttp3/CacheControl$Builder;", state)
+    }
 }
 
 /// `CacheControl$Builder.maxAge-LRDsOJo(J)` — kotlin.time.Duration is the

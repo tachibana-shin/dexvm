@@ -1,31 +1,31 @@
 //! Kotlin Pair/Triple/Tuples registrations.
 use crate::vm::native::*;
 
-pub(crate) fn tupled_to(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn tupled_to(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Lkotlin/Pair;", Native::Pair(args[0], args[1]))
 }
 
-pub(crate) fn pair_get_first(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn pair_get_first(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::Pair(a, _)) = payload(vm, args[0]) else {
         return Err(npe(vm));
     };
     Ok(*a)
 }
 
-pub(crate) fn pair_get_second(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn pair_get_second(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(Native::Pair(_, b)) = payload(vm, args[0]) else {
         return Err(npe(vm));
     };
     Ok(*b)
 }
 
-pub(crate) fn pair_init(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn pair_init(vm: &mut Vm, args: &[JValue]) -> R {
     let this = args[0].as_obj();
     vm.arena.objects[this as usize].native = Some(Native::Pair(args[1], args[2]));
     Ok(JValue::Null)
 }
 
-pub(crate) fn tripled_to(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn tripled_to(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(
         vm,
         "Lkotlin/Triple;",
@@ -44,25 +44,25 @@ fn triple_get(vm: &mut Vm, args: &[JValue], which: u8) -> R {
     }
 }
 
-pub(crate) fn triple_get_first(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn triple_get_first(vm: &mut Vm, args: &[JValue]) -> R {
     triple_get(vm, args, 0)
 }
-pub(crate) fn triple_get_second(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn triple_get_second(vm: &mut Vm, args: &[JValue]) -> R {
     triple_get(vm, args, 1)
 }
-pub(crate) fn triple_get_third(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn triple_get_third(vm: &mut Vm, args: &[JValue]) -> R {
     triple_get(vm, args, 2)
 }
-pub(crate) fn triple_component1(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn triple_component1(vm: &mut Vm, args: &[JValue]) -> R {
     triple_get_first(vm, args)
 }
-pub(crate) fn triple_component2(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn triple_component2(vm: &mut Vm, args: &[JValue]) -> R {
     triple_get_second(vm, args)
 }
-pub(crate) fn triple_component3(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn triple_component3(vm: &mut Vm, args: &[JValue]) -> R {
     triple_get_third(vm, args)
 }
-pub(crate) fn triple_init(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn triple_init(vm: &mut Vm, args: &[JValue]) -> R {
     vm.arena.objects[args[0].as_obj() as usize].native =
         Some(Native::Triple(args[1], args[2], args[3]));
     Ok(JValue::Null)

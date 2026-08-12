@@ -1,0 +1,101 @@
+//! Kotlin runtime support classes outside text/collections APIs.
+pub(super) fn object_noop(_vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(JValue::Null)
+}
+use crate::vm::native::*;
+
+pub(super) fn enum_entries(vm: &mut Vm, args: &[JValue]) -> R {
+    let entries = coll_elems(vm, args[0])?;
+    list_alloc(vm, entries)
+}
+pub(super) fn boxing_box_boolean(vm: &mut Vm, args: &[JValue]) -> R {
+    boxed(
+        vm,
+        "Ljava/lang/Boolean;",
+        Native::BoolBox(int_of(vm, args[0]) != 0),
+    )
+}
+pub(super) fn boxing_box_int(vm: &mut Vm, args: &[JValue]) -> R {
+    boxed(
+        vm,
+        "Ljava/lang/Integer;",
+        Native::IntBox(int_of(vm, args[0])),
+    )
+}
+pub(super) fn boxing_identity(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+pub(super) fn kotlin_random_default_next_int(vm: &mut Vm, args: &[JValue]) -> R {
+    let (from, until) = if args.len() >= 2 {
+        (args[0].as_int(), args[1].as_int())
+    } else {
+        (0, args[0].as_int())
+    };
+    if until <= from {
+        return Err(NatErr::Throw(vm.throwable_of(
+            "Ljava/lang/IllegalArgumentException;",
+            "empty random range",
+        )));
+    }
+    let seed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.subsec_nanos());
+    Ok(JValue::Int(from + (seed % (until - from) as u32) as i32))
+}
+pub(super) fn kotlin_reflection_class(_vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(args[0])
+}
+pub(super) fn coroutines_suspended(vm: &mut Vm, _args: &[JValue]) -> R {
+    Ok(opaque_inst(vm, "Ljava/lang/Object;"))
+}
+
+pub(super) fn comparisons_compare_values(vm: &mut Vm, args: &[JValue]) -> R {
+    Ok(JValue::Int(java_cmp(vm, args[0], args[1])? as i32))
+}
+
+pub(super) fn comparisons_max_of(vm: &mut Vm, args: &[JValue]) -> R {
+    let a = args[0];
+    let b = args[1];
+    match java_cmp(vm, a, b)? {
+        Ordering::Less => Ok(b),
+        _ => Ok(a),
+    }
+}
+
+pub(super) fn comparisons_max_of3(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut best = args[0];
+    for v in [args[1], args[2]] {
+        if java_cmp(vm, v, best)? == Ordering::Greater {
+            best = v;
+        }
+    }
+    Ok(best)
+}
+
+pub(crate) fn opaque_inst(vm: &mut Vm, desc: &str) -> JValue {
+    let Ok(class) = vm.ensure_class_by_desc(desc) else {
+        return JValue::Null;
+    };
+    JValue::Obj(vm.arena.alloc(class, Vec::new(), Some(Native::Opaque)))
+}
+
+pub(crate) const TABLE: &[NativeEntry] = &[
+    ne!("Lkotlin/NoWhenBranchMatchedException;", "<init>", "()V", true, object_noop),
+    ne!("Lkotlin/enums/EnumEntriesKt;", "enumEntries", "([Ljava/lang/Enum;)Lkotlin/enums/EnumEntries;", false, enum_entries),
+    ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxBoolean", "(Z)Ljava/lang/Boolean;", false, boxing_box_boolean),
+    ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxInt", "(I)Ljava/lang/Integer;", false, boxing_box_int),
+    ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxFloat", "(F)Ljava/lang/Float;", false, boxing_identity),
+    ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxLong", "(J)Ljava/lang/Long;", false, boxing_identity),
+    ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxChar", "(C)Ljava/lang/Character;", false, boxing_identity),
+    ne!("Lkotlin/jvm/internal/Reflection;", "getOrCreateKotlinClass", "(Ljava/lang/Class;)Lkotlin/reflect/KClass;", false, kotlin_reflection_class),
+    ne!("Lkotlin/jvm/internal/Reflection;", "typeOf", "(Ljava/lang/Class;)Lkotlin/reflect/KType;", false, kotlin_reflection_class),
+    ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of),
+    ne!("Lkotlin/comparisons/ComparisonsKt;", "maxOf", "(Ljava/lang/Comparable;Ljava/lang/Comparable;Ljava/lang/Comparable;)Ljava/lang/Comparable;", false, comparisons_max_of3),
+    ne!("Lkotlin/comparisons/ComparisonsKt;", "compareValues", "(Ljava/lang/Comparable;Ljava/lang/Comparable;)I", false, comparisons_compare_values),
+    ne!("Lkotlin/random/Random$Default;", "nextInt", "(I)I", false, kotlin_random_default_next_int),
+    ne!("Lkotlin/random/Random$Default;", "nextInt", "(II)I", false, kotlin_random_default_next_int),
+    ne!("Lkotlin/jvm/internal/DefaultConstructorMarker;", "<init>", "()V", true, object_noop),
+    ne!("Lkotlin/jvm/internal/Lambda;", "<init>", "(I)V", true, object_noop),
+    ne!("Lkotlin/jvm/internal/FunctionReferenceImpl;", "<init>", "(ILjava/lang/Object;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;I)V", true, object_noop),
+    ne!("Lkotlin/coroutines/intrinsics/IntrinsicsKt;", "getCOROUTINE_SUSPENDED", "()Ljava/lang/Object;", false, coroutines_suspended),
+];

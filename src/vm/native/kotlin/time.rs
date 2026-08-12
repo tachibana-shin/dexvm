@@ -1,5 +1,5 @@
 //! Kotlin time value classes and instant helpers.
-use super::*;
+use crate::vm::native::*;
 
 fn unit_millis(vm: &mut Vm, v: JValue) -> Result<i64, NatErr> {
     if v.is_null_ref() {
@@ -13,34 +13,34 @@ fn unit_millis(vm: &mut Vm, v: JValue) -> Result<i64, NatErr> {
     })
 }
 
-pub(crate) fn duration_get_zero(_vm: &mut Vm, _args: &[JValue]) -> R {
+pub(super) fn duration_get_zero(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Long(0))
 }
-pub(crate) fn duration_to_duration_int(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn duration_to_duration_int(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Long(
         int_of(vm, args[0]) as i64 * unit_millis(vm, args[1])?,
     ))
 }
-pub(crate) fn duration_to_duration_long(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn duration_to_duration_long(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Long(
         long_of(vm, args[0]) * unit_millis(vm, args[1])?,
     ))
 }
 
-pub(crate) fn kotlin_instant_to_epoch_millis(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn kotlin_instant_to_epoch_millis(vm: &mut Vm, args: &[JValue]) -> R {
     match payload(vm, args[0]) {
         Some(Native::EpochMillis(m)) => Ok(JValue::Long(*m)),
         _ => Err(npe(vm)),
     }
 }
-pub(crate) fn kotlin_instant_now(vm: &mut Vm, _args: &[JValue]) -> R {
+pub(super) fn kotlin_instant_now(vm: &mut Vm, _args: &[JValue]) -> R {
     let millis = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|_| iae(vm, "clock before epoch"))?
         .as_millis() as i64;
     alloc(vm, "Lkotlin/time/Instant;", Native::EpochMillis(millis))
 }
-pub(crate) fn kotlin_instant_minus(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn kotlin_instant_minus(vm: &mut Vm, args: &[JValue]) -> R {
     let base = match payload(vm, args[0]) {
         Some(Native::EpochMillis(m)) => *m,
         _ => return Err(npe(vm)),
@@ -51,7 +51,7 @@ pub(crate) fn kotlin_instant_minus(vm: &mut Vm, args: &[JValue]) -> R {
         Native::EpochMillis(base.saturating_sub(long_of(vm, args[1]))),
     )
 }
-pub(crate) fn kotlin_instant_parse_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+pub(super) fn kotlin_instant_parse_or_null(vm: &mut Vm, args: &[JValue]) -> R {
     let text = jstr(vm, args[1]).unwrap_or_default();
     let Some((date, time)) = text.split_once('T') else {
         return Ok(JValue::Null);
@@ -77,47 +77,61 @@ pub(crate) fn kotlin_instant_parse_or_null(vm: &mut Vm, args: &[JValue]) -> R {
     if !(1..=12).contains(&m) || !(1..=31).contains(&day) || h > 23 || min > 59 || sec > 60 {
         return Ok(JValue::Null);
     }
-    let (y2, m2) = (y - i64::from(m <= 2), if m <= 2 { m + 12 } else { m });
-    let days =
-        365 * y2 + y2 / 4 - y2 / 100 + y2 / 400 + (153 * (m2 - 3) + 2) / 5 + day - 1 - 719468;
-    let millis = (days * 86_400 + h * 3600 + min * 60 + sec) * 1000
-        + frac.parse::<f64>().unwrap_or(0.0) as i64 * 1000;
+    // Howard Hinnant's civil-date conversion, using Euclidean division so
+    // dates before the Unix epoch are handled correctly as well.
+    let adjusted_year = y - i64::from(m <= 2);
+    let era = adjusted_year.div_euclid(400);
+    let year_of_era = adjusted_year - era * 400;
+    let shifted_month = m + if m > 2 { -3 } else { 9 };
+    let day_of_year = (153 * shifted_month + 2) / 5 + day - 1;
+    let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+    let days = era * 146_097 + day_of_era - 719_468;
+    let fraction_millis = frac
+        .bytes()
+        .take(3)
+        .try_fold((0_i64, 0_u8), |(value, digits), byte| {
+            byte.is_ascii_digit()
+                .then_some((value * 10 + i64::from(byte - b'0'), digits + 1))
+        })
+        .map(|(value, digits)| value * 10_i64.pow(u32::from(3 - digits)))
+        .unwrap_or(0);
+    let millis = (days * 86_400 + h * 3600 + min * 60 + sec) * 1000 + fraction_millis;
     alloc(vm, "Lkotlin/time/Instant;", Native::EpochMillis(millis))
 }
 
-pub(crate) fn keiyoushi_duration_minus(vm: &mut Vm, args: &[JValue]) -> R {
+fn keiyoushi_duration_minus(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Long(long_of(vm, args[0]) - long_of(vm, args[1])))
 }
-pub(crate) fn keiyoushi_duration_compare(vm: &mut Vm, args: &[JValue]) -> R {
+fn keiyoushi_duration_compare(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(
         long_of(vm, args[0]).cmp(&long_of(vm, args[1])) as i32
     ))
 }
-pub(crate) fn keiyoushi_duration_equals(vm: &mut Vm, args: &[JValue]) -> R {
+fn keiyoushi_duration_equals(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(i32::from(
         long_of(vm, args[0]) == long_of(vm, args[1]),
     )))
 }
-pub(crate) fn duration_box(vm: &mut Vm, args: &[JValue]) -> R {
+fn duration_box(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(
         vm,
         "Lkotlin/time/Duration;",
         Native::Duration(long_of(vm, args[0])),
     )
 }
-pub(crate) fn duration_unbox(vm: &mut Vm, args: &[JValue]) -> R {
+fn duration_unbox(vm: &mut Vm, args: &[JValue]) -> R {
     match payload(vm, args[0]) {
         Some(Native::Duration(raw)) => Ok(JValue::Long(*raw)),
         _ => Err(npe(vm)),
     }
 }
-pub(crate) fn duration_nanos_impl(vm: &mut Vm, args: &[JValue]) -> R {
+fn duration_nanos_impl(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Long(long_of(vm, args[0]).saturating_mul(1_000_000)))
 }
-pub(crate) fn duration_millis_impl(vm: &mut Vm, args: &[JValue]) -> R {
+fn duration_millis_impl(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Long(long_of(vm, args[0])))
 }
-pub(crate) fn duration_compare_to(vm: &mut Vm, args: &[JValue]) -> R {
+fn duration_compare_to(vm: &mut Vm, args: &[JValue]) -> R {
     let a = match payload(vm, args[0]) {
         Some(Native::Duration(raw)) => *raw,
         _ => return Err(npe(vm)),

@@ -38,7 +38,7 @@ ENTRY_RE = re.compile(
     r'ne!\(\s*"([^"]+;)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"'
     r'\s*,\s*\w+\s*,\s*([\w:]+)\s*,?\s*\)'
 )
-FN_RE = re.compile(r'^(?:pub(?:\(crate\))?\s+)?fn\s+(\w+)', re.M)
+FN_RE = re.compile(r'^(?:pub(?:\([^)]*\))?\s+)?fn\s+(\w+)', re.M)
 # field macros (sm_get_field! / sm_set_field! / sc_get_field! / ...) define fns
 MACRO_FN_RE = re.compile(r'^\w+!\s*\(\s*\w+,', re.M)
 

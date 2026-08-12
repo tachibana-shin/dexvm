@@ -1,27 +1,33 @@
 //! Kotlin Result inline-class helpers.
 use crate::vm::native::*;
 
-pub(crate) fn constructor_impl(_vm: &mut Vm, args: &[JValue]) -> R {
+fn constructor_impl(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
-pub(crate) fn is_failure_impl(vm: &mut Vm, args: &[JValue]) -> R {
+fn is_failure_impl(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(i32::from(matches!(
         payload(vm, args[0]),
         Some(Native::ResultFailure(_))
     ))))
 }
-pub(crate) fn create_failure(vm: &mut Vm, args: &[JValue]) -> R {
+fn create_failure(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(
         vm,
         "Lkotlin/Result$Failure;",
         Native::ResultFailure(args[0]),
     )
 }
-pub(crate) fn exception_or_null(vm: &mut Vm, args: &[JValue]) -> R {
+fn exception_or_null(vm: &mut Vm, args: &[JValue]) -> R {
     match payload(vm, args[0]) {
         Some(Native::ResultFailure(error)) => Ok(*error),
         _ => Ok(JValue::Null),
     }
+}
+fn throw_on_failure(vm: &mut Vm, args: &[JValue]) -> R {
+    if let Some(Native::ResultFailure(value)) = payload(vm, args[0]) {
+        return Err(NatErr::Throw(value.as_obj()));
+    }
+    Ok(JValue::Null)
 }
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
@@ -51,5 +57,12 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "(Ljava/lang/Object;)Ljava/lang/Throwable;",
         false,
         exception_or_null
+    ),
+    ne!(
+        "Lkotlin/ResultKt;",
+        "throwOnFailure",
+        "(Ljava/lang/Object;)V",
+        false,
+        throw_on_failure
     ),
 ];
