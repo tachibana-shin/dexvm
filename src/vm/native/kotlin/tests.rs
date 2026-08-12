@@ -502,3 +502,25 @@ fn array_regex_and_progression_bridges_are_real() {
         assert_eq!(s_of!(vm, regex_replace_first(vm, &[p, text, repl])), "a! x");
     });
 }
+
+#[test]
+fn common_string_and_collection_bridges_are_real() {
+    with_vm(|vm| {
+        let x = s(vm, "abcdef");
+        let take = stringskt_take(vm, &[x, JValue::Int(3)]).unwrap();
+        assert_eq!(jstr(vm, take).unwrap(), "abc");
+        let x = s(vm, "42");
+        let pad = stringskt_pad_start(vm, &[x, JValue::Int(4), JValue::Int('0' as i32)]).unwrap();
+        assert_eq!(jstr(vm, pad).unwrap(), "0042");
+        let x = s(vm, "abcd");
+        let drop = stringskt_drop_last(vm, &[x, JValue::Int(2)]).unwrap();
+        assert_eq!(jstr(vm, drop).unwrap(), "ab");
+        let a = s(vm, "b");
+        let b = s(vm, "a");
+        let list = list_alloc(vm, vec![a, b]).unwrap();
+        let sorted = collections_sorted(vm, &[list]).unwrap();
+        let items = coll_elems(vm, sorted).unwrap();
+        let first = items[0];
+        assert_eq!(jstr(vm, first).unwrap(), "a");
+    });
+}

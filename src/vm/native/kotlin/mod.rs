@@ -358,6 +358,15 @@ pub(crate) fn collections_reversed(vm: &mut Vm, args: &[JValue]) -> R {
     items.reverse();
     list_alloc(vm, items)
 }
+fn collections_to_list_iterable(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = coll_elems(vm, args[0])?;
+    list_alloc(vm, values)
+}
+fn collections_sorted(vm: &mut Vm, args: &[JValue]) -> R {
+    let mut values = coll_elems(vm, args[0])?;
+    values.sort_by(|a, b| java_cmp(vm, *a, *b).unwrap_or(Ordering::Equal));
+    list_alloc(vm, values)
+}
 
 fn collections_as_reversed(vm: &mut Vm, args: &[JValue]) -> R {
     collections_reversed(vm, args)
@@ -1552,6 +1561,46 @@ fn stringskt_contains_default(vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(found as i32))
 }
 
+fn stringskt_take(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    let n = int_of(vm, args[1]).max(0) as usize;
+    Ok(new_str(vm, &s.chars().take(n).collect::<String>()))
+}
+fn stringskt_pad_start(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    let n = int_of(vm, args[1]).max(0) as usize;
+    let pad = char::from_u32(int_of(vm, args[2]) as u32).unwrap_or(' ');
+    let len = s.chars().count();
+    let mut out = std::iter::repeat_n(pad, n.saturating_sub(len)).collect::<String>();
+    out.push_str(&s);
+    Ok(new_str(vm, &out))
+}
+fn stringskt_drop_last(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    let n = int_of(vm, args[1]).max(0) as usize;
+    Ok(new_str(
+        vm,
+        &s.chars()
+            .take(s.chars().count().saturating_sub(n))
+            .collect::<String>(),
+    ))
+}
+fn stringskt_replace_first_default(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = charseq_of(vm, args[0])?;
+    let from = charseq_of(vm, args[1])?;
+    let to = charseq_of(vm, args[2])?;
+    let ignore = args[3].as_int() != 0 && args[4].as_int() & 4 == 0;
+    let pos = if ignore {
+        s.to_lowercase().find(&from.to_lowercase())
+    } else {
+        s.find(&from)
+    };
+    let out = pos
+        .map(|i| format!("{}{}{}", &s[..i], to, &s[i + from.len()..]))
+        .unwrap_or(s);
+    Ok(new_str(vm, &out))
+}
+
 fn stringskt_replace_default(vm: &mut Vm, args: &[JValue]) -> R {
     let s = charseq_of(vm, args[0])?;
     let from = charseq_of(vm, args[1])?;
@@ -2005,6 +2054,8 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/ArraysKt;", "plus", "([B[B)[B", false, arrayskt_plus_bytes),
     ne!("Lkotlin/collections/ArraysKt;", "contains", "([Ljava/lang/Object;Ljava/lang/Object;)Z", false, arrayskt_contains),
     ne!("Lkotlin/collections/CollectionsKt;", "reversed", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_reversed),
+    ne!("Lkotlin/collections/CollectionsKt;", "toList", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_to_list_iterable),
+    ne!("Lkotlin/collections/CollectionsKt;", "sorted", "(Ljava/lang/Iterable;)Ljava/util/List;", false, collections_sorted),
     ne!("Lkotlin/collections/CollectionsKt;", "asReversed", "(Ljava/util/List;)Ljava/util/List;", false, collections_as_reversed),
     ne!("Lkotlin/collections/CollectionsKt;", "take", "(Ljava/lang/Iterable;I)Ljava/util/List;", false, collections_take),
     ne!("Lkotlin/collections/CollectionsKt;", "drop", "(Ljava/lang/Iterable;I)Ljava/util/List;", false, collections_drop),
@@ -2082,6 +2133,11 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/jvm/internal/DefaultConstructorMarker;", "<init>", "()V", true, object_noop),
     ne!("Lkotlin/jvm/internal/Lambda;", "<init>", "(I)V", true, object_noop),
     ne!("Lkotlin/text/StringsKt;", "contains$default", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;ZILjava/lang/Object;)Z", false, stringskt_contains_default),
+    ne!("Lkotlin/text/StringsKt;", "take", "(Ljava/lang/String;I)Ljava/lang/String;", false, stringskt_take),
+    ne!("Lkotlin/text/StringsKt;", "padStart", "(Ljava/lang/String;IC)Ljava/lang/String;", false, stringskt_pad_start),
+    ne!("Lkotlin/text/StringsKt;", "dropLast", "(Ljava/lang/String;I)Ljava/lang/String;", false, stringskt_drop_last),
+    ne!("Lkotlin/text/StringsKt;", "replaceFirst$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;", false, stringskt_replace_first_default),
+    ne!("Lkotlin/jvm/internal/FunctionReferenceImpl;", "<init>", "(ILjava/lang/Object;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;I)V", true, object_noop),
     ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;", false, stringskt_replace_default),
     ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;CCZILjava/lang/Object;)Ljava/lang/String;", false, stringskt_replace_char_default),
     ne!("Lkotlin/text/StringsKt;", "trimStart", "(Ljava/lang/String;[C)Ljava/lang/String;", false, stringskt_trim_start),
