@@ -375,3 +375,35 @@ fn duration_conversions() {
         assert_eq!(long_of(duration_get_zero(vm, &[]).unwrap()), 0);
     });
 }
+
+#[test]
+fn instant_and_match_result_bridges_keep_values() {
+    with_vm(|vm| {
+        let instant = alloc(vm, "Lkotlin/time/Instant;", Native::EpochMillis(1234)).unwrap();
+        assert_eq!(
+            kotlin_instant_to_epoch_millis(vm, &[instant]).unwrap(),
+            JValue::Long(1234)
+        );
+        let minus = kotlin_instant_minus(vm, &[instant, JValue::Long(234)]).unwrap();
+        assert_eq!(
+            kotlin_instant_to_epoch_millis(vm, &[minus]).unwrap(),
+            JValue::Long(1000)
+        );
+
+        let matcher = alloc(
+            vm,
+            "Lkotlin/text/MatcherMatchResult;",
+            Native::Matcher(MatcherState {
+                pattern: Regex::new("x").unwrap(),
+                text: "prefix".into(),
+                pos: 0,
+                last: Some((0, 3)),
+            }),
+        )
+        .unwrap();
+        let value = match_result_get_value(vm, &[matcher]).unwrap();
+        assert_eq!(jstr(vm, value).unwrap(), "pre");
+        let list = match_result_destructured_to_list(vm, &[matcher]).unwrap();
+        assert!(matches!(payload(vm, list), Some(Native::List(values)) if values.len() == 1));
+    });
+}
