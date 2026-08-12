@@ -34,7 +34,11 @@ fn biginteger_init_bytes(vm: &mut Vm, args: &[JValue]) -> R {
 
 fn biginteger_init_string(vm: &mut Vm, args: &[JValue]) -> R {
     let s = jstr(vm, args[1])?;
-    let radix = if args.len() > 2 { int_of(vm, args[2]) } else { 10 };
+    let radix = if args.len() > 2 {
+        int_of(vm, args[2])
+    } else {
+        10
+    };
     let value = BigInt::parse_bytes(s.trim().as_bytes(), radix as u32)
         .ok_or_else(|| NatErr::Throw(vm.err_nfe(format!("invalid BigInteger: {s}"))))?;
     set_this(vm, args[0], value)
@@ -63,9 +67,10 @@ fn biginteger_divide(vm: &mut Vm, args: &[JValue]) -> R {
     let a = big_of(vm, args[0]).ok_or_else(|| npe(vm))?;
     let b = big_of(vm, args[1]).ok_or_else(|| npe(vm))?;
     if b.is_zero() {
-        return Err(NatErr::Throw(
-            vm.throwable_of("Ljava/lang/ArithmeticException;", "BigInteger divide by zero"),
-        ));
+        return Err(NatErr::Throw(vm.throwable_of(
+            "Ljava/lang/ArithmeticException;",
+            "BigInteger divide by zero",
+        )));
     }
     alloc_big(vm, a / b)
 }
@@ -131,12 +136,26 @@ fn biginteger_mod_inverse(vm: &mut Vm, args: &[JValue]) -> R {
 fn biginteger_shift_left(vm: &mut Vm, args: &[JValue]) -> R {
     let a = big_of(vm, args[0]).ok_or_else(|| npe(vm))?;
     let n = int_of(vm, args[1]);
-    alloc_big(vm, if n >= 0 { a << n as u32 } else { a >> (-n) as u32 })
+    alloc_big(
+        vm,
+        if n >= 0 {
+            a << n as u32
+        } else {
+            a >> (-n) as u32
+        },
+    )
 }
 fn biginteger_shift_right(vm: &mut Vm, args: &[JValue]) -> R {
     let a = big_of(vm, args[0]).ok_or_else(|| npe(vm))?;
     let n = int_of(vm, args[1]);
-    alloc_big(vm, if n >= 0 { a >> n as u32 } else { a << (-n) as u32 })
+    alloc_big(
+        vm,
+        if n >= 0 {
+            a >> n as u32
+        } else {
+            a << (-n) as u32
+        },
+    )
 }
 fn biginteger_signum(vm: &mut Vm, args: &[JValue]) -> R {
     let a = big_of(vm, args[0]).ok_or_else(|| npe(vm))?;
@@ -219,38 +238,230 @@ fn biginteger_gcd(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/math/BigInteger;", "<init>", "([B)V", true, biginteger_init_bytes),
-    ne!("Ljava/math/BigInteger;", "<init>", "(Ljava/lang/String;)V", true, biginteger_init_string),
-    ne!("Ljava/math/BigInteger;", "<init>", "(Ljava/lang/String;I)V", true, biginteger_init_string),
-    ne!("Ljava/math/BigInteger;", "valueOf", "(J)Ljava/math/BigInteger;", false, biginteger_value_of),
-    ne!("Ljava/math/BigInteger;", "add", "(Ljava/math/BigInteger;)Ljava/math/BigInteger;", true, biginteger_add),
-    ne!("Ljava/math/BigInteger;", "subtract", "(Ljava/math/BigInteger;)Ljava/math/BigInteger;", true, biginteger_subtract),
-    ne!("Ljava/math/BigInteger;", "multiply", "(Ljava/math/BigInteger;)Ljava/math/BigInteger;", true, biginteger_multiply),
-    ne!("Ljava/math/BigInteger;", "divide", "(Ljava/math/BigInteger;)Ljava/math/BigInteger;", true, biginteger_divide),
-    ne!("Ljava/math/BigInteger;", "mod", "(Ljava/math/BigInteger;)Ljava/math/BigInteger;", true, biginteger_mod),
-    ne!("Ljava/math/BigInteger;", "remainder", "(Ljava/math/BigInteger;)Ljava/math/BigInteger;", true, biginteger_remainder),
-    ne!("Ljava/math/BigInteger;", "negate", "()Ljava/math/BigInteger;", true, biginteger_neg),
-    ne!("Ljava/math/BigInteger;", "abs", "()Ljava/math/BigInteger;", true, biginteger_abs),
-    ne!("Ljava/math/BigInteger;", "pow", "(I)Ljava/math/BigInteger;", true, biginteger_pow),
-    ne!("Ljava/math/BigInteger;", "modPow", "(Ljava/math/BigInteger;Ljava/math/BigInteger;)Ljava/math/BigInteger;", true, biginteger_mod_pow),
-    ne!("Ljava/math/BigInteger;", "modInverse", "(Ljava/math/BigInteger;)Ljava/math/BigInteger;", true, biginteger_mod_inverse),
-    ne!("Ljava/math/BigInteger;", "gcd", "(Ljava/math/BigInteger;)Ljava/math/BigInteger;", true, biginteger_gcd),
-    ne!("Ljava/math/BigInteger;", "shiftLeft", "(I)Ljava/math/BigInteger;", true, biginteger_shift_left),
-    ne!("Ljava/math/BigInteger;", "shiftRight", "(I)Ljava/math/BigInteger;", true, biginteger_shift_right),
-    ne!("Ljava/math/BigInteger;", "signum", "()I", true, biginteger_signum),
-    ne!("Ljava/math/BigInteger;", "testBit", "(I)Z", true, biginteger_test_bit),
-    ne!("Ljava/math/BigInteger;", "bitLength", "()I", true, biginteger_bit_length),
-    ne!("Ljava/math/BigInteger;", "intValue", "()I", true, biginteger_int_value),
-    ne!("Ljava/math/BigInteger;", "intValueExact", "()I", true, biginteger_int_value),
-    ne!("Ljava/math/BigInteger;", "longValue", "()J", true, biginteger_long_value),
-    ne!("Ljava/math/BigInteger;", "longValueExact", "()J", true, biginteger_long_value),
-    ne!("Ljava/math/BigInteger;", "doubleValue", "()D", true, biginteger_double_value),
-    ne!("Ljava/math/BigInteger;", "compareTo", "(Ljava/math/BigInteger;)I", true, biginteger_compare_to),
-    ne!("Ljava/math/BigInteger;", "equals", "(Ljava/lang/Object;)Z", true, biginteger_equals),
-    ne!("Ljava/math/BigInteger;", "toString", "()Ljava/lang/String;", true, biginteger_to_string),
-    ne!("Ljava/math/BigInteger;", "toString", "(I)Ljava/lang/String;", true, biginteger_to_string_radix),
-    ne!("Ljava/math/BigInteger;", "toByteArray", "()[B", true, biginteger_to_byte_array),
-    ne!("Ljava/math/BigInteger;", "hashCode", "()I", true, biginteger_hash_code),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "<init>",
+        "([B)V",
+        true,
+        biginteger_init_bytes
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        biginteger_init_string
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "<init>",
+        "(Ljava/lang/String;I)V",
+        true,
+        biginteger_init_string
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "valueOf",
+        "(J)Ljava/math/BigInteger;",
+        false,
+        biginteger_value_of
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "add",
+        "(Ljava/math/BigInteger;)Ljava/math/BigInteger;",
+        true,
+        biginteger_add
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "subtract",
+        "(Ljava/math/BigInteger;)Ljava/math/BigInteger;",
+        true,
+        biginteger_subtract
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "multiply",
+        "(Ljava/math/BigInteger;)Ljava/math/BigInteger;",
+        true,
+        biginteger_multiply
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "divide",
+        "(Ljava/math/BigInteger;)Ljava/math/BigInteger;",
+        true,
+        biginteger_divide
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "mod",
+        "(Ljava/math/BigInteger;)Ljava/math/BigInteger;",
+        true,
+        biginteger_mod
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "remainder",
+        "(Ljava/math/BigInteger;)Ljava/math/BigInteger;",
+        true,
+        biginteger_remainder
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "negate",
+        "()Ljava/math/BigInteger;",
+        true,
+        biginteger_neg
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "abs",
+        "()Ljava/math/BigInteger;",
+        true,
+        biginteger_abs
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "pow",
+        "(I)Ljava/math/BigInteger;",
+        true,
+        biginteger_pow
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "modPow",
+        "(Ljava/math/BigInteger;Ljava/math/BigInteger;)Ljava/math/BigInteger;",
+        true,
+        biginteger_mod_pow
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "modInverse",
+        "(Ljava/math/BigInteger;)Ljava/math/BigInteger;",
+        true,
+        biginteger_mod_inverse
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "gcd",
+        "(Ljava/math/BigInteger;)Ljava/math/BigInteger;",
+        true,
+        biginteger_gcd
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "shiftLeft",
+        "(I)Ljava/math/BigInteger;",
+        true,
+        biginteger_shift_left
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "shiftRight",
+        "(I)Ljava/math/BigInteger;",
+        true,
+        biginteger_shift_right
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "signum",
+        "()I",
+        true,
+        biginteger_signum
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "testBit",
+        "(I)Z",
+        true,
+        biginteger_test_bit
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "bitLength",
+        "()I",
+        true,
+        biginteger_bit_length
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "intValue",
+        "()I",
+        true,
+        biginteger_int_value
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "intValueExact",
+        "()I",
+        true,
+        biginteger_int_value
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "longValue",
+        "()J",
+        true,
+        biginteger_long_value
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "longValueExact",
+        "()J",
+        true,
+        biginteger_long_value
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "doubleValue",
+        "()D",
+        true,
+        biginteger_double_value
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "compareTo",
+        "(Ljava/math/BigInteger;)I",
+        true,
+        biginteger_compare_to
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "equals",
+        "(Ljava/lang/Object;)Z",
+        true,
+        biginteger_equals
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        biginteger_to_string
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "toString",
+        "(I)Ljava/lang/String;",
+        true,
+        biginteger_to_string_radix
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "toByteArray",
+        "()[B",
+        true,
+        biginteger_to_byte_array
+    ),
+    ne!(
+        "Ljava/math/BigInteger;",
+        "hashCode",
+        "()I",
+        true,
+        biginteger_hash_code
+    ),
 ];
 
 #[cfg(test)]

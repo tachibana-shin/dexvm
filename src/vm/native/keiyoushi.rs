@@ -890,7 +890,11 @@ pub(crate) fn mangas_page_copy_default(vm: &mut Vm, args: &[JValue]) -> R {
             _ => Vec::new(),
         }
     };
-    let has_next = if mask & 2 != 0 { orig_next } else { bool_of(vm, args[2]) };
+    let has_next = if mask & 2 != 0 {
+        orig_next
+    } else {
+        bool_of(vm, args[2])
+    };
     alloc(
         vm,
         "Leu/kanade/tachiyomi/source/model/MangasPage;",

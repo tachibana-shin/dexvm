@@ -7,9 +7,7 @@ mod normalizer;
 mod parseposition;
 mod simpledateformat;
 
-pub(crate) use normalizer::{
-    lazy_form_nfc, lazy_form_nfd, lazy_form_nfkc, lazy_form_nfkd,
-};
+pub(crate) use normalizer::{lazy_form_nfc, lazy_form_nfd, lazy_form_nfkc, lazy_form_nfkd};
 pub(crate) use simpledateformat::*;
 
 /// All java.text native tables, grouped for `register`.

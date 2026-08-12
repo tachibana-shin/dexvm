@@ -77,7 +77,10 @@ fn url_get_host(vm: &mut Vm, args: &[JValue]) -> R {
         .last()
         .and_then(|part| part.strip_prefix("//").or(Some(part)))
         .unwrap_or(&value);
-    Ok(new_str(vm, authority.split(['/', ':']).next().unwrap_or("")))
+    Ok(new_str(
+        vm,
+        authority.split(['/', ':']).next().unwrap_or(""),
+    ))
 }
 
 fn url_get_path(vm: &mut Vm, args: &[JValue]) -> R {
@@ -109,9 +112,27 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         false,
         url_decoder_decode
     ),
-    ne!("Ljava/net/URL;", "<init>", "(Ljava/lang/String;)V", true, url_init),
-    ne!("Ljava/net/URL;", "getHost", "()Ljava/lang/String;", true, url_get_host),
-    ne!("Ljava/net/URL;", "getPath", "()Ljava/lang/String;", true, url_get_path),
+    ne!(
+        "Ljava/net/URL;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        url_init
+    ),
+    ne!(
+        "Ljava/net/URL;",
+        "getHost",
+        "()Ljava/lang/String;",
+        true,
+        url_get_host
+    ),
+    ne!(
+        "Ljava/net/URL;",
+        "getPath",
+        "()Ljava/lang/String;",
+        true,
+        url_get_path
+    ),
 ];
 
 #[cfg(test)]

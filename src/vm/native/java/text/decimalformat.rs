@@ -79,7 +79,10 @@ fn decimal_format_format_double(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::Str(p)) => p.clone(),
         _ => return Err(npe(vm)),
     };
-    Ok(new_str(vm, &format_decimal(&pattern, double_of(vm, args[1]))))
+    Ok(new_str(
+        vm,
+        &format_decimal(&pattern, double_of(vm, args[1])),
+    ))
 }
 
 fn decimal_format_format_long(vm: &mut Vm, args: &[JValue]) -> R {

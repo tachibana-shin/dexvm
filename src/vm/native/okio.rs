@@ -12,7 +12,11 @@ use std::io::Write as _;
 
 fn byte_string_alloc(vm: &mut Vm, bytes: Vec<u8>) -> R {
     let data: Vec<i8> = bytes.iter().map(|&b| b as i8).collect();
-    alloc(vm, "Lokio/ByteString;", Native::Array(ArrayData::Byte(data)))
+    alloc(
+        vm,
+        "Lokio/ByteString;",
+        Native::Array(ArrayData::Byte(data)),
+    )
 }
 
 fn byte_string_decode_base64(vm: &mut Vm, args: &[JValue]) -> R {
@@ -133,7 +137,10 @@ fn okio_bytes_of(vm: &Vm, v: JValue) -> Option<Vec<u8>> {
 /// `BufferedSource` from then on.
 pub(crate) fn okio_inflater_source_init(vm: &mut Vm, args: &[JValue]) -> R {
     let compressed = okio_bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
-    let nowrap = matches!(payload(vm, args[2]), Some(Native::Inflater { nowrap: true, .. }));
+    let nowrap = matches!(
+        payload(vm, args[2]),
+        Some(Native::Inflater { nowrap: true, .. })
+    );
     let decompressed = if nowrap {
         miniz_oxide::inflate::decompress_to_vec(&compressed)
     } else {
@@ -515,13 +522,49 @@ pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
         true,
         byte_string_encode_utf8
     ),
-    ne!("Lokio/ByteString;", "hex", "()Ljava/lang/String;", true, byte_string_hex),
-    ne!("Lokio/ByteString;", "toByteArray", "()[B", true, byte_string_to_byte_array),
-    ne!("Lokio/ByteString;", "sha256", "()Lokio/ByteString;", true, byte_string_sha256),
-    ne!("Lokio/ByteString;", "sha512", "()Lokio/ByteString;", true, byte_string_sha512),
-    ne!("Lokio/ByteString;", "getByte", "(I)B", true, byte_string_get_byte),
+    ne!(
+        "Lokio/ByteString;",
+        "hex",
+        "()Ljava/lang/String;",
+        true,
+        byte_string_hex
+    ),
+    ne!(
+        "Lokio/ByteString;",
+        "toByteArray",
+        "()[B",
+        true,
+        byte_string_to_byte_array
+    ),
+    ne!(
+        "Lokio/ByteString;",
+        "sha256",
+        "()Lokio/ByteString;",
+        true,
+        byte_string_sha256
+    ),
+    ne!(
+        "Lokio/ByteString;",
+        "sha512",
+        "()Lokio/ByteString;",
+        true,
+        byte_string_sha512
+    ),
+    ne!(
+        "Lokio/ByteString;",
+        "getByte",
+        "(I)B",
+        true,
+        byte_string_get_byte
+    ),
     ne!("Lokio/ByteString;", "size", "()I", true, byte_string_size),
-    ne!("Lokio/ByteString;", "utf8", "()Ljava/lang/String;", true, byte_string_utf8),
+    ne!(
+        "Lokio/ByteString;",
+        "utf8",
+        "()Ljava/lang/String;",
+        true,
+        byte_string_utf8
+    ),
     ne!(
         "Lokio/Okio;",
         "source",
@@ -599,15 +642,69 @@ pub(crate) const OKIO_TABLE: &[NativeEntry] = &[
         true,
         okio_forwarding_source_read
     ),
-    ne!("Lokio/Buffer;", "writeAll", "(Lokio/Source;)J", true, okio_buffer_write_all),
-    ne!("Lokio/Buffer;", "read", "(Lokio/Buffer;J)J", true, okio_buffer_read_into),
-    ne!("Lokio/Buffer;", "writeByte", "(I)Lokio/Buffer;", true, okio_buffer_write_byte),
-    ne!("Lokio/Buffer;", "readByte", "()B", true, okio_buffer_read_byte),
-    ne!("Lokio/Buffer;", "write", "([BII)Lokio/Buffer;", true, okio_buffer_write_range),
-    ne!("Lokio/Buffer;", "write", "([BII)Lokio/BufferedSink;", true, okio_buffer_write_range),
-    ne!("Lokio/Buffer;", "writeUtf8", "(Ljava/lang/String;)Lokio/Buffer;", true, okio_buffer_write_utf8),
-    ne!("Lokio/Buffer;", "writeIntLe", "(I)Lokio/Buffer;", true, okio_buffer_write_int_le),
-    ne!("Lokio/Buffer;", "inputStream", "()Ljava/io/InputStream;", true, okio_buffer_input_stream),
+    ne!(
+        "Lokio/Buffer;",
+        "writeAll",
+        "(Lokio/Source;)J",
+        true,
+        okio_buffer_write_all
+    ),
+    ne!(
+        "Lokio/Buffer;",
+        "read",
+        "(Lokio/Buffer;J)J",
+        true,
+        okio_buffer_read_into
+    ),
+    ne!(
+        "Lokio/Buffer;",
+        "writeByte",
+        "(I)Lokio/Buffer;",
+        true,
+        okio_buffer_write_byte
+    ),
+    ne!(
+        "Lokio/Buffer;",
+        "readByte",
+        "()B",
+        true,
+        okio_buffer_read_byte
+    ),
+    ne!(
+        "Lokio/Buffer;",
+        "write",
+        "([BII)Lokio/Buffer;",
+        true,
+        okio_buffer_write_range
+    ),
+    ne!(
+        "Lokio/Buffer;",
+        "write",
+        "([BII)Lokio/BufferedSink;",
+        true,
+        okio_buffer_write_range
+    ),
+    ne!(
+        "Lokio/Buffer;",
+        "writeUtf8",
+        "(Ljava/lang/String;)Lokio/Buffer;",
+        true,
+        okio_buffer_write_utf8
+    ),
+    ne!(
+        "Lokio/Buffer;",
+        "writeIntLe",
+        "(I)Lokio/Buffer;",
+        true,
+        okio_buffer_write_int_le
+    ),
+    ne!(
+        "Lokio/Buffer;",
+        "inputStream",
+        "()Ljava/io/InputStream;",
+        true,
+        okio_buffer_input_stream
+    ),
     ne!(
         "Lokio/ByteStreams;",
         "source",

@@ -163,17 +163,19 @@ fn sequence_sorted_with(vm: &mut Vm, args: &[JValue]) -> R {
     let mut values = coll_elems(vm, args[0])?;
     let comparator = args[1];
     let mut err: Option<NatErr> = None;
-    values.sort_by(|a, b| match inv_virt(
-        vm,
-        comparator,
-        "compare",
-        "(Ljava/lang/Object;Ljava/lang/Object;)I",
-        &[*a, *b],
-    ) {
-        Ok(r) => r.as_int().cmp(&0),
-        Err(e) => {
-            err = Some(e);
-            Ordering::Equal
+    values.sort_by(|a, b| {
+        match inv_virt(
+            vm,
+            comparator,
+            "compare",
+            "(Ljava/lang/Object;Ljava/lang/Object;)I",
+            &[*a, *b],
+        ) {
+            Ok(r) => r.as_int().cmp(&0),
+            Err(e) => {
+                err = Some(e);
+                Ordering::Equal
+            }
         }
     });
     if let Some(e) = err {

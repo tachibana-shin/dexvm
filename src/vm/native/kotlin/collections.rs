@@ -574,7 +574,10 @@ pub(super) fn collections_single_or_null(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(super) fn collections_to_char_array(vm: &mut Vm, args: &[JValue]) -> R {
     let items = coll_elems(vm, args[0])?;
-    let chars = items.iter().map(|v| int_of(vm, *v) as u16).collect::<Vec<u16>>();
+    let chars = items
+        .iter()
+        .map(|v| int_of(vm, *v) as u16)
+        .collect::<Vec<u16>>();
     alloc_arr(vm, "C", chars.len(), move || ArrayData::Char(chars))
 }
 
@@ -586,7 +589,10 @@ pub(super) fn collections_to_int_array(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(super) fn collections_to_byte_array(vm: &mut Vm, args: &[JValue]) -> R {
     let items = coll_elems(vm, args[0])?;
-    let bytes = items.iter().map(|v| int_of(vm, *v) as i8).collect::<Vec<i8>>();
+    let bytes = items
+        .iter()
+        .map(|v| int_of(vm, *v) as i8)
+        .collect::<Vec<i8>>();
     alloc_arr(vm, "B", bytes.len(), move || ArrayData::Byte(bytes))
 }
 
@@ -717,7 +723,9 @@ pub(super) fn collections_shuffled(vm: &mut Vm, args: &[JValue]) -> R {
     let seed = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| d.subsec_nanos()) as u64;
-    let mut state = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    let mut state = seed
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     for i in (1..items.len()).rev() {
         state ^= state << 13;
         state ^= state >> 7;
@@ -837,10 +845,7 @@ pub(super) fn arrayskt_join_bytes_default(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::Array(ArrayData::Byte(values))) => values.clone(),
         _ => return Err(npe(vm)),
     };
-    let items: Vec<JValue> = bytes
-        .iter()
-        .map(|b| new_str(vm, &b.to_string()))
-        .collect();
+    let items: Vec<JValue> = bytes.iter().map(|b| new_str(vm, &b.to_string())).collect();
     let list = list_alloc(vm, items)?;
     collections_join_to_string_default(
         vm,

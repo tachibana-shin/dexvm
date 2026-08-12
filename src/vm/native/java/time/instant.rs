@@ -19,7 +19,11 @@ pub(crate) fn instant_at_zone(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn instant_of_epoch_milli(vm: &mut Vm, args: &[JValue]) -> R {
-    alloc(vm, "Ljava/time/Instant;", Native::EpochMillis(long_of(vm, args[0])))
+    alloc(
+        vm,
+        "Ljava/time/Instant;",
+        Native::EpochMillis(long_of(vm, args[0])),
+    )
 }
 
 pub(crate) fn instant_parse(vm: &mut Vm, args: &[JValue]) -> R {

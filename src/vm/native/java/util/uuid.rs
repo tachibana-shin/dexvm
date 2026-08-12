@@ -79,8 +79,20 @@ mod tests {
         let s = random_uuid_string();
         let parts: Vec<&str> = s.split('-').collect();
         assert_eq!(parts.len(), 5);
-        assert_eq!([parts[0].len(), parts[1].len(), parts[2].len(), parts[3].len(), parts[4].len()], [8, 4, 4, 4, 12]);
+        assert_eq!(
+            [
+                parts[0].len(),
+                parts[1].len(),
+                parts[2].len(),
+                parts[3].len(),
+                parts[4].len()
+            ],
+            [8, 4, 4, 4, 12]
+        );
         assert_eq!(&parts[2][..1], "4");
-        assert!(matches!(parts[3].chars().next().unwrap(), '8' | '9' | 'a' | 'b'));
+        assert!(matches!(
+            parts[3].chars().next().unwrap(),
+            '8' | '9' | 'a' | 'b'
+        ));
     }
 }

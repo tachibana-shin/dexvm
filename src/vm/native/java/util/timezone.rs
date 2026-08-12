@@ -8,7 +8,11 @@ pub(crate) fn time_zone_get_time_zone(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn time_zone_get_default(vm: &mut Vm, _args: &[JValue]) -> R {
-    alloc(vm, "Ljava/util/TimeZone;", Native::TimeZone("UTC".to_string()))
+    alloc(
+        vm,
+        "Ljava/util/TimeZone;",
+        Native::TimeZone("UTC".to_string()),
+    )
 }
 
 /// Native methods for Ljava/util/TimeZone;

@@ -67,7 +67,11 @@ pub(crate) fn sb_append_charseq_range(vm: &mut Vm, args: &[JValue]) -> R {
     };
     let start = int_of(vm, args[2]).max(0) as usize;
     let end = (int_of(vm, args[3]).max(0) as usize).min(s.chars().count());
-    let slice: String = s.chars().skip(start).take(end.saturating_sub(start)).collect();
+    let slice: String = s
+        .chars()
+        .skip(start)
+        .take(end.saturating_sub(start))
+        .collect();
     let Some(Native::StringBuilder(dst)) = payload_mut(vm, args[0]) else {
         return Err(npe(vm));
     };

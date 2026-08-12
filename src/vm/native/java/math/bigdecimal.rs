@@ -62,12 +62,20 @@ fn parse_decimal(s: &str) -> Option<Dec> {
 
 fn bigdecimal_init_string(vm: &mut Vm, args: &[JValue]) -> R {
     let s = jstr(vm, args[1])?;
-    let dec = parse_decimal(&s).ok_or_else(|| NatErr::Throw(vm.err_nfe(format!("invalid BigDecimal: {s}"))))?;
+    let dec = parse_decimal(&s)
+        .ok_or_else(|| NatErr::Throw(vm.err_nfe(format!("invalid BigDecimal: {s}"))))?;
     set_this(vm, args[0], dec)
 }
 
 fn bigdecimal_init_int(vm: &mut Vm, args: &[JValue]) -> R {
-    set_this(vm, args[0], Dec { unscaled: BigInt::from(int_of(vm, args[1])), scale: 0 })
+    set_this(
+        vm,
+        args[0],
+        Dec {
+            unscaled: BigInt::from(int_of(vm, args[1])),
+            scale: 0,
+        },
+    )
 }
 
 fn bigdecimal_init_biginteger_scale(vm: &mut Vm, args: &[JValue]) -> R {
@@ -91,31 +99,56 @@ fn bigdecimal_add(vm: &mut Vm, args: &[JValue]) -> R {
     let a = dec_of(vm, args[0]).ok_or_else(|| npe(vm))?;
     let b = dec_of(vm, args[1]).ok_or_else(|| npe(vm))?;
     let (ua, ub, scale) = align(&a, &b);
-    alloc_dec(vm, Dec { unscaled: ua + ub, scale })
+    alloc_dec(
+        vm,
+        Dec {
+            unscaled: ua + ub,
+            scale,
+        },
+    )
 }
 fn bigdecimal_subtract(vm: &mut Vm, args: &[JValue]) -> R {
     let a = dec_of(vm, args[0]).ok_or_else(|| npe(vm))?;
     let b = dec_of(vm, args[1]).ok_or_else(|| npe(vm))?;
     let (ua, ub, scale) = align(&a, &b);
-    alloc_dec(vm, Dec { unscaled: ua - ub, scale })
+    alloc_dec(
+        vm,
+        Dec {
+            unscaled: ua - ub,
+            scale,
+        },
+    )
 }
 fn bigdecimal_multiply(vm: &mut Vm, args: &[JValue]) -> R {
     let a = dec_of(vm, args[0]).ok_or_else(|| npe(vm))?;
     let b = dec_of(vm, args[1]).ok_or_else(|| npe(vm))?;
-    alloc_dec(vm, Dec { unscaled: a.unscaled * b.unscaled, scale: a.scale + b.scale })
+    alloc_dec(
+        vm,
+        Dec {
+            unscaled: a.unscaled * b.unscaled,
+            scale: a.scale + b.scale,
+        },
+    )
 }
 fn bigdecimal_divide(vm: &mut Vm, args: &[JValue]) -> R {
     let a = dec_of(vm, args[0]).ok_or_else(|| npe(vm))?;
     let b = dec_of(vm, args[1]).ok_or_else(|| npe(vm))?;
     if b.unscaled.is_zero() {
-        return Err(NatErr::Throw(
-            vm.throwable_of("Ljava/lang/ArithmeticException;", "BigDecimal divide by zero"),
-        ));
+        return Err(NatErr::Throw(vm.throwable_of(
+            "Ljava/lang/ArithmeticException;",
+            "BigDecimal divide by zero",
+        )));
     }
     // Divide at a generous extra precision, then round half-up to that scale.
     let scale = a.scale.max(b.scale) + 16;
     let num = &a.unscaled * BigInt::from(10u32).pow((scale - a.scale + b.scale).max(0) as u32);
-    alloc_dec(vm, Dec { unscaled: &num / &b.unscaled, scale })
+    alloc_dec(
+        vm,
+        Dec {
+            unscaled: &num / &b.unscaled,
+            scale,
+        },
+    )
 }
 fn bigdecimal_signum(vm: &mut Vm, args: &[JValue]) -> R {
     let a = dec_of(vm, args[0]).ok_or_else(|| npe(vm))?;
@@ -143,12 +176,24 @@ fn bigdecimal_set_scale(vm: &mut Vm, args: &[JValue]) -> R {
         let sign = if a.unscaled.is_negative() { -1 } else { 1 };
         (a.unscaled.abs() + half) / divisor * sign
     };
-    alloc_dec(vm, Dec { unscaled, scale: new_scale })
+    alloc_dec(
+        vm,
+        Dec {
+            unscaled,
+            scale: new_scale,
+        },
+    )
 }
 fn bigdecimal_strip_trailing_zeros(vm: &mut Vm, args: &[JValue]) -> R {
     let mut a = dec_of(vm, args[0]).ok_or_else(|| npe(vm))?;
     if a.unscaled.is_zero() {
-        return alloc_dec(vm, Dec { unscaled: BigInt::zero(), scale: 0 });
+        return alloc_dec(
+            vm,
+            Dec {
+                unscaled: BigInt::zero(),
+                scale: 0,
+            },
+        );
     }
     let ten = BigInt::from(10u32);
     while a.scale > 0 {
@@ -211,24 +256,132 @@ fn bigdecimal_to_string(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/math/BigDecimal;", "<init>", "(Ljava/lang/String;)V", true, bigdecimal_init_string),
-    ne!("Ljava/math/BigDecimal;", "<init>", "(I)V", true, bigdecimal_init_int),
-    ne!("Ljava/math/BigDecimal;", "<init>", "(Ljava/math/BigInteger;I)V", true, bigdecimal_init_biginteger_scale),
-    ne!("Ljava/math/BigDecimal;", "add", "(Ljava/math/BigDecimal;)Ljava/math/BigDecimal;", true, bigdecimal_add),
-    ne!("Ljava/math/BigDecimal;", "subtract", "(Ljava/math/BigDecimal;)Ljava/math/BigDecimal;", true, bigdecimal_subtract),
-    ne!("Ljava/math/BigDecimal;", "multiply", "(Ljava/math/BigDecimal;)Ljava/math/BigDecimal;", true, bigdecimal_multiply),
-    ne!("Ljava/math/BigDecimal;", "divide", "(Ljava/math/BigDecimal;)Ljava/math/BigDecimal;", true, bigdecimal_divide),
-    ne!("Ljava/math/BigDecimal;", "divide", "(Ljava/math/BigDecimal;Ljava/math/RoundingMode;)Ljava/math/BigDecimal;", true, bigdecimal_divide),
-    ne!("Ljava/math/BigDecimal;", "signum", "()I", true, bigdecimal_signum),
-    ne!("Ljava/math/BigDecimal;", "scale", "()I", true, bigdecimal_scale),
-    ne!("Ljava/math/BigDecimal;", "setScale", "(I)Ljava/math/BigDecimal;", true, bigdecimal_set_scale),
-    ne!("Ljava/math/BigDecimal;", "setScale", "(ILjava/math/RoundingMode;)Ljava/math/BigDecimal;", true, bigdecimal_set_scale),
-    ne!("Ljava/math/BigDecimal;", "stripTrailingZeros", "()Ljava/math/BigDecimal;", true, bigdecimal_strip_trailing_zeros),
-    ne!("Ljava/math/BigDecimal;", "intValue", "()I", true, bigdecimal_int_value),
-    ne!("Ljava/math/BigDecimal;", "doubleValue", "()D", true, bigdecimal_double_value),
-    ne!("Ljava/math/BigDecimal;", "compareTo", "(Ljava/math/BigDecimal;)I", true, bigdecimal_compare_to),
-    ne!("Ljava/math/BigDecimal;", "toPlainString", "()Ljava/lang/String;", true, bigdecimal_to_plain_string),
-    ne!("Ljava/math/BigDecimal;", "toString", "()Ljava/lang/String;", true, bigdecimal_to_string),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "<init>",
+        "(Ljava/lang/String;)V",
+        true,
+        bigdecimal_init_string
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "<init>",
+        "(I)V",
+        true,
+        bigdecimal_init_int
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "<init>",
+        "(Ljava/math/BigInteger;I)V",
+        true,
+        bigdecimal_init_biginteger_scale
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "add",
+        "(Ljava/math/BigDecimal;)Ljava/math/BigDecimal;",
+        true,
+        bigdecimal_add
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "subtract",
+        "(Ljava/math/BigDecimal;)Ljava/math/BigDecimal;",
+        true,
+        bigdecimal_subtract
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "multiply",
+        "(Ljava/math/BigDecimal;)Ljava/math/BigDecimal;",
+        true,
+        bigdecimal_multiply
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "divide",
+        "(Ljava/math/BigDecimal;)Ljava/math/BigDecimal;",
+        true,
+        bigdecimal_divide
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "divide",
+        "(Ljava/math/BigDecimal;Ljava/math/RoundingMode;)Ljava/math/BigDecimal;",
+        true,
+        bigdecimal_divide
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "signum",
+        "()I",
+        true,
+        bigdecimal_signum
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "scale",
+        "()I",
+        true,
+        bigdecimal_scale
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "setScale",
+        "(I)Ljava/math/BigDecimal;",
+        true,
+        bigdecimal_set_scale
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "setScale",
+        "(ILjava/math/RoundingMode;)Ljava/math/BigDecimal;",
+        true,
+        bigdecimal_set_scale
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "stripTrailingZeros",
+        "()Ljava/math/BigDecimal;",
+        true,
+        bigdecimal_strip_trailing_zeros
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "intValue",
+        "()I",
+        true,
+        bigdecimal_int_value
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "doubleValue",
+        "()D",
+        true,
+        bigdecimal_double_value
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "compareTo",
+        "(Ljava/math/BigDecimal;)I",
+        true,
+        bigdecimal_compare_to
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "toPlainString",
+        "()Ljava/lang/String;",
+        true,
+        bigdecimal_to_plain_string
+    ),
+    ne!(
+        "Ljava/math/BigDecimal;",
+        "toString",
+        "()Ljava/lang/String;",
+        true,
+        bigdecimal_to_string
+    ),
 ];
 
 #[cfg(test)]

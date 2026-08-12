@@ -4,7 +4,7 @@
 //! DST tracking, consistent with the rest of `java.time`), so the same
 //! arithmetic helpers back every registered class.
 
-use super::super::civil::{compose, components, DAY_MS};
+use super::super::civil::{components, compose, DAY_MS};
 use crate::vm::native::*;
 
 fn millis_of(vm: &Vm, v: JValue) -> Option<i64> {
@@ -108,11 +108,7 @@ pub(crate) fn zdt_minus_hours(vm: &mut Vm, args: &[JValue]) -> R {
     let millis = millis_of(vm, args[0]).ok_or_else(|| npe(vm))?;
     let amount = long_of(vm, args[1]);
     let class = class_desc_of(vm, args[0]);
-    alloc(
-        vm,
-        &class,
-        Native::EpochMillis(millis - amount * 3_600_000),
-    )
+    alloc(vm, &class, Native::EpochMillis(millis - amount * 3_600_000))
 }
 pub(crate) fn zdt_minus_minutes(vm: &mut Vm, args: &[JValue]) -> R {
     let millis = millis_of(vm, args[0]).ok_or_else(|| npe(vm))?;
@@ -247,7 +243,15 @@ pub(crate) fn parse_pattern_millis(text: &str, pattern: &str) -> Option<i64> {
     if !seen {
         return None;
     }
-    Some(compose(y as i32, mo as i32 - 1, d as i32, h as i32, mi as i32, s as i32, 0))
+    Some(compose(
+        y as i32,
+        mo as i32 - 1,
+        d as i32,
+        h as i32,
+        mi as i32,
+        s as i32,
+        0,
+    ))
 }
 
 /// Native methods for Ljava/time/chrono/ChronoZonedDateTime;,

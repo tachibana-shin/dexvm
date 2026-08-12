@@ -43,7 +43,9 @@ pub(crate) fn localdate_parse_iso(vm: &mut Vm, args: &[JValue]) -> R {
         parts.get(1).and_then(|p| p.parse::<i32>().ok()),
         parts.get(2).and_then(|p| p.parse::<i32>().ok()),
     ) else {
-        return Err(NatErr::Throw(vm.err_iae(format!("unparseable date: {text}"))));
+        return Err(NatErr::Throw(
+            vm.err_iae(format!("unparseable date: {text}")),
+        ));
     };
     let days = days_from_civil(y, m, d) as u32;
     alloc(vm, "Ljava/time/LocalDate;", Native::LocalDay(days))

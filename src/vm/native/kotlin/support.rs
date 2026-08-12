@@ -26,7 +26,11 @@ pub(super) fn boxing_identity(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 pub(super) fn boxing_box_double(vm: &mut Vm, args: &[JValue]) -> R {
-    boxed(vm, "Ljava/lang/Double;", Native::DoubleBox(double_of(vm, args[0])))
+    boxed(
+        vm,
+        "Ljava/lang/Double;",
+        Native::DoubleBox(double_of(vm, args[0])),
+    )
 }
 pub(super) fn kotlin_random_default_next_int(vm: &mut Vm, args: &[JValue]) -> R {
     let first = if args.len() >= 2 && matches!(args[0], JValue::Obj(_)) {

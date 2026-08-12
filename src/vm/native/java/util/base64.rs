@@ -2,9 +2,9 @@
 //! Decoder/Encoder instance is a `Native::Str` tag ("STD", "URL",
 //! "STD_NOPAD", "URL_NOPAD") selecting which `base64` engine to use.
 
+use crate::vm::native::*;
 use base64::engine::general_purpose::{STANDARD, STANDARD_NO_PAD, URL_SAFE, URL_SAFE_NO_PAD};
 use base64::Engine as _;
-use crate::vm::native::*;
 
 fn engine_for(tag: &str) -> &'static base64::engine::GeneralPurpose {
     match tag {
@@ -67,11 +67,53 @@ fn encoder_without_padding(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/util/Base64;", "getDecoder", "()Ljava/util/Base64$Decoder;", false, get_decoder),
-    ne!("Ljava/util/Base64;", "getEncoder", "()Ljava/util/Base64$Encoder;", false, get_encoder),
-    ne!("Ljava/util/Base64;", "getUrlDecoder", "()Ljava/util/Base64$Decoder;", false, get_url_decoder),
-    ne!("Ljava/util/Base64;", "getUrlEncoder", "()Ljava/util/Base64$Encoder;", false, get_url_encoder),
-    ne!("Ljava/util/Base64$Decoder;", "decode", "(Ljava/lang/String;)[B", true, decoder_decode),
-    ne!("Ljava/util/Base64$Encoder;", "encodeToString", "([B)Ljava/lang/String;", true, encoder_encode_to_string),
-    ne!("Ljava/util/Base64$Encoder;", "withoutPadding", "()Ljava/util/Base64$Encoder;", true, encoder_without_padding),
+    ne!(
+        "Ljava/util/Base64;",
+        "getDecoder",
+        "()Ljava/util/Base64$Decoder;",
+        false,
+        get_decoder
+    ),
+    ne!(
+        "Ljava/util/Base64;",
+        "getEncoder",
+        "()Ljava/util/Base64$Encoder;",
+        false,
+        get_encoder
+    ),
+    ne!(
+        "Ljava/util/Base64;",
+        "getUrlDecoder",
+        "()Ljava/util/Base64$Decoder;",
+        false,
+        get_url_decoder
+    ),
+    ne!(
+        "Ljava/util/Base64;",
+        "getUrlEncoder",
+        "()Ljava/util/Base64$Encoder;",
+        false,
+        get_url_encoder
+    ),
+    ne!(
+        "Ljava/util/Base64$Decoder;",
+        "decode",
+        "(Ljava/lang/String;)[B",
+        true,
+        decoder_decode
+    ),
+    ne!(
+        "Ljava/util/Base64$Encoder;",
+        "encodeToString",
+        "([B)Ljava/lang/String;",
+        true,
+        encoder_encode_to_string
+    ),
+    ne!(
+        "Ljava/util/Base64$Encoder;",
+        "withoutPadding",
+        "()Ljava/util/Base64$Encoder;",
+        true,
+        encoder_without_padding
+    ),
 ];

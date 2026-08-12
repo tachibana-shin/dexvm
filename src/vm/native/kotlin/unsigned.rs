@@ -54,12 +54,42 @@ fn next_ubytes(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/UInt;", "constructor-impl", "(I)I", false, identity),
-    ne!("Lkotlin/UInt;", "box-impl", "(I)Lkotlin/UInt;", false, identity),
+    ne!(
+        "Lkotlin/UInt;",
+        "box-impl",
+        "(I)Lkotlin/UInt;",
+        false,
+        identity
+    ),
     ne!("Lkotlin/UInt;", "unbox-impl", "()I", true, identity),
-    ne!("Lkotlin/UInt;", "toString-impl", "(I)Ljava/lang/String;", false, uint_to_string),
-    ne!("Lkotlin/UInt;", "hashCode-impl", "(I)I", false, uint_hash_code),
-    ne!("Lkotlin/ULong;", "constructor-impl", "(J)J", false, identity),
-    ne!("Lkotlin/UnsignedKt;", "uintToDouble", "(I)D", false, uint_to_double),
+    ne!(
+        "Lkotlin/UInt;",
+        "toString-impl",
+        "(I)Ljava/lang/String;",
+        false,
+        uint_to_string
+    ),
+    ne!(
+        "Lkotlin/UInt;",
+        "hashCode-impl",
+        "(I)I",
+        false,
+        uint_hash_code
+    ),
+    ne!(
+        "Lkotlin/ULong;",
+        "constructor-impl",
+        "(J)J",
+        false,
+        identity
+    ),
+    ne!(
+        "Lkotlin/UnsignedKt;",
+        "uintToDouble",
+        "(I)D",
+        false,
+        uint_to_double
+    ),
     ne!(
         "Lkotlin/UByte;",
         "constructor-impl",
@@ -68,8 +98,32 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         identity
     ),
     ne!("Lkotlin/UByte;", "unbox-impl", "()B", true, identity),
-    ne!("Lkotlin/UByteArray;", "box-impl", "([B)Lkotlin/UByteArray;", false, identity),
-    ne!("Lkotlin/UIntArray;", "get-pVg5ArA", "([II)I", false, uint_array_get),
-    ne!("Lkotlin/UIntArray;", "getSize-impl", "([I)I", false, uint_array_size),
-    ne!("Lkotlin/random/URandomKt;", "nextUBytes", "(Lkotlin/random/Random;I)[B", false, next_ubytes),
+    ne!(
+        "Lkotlin/UByteArray;",
+        "box-impl",
+        "([B)Lkotlin/UByteArray;",
+        false,
+        identity
+    ),
+    ne!(
+        "Lkotlin/UIntArray;",
+        "get-pVg5ArA",
+        "([II)I",
+        false,
+        uint_array_get
+    ),
+    ne!(
+        "Lkotlin/UIntArray;",
+        "getSize-impl",
+        "([I)I",
+        false,
+        uint_array_size
+    ),
+    ne!(
+        "Lkotlin/random/URandomKt;",
+        "nextUBytes",
+        "(Lkotlin/random/Random;I)[B",
+        false,
+        next_ubytes
+    ),
 ];

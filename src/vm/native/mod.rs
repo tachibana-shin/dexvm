@@ -14,7 +14,9 @@ pub(crate) use ::fancy_regex::Regex;
 
 pub(crate) use crate::dex::insn::InvokeKind;
 pub(crate) use crate::vm::error::JvmError;
-pub(crate) use crate::vm::object::{ArrayData, ClassOrPrim, HexFormatState, IterKind, MatcherState, Native};
+pub(crate) use crate::vm::object::{
+    ArrayData, ClassOrPrim, HexFormatState, IterKind, MatcherState, Native,
+};
 #[cfg(feature = "tachiyomi")]
 pub(crate) use crate::vm::object::{JsonVal, PrimitiveSerializerKind};
 #[cfg(feature = "android")]

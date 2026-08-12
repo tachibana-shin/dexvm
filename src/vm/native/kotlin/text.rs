@@ -588,7 +588,10 @@ fn stringskt_substring_before_last_char_default(vm: &mut Vm, args: &[JValue]) ->
     };
     Ok(new_str(
         vm,
-        value.rfind(delimiter).map(|index| &value[..index]).unwrap_or(&missing),
+        value
+            .rfind(delimiter)
+            .map(|index| &value[..index])
+            .unwrap_or(&missing),
     ))
 }
 
@@ -1058,7 +1061,10 @@ fn stringskt_repeat(vm: &mut Vm, args: &[JValue]) -> R {
     let s = charseq_of(vm, args[0])?;
     let n = int_of(vm, args[1]);
     if n < 0 {
-        return Err(iae(vm, format!("Repeat count must be non-negative, but was {n}.")));
+        return Err(iae(
+            vm,
+            format!("Repeat count must be non-negative, but was {n}."),
+        ));
     }
     let out = s.repeat(n as usize);
     Ok(new_str(vm, &out))
@@ -1174,7 +1180,11 @@ fn stringskt_get_or_null(vm: &mut Vm, args: &[JValue]) -> R {
 
 fn stringskt_trim_end(vm: &mut Vm, args: &[JValue]) -> R {
     let s = charseq_of(vm, args[0])?;
-    alloc(vm, "Ljava/lang/String;", Native::Str(s.trim_end().to_string()))
+    alloc(
+        vm,
+        "Ljava/lang/String;",
+        Native::Str(s.trim_end().to_string()),
+    )
 }
 
 /// Legacy `StringsKt.capitalize(String, Locale)` — first char uppercased,
@@ -1643,7 +1653,11 @@ fn match_result_destructured_get_match(vm: &mut Vm, args: &[JValue]) -> R {
         },
         _ => return Err(npe(vm)),
     };
-    alloc(vm, "Lkotlin/text/MatcherMatchResult;", Native::Matcher(state))
+    alloc(
+        vm,
+        "Lkotlin/text/MatcherMatchResult;",
+        Native::Matcher(state),
+    )
 }
 
 // kotlin.text.UStringsKt

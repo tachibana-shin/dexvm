@@ -61,7 +61,10 @@ pub(crate) fn inflater_inflate(vm: &mut Vm, args: &[JValue]) -> R {
         };
         *output = Some(decompressed);
     }
-    let Some(Native::Inflater { output, out_pos, .. }) = payload_mut(vm, args[0]) else {
+    let Some(Native::Inflater {
+        output, out_pos, ..
+    }) = payload_mut(vm, args[0])
+    else {
         return Err(npe(vm));
     };
     let out = output.as_ref().expect("output populated above");
@@ -110,8 +113,20 @@ pub(crate) fn inflater_end(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/util/zip/Inflater;", "<init>", "()V", true, inflater_init),
-    ne!("Ljava/util/zip/Inflater;", "<init>", "(Z)V", true, inflater_init),
+    ne!(
+        "Ljava/util/zip/Inflater;",
+        "<init>",
+        "()V",
+        true,
+        inflater_init
+    ),
+    ne!(
+        "Ljava/util/zip/Inflater;",
+        "<init>",
+        "(Z)V",
+        true,
+        inflater_init
+    ),
     ne!(
         "Ljava/util/zip/Inflater;",
         "setInput",
@@ -140,7 +155,8 @@ pub(crate) const TABLE: &[NativeEntry] = &[
 mod tests {
     #[test]
     fn raw_deflate_roundtrips_through_miniz_oxide() {
-        let original = b"the quick brown fox jumps over the lazy dog, repeatedly, for compression".repeat(4);
+        let original =
+            b"the quick brown fox jumps over the lazy dog, repeatedly, for compression".repeat(4);
         let compressed = miniz_oxide::deflate::compress_to_vec(&original, 6);
         let decompressed = miniz_oxide::inflate::decompress_to_vec(&compressed).unwrap();
         assert_eq!(decompressed, original);

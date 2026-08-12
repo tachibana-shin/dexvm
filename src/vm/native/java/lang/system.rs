@@ -23,7 +23,9 @@ pub(crate) fn runtime_get_runtime(vm: &mut Vm, _args: &[JValue]) -> R {
 }
 
 pub(crate) fn runtime_available_processors(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Int(std::thread::available_parallelism().map_or(1, |n| n.get() as i32)))
+    Ok(JValue::Int(
+        std::thread::available_parallelism().map_or(1, |n| n.get() as i32),
+    ))
 }
 
 pub(crate) fn arrcopy_into(

@@ -32,7 +32,11 @@ fn bb_wrap_range(vm: &mut Vm, args: &[JValue]) -> R {
     let off = int_of(vm, args[1]).max(0) as usize;
     let len = int_of(vm, args[2]).max(0) as usize;
     let end = off.saturating_add(len).min(bytes.len());
-    let slice = if off <= end { bytes[off..end].to_vec() } else { Vec::new() };
+    let slice = if off <= end {
+        bytes[off..end].to_vec()
+    } else {
+        Vec::new()
+    };
     bb_alloc(vm, slice)
 }
 
@@ -57,9 +61,10 @@ fn bb_take(vm: &mut Vm, this: JValue, n: usize) -> Result<Vec<u8>, NatErr> {
         return Err(npe(vm));
     };
     if *pos + n > *limit {
-        return Err(NatErr::Throw(
-            vm.throwable_of("Ljava/nio/BufferUnderflowException;", "buffer underflow"),
-        ));
+        return Err(NatErr::Throw(vm.throwable_of(
+            "Ljava/nio/BufferUnderflowException;",
+            "buffer underflow",
+        )));
     }
     let mut chunk = data[*pos..*pos + n].to_vec();
     *pos += n;
@@ -84,7 +89,9 @@ fn bb_get_int(vm: &mut Vm, args: &[JValue]) -> R {
 fn bb_get_int_at(vm: &mut Vm, args: &[JValue]) -> R {
     let i = int_of(vm, args[1]).max(0) as usize;
     let (data, big_endian) = match payload(vm, args[0]) {
-        Some(Native::ByteBuffer { data, big_endian, .. }) => (data.clone(), *big_endian),
+        Some(Native::ByteBuffer {
+            data, big_endian, ..
+        }) => (data.clone(), *big_endian),
         _ => return Err(npe(vm)),
     };
     if i + 4 > data.len() {
@@ -137,7 +144,11 @@ fn bb_put(vm: &mut Vm, args: &[JValue]) -> R {
     bb_put_bytes(vm, args[0], vec![int_of(vm, args[1]) as u8])
 }
 fn bb_put_short(vm: &mut Vm, args: &[JValue]) -> R {
-    bb_put_bytes(vm, args[0], (int_of(vm, args[1]) as i16).to_be_bytes().to_vec())
+    bb_put_bytes(
+        vm,
+        args[0],
+        (int_of(vm, args[1]) as i16).to_be_bytes().to_vec(),
+    )
 }
 fn bb_put_int(vm: &mut Vm, args: &[JValue]) -> R {
     bb_put_bytes(vm, args[0], int_of(vm, args[1]).to_be_bytes().to_vec())
@@ -184,24 +195,102 @@ fn bb_limit(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) const TABLE: &[NativeEntry] = &[
-    ne!("Ljava/nio/ByteBuffer;", "allocate", "(I)Ljava/nio/ByteBuffer;", false, bb_allocate),
-    ne!("Ljava/nio/ByteBuffer;", "wrap", "([B)Ljava/nio/ByteBuffer;", false, bb_wrap),
-    ne!("Ljava/nio/ByteBuffer;", "wrap", "([BII)Ljava/nio/ByteBuffer;", false, bb_wrap_range),
-    ne!("Ljava/nio/ByteBuffer;", "order", "(Ljava/nio/ByteOrder;)Ljava/nio/ByteBuffer;", true, bb_order),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "allocate",
+        "(I)Ljava/nio/ByteBuffer;",
+        false,
+        bb_allocate
+    ),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "wrap",
+        "([B)Ljava/nio/ByteBuffer;",
+        false,
+        bb_wrap
+    ),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "wrap",
+        "([BII)Ljava/nio/ByteBuffer;",
+        false,
+        bb_wrap_range
+    ),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "order",
+        "(Ljava/nio/ByteOrder;)Ljava/nio/ByteBuffer;",
+        true,
+        bb_order
+    ),
     ne!("Ljava/nio/ByteBuffer;", "get", "()B", true, bb_get),
-    ne!("Ljava/nio/ByteBuffer;", "get", "([B)Ljava/nio/ByteBuffer;", true, bb_get_bytes),
-    ne!("Ljava/nio/ByteBuffer;", "getShort", "()S", true, bb_get_short),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "get",
+        "([B)Ljava/nio/ByteBuffer;",
+        true,
+        bb_get_bytes
+    ),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "getShort",
+        "()S",
+        true,
+        bb_get_short
+    ),
     ne!("Ljava/nio/ByteBuffer;", "getInt", "()I", true, bb_get_int),
-    ne!("Ljava/nio/ByteBuffer;", "getInt", "(I)I", true, bb_get_int_at),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "getInt",
+        "(I)I",
+        true,
+        bb_get_int_at
+    ),
     ne!("Ljava/nio/ByteBuffer;", "getLong", "()J", true, bb_get_long),
-    ne!("Ljava/nio/ByteBuffer;", "put", "(B)Ljava/nio/ByteBuffer;", true, bb_put),
-    ne!("Ljava/nio/ByteBuffer;", "put", "([B)Ljava/nio/ByteBuffer;", true, bb_put_array),
-    ne!("Ljava/nio/ByteBuffer;", "putShort", "(S)Ljava/nio/ByteBuffer;", true, bb_put_short),
-    ne!("Ljava/nio/ByteBuffer;", "putInt", "(I)Ljava/nio/ByteBuffer;", true, bb_put_int),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "put",
+        "(B)Ljava/nio/ByteBuffer;",
+        true,
+        bb_put
+    ),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "put",
+        "([B)Ljava/nio/ByteBuffer;",
+        true,
+        bb_put_array
+    ),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "putShort",
+        "(S)Ljava/nio/ByteBuffer;",
+        true,
+        bb_put_short
+    ),
+    ne!(
+        "Ljava/nio/ByteBuffer;",
+        "putInt",
+        "(I)Ljava/nio/ByteBuffer;",
+        true,
+        bb_put_int
+    ),
     ne!("Ljava/nio/ByteBuffer;", "array", "()[B", true, bb_array),
     ne!("Ljava/nio/Buffer;", "remaining", "()I", true, bb_remaining),
-    ne!("Ljava/nio/Buffer;", "position", "()I", true, bb_position_get),
-    ne!("Ljava/nio/Buffer;", "position", "(I)Ljava/nio/Buffer;", true, bb_position_set),
+    ne!(
+        "Ljava/nio/Buffer;",
+        "position",
+        "()I",
+        true,
+        bb_position_get
+    ),
+    ne!(
+        "Ljava/nio/Buffer;",
+        "position",
+        "(I)Ljava/nio/Buffer;",
+        true,
+        bb_position_set
+    ),
     ne!("Ljava/nio/Buffer;", "limit", "()I", true, bb_limit),
 ];
 

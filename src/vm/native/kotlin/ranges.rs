@@ -127,10 +127,9 @@ pub(super) fn progression_step(vm: &mut Vm, args: &[JValue]) -> R {
 pub(super) fn progression_reversed(vm: &mut Vm, args: &[JValue]) -> R {
     let (first, last, step) = progression_bounds(vm, args[0])?;
     if step == i32::MIN {
-        return Err(NatErr::Throw(vm.throwable_of(
-            "Ljava/lang/ArithmeticException;",
-            "step overflow",
-        )));
+        return Err(NatErr::Throw(
+            vm.throwable_of("Ljava/lang/ArithmeticException;", "step overflow"),
+        ));
     }
     alloc(
         vm,
@@ -234,7 +233,11 @@ pub(super) fn long_range_get_last(vm: &mut Vm, args: &[JValue]) -> R {
 pub(super) fn rangeskt_until_long(vm: &mut Vm, args: &[JValue]) -> R {
     let first = long_of(vm, args[0]);
     let last = long_of(vm, args[1]).saturating_sub(1);
-    alloc(vm, "Lkotlin/ranges/LongRange;", Native::LongRange(first, last))
+    alloc(
+        vm,
+        "Lkotlin/ranges/LongRange;",
+        Native::LongRange(first, last),
+    )
 }
 
 pub(super) fn rangeskt_random(vm: &mut Vm, args: &[JValue]) -> R {
@@ -259,9 +262,7 @@ fn coerce_at_most(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(JValue::Int(args[0].as_int().min(args[1].as_int())))
 }
 fn coerce_at_least_long(vm: &mut Vm, args: &[JValue]) -> R {
-    Ok(JValue::Long(
-        long_of(vm, args[0]).max(long_of(vm, args[1])),
-    ))
+    Ok(JValue::Long(long_of(vm, args[0]).max(long_of(vm, args[1]))))
 }
 fn coerce_in_closed_range(vm: &mut Vm, args: &[JValue]) -> R {
     let value = int_of(vm, args[0]);

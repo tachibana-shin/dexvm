@@ -2,8 +2,8 @@
 
 use crate::vm::native::*;
 
-mod bytebuffer;
 mod byte_order;
+mod bytebuffer;
 mod charset;
 
 pub(crate) use byte_order::{lazy_big_endian, lazy_little_endian};

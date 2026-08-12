@@ -390,18 +390,18 @@ fn mac_do_final(vm: &mut Vm, args: &[JValue]) -> R {
     };
     let algo_upper = algorithm.to_ascii_uppercase();
     let out = if algo_upper.contains("SHA256") {
-        let mut mac =
-            <Hmac<Sha256> as HmacKeyInit>::new_from_slice(&key).map_err(|_| iae(vm, "invalid HMAC key"))?;
+        let mut mac = <Hmac<Sha256> as HmacKeyInit>::new_from_slice(&key)
+            .map_err(|_| iae(vm, "invalid HMAC key"))?;
         mac.update(&input);
         mac.finalize().into_bytes().to_vec()
     } else if algo_upper.contains("SHA512") {
-        let mut mac =
-            <Hmac<Sha512> as HmacKeyInit>::new_from_slice(&key).map_err(|_| iae(vm, "invalid HMAC key"))?;
+        let mut mac = <Hmac<Sha512> as HmacKeyInit>::new_from_slice(&key)
+            .map_err(|_| iae(vm, "invalid HMAC key"))?;
         mac.update(&input);
         mac.finalize().into_bytes().to_vec()
     } else if algo_upper.contains("SHA1") {
-        let mut mac =
-            <Hmac<Sha1> as HmacKeyInit>::new_from_slice(&key).map_err(|_| iae(vm, "invalid HMAC key"))?;
+        let mut mac = <Hmac<Sha1> as HmacKeyInit>::new_from_slice(&key)
+            .map_err(|_| iae(vm, "invalid HMAC key"))?;
         mac.update(&input);
         mac.finalize().into_bytes().to_vec()
     } else if algo_upper.contains("MD5") {
@@ -521,7 +521,13 @@ pub(crate) const JAVAX_CRYPTO_TABLE: &[NativeEntry] = &[
         true,
         mac_get_algorithm
     ),
-    ne!("Ljavax/crypto/Mac;", "doFinal", "([B)[B", true, mac_do_final),
+    ne!(
+        "Ljavax/crypto/Mac;",
+        "doFinal",
+        "([B)[B",
+        true,
+        mac_do_final
+    ),
 ];
 
 #[cfg(test)]
@@ -567,8 +573,8 @@ mod tests {
         assert_eq!(
             out,
             [
-                0x0c, 0x60, 0xc8, 0x0f, 0x96, 0x1f, 0x0e, 0x71, 0xf3, 0xa9, 0xb5, 0x24, 0xaf,
-                0x60, 0x12, 0x06, 0x2f, 0xe0, 0x37, 0xa6,
+                0x0c, 0x60, 0xc8, 0x0f, 0x96, 0x1f, 0x0e, 0x71, 0xf3, 0xa9, 0xb5, 0x24, 0xaf, 0x60,
+                0x12, 0x06, 0x2f, 0xe0, 0x37, 0xa6,
             ]
         );
     }
@@ -583,9 +589,9 @@ mod tests {
         assert_eq!(
             result.as_slice(),
             [
-                0xb0, 0x34, 0x4c, 0x61, 0xd8, 0xdb, 0x38, 0x53, 0x5c, 0xa8, 0xaf, 0xce, 0xaf,
-                0x0b, 0xf1, 0x2b, 0x88, 0x1d, 0xc2, 0x00, 0xc9, 0x83, 0x3d, 0xa7, 0x26, 0xe9,
-                0x37, 0x6c, 0x2e, 0x32, 0xcf, 0xf7,
+                0xb0, 0x34, 0x4c, 0x61, 0xd8, 0xdb, 0x38, 0x53, 0x5c, 0xa8, 0xaf, 0xce, 0xaf, 0x0b,
+                0xf1, 0x2b, 0x88, 0x1d, 0xc2, 0x00, 0xc9, 0x83, 0x3d, 0xa7, 0x26, 0xe9, 0x37, 0x6c,
+                0x2e, 0x32, 0xcf, 0xf7,
             ]
         );
     }
