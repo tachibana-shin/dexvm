@@ -97,6 +97,19 @@ fn select_size_first_document_text() {
 }
 
 #[test]
+fn document_get_element_by_id_returns_matching_element() {
+    with_vm(|vm| {
+        let doc = doc_of(vm, "<div id='chapter'><span>one</span></div>", None);
+        let id = s(vm, "chapter");
+        let element = document_get_element_by_id(vm, &[doc, id]).unwrap();
+        assert!(!element.is_null());
+        assert_eq!(s_of!(vm, element_tag_name(vm, &[element])), "div");
+        let missing = document_get_element_by_id(vm, &[doc, s(vm, "missing")]).unwrap();
+        assert!(missing.is_null());
+    });
+}
+
+#[test]
 fn element_data_and_value_follow_jsoup_conventions() {
     with_vm(|vm| {
         let doc = doc_of(

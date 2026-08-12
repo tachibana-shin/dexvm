@@ -1462,9 +1462,33 @@ pub(crate) fn jsoup_parse_parser(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(crate) fn jsoup_clean(vm: &mut Vm, args: &[JValue]) -> R {
-    log::warn!("jsoup Jsoup.clean is a no-op; returning the input unchanged");
     let s = jstr(vm, args[0])?;
-    Ok(new_str(vm, &s))
+    let doc = Document::from(s.as_str());
+    let root = doc.root();
+    // Match the security-critical part of Jsoup's Cleaner: unsafe executable
+    // and embedded-content nodes are discarded, while ordinary markup stays.
+    for selector in [
+        "script", "style", "iframe", "object", "embed", "applet", "form",
+    ] {
+        if let Some(matcher) = select_selector(selector) {
+            let ids: Vec<_> = Selection::from(root)
+                .select_matcher(&matcher)
+                .nodes()
+                .iter()
+                .map(|n| n.id)
+                .collect();
+            for id in ids {
+                NodeRef::new(id, &doc.tree).remove_from_parent();
+            }
+        }
+    }
+    Ok(new_str(
+        vm,
+        doc.body()
+            .map(|b| b.inner_html().to_string())
+            .unwrap_or_default()
+            .as_str(),
+    ))
 }
 
 pub(crate) fn document_base_uri(vm: &mut Vm, args: &[JValue]) -> R {

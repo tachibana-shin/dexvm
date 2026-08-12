@@ -471,6 +471,16 @@ pub enum Native {
     /// okhttp3.CacheControl$Builder (chained `maxAge(...)` before `build()`).
     CacheControlBuilder {
         max_age: i64,
+        no_cache: bool,
+    },
+    /// okhttp cache lifecycle state (disk cache itself is intentionally host-owned).
+    Cache {
+        closed: bool,
+    },
+    /// okhttp dispatcher configuration for synchronous host execution.
+    Dispatcher {
+        max_requests: i32,
+        max_requests_per_host: i32,
     },
     /// kotlin.Result failure marker: holds the wrapped throwable.
     ResultFailure(JValue),
@@ -913,6 +923,8 @@ impl Native {
             | Native::ResourceBundle(_)
             | Native::CacheControl { .. }
             | Native::CacheControlBuilder { .. }
+            | Native::Cache { .. }
+            | Native::Dispatcher { .. }
             | Native::URI(_)
             | Native::Timeout { .. }
             | Native::OkioBuf { .. }

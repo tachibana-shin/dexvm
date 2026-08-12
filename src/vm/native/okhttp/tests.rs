@@ -99,6 +99,16 @@ fn request_headers_roundtrip() {
 }
 
 #[test]
+fn cache_control_builder_preserves_no_cache() {
+    with_vm(|vm| {
+        let builder = cache_control_builder_init(vm, &[]).unwrap();
+        let builder = cache_control_builder_no_cache(vm, &[builder]).unwrap();
+        let control = cache_control_builder_build(vm, &[builder]).unwrap();
+        assert!(bool_of(cache_control_no_cache(vm, &[control]).unwrap()));
+    });
+}
+
+#[test]
 fn request_new_builder_copies() {
     with_vm(|vm| {
         let req = request_of(vm, "https://api.example.com/a", "GET");

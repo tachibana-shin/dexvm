@@ -481,7 +481,10 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
             }
             "Ljava/util/ArrayDeque;" => Some(Native::ArrayDeque(Vec::new())),
             "Lokhttp3/FormBody$Builder;" => Some(Native::FormBody(Vec::new())),
-            "Lokhttp3/CacheControl$Builder;" => Some(Native::CacheControlBuilder { max_age: 0 }),
+            "Lokhttp3/CacheControl$Builder;" => Some(Native::CacheControlBuilder {
+                max_age: 0,
+                no_cache: false,
+            }),
             "Lokhttp3/Request$Builder;" => Some(Native::RequestBuilder {
                 url: String::new(),
                 method: String::new(),

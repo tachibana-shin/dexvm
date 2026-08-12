@@ -704,7 +704,7 @@ pub(crate) fn cache_control_builder_init(_vm: &mut Vm, _args: &[JValue]) -> R {
 pub(crate) fn cache_control_builder_max_age(vm: &mut Vm, args: &[JValue]) -> R {
     let millis = long_of(vm, args[1]);
     match payload_mut(vm, args[0]) {
-        Some(Native::CacheControlBuilder { max_age }) => *max_age = millis / 1000,
+        Some(Native::CacheControlBuilder { max_age, .. }) => *max_age = millis / 1000,
         _ => return Err(npe(vm)),
     }
     Ok(args[0])
@@ -713,7 +713,7 @@ pub(crate) fn cache_control_builder_max_age(vm: &mut Vm, args: &[JValue]) -> R {
 /// `CacheControl$Builder.build()` — materialize the parsed CacheControl.
 pub(crate) fn cache_control_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
     let max_age = match payload(vm, args[0]) {
-        Some(Native::CacheControlBuilder { max_age }) => *max_age,
+        Some(Native::CacheControlBuilder { max_age, .. }) => *max_age,
         _ => return Err(npe(vm)),
     };
     alloc(
@@ -721,7 +721,10 @@ pub(crate) fn cache_control_builder_build(vm: &mut Vm, args: &[JValue]) -> R {
         "Lokhttp3/CacheControl;",
         Native::CacheControl {
             max_age,
-            no_cache: false,
+            no_cache: match payload(vm, args[0]) {
+                Some(Native::CacheControlBuilder { no_cache, .. }) => *no_cache,
+                _ => return Err(npe(vm)),
+            },
         },
     )
 }
@@ -1961,11 +1964,19 @@ pub(crate) fn cache_control_builder_noop(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
 
+pub(crate) fn cache_control_builder_no_cache(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload_mut(vm, args[0]) {
+        Some(Native::CacheControlBuilder { no_cache, .. }) => *no_cache = true,
+        _ => return Err(npe(vm)),
+    }
+    Ok(args[0])
+}
+
 pub(crate) fn cache_init(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(JValue::Obj(this)) = args.first().copied() else {
         return Err(npe(vm));
     };
-    vm.arena.objects[this as usize].native = Some(Native::Opaque);
+    vm.arena.objects[this as usize].native = Some(Native::Cache { closed: false });
     warn!("Lokhttp3/Cache: on-disk response caching is not implemented");
     Ok(JValue::Null)
 }
@@ -1974,11 +1985,39 @@ pub(crate) fn dispatcher_init(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(JValue::Obj(this)) = args.first().copied() else {
         return Err(npe(vm));
     };
-    vm.arena.objects[this as usize].native = Some(Native::Opaque);
+    vm.arena.objects[this as usize].native = Some(Native::Dispatcher {
+        max_requests: 64,
+        max_requests_per_host: 5,
+    });
     Ok(JValue::Null)
 }
 
-pub(crate) fn dispatcher_set_max_requests(_vm: &mut Vm, _args: &[JValue]) -> R {
+pub(crate) fn dispatcher_set_max_requests(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = int_of(vm, args[1]).max(1);
+    match payload_mut(vm, args[0]) {
+        Some(Native::Dispatcher { max_requests, .. }) => *max_requests = value,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
+pub(crate) fn dispatcher_set_max_requests_per_host(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = int_of(vm, args[1]).max(1);
+    match payload_mut(vm, args[0]) {
+        Some(Native::Dispatcher {
+            max_requests_per_host,
+            ..
+        }) => *max_requests_per_host = value,
+        _ => return Err(npe(vm)),
+    }
+    Ok(JValue::Null)
+}
+
+pub(crate) fn cache_close(vm: &mut Vm, args: &[JValue]) -> R {
+    match payload_mut(vm, args[0]) {
+        Some(Native::Cache { closed }) => *closed = true,
+        _ => return Err(npe(vm)),
+    }
     Ok(JValue::Null)
 }
 
@@ -2552,9 +2591,10 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/MultipartBody$Builder;", "build", "()Lokhttp3/MultipartBody;", true, multipart_builder_build),
     ne!("Lokhttp3/Credentials;", "basic$default", "(Ljava/lang/String;Ljava/lang/String;Ljava/nio/charset/Charset;ILjava/lang/Object;)Ljava/lang/String;", false, credentials_basic_default),
     ne!("Lokhttp3/Cache;", "<init>", "(Ljava/io/File;J)V", true, cache_init),
+    ne!("Lokhttp3/Cache;", "close", "()V", true, cache_close),
     ne!("Lokhttp3/Dispatcher;", "<init>", "()V", true, dispatcher_init),
     ne!("Lokhttp3/Dispatcher;", "setMaxRequests", "(I)V", true, dispatcher_set_max_requests),
-    ne!("Lokhttp3/Dispatcher;", "setMaxRequestsPerHost", "(I)V", true, dispatcher_set_max_requests),
+    ne!("Lokhttp3/Dispatcher;", "setMaxRequestsPerHost", "(I)V", true, dispatcher_set_max_requests_per_host),
     ne!("Lokhttp3/Dns;", "lookup", "(Ljava/lang/String;)Ljava/util/List;", true, dns_lookup),
     ne!("Lokhttp3/internal/_UtilCommonKt;", "closeQuietly", "(Ljava/io/Closeable;)V", true, close_quietly),
     ne!("Lokhttp3/OkHttpClient;", "cookieJar", "()Lokhttp3/CookieJar;", true, okhttp_client_cookie_jar),
@@ -2632,7 +2672,7 @@ pub(crate) const OKHTTP_TABLE: &[NativeEntry] = &[
     ne!("Lokhttp3/RequestBody;", "writeTo", "(Lokio/BufferedSink;)V", true, request_body_write_to),
     ne!("Lokhttp3/CacheControl$Builder;", "maxStale-LRDsOJo", "(J)Lokhttp3/CacheControl$Builder;", true, cache_control_builder_noop),
     ne!("Lokhttp3/CacheControl$Builder;", "maxStale", "(ILjava/util/concurrent/TimeUnit;)Lokhttp3/CacheControl$Builder;", true, cache_control_builder_noop),
-    ne!("Lokhttp3/CacheControl$Builder;", "noCache", "()Lokhttp3/CacheControl$Builder;", true, cache_control_builder_noop),
+    ne!("Lokhttp3/CacheControl$Builder;", "noCache", "()Lokhttp3/CacheControl$Builder;", true, cache_control_builder_no_cache),
     ne!("Lokhttp3/CacheControl$Builder;", "noStore", "()Lokhttp3/CacheControl$Builder;", true, cache_control_builder_noop),
 ];
 
