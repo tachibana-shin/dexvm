@@ -473,3 +473,32 @@ fn triple_bridge_keeps_all_three_values() {
         assert_eq!(triple_get_third(vm, &[t]).unwrap(), c);
     });
 }
+
+#[test]
+fn array_regex_and_progression_bridges_are_real() {
+    with_vm(|vm| {
+        let arr = alloc_arr(vm, "I", 2, || ArrayData::Int(vec![4, 9])).unwrap();
+        let list = arrayskt_int_to_list(vm, &[arr]).unwrap();
+        assert_eq!(
+            coll_elems(vm, list).unwrap(),
+            vec![JValue::Int(4), JValue::Int(9)]
+        );
+        assert_eq!(
+            progression_last_element(vm, &[JValue::Int(1), JValue::Int(10), JValue::Int(3)])
+                .unwrap(),
+            JValue::Int(10)
+        );
+        let p = alloc(
+            vm,
+            "Lkotlin/text/Regex;",
+            Native::Pattern {
+                re: Regex::new("x+").unwrap(),
+                source: "x+".into(),
+            },
+        )
+        .unwrap();
+        let text = s(vm, "axx x");
+        let repl = s(vm, "!");
+        assert_eq!(s_of!(vm, regex_replace_first(vm, &[p, text, repl])), "a! x");
+    });
+}

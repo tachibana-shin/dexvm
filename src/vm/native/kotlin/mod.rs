@@ -1718,6 +1718,52 @@ fn arrayskt_copy_of_range(vm: &mut Vm, args: &[JValue]) -> R {
     alloc_arr(vm, "B", slice.len(), move || ArrayData::Byte(slice))
 }
 
+fn arrayskt_int_to_list(vm: &mut Vm, args: &[JValue]) -> R {
+    let values = match payload(vm, args[0]) {
+        Some(Native::Array(ArrayData::Int(v))) => v.iter().map(|x| JValue::Int(*x)).collect(),
+        _ => return Err(npe(vm)),
+    };
+    list_alloc(vm, values)
+}
+
+fn progression_last_element(_vm: &mut Vm, args: &[JValue]) -> R {
+    let first = args[0].as_int();
+    let last = args[1].as_int();
+    let step = args[2].as_int();
+    if step == 0 {
+        return Ok(JValue::Int(last));
+    }
+    let r = if step > 0 {
+        last - (last - first).rem_euclid(step)
+    } else {
+        last + (first - last).rem_euclid(-step)
+    };
+    Ok(JValue::Int(r))
+}
+
+fn regex_replace_first(vm: &mut Vm, args: &[JValue]) -> R {
+    let re = match payload(vm, args[0]) {
+        Some(Native::Pattern { re, .. }) => re.clone(),
+        _ => return Err(npe(vm)),
+    };
+    let text = charseq_of(vm, args[1])?;
+    let repl = jstr(vm, args[2])?;
+    let out = if let Some(m) = re.find(&text).ok().flatten() {
+        format!("{}{}{}", &text[..m.start()], repl, &text[m.end()..])
+    } else {
+        text
+    };
+    Ok(new_str(vm, &out))
+}
+
+fn strings_encode_bytes(vm: &mut Vm, args: &[JValue]) -> R {
+    let s = jstr(vm, args[0])?;
+    let bytes = s.into_bytes();
+    alloc_arr(vm, "B", bytes.len(), move || {
+        ArrayData::Byte(bytes.into_iter().map(|b| b as i8).collect())
+    })
+}
+
 // kotlin.UInt / UByte `constructor-impl`: identity (already raw ints).
 // Static: the value arrives as the only argument.
 fn uint_constructor_impl(_vm: &mut Vm, args: &[JValue]) -> R {
@@ -2040,6 +2086,10 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/StringsKt;", "replace$default", "(Ljava/lang/String;CCZILjava/lang/Object;)Ljava/lang/String;", false, stringskt_replace_char_default),
     ne!("Lkotlin/text/StringsKt;", "trimStart", "(Ljava/lang/String;[C)Ljava/lang/String;", false, stringskt_trim_start),
     ne!("Lkotlin/collections/ArraysKt;", "copyOfRange", "([BII)[B", false, arrayskt_copy_of_range),
+    ne!("Lkotlin/collections/ArraysKt;", "toList", "([I)Ljava/util/List;", false, arrayskt_int_to_list),
+    ne!("Lkotlin/internal/ProgressionUtilKt;", "getProgressionLastElement", "(III)I", false, progression_last_element),
+    ne!("Lkotlin/text/Regex;", "replaceFirst", "(Ljava/lang/CharSequence;Ljava/lang/String;)Ljava/lang/String;", true, regex_replace_first),
+    ne!("Lkotlin/text/StringsKt;", "encodeToByteArray", "(Ljava/lang/String;)[B", false, strings_encode_bytes),
     ne!("Lkotlin/coroutines/jvm/internal/SuspendLambda;", "<init>", "(ILkotlin/coroutines/Continuation;)V", true, suspend_lambda_init),
     ne!("Lkotlin/coroutines/jvm/internal/ContinuationImpl;", "<init>", "(Lkotlin/coroutines/Continuation;)V", true, continuation_impl_init),
     ne!("Lkotlin/coroutines/jvm/internal/SpillingKt;", "nullOutSpilledVariable", "(Ljava/lang/Object;)Ljava/lang/Object;", false, null_out_spilled_variable),
