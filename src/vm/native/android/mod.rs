@@ -169,7 +169,7 @@ fn decode_shared_preferences(
     Ok(prefs)
 }
 
-fn load_shared_preferences(vm: &mut Vm) -> Result<(), NatErr> {
+pub(crate) fn load_shared_preferences(vm: &mut Vm) -> Result<(), NatErr> {
     if vm.shared_preferences_loaded {
         return Ok(());
     }
@@ -482,12 +482,55 @@ pub(crate) fn log_error(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Int(0))
 }
 pub(crate) fn prefs_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let value = match args.get(1) {
+        // sget-object Boolean.FALSE/TRUE arrives as a boxed object;
+        // store the primitive so hosts can read switch defaults directly.
+        Some(JValue::Obj(id))
+            if matches!(
+                vm.arena
+                    .objects
+                    .get(*id as usize)
+                    .and_then(|o| o.native.as_ref()),
+                Some(Native::BoolBox(_))
+            ) =>
+        {
+            let b = match &vm.arena.objects[*id as usize].native {
+                Some(Native::BoolBox(b)) => *b,
+                _ => false,
+            };
+            JValue::Int(i32::from(b))
+        }
+        other => other.copied().unwrap_or(JValue::Null),
+    };
     let Some(Native::Preference { default_value, .. }) = payload_mut(vm, args[0]) else {
         return Err(npe(vm));
     };
-    if let Some(value) = args.get(1) {
-        *default_value = *value;
+    *default_value = value;
+    Ok(JValue::Null)
+}
+
+pub(crate) fn prefs_set_title(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(obj) = vm.arena.objects.get_mut(args[0].as_obj() as usize) else {
+        return Err(npe(vm));
+    };
+    let Some(native) = obj.native.as_mut() else {
+        return Err(npe(vm));
+    };
+    let value = args.get(1).copied();
+    match native {
+        Native::Preference { title, .. } | Native::PreferenceScreen { title, .. } => {
+            *title = value;
+        }
+        _ => return Err(npe(vm)),
     }
+    Ok(JValue::Null)
+}
+
+pub(crate) fn prefs_set_summary(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::Preference { summary, .. }) = payload_mut(vm, args[0]) else {
+        return Err(npe(vm));
+    };
+    *summary = args.get(1).copied();
     Ok(JValue::Null)
 }
 

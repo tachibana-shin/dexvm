@@ -232,14 +232,14 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "setTitle",
         "(Ljava/lang/CharSequence;)V",
         true,
-        crate::vm::native::android::prefs_set
+        crate::vm::native::android::prefs_set_title
     ),
     ne!(
         "Landroidx/preference/Preference;",
         "setSummary",
         "(Ljava/lang/CharSequence;)V",
         true,
-        crate::vm::native::android::prefs_set
+        crate::vm::native::android::prefs_set_summary
     ),
     ne!(
         "Landroidx/preference/Preference;",
@@ -267,7 +267,7 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "setTitle",
         "(Ljava/lang/CharSequence;)V",
         true,
-        crate::vm::native::android::prefs_set
+        crate::vm::native::android::prefs_set_title
     ),
     ne!(
         "Landroidx/preference/SwitchPreferenceCompat;",
@@ -288,14 +288,14 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         "setTitle",
         "(Ljava/lang/CharSequence;)V",
         true,
-        crate::vm::native::android::prefs_set
+        crate::vm::native::android::prefs_set_title
     ),
     ne!(
         "Landroidx/preference/SwitchPreferenceCompat;",
         "setSummary",
         "(Ljava/lang/CharSequence;)V",
         true,
-        crate::vm::native::android::prefs_set
+        crate::vm::native::android::prefs_set_summary
     ),
     ne!(
         "Landroidx/preference/SwitchPreferenceCompat;",

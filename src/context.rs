@@ -318,11 +318,22 @@ impl Context {
             .collect()
     }
 
-    /// Returns persisted/in-memory values for named settings.
+    /// Resolves an arena object id to its string payload, if the object is a
+    /// java String (used e.g. to read a preference's `default_value`).
+    pub fn string_of(&mut self, id: u32) -> Option<String> {
+        match self.vm().arena.objects.get(id as usize).and_then(|o| o.native.as_ref()) {
+            Some(Native::Str(s)) => Some(s.clone()),
+            _ => None,
+        }
+    }
+
+    /// Returns persisted/in-memory values for named settings. Mirrors the
+    /// Android lazy load: values on disk are picked up on the first read.
     pub fn get_settings(
         &mut self,
         preference_file: &str,
     ) -> std::collections::HashMap<String, PreferenceValue> {
+        let _ = crate::vm::native::android::load_shared_preferences(self.vm());
         self.vm
             .shared_preferences
             .get(preference_file)

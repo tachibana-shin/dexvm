@@ -139,8 +139,57 @@ impl Keiyoushi {
         self.ctx.set_shared_preferences_path(path);
     }
 
+    /// Materializes the source's AndroidX preference screen and returns the
+    /// captured definitions. Both mihon-era shapes are supported:
+    /// `ConfigurableSource.setupPreferenceScreen(screen)` and, when the
+    /// extension declares it, the newer `createPreferenceScreen(context)`.
+    /// Needs no network.
+    pub fn preference_definitions(
+        &mut self,
+        src: &Source,
+    ) -> Result<Vec<SettingDefinition>, JvmError> {
+        let ctx_inst = {
+            let vm = self.vm();
+            let cid = vm.ensure_class_by_desc("Landroid/content/Context;")?;
+            vm.alloc_instance(cid)?
+        };
+        if let Ok(_screen) = self.ctx.invoke_on(
+            src.inst,
+            "createPreferenceScreen",
+            "(Landroid/content/Context;)Landroidx/preference/PreferenceScreen;",
+            &[JValue::Obj(ctx_inst)],
+        ) {
+            return Ok(self.get_all_setting_definitions());
+        }
+        let screen = {
+            let vm = self.vm();
+            let cid = vm.ensure_class_by_desc("Landroidx/preference/PreferenceScreen;")?;
+            vm.arena.alloc(
+                cid,
+                Vec::new(),
+                Some(Native::PreferenceScreen {
+                    children: Vec::new(),
+                    title: None,
+                }),
+            )
+        };
+        self.ctx.invoke_on(
+            src.inst,
+            "setupPreferenceScreen",
+            "(Landroidx/preference/PreferenceScreen;)V",
+            &[JValue::Obj(screen)],
+        )?;
+        Ok(self.get_all_setting_definitions())
+    }
+
     pub fn get_all_setting_definitions(&self) -> Vec<SettingDefinition> {
         self.ctx.get_all_setting_definitions()
+    }
+
+    /// Resolves an arena object to its string payload, if it is one
+    /// (e.g. the `default_value` of a [`SettingDefinition`]).
+    pub fn string_of(&mut self, id: u32) -> Option<String> {
+        self.ctx.string_of(id)
     }
 
     pub fn get_settings(
