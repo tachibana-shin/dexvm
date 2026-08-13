@@ -1228,7 +1228,9 @@ impl Vm {
         candidates.sort_by_key(|(_, is_entry)| !*is_entry);
         for (type_str, _) in candidates {
             let cid = self.ensure_class_by_desc(&type_str)?;
-            return Ok(self.str_of(self.classes[cid as usize].descriptor).to_string());
+            return Ok(self
+                .str_of(self.classes[cid as usize].descriptor)
+                .to_string());
         }
         Err(JvmError::Resolution("no HttpSource subclass in dex".into()))
     }
@@ -1291,13 +1293,7 @@ impl Vm {
                         .classes
                         .get(class as usize)
                         .and_then(|c| c.methods.get(slot as usize))
-                        .map(|m| {
-                            format!(
-                                "{}.{}",
-                                self.class_desc_str(class),
-                                self.str_of(m.name)
-                            )
-                        });
+                        .map(|m| format!("{}.{}", self.class_desc_str(class), self.str_of(m.name)));
                     if let Some(name) = name {
                         let recv = args.first().copied().and_then(|v| match v {
                             JValue::Obj(o) => Some(

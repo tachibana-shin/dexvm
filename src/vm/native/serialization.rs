@@ -556,7 +556,9 @@ fn member_by_index(vm: &Vm, element: JValue, descriptor: JValue, index: i32) -> 
 /// Invokes `deserializer.deserialize(decoder)` (interface dispatch into real
 /// dex bytecode where the serializer is a dex class).
 fn invoke_deserialize(vm: &mut Vm, serializer: JValue, decoder: JValue) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native invoke_deserialize"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native invoke_deserialize");
+    }
     let JValue::Obj(o) = serializer else {
         return Err(nat_fatal(JvmError::Resolution(
             "deserialize: null serializer".into(),
@@ -763,7 +765,9 @@ pub(crate) fn json_decode_from_json_element(vm: &mut Vm, args: &[JValue]) -> R {
 
 /// `Json.decodeFromString(strategy, text)`.
 pub(crate) fn json_decode_from_string(vm: &mut Vm, args: &[JValue]) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native json_decode_from_string"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native json_decode_from_string");
+    }
     let text = jstr(vm, args[2])?;
     let val =
         parse_json(&text).map_err(|e| nat_fatal(JvmError::Resolution(format!("json: {e}"))))?;
@@ -856,7 +860,9 @@ pub(crate) fn image_decoder_recycle(_vm: &mut Vm, _args: &[JValue]) -> R {
 /// `Decoder.beginStructure(descriptor)` — the host decoder is reused across
 /// nesting levels, like kotlinx's StreamingJsonDecoder.
 pub(crate) fn dec_begin_structure(vm: &mut Vm, args: &[JValue]) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native dec_begin_structure"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native dec_begin_structure");
+    }
     let _ = vm;
     Ok(args[0])
 }
@@ -864,7 +870,9 @@ pub(crate) fn dec_begin_structure(vm: &mut Vm, args: &[JValue]) -> R {
 /// `CompositeDecoder.decodeSequentially()` — always sequential; the
 /// generated serializers then walk elements by descriptor index.
 pub(crate) fn dec_decode_sequentially(_vm: &mut Vm, _args: &[JValue]) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native dec_decode_sequentially"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native dec_decode_sequentially");
+    }
     Ok(JValue::Int(1))
 }
 
@@ -872,7 +880,9 @@ pub(crate) fn dec_decode_sequentially(_vm: &mut Vm, _args: &[JValue]) -> R {
 /// members in order, returning descriptor indexes of matching keys, or -1
 /// when exhausted (non-sequential fallback; unused in the sequential path).
 pub(crate) fn dec_decode_element_index(vm: &mut Vm, args: &[JValue]) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native dec_decode_element_index"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native dec_decode_element_index");
+    }
     let element = match payload(vm, args[0]) {
         Some(Native::JsonDecoder { element, .. }) => *element,
         _ => return Err(npe(vm)),
@@ -902,7 +912,9 @@ pub(crate) fn dec_decode_element_index(vm: &mut Vm, args: &[JValue]) -> R {
 
 /// `CompositeDecoder.decodeStringElement(descriptor, index)`.
 pub(crate) fn dec_decode_string_element(vm: &mut Vm, args: &[JValue]) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native dec_decode_string_element"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native dec_decode_string_element");
+    }
     let element = match payload(vm, args[0]) {
         Some(Native::JsonDecoder { element, .. }) => *element,
         _ => return Err(npe(vm)),
@@ -925,7 +937,9 @@ fn member_primitive(vm: &Vm, args: &[JValue]) -> Option<JsonVal> {
 
 /// `CompositeDecoder.decodeIntElement(descriptor, index)`.
 pub(crate) fn dec_decode_int_element(vm: &mut Vm, args: &[JValue]) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native dec_decode_int_element"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native dec_decode_int_element");
+    }
     let v = member_primitive(vm, args).unwrap_or(JsonVal::Int(0));
     Ok(JValue::Int(match v {
         JsonVal::Int(i) => i as i32,
@@ -974,9 +988,13 @@ pub(crate) fn dec_decode_collection_size(vm: &mut Vm, args: &[JValue]) -> R {
 /// `CompositeDecoder.decodeSerializableElement(descriptor, index, serializer,
 /// previous)`.
 pub(crate) fn dec_decode_serializable_element(vm: &mut Vm, args: &[JValue]) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native dec_decode_serializable_element"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native dec_decode_serializable_element");
+    }
     let (element, module) = match payload(vm, args[0]) {
-        Some(Native::JsonDecoder { element, module, .. }) => (*element, *module),
+        Some(Native::JsonDecoder {
+            element, module, ..
+        }) => (*element, *module),
         _ => return Err(npe(vm)),
     };
     let index = int_of(vm, args[2]);
@@ -996,9 +1014,13 @@ pub(crate) fn dec_decode_serializable_element(vm: &mut Vm, args: &[JValue]) -> R
 /// `CompositeDecoder.decodeNullableSerializableElement(...)` — null members
 /// decode to null, otherwise forwards to the non-null path.
 pub(crate) fn dec_decode_nullable_serializable_element(vm: &mut Vm, args: &[JValue]) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native dec_decode_nullable_serializable_element"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native dec_decode_nullable_serializable_element");
+    }
     let (element, module) = match payload(vm, args[0]) {
-        Some(Native::JsonDecoder { element, module, .. }) => (*element, *module),
+        Some(Native::JsonDecoder {
+            element, module, ..
+        }) => (*element, *module),
         _ => return Err(npe(vm)),
     };
     let index = int_of(vm, args[2]);
@@ -1014,14 +1036,18 @@ pub(crate) fn dec_decode_nullable_serializable_element(vm: &mut Vm, args: &[JVal
 
 /// `CompositeDecoder.endStructure(descriptor)`.
 pub(crate) fn dec_end_structure(_vm: &mut Vm, _args: &[JValue]) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native dec_end_structure"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native dec_end_structure");
+    }
     Ok(JValue::Null)
 }
 
 /// `CompositeDecoder.decodeJsonElement()` (Decoder extension) — returns the
 /// element currently being decoded.
 pub(crate) fn dec_decode_json_element(vm: &mut Vm, args: &[JValue]) -> R {
-        if std::env::var("DEXVM_TRACE").is_ok() { eprintln!("DEXVM_TRACE native dec_decode_json_element"); }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE native dec_decode_json_element");
+    }
     let element = match payload(vm, args[0]) {
         Some(Native::JsonDecoder { element, .. }) => *element,
         _ => return Err(npe(vm)),
@@ -1289,7 +1315,9 @@ pub(crate) fn array_list_serializer_init(vm: &mut Vm, args: &[JValue]) -> R {
 /// under the decoder.
 pub(crate) fn array_list_serializer_deserialize(vm: &mut Vm, args: &[JValue]) -> R {
     let (element, module) = match payload(vm, args[1]) {
-        Some(Native::JsonDecoder { element, module, .. }) => (*element, *module),
+        Some(Native::JsonDecoder {
+            element, module, ..
+        }) => (*element, *module),
         _ => return Err(npe(vm)),
     };
     run_serializer(vm, args[0], element, module)
@@ -1350,9 +1378,7 @@ fn serializers_module_builder_init(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(JValue::Obj(this)) = args.first().copied() else {
         return Err(npe(vm));
     };
-    vm.arena.objects[this as usize].native = Some(Native::SerializersModule {
-        polys: Vec::new(),
-    });
+    vm.arena.objects[this as usize].native = Some(Native::SerializersModule { polys: Vec::new() });
     Ok(JValue::Null)
 }
 
@@ -1374,9 +1400,7 @@ fn polymorphic_module_builder_subclass(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(JValue::Obj(this)) = args.first().copied() else {
         return Err(npe(vm));
     };
-    let Some(Native::SerializersModule { polys }) =
-        payload_mut(vm, JValue::Obj(this))
-    else {
+    let Some(Native::SerializersModule { polys }) = payload_mut(vm, JValue::Obj(this)) else {
         return Err(npe(vm));
     };
     let Some((_, subs, _)) = polys.last_mut() else {
@@ -1392,9 +1416,7 @@ fn polymorphic_module_builder_default_deserializer(vm: &mut Vm, args: &[JValue])
     let Some(JValue::Obj(this)) = args.first().copied() else {
         return Err(npe(vm));
     };
-    let Some(Native::SerializersModule { polys }) =
-        payload_mut(vm, JValue::Obj(this))
-    else {
+    let Some(Native::SerializersModule { polys }) = payload_mut(vm, JValue::Obj(this)) else {
         return Err(npe(vm));
     };
     let Some((_, _, slot)) = polys.last_mut() else {
@@ -1411,9 +1433,7 @@ fn polymorphic_module_builder_build_to(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::SerializersModule { polys }) => polys.clone(),
         _ => Vec::new(),
     };
-    let Some(Native::SerializersModule { polys: target }) =
-        payload_mut(vm, args[1])
-    else {
+    let Some(Native::SerializersModule { polys: target }) = payload_mut(vm, args[1]) else {
         return Err(npe(vm));
     };
     target.extend(polys);
@@ -1439,10 +1459,7 @@ fn serializers_module_plus(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::SerializersModule { polys }) => polys.clone(),
         _ => Vec::new(),
     };
-    if let Some(Native::SerializersModule {
-        polys: more,
-    }) = payload(vm, args[1])
-    {
+    if let Some(Native::SerializersModule { polys: more }) = payload(vm, args[1]) {
         polys.extend(more.clone());
     }
     alloc(
@@ -1460,8 +1477,7 @@ fn json_builder_set_serializers_module(vm: &mut Vm, args: &[JValue]) -> R {
         _ => Vec::new(),
     };
     if let JValue::Obj(o) = args[0] {
-        vm.arena.objects[o as usize].native =
-            Some(Native::SerializersModule { polys });
+        vm.arena.objects[o as usize].native = Some(Native::SerializersModule { polys });
     }
     Ok(JValue::Null)
 }
@@ -1471,9 +1487,7 @@ fn polymorphic_serializer_init(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(JValue::Obj(this)) = args.first().copied() else {
         return Err(npe(vm));
     };
-    vm.arena.objects[this as usize].native = Some(Native::Polymorphic {
-        base: args[1],
-    });
+    vm.arena.objects[this as usize].native = Some(Native::Polymorphic { base: args[1] });
     Ok(JValue::Null)
 }
 
@@ -1505,7 +1519,9 @@ fn serializer_descriptor_name(vm: &mut Vm, serializer: JValue) -> Result<String,
     let target = vm
         .resolve_target(InvokeKind::Interface, &mref, Some(o), 0)
         .map_err(nat_fatal)?;
-    let desc = vm.call_target(target, vec![serializer]).map_err(nat_fatal)?;
+    let desc = vm
+        .call_target(target, vec![serializer])
+        .map_err(nat_fatal)?;
     match payload(vm, desc) {
         Some(Native::SerialDescriptor { name, .. }) => Ok(name.clone()),
         _ => Ok(String::new()),
@@ -1525,7 +1541,9 @@ fn polymorphic_deserialize(vm: &mut Vm, args: &[JValue]) -> R {
         }
     };
     let (element, module) = match payload(vm, args[1]) {
-        Some(Native::JsonDecoder { element, module, .. }) => (*element, *module),
+        Some(Native::JsonDecoder {
+            element, module, ..
+        }) => (*element, *module),
         _ => {
             return Err(nat_fatal(JvmError::Resolution(
                 "polymorphic: no decoder".into(),
@@ -1831,16 +1849,14 @@ fn linked_hash_map_deserialize(vm: &mut Vm, args: &[JValue]) -> R {
     };
     let (element, module) = match payload(vm, args[1]) {
         Some(Native::JsonDecoder {
-            element,
-            module,
-            ..
+            element, module, ..
         }) => (*element, *module),
         _ => return Err(npe(vm)),
     };
     decode_map(vm, args[0], element, module, *value)
 }
 
-fn linked_hash_map_descriptor(vm: &mut Vm, args: &[JValue]) -> R {
+fn linked_hash_map_descriptor(vm: &mut Vm, _args: &[JValue]) -> R {
     alloc(
         vm,
         "Lkotlinx/serialization/internal/PluginGeneratedSerialDescriptor;",

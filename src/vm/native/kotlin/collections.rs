@@ -416,7 +416,10 @@ pub(super) fn collections_list_of_not_null(vm: &mut Vm, args: &[JValue]) -> R {
             })
             .collect::<Vec<_>>()
             .join(",");
-        eprintln!("DEXVM_TRACE listOfNotNull n={} elems=[{classes}]", values.len());
+        eprintln!(
+            "DEXVM_TRACE listOfNotNull n={} elems=[{classes}]",
+            values.len()
+        );
     }
     list_alloc(
         vm,

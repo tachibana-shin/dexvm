@@ -962,7 +962,11 @@ pub(crate) fn okhttp_http_url_parse(vm: &mut Vm, args: &[JValue]) -> R {
     if !valid_http_url(url) {
         return Ok(JValue::Null);
     }
-    alloc(vm, "Lokhttp3/HttpUrl;", Native::HttpUrl(okhttp_url_encode(url)))
+    alloc(
+        vm,
+        "Lokhttp3/HttpUrl;",
+        Native::HttpUrl(okhttp_url_encode(url)),
+    )
 }
 
 /// okhttp percent-encodes characters that are illegal in a raw URL when
@@ -989,10 +993,27 @@ fn okhttp_url_encode(s: &str) -> String {
         let raw_ok = b.is_ascii_alphanumeric()
             || matches!(
                 b,
-                b'-' | b'.' | b'_' | b'~'
-                    | b':' | b'/' | b'?' | b'#' | b'[' | b']' | b'@'
-                    | b'!' | b'$' | b'&' | b'\'' | b'(' | b')' | b'*'
-                    | b'+' | b',' | b';' | b'='
+                b'-' | b'.'
+                    | b'_'
+                    | b'~'
+                    | b':'
+                    | b'/'
+                    | b'?'
+                    | b'#'
+                    | b'['
+                    | b']'
+                    | b'@'
+                    | b'!'
+                    | b'$'
+                    | b'&'
+                    | b'\''
+                    | b'('
+                    | b')'
+                    | b'*'
+                    | b'+'
+                    | b','
+                    | b';'
+                    | b'='
             );
         if raw_ok {
             out.push(b as char);

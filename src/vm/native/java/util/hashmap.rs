@@ -69,7 +69,10 @@ pub(crate) fn map_get(vm: &mut Vm, args: &[JValue]) -> R {
         eprintln!(
             "DEXVM_TRACE map_get query=Int(0) n={} keys={:?}",
             entries.len(),
-            entries.iter().map(|(k, _)| format!("{k:?}")).collect::<Vec<_>>()
+            entries
+                .iter()
+                .map(|(k, _)| format!("{k:?}"))
+                .collect::<Vec<_>>()
         );
     }
     match map_find(vm, &entries, args[1])? {

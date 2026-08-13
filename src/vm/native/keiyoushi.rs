@@ -11,7 +11,7 @@ use std::rc::Rc;
 
 pub(crate) const SMANGA: &str = "Leu/kanade/tachiyomi/source/model/SManga;";
 pub(crate) const SCHAPTER: &str = "Leu/kanade/tachiyomi/source/model/SChapter;";
-pub(crate) const PAGE: &str = "Leu/kanade/tachiyomi/source/model/Page;";
+// pub(crate) const PAGE: &str = "Leu/kanade/tachiyomi/source/model/Page;";
 pub(crate) const FILTER_LIST: &str = "Leu/kanade/tachiyomi/source/model/FilterList;";
 pub(crate) const FILTER: &str = "Leu/kanade/tachiyomi/source/model/Filter;";
 pub(crate) const HEADERS: &str = "Lokhttp3/Headers;";
@@ -900,7 +900,9 @@ pub(crate) fn page_init(vm: &mut Vm, args: &[JValue]) -> R {
                 let n = vm.arena.objects[*o as usize].native.clone();
                 match n {
                     Some(Native::Str(s)) => format!("Str({s})"),
-                    Some(Native::Opaque) => format!("Opaque({})", vm.arena.objects[*o as usize].class),
+                    Some(Native::Opaque) => {
+                        format!("Opaque({})", vm.arena.objects[*o as usize].class)
+                    }
                     _ => vm.arena.objects[*o as usize].class.to_string(),
                 }
             }

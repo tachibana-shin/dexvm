@@ -69,9 +69,7 @@ pub fn run(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<JVal
             .join("\n  ");
         return Err(JvmError::Fatal(format!(
             "vm re-entry stack overflow (recur_depth {} above limit {}):\n  {}",
-            vm.recursion_depth,
-            vm.depth_limit,
-            chain
+            vm.recursion_depth, vm.depth_limit, chain
         )));
     }
     vm.recursion_depth += 1;
@@ -282,13 +280,18 @@ impl Vm {
                                 })
                                 .unwrap_or_else(|| format!("{:?}", receiver));
                             let tgt = match &target {
-                                Target::Native(key) => format!(
-                                    "NAT {}.{}",
-                                    self.str_of(key.0),
-                                    self.str_of(key.1)
-                                ),
+                                Target::Native(key) => {
+                                    format!("NAT {}.{}", self.str_of(key.0), self.str_of(key.1))
+                                }
                                 Target::Bytecode { class, slot, .. } => {
-                                    format!("VM {}.{}", self.class_desc_str(*class), self.str_of(self.classes[*class as usize].methods[*slot as usize].name))
+                                    format!(
+                                        "VM {}.{}",
+                                        self.class_desc_str(*class),
+                                        self.str_of(
+                                            self.classes[*class as usize].methods[*slot as usize]
+                                                .name
+                                        )
+                                    )
                                 }
                             };
                             if std::env::var("DEXVM_TRACE").is_ok() {

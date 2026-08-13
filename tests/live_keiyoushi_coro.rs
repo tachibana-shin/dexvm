@@ -111,7 +111,10 @@ fn or_blocked<T>(
             if live {
                 panic!("{what} failed: {}", ext.describe_error(&e));
             }
-            eprintln!("warn: {what} failed (blocked site?): {}", ext.describe_error(&e));
+            eprintln!(
+                "warn: {what} failed (blocked site?): {}",
+                ext.describe_error(&e)
+            );
             None
         }
     }
@@ -194,12 +197,7 @@ fn run_flow(apk_default: &str, expect_16plus: bool) {
     let supports_latest = ext.supports_latest(src).unwrap();
 
     // popular + search through the suspend entries
-    let popular = or_blocked(
-        ext.popular_coro(src, 1),
-        &mut ext,
-        "popular_coro",
-        false,
-    );
+    let popular = or_blocked(ext.popular_coro(src, 1), &mut ext, "popular_coro", false);
     let found = or_blocked(
         ext.search_coro(src, 1, QUERY, &[]),
         &mut ext,
@@ -207,9 +205,7 @@ fn run_flow(apk_default: &str, expect_16plus: bool) {
         false,
     );
 
-    let live = popular
-        .as_ref()
-        .map_or(false, |p| !p.mangas.is_empty())
+    let live = popular.as_ref().map_or(false, |p| !p.mangas.is_empty())
         || found.as_ref().map_or(false, |f| !f.mangas.is_empty());
     if !live {
         eprintln!(
@@ -262,12 +258,9 @@ fn run_flow(apk_default: &str, expect_16plus: bool) {
     // chapters: same fallback pattern
     let chapters = match ext.manga_update_chapters(src, &m0) {
         Ok(c) => Some(c),
-        Err(_e) if !expect_16plus => or_blocked(
-            ext.chapters(src, &m0),
-            &mut ext,
-            "classic chapters",
-            live,
-        ),
+        Err(_e) if !expect_16plus => {
+            or_blocked(ext.chapters(src, &m0), &mut ext, "classic chapters", live)
+        }
         Err(e) => or_blocked(Err(e), &mut ext, "manga_update_chapters", live),
     };
     if let Some(chs) = &chapters {
@@ -283,12 +276,9 @@ fn run_flow(apk_default: &str, expect_16plus: bool) {
     let pages = match chapters.as_ref().and_then(|l| l.first()) {
         Some(c) => match ext.pages_coro(src, c) {
             Ok(p) => Some(p),
-            Err(_e) if !expect_16plus => or_blocked(
-                ext.pages(src, c),
-                &mut ext,
-                "classic pages",
-                live,
-            ),
+            Err(_e) if !expect_16plus => {
+                or_blocked(ext.pages(src, c), &mut ext, "classic pages", live)
+            }
             Err(e) => or_blocked(Err(e), &mut ext, "pages_coro", live),
         },
         None => None,
@@ -307,12 +297,7 @@ fn run_flow(apk_default: &str, expect_16plus: bool) {
 
     // latest through the suspend entry when the source supports it
     if supports_latest {
-        let _lp = or_blocked(
-            ext.latest_coro(src, 1),
-            &mut ext,
-            "latest_coro",
-            live,
-        );
+        let _lp = or_blocked(ext.latest_coro(src, 1), &mut ext, "latest_coro", live);
     }
 
     let caps = captured.borrow();

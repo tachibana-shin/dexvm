@@ -27,7 +27,10 @@ fn get_value(vm: &mut Vm, args: &[JValue]) -> R {
     if let Some(Native::KotlinLazy { value: Some(v), .. }) = payload(vm, args[0]) {
         return Ok(*v);
     }
-    if let Some(Native::KotlinLazy { evaluating: true, .. }) = payload(vm, args[0]) {
+    if let Some(Native::KotlinLazy {
+        evaluating: true, ..
+    }) = payload(vm, args[0])
+    {
         return Err(iae(vm, "Lazy value cannot be computed recursively"));
     }
     let f = match payload(vm, args[0]) {
@@ -42,8 +45,9 @@ fn get_value(vm: &mut Vm, args: &[JValue]) -> R {
     }
     match inv_virt(vm, f, "invoke", "()Ljava/lang/Object;", &[]) {
         Ok(v) => {
-            if let Some(Native::KotlinLazy { value, evaluating, .. }) =
-                payload_mut(vm, args[0])
+            if let Some(Native::KotlinLazy {
+                value, evaluating, ..
+            }) = payload_mut(vm, args[0])
             {
                 *value = Some(v);
                 *evaluating = false;

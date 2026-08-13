@@ -19,9 +19,9 @@ use std::rc::Rc;
 
 use crate::context::{Context, ContextError, SandboxOptions, SettingDefinition, SettingValue};
 use crate::vm::error::JvmError;
-use crate::vm::value::JValue;
 use crate::vm::native::keiyoushi::{FILTER, FILTER_LIST, SCHAPTER, SMANGA};
 use crate::vm::object::Native;
+use crate::vm::value::JValue;
 use crate::vm::Vm;
 
 pub use crate::vm::native::keiyoushi::{HttpData, HttpResp};
@@ -426,13 +426,13 @@ impl Keiyoushi {
         let mut out = Vec::with_capacity(mangas.len());
         for (i, m) in mangas.iter().enumerate() {
             let desc = if let JValue::Obj(o) = m {
-            let vm = self.ctx.vm();
-            let class = vm.arena.objects[*o as usize].class;
-            vm.class_desc_str(class)
-        } else {
-            format!("{m:?}")
-        };
-        eprintln!("DEXTRACE manga[{i}] = {m:?} class={desc}");
+                let vm = self.ctx.vm();
+                let class = vm.arena.objects[*o as usize].class;
+                vm.class_desc_str(class)
+            } else {
+                format!("{m:?}")
+            };
+            eprintln!("DEXTRACE manga[{i}] = {m:?} class={desc}");
             #[allow(clippy::manual_let_else)]
             let value = match m {
                 JValue::Obj(_) => *m,
@@ -535,10 +535,7 @@ impl Keiyoushi {
                     match first {
                         JValue::Obj(o) => {
                             let cls = self.ctx.vm().arena.objects[*o as usize].class;
-                            format!(
-                                "{} (idx {o})",
-                                self.ctx.vm().class_desc_str(cls)
-                            )
+                            format!("{} (idx {o})", self.ctx.vm().class_desc_str(cls))
                         }
                         _ => "-".to_string(),
                     }
@@ -863,12 +860,9 @@ impl Keiyoushi {
         let JValue::Obj(out_id) = out else {
             return Err(JvmError::Resolution("getMangaUpdate: not an object".into()));
         };
-        let list = self.ctx.invoke_on(
-            out_id,
-            "getChapters",
-            "()Ljava/util/List;",
-            &[],
-        )?;
+        let list = self
+            .ctx
+            .invoke_on(out_id, "getChapters", "()Ljava/util/List;", &[])?;
         self.read_chapter_list(list)
     }
 }

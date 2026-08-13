@@ -72,25 +72,18 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
 }
 
 pub(crate) fn list_alloc(vm: &mut Vm, items: Vec<JValue>) -> Result<JValue, NatErr> {
-    if items
-        .iter()
-        .any(|v| matches!(v, JValue::Int(i) if *i == 0))
-    {
+    if items.iter().any(|v| matches!(v, JValue::Int(i) if *i == 0)) {
         eprintln!("DEXTRACE list_alloc WITH INT(0): {items:?}");
-    if let Some(f) = vm.frames.last() {
-        let cls = &vm.classes[f.class as usize];
-        let name = cls
-            .methods
-            .get(f.slot as usize)
-            .map(|m| vm.str_of(m.name))
-            .unwrap_or("?");
-        eprintln!(
-            "DEXTRACE   caller: {}.{}",
-            vm.class_desc_str(f.class),
-            name
-        );
-    }
-    eprintln!("{}", std::backtrace::Backtrace::force_capture());
+        if let Some(f) = vm.frames.last() {
+            let cls = &vm.classes[f.class as usize];
+            let name = cls
+                .methods
+                .get(f.slot as usize)
+                .map(|m| vm.str_of(m.name))
+                .unwrap_or("?");
+            eprintln!("DEXTRACE   caller: {}.{}", vm.class_desc_str(f.class), name);
+        }
+        eprintln!("{}", std::backtrace::Backtrace::force_capture());
     }
     alloc(vm, "Ljava/util/ArrayList;", Native::List(items))
 }
