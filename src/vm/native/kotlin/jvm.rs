@@ -52,14 +52,28 @@ fn collection_to_array(vm: &mut Vm, args: &[JValue]) -> R {
 }
 fn collection_to_array_typed(vm: &mut Vm, args: &[JValue]) -> R {
     let items = coll_elems(vm, args[0])?;
-    let dest = match payload_mut(vm, args[1]) {
-        Some(Native::Array(ArrayData::Obj(slots))) => slots,
-        _ => return Err(npe(vm)),
-    };
-    for (slot, value) in dest.iter_mut().zip(items) {
-        *slot = value;
+    if let Some(Native::Array(ArrayData::Obj(slots))) = payload(vm, args[1]) {
+        if slots.len() >= items.len() {
+            let mut out = slots.clone();
+            for (i, v) in items.iter().enumerate() {
+                out[i] = *v;
+            }
+            if out.len() > items.len() {
+                out[items.len()] = JValue::Null;
+            }
+            if let Some(Native::Array(ArrayData::Obj(d))) = payload_mut(vm, args[1]) {
+                *d = out;
+            }
+            return Ok(args[1]);
+        }
+        let cls = vm.arena.objects[args[1].as_obj() as usize].class;
+        return Ok(JValue::Obj(vm.arena.alloc(
+            cls,
+            Vec::new(),
+            Some(Native::Array(ArrayData::Obj(items))),
+        )));
     }
-    Ok(args[1])
+    Err(npe(vm))
 }
 fn close_finally(vm: &mut Vm, args: &[JValue]) -> R {
     if args[0].is_null() {

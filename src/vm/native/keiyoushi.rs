@@ -94,6 +94,9 @@ pub(crate) fn lazy_update_strategy_once(vm: &mut Vm) -> JValue {
 pub(crate) fn keiyoushi_execute(vm: &mut Vm, args: &[JValue]) -> R {
     let (url, method, headers, body) = request_parts(vm, args[0])?;
     check_network_url(vm, &url)?;
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("DEXVM_TRACE http-req {method} {url}");
+    }
     let body_str = form_body_to_string(vm, &body);
     let Some(http) = vm.http.clone() else {
         return Err(uoe(vm, "no HTTP client registered for this SourceEngine"));
@@ -104,6 +107,22 @@ pub(crate) fn keiyoushi_execute(vm: &mut Vm, args: &[JValue]) -> R {
         headers,
         body: body_str,
     });
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        let preview: String = resp
+            .body
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .take(60)
+            .map(|b| char::from(*b))
+            .collect();
+        eprintln!(
+            "DEXVM_TRACE http {} code={} body={}",
+            resp.code,
+            resp.message,
+            preview.escape_default().take(120).collect::<String>()
+        );
+    }
     alloc(
         vm,
         RESPONSE,
@@ -776,19 +795,42 @@ pub(crate) fn schapter_set_memo(vm: &mut Vm, args: &[JValue]) -> R {
 // ---- Page ----
 
 pub(crate) fn page_init(vm: &mut Vm, args: &[JValue]) -> R {
-    let name = jstr(vm, args[2]).unwrap_or_default();
-    let url = jstr(vm, args[3]).unwrap_or_default();
-    let image_url = jstr(vm, args[4]).unwrap_or_default();
-    alloc(
-        vm,
-        PAGE,
-        Native::SPPage {
-            index: int_of(vm, args[1]),
-            name,
-            url,
-            image_url,
-        },
-    )
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        let pt = |v: &JValue| match v {
+            JValue::Obj(o) => {
+                let n = vm.arena.objects[*o as usize].native.clone();
+                match n {
+                    Some(Native::Str(s)) => format!("Str({s})"),
+                    Some(Native::Opaque) => format!("Opaque({})", vm.arena.objects[*o as usize].class),
+                    _ => vm.arena.objects[*o as usize].class.to_string(),
+                }
+            }
+            JValue::Null => "null".to_string(),
+            JValue::Int(i) => format!("Int({i})"),
+            _ => format!("{v:?}"),
+        };
+        eprintln!(
+            "DEXVM_TRACE page_init idx={} name={} url={} uri={}",
+            int_of(vm, args[1]),
+            pt(&args[2]),
+            pt(&args[3]),
+            pt(&args[4])
+        );
+    }
+    // Tachiyomi `Page(index, url, imageUrl, imageUri)`: the url may be a
+    // comma-joined payload (mangadex at-home metadata) and the imageUrl is
+    // the relative image path; the native must be attached to the receiver
+    // because the interpreter keeps the `new-instance` object.
+    let JValue::Obj(o) = args[0] else {
+        return Err(npe(vm));
+    };
+    vm.arena.objects[o as usize].native = Some(Native::SPPage {
+        index: int_of(vm, args[1]),
+        name: jstr(vm, args[2]).unwrap_or_default(),
+        url: jstr(vm, args[2]).unwrap_or_default(),
+        image_url: jstr(vm, args[3]).unwrap_or_default(),
+    });
+    Ok(JValue::Null)
 }
 
 pub(crate) fn page_get_url(vm: &mut Vm, args: &[JValue]) -> R {
@@ -840,6 +882,15 @@ pub(crate) fn page_set_image_url(vm: &mut Vm, args: &[JValue]) -> R {
 // ---- MangasPage / FilterList ----
 
 pub(crate) fn mangas_page_init(vm: &mut Vm, args: &[JValue]) -> R {
+    eprintln!(
+        "DEXTRACE mangas_page_init: self={:?} mangas={:?} mangas_class={}",
+        args[0],
+        args[1],
+        match args[1] {
+            JValue::Obj(o) => vm.class_desc_str(vm.arena.objects[o as usize].class),
+            _ => "-".to_string(),
+        }
+    );
     let mangas = match payload(vm, args[1]) {
         Some(Native::List(items)) => items.clone(),
         _ => Vec::new(),
@@ -1268,19 +1319,8 @@ pub(crate) fn filter_group_state_obj(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::SFilter { children, .. }) => children.clone(),
         _ => return Ok(JValue::Null),
     };
-    for c in &children {
-        match payload(vm, *c) {
-            Some(Native::SFilter {
-                state, is_checked, ..
-            }) => {
-                if *state != 0 || *is_checked {
-                    return Ok(*c);
-                }
-            }
-            _ => return Ok(JValue::Null),
-        }
-    }
-    Ok(JValue::Null)
+    let list = alloc(vm, "Ljava/util/ArrayList;", Native::List(children))?;
+    Ok(list)
 }
 
 pub(crate) fn filter_tristate_is_excluded(vm: &mut Vm, args: &[JValue]) -> R {

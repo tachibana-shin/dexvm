@@ -8,7 +8,7 @@ pub mod native;
 pub mod object;
 pub mod value;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
@@ -126,6 +126,10 @@ pub struct Vm {
     pub out: Box<dyn Write>,
     pub budget: i64,
     pub depth_limit: usize,
+    /// Nested VM-entry depth (each entry = one Rust stack level via [`interpret::run`]).
+    pub recursion_depth: usize,
+    /// Ring of recently entered guest methods (for overflow diagnostics).
+    pub trace_ring: VecDeque<String>,
     pub hot: Hot,
     pub frames: Vec<crate::vm::interpret::Frame>,
     /// Host-registered natives (see [`Vm::register_native`]).
@@ -179,7 +183,9 @@ impl Vm {
             field_refs: HashMap::new(),
             out,
             budget: 50_000_000,
-            depth_limit: 20_000,
+            depth_limit: 700,
+            recursion_depth: 0,
+            trace_ring: VecDeque::with_capacity(24),
             frames: Vec::new(),
             hot: Hot {
                 clinit: 0,
@@ -257,6 +263,18 @@ impl Vm {
     /// Dotted class name for a class id, e.g. `a.b.Main`.
     pub fn class_desc_str(&self, class: u32) -> String {
         crate::vm::value::dotted_name(self.str_of(self.classes[class as usize].descriptor))
+    }
+
+    /// `Class.methodName(args)ret` for a class id + method slot.
+    pub fn method_desc_str(&self, class: u32, slot: u32) -> String {
+        let cls = &self.classes[class as usize];
+        let m = &cls.methods[slot as usize];
+        format!(
+            "{}.{}{}",
+            crate::vm::value::dotted_name(self.str_of(cls.descriptor)),
+            self.str_of(m.name),
+            self.str_of(m.sig)
+        )
     }
 
     /// Runtime generic signature of a loaded class (from its dex
@@ -403,7 +421,17 @@ impl Vm {
         }
         let desc = self.dex_at(dex_idx).type_descriptor(type_id).to_string();
         if desc.starts_with('[') {
-            return self.array_class(dex_idx, type_id);
+            let desc_id = self.intern(&desc);
+            if let Some(&c) = self.class_by_desc.get(&desc_id) {
+                self.class_by_type.insert((dex_idx, type_id), c);
+                return Ok(c);
+            }
+            if let Some(inner) = desc.strip_prefix('[') {
+                if let Some(inner_tid) = self.dex_at(dex_idx).type_id_of(inner) {
+                    return self.array_class(dex_idx, inner_tid);
+                }
+            }
+            return self.synth_array_class(desc_id);
         }
         let desc_id = self.intern(&desc);
         if let Some(&c) = self.class_by_desc.get(&desc_id) {
@@ -434,15 +462,15 @@ impl Vm {
         }
         let desc = self.str_of(desc_id).to_string();
         if desc.starts_with('[') {
-            // find the dex type id for this array descriptor (any dex)
+            // find the dex type id for the inner descriptor of this array
+            // descriptor (any dex), so array classes link to the exact
+            // element type and nested-array assignability terminates.
+            let inner = &desc[1..];
             for (di, dex) in self.dexes.iter().enumerate() {
-                let Some(sid) = dex.strings.iter().position(|s| s.as_ref() == desc) else {
+                let Some(inner_tid) = dex.type_id_of(inner) else {
                     continue;
                 };
-                let Some(type_id) = dex.types.iter().position(|t| *t == sid as u32) else {
-                    continue;
-                };
-                return self.array_class(di as u32, type_id as u32);
+                return self.array_class(di as u32, inner_tid);
             }
             // No dex defines the descriptor (test fixtures): synthesize a
             // plain array class. Real dexes always carry array descriptors,
@@ -1224,6 +1252,14 @@ impl Vm {
     pub fn call_target(&mut self, target: Target, args: Vec<JValue>) -> Result<JValue, JvmError> {
         match target {
             Target::Native(key) => {
+                if std::env::var("DEXVM_TRACE").is_ok() {
+                    eprintln!(
+                        "DEXVM_TRACE native {}.{}{}",
+                        crate::vm::value::dotted_name(self.str_of(key.0)),
+                        self.str_of(key.1),
+                        self.str_of(key.2)
+                    );
+                }
                 let f = *self
                     .natives
                     .get(&key)
@@ -1234,7 +1270,34 @@ impl Vm {
                     Err(NatErr::Fatal(e)) => Err(e),
                 }
             }
-            Target::Bytecode { class, slot, .. } => interpret::run(self, class, slot, args),
+            Target::Bytecode { class, slot, .. } => {
+                if std::env::var("DEXVM_TRACE").is_ok() {
+                    let name = self
+                        .classes
+                        .get(class as usize)
+                        .and_then(|c| c.methods.get(slot as usize))
+                        .map(|m| {
+                            format!(
+                                "{}.{}",
+                                self.class_desc_str(class),
+                                self.str_of(m.name)
+                            )
+                        });
+                    if let Some(name) = name {
+                        let recv = args.first().copied().and_then(|v| match v {
+                            JValue::Obj(o) => Some(
+                                self.class_desc_str(self.object_class(JValue::Obj(o)).unwrap_or(0)),
+                            ),
+                            _ => None,
+                        });
+                        eprintln!(
+                            "DEXVM_TRACE call {name} recv={}",
+                            recv.unwrap_or_else(|| format!("{args:?}"))
+                        );
+                    }
+                }
+                interpret::run(self, class, slot, args)
+            }
         }
     }
 
@@ -1357,9 +1420,11 @@ impl Vm {
         }
         let (found_class, slot) = slot.ok_or_else(|| {
             JvmError::Resolution(format!(
-                "no method {} {} found",
+                "no method {} {} found (on {} starting from {})",
                 self.str_of(mref.name),
-                self.str_of(mref.sig)
+                self.str_of(mref.sig),
+                self.str_of(self.classes[c0 as usize].descriptor),
+                self.str_of(self.classes[c as usize].descriptor)
             ))
         })?;
         let (native_key, code, decoded, ins_size, registers, ret, args, static_method) = {
@@ -1625,6 +1690,9 @@ impl Vm {
     }
 
     pub fn err_npe(&mut self) -> u32 {
+        if std::env::var("DEXVM_TRACE").is_ok() {
+            eprintln!("NPE@created");
+        }
         self.throwable_of("Ljava/lang/NullPointerException;", "")
     }
     pub fn err_npe_msg(&mut self, msg: impl Into<String>) -> u32 {
@@ -1676,22 +1744,39 @@ impl Vm {
     // ---- assignability ----
 
     pub fn is_assignable(&mut self, obj_class: u32, target: u32) -> Result<bool, JvmError> {
+        self.is_assignable_inner(obj_class, target, 0)
+    }
+
+    fn is_assignable_inner(
+        &mut self,
+        obj_class: u32,
+        target: u32,
+        depth: usize,
+    ) -> Result<bool, JvmError> {
         if obj_class == target {
             return Ok(true);
         }
+        if depth > 64 {
+            return Err(JvmError::Resolution(format!(
+                "type graph cycle or too deep in assignability check (class {obj_class} -> {target})"
+            )));
+        }
         let is_target_array = self.classes[target as usize].array_elem.is_some();
         let mut c = Some(obj_class);
-        let mut depth = 0usize;
+        let mut level = 0usize;
         while let Some(cc) = c {
-            if depth > 64 {
+            if level > 64 {
                 return Err(JvmError::Resolution("class hierarchy too deep".into()));
             }
-            depth += 1;
-            let cl = &self.classes[cc as usize];
+            level += 1;
+            let (array_elem, interfaces, superclass) = {
+                let cl = &self.classes[cc as usize];
+                (cl.array_elem, cl.interfaces.clone(), cl.superclass)
+            };
             if cc == target {
                 return Ok(true);
             }
-            if let Some((edx, elem)) = cl.array_elem {
+            if let Some((edx, elem)) = array_elem {
                 // array targets
                 if is_target_array {
                     let Some((tdx, t_elem)) = self.classes[target as usize].array_elem else {
@@ -1710,22 +1795,41 @@ impl Vm {
                     }
                     let ec = self.ensure_class_by_type(edx, elem)?;
                     let tc = self.ensure_class_by_type(tdx, t_elem)?;
-                    return self.is_assignable(ec, tc);
+                    if depth > 6 {
+                        eprintln!(
+                            "DEXDBG assign array recur obj={} ({}::elem {}) -> {} ({})",
+                            obj_class,
+                            self.class_desc_str(obj_class),
+                            self.dex_at(edx).type_descriptor(elem),
+                            target,
+                            self.class_desc_str(target)
+                        );
+                    }
+                    return self.is_assignable_inner(ec, tc, depth + 1);
                 }
                 // array to Cloneable/Serializable/Object
-                for &i in &cl.interfaces {
+                for &i in &interfaces {
                     if i == target {
                         return Ok(true);
                     }
                 }
                 return Ok(false);
             }
-            for &i in &cl.interfaces {
+            let mut match_interface = false;
+            for &i in &interfaces {
                 if i == target {
-                    return Ok(true);
+                    match_interface = true;
+                    break;
+                }
+                if self.is_assignable_inner(i, target, depth + 1)? {
+                    match_interface = true;
+                    break;
                 }
             }
-            c = cl.superclass;
+            if match_interface {
+                return Ok(true);
+            }
+            c = superclass;
         }
         Ok(false)
     }

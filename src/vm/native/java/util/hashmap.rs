@@ -65,6 +65,13 @@ pub(crate) fn map_get(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::Map(entries)) => entries.clone(),
         _ => return Err(npe(vm)),
     };
+    if std::env::var("DEXVM_TRACE").is_ok() && matches!(args[1], JValue::Int(0)) {
+        eprintln!(
+            "DEXVM_TRACE map_get query=Int(0) n={} keys={:?}",
+            entries.len(),
+            entries.iter().map(|(k, _)| format!("{k:?}")).collect::<Vec<_>>()
+        );
+    }
     match map_find(vm, &entries, args[1])? {
         Some(i) => Ok(entries[i].1),
         None => Ok(JValue::Null),

@@ -21,7 +21,7 @@ pub(crate) use collections::TABLE as COLLECTIONS_TABLE;
 pub(crate) use intrinsics::TABLE as INTRINSICS_TABLE;
 pub(crate) use io::TABLE as IO_TABLE;
 pub(crate) use jvm::TABLE as JVM_TABLE;
-pub(crate) use lazy::TABLE as LAZY_TABLE;
+pub(crate) use lazy::{lazy_lazy_mode_none, lazy_lazy_mode_publication, lazy_lazy_mode_synchronized, TABLE as LAZY_TABLE};
 pub(crate) use ranges::TABLE as RANGES_TABLE;
 pub(crate) use result::TABLE as RESULT_TABLE;
 pub(crate) use sequences::TABLE as SEQUENCES_TABLE;

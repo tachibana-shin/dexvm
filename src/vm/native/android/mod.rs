@@ -303,6 +303,32 @@ pub(crate) fn shared_prefs_contains(vm: &mut Vm, args: &[JValue]) -> R {
     )))
 }
 
+/// `SharedPreferences.getStringSet`: stored values are '\n'-joined strings;
+/// the default (and missing keys) fall back to `args[2]` as a real Set.
+pub(crate) fn shared_prefs_get_string_set(vm: &mut Vm, args: &[JValue]) -> R {
+    let name = shared_prefs_name(vm, args[0])?;
+    let key = jstr(vm, args[1])?;
+    let value = vm
+        .shared_preferences
+        .get(&name)
+        .and_then(|p| p.get(&key))
+        .and_then(|v| match v {
+            PreferenceValue::String(s) => Some(s.clone()),
+            _ => None,
+        });
+    match value {
+        Some(s) => {
+            let items = s
+                .split('\n')
+                .filter(|line| !line.is_empty())
+                .map(|line| vm.alloc_string(line))
+                .collect();
+            set_alloc(vm, items)
+        }
+        None => Ok(args[2]),
+    }
+}
+
 pub(crate) fn shared_prefs_edit(vm: &mut Vm, args: &[JValue]) -> R {
     let name = shared_prefs_name(vm, args[0])?;
     alloc(
@@ -1856,6 +1882,20 @@ pub(crate) const ANDROID_TABLE: &[NativeEntry] = &[
         "(Ljava/lang/String;)Z",
         true,
         shared_prefs_contains
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences;",
+        "containsKey",
+        "(Ljava/lang/String;)Z",
+        true,
+        shared_prefs_contains
+    ),
+    ne!(
+        "Landroid/content/SharedPreferences;",
+        "getStringSet",
+        "(Ljava/lang/String;Ljava/util/Set;)Ljava/util/Set;",
+        true,
+        shared_prefs_get_string_set
     ),
     ne!(
         "Landroid/content/SharedPreferences;",

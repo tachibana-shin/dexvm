@@ -125,6 +125,20 @@ pub(crate) const TABLE: &[NativeEntry] = &[
         property_resource_bundle_init
     ),
     ne!(
+        "Ljava/util/PropertyResourceBundle;",
+        "containsKey",
+        "(Ljava/lang/String;)Z",
+        true,
+        resource_bundle_contains_key
+    ),
+    ne!(
+        "Ljava/util/PropertyResourceBundle;",
+        "getString",
+        "(Ljava/lang/String;)Ljava/lang/String;",
+        true,
+        resource_bundle_get_string
+    ),
+    ne!(
         "Ljava/util/ResourceBundle;",
         "containsKey",
         "(Ljava/lang/String;)Z",

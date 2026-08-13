@@ -14,8 +14,8 @@ use crate::vm::{MethodRef, NatErr, Target, Vm};
 
 #[derive(Debug, Clone)]
 pub struct Frame {
-    class: u32,
-    slot: u32,
+    pub(crate) class: u32,
+    pub(crate) slot: u32,
     /// Dex file (index into `Vm::dexes`) the method's ids refer to.
     dex: u32,
     decoded: Arc<crate::dex::insn::Decoded>,
@@ -60,6 +60,38 @@ impl Frame {
 /// from native code. Native-backing methods (host APIs) run directly.
 pub fn run(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<JValue, JvmError> {
     let m = &vm.classes[class as usize].methods[slot as usize];
+    if vm.recursion_depth >= vm.depth_limit {
+        let chain = vm
+            .trace_ring
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n  ");
+        return Err(JvmError::Fatal(format!(
+            "vm re-entry stack overflow (recur_depth {} above limit {}):\n  {}",
+            vm.recursion_depth,
+            vm.depth_limit,
+            chain
+        )));
+    }
+    vm.recursion_depth += 1;
+    if vm.trace_ring.len() >= 24 {
+        vm.trace_ring.pop_front();
+    }
+    vm.trace_ring.push_back(format!(
+        "{}.{}{}",
+        vm.class_desc_str(class),
+        vm.str_of(m.name),
+        vm.str_of(m.sig)
+    ));
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!(
+            "DEXVM_TRACE enter {}.{}{}",
+            vm.class_desc_str(class),
+            vm.str_of(m.name),
+            vm.str_of(m.sig)
+        );
+    }
     if m.native_decl {
         return Err(JvmError::Resolution(format!(
             "native method {} {} has no JNI bridge (JNI unsupported)",
@@ -85,12 +117,68 @@ pub fn run(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<JVal
         vm.run_loop()
     })();
     vm.frames = saved;
+    vm.recursion_depth -= 1;
     r
 }
 
 fn push_frame(vm: &mut Vm, class: u32, slot: u32, args: Vec<JValue>) -> Result<(), JvmError> {
+    if vm.frames.len() >= vm.depth_limit {
+        let mut dump = Vec::new();
+        for f in vm.frames.iter().rev().take(20) {
+            let m = &vm.classes[f.class as usize].methods[f.slot as usize];
+            dump.push(format!(
+                "  {} . {}",
+                vm.class_desc_str(f.class),
+                vm.str_of(m.name)
+            ));
+        }
+        let m = &vm.classes[class as usize].methods[slot as usize];
+        dump.push(format!(
+            "  {} . {}",
+            vm.class_desc_str(class),
+            vm.str_of(m.name)
+        ));
+        return Err(JvmError::Fatal(format!(
+            "guest stack overflow (depth {}):\n{}",
+            vm.depth_limit,
+            dump.join("\n")
+        )));
+    }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        let m = &vm.classes[class as usize].methods[slot as usize];
+        eprintln!(
+            "DEXVM_TRACE push {}.{} argscount={} args={:?}",
+            vm.class_desc_str(class),
+            vm.str_of(m.name),
+            args.len(),
+            args.iter()
+                .map(|a| match a {
+                    JValue::Obj(o) => vm
+                        .object_class(JValue::Obj(*o))
+                        .map(|c| vm.class_desc_str(c))
+                        .unwrap_or_else(|| "?".into()),
+                    JValue::Null => "Null".into(),
+                    JValue::Int(v) => format!("Int({v})"),
+                    JValue::Long(v) => format!("Long({v})"),
+                    other => format!("{other:?}"),
+                })
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+    }
     let (dex, ins_size, registers, decoded, tries) = {
         let m = &vm.classes[class as usize].methods[slot as usize];
+        if std::env::var("DEXVM_TRACE").is_ok() {
+            if let Some(code) = &m.code {
+                eprintln!(
+                    "DEXVM_TRACE codeitem {}.{} ins={} regs={}",
+                    vm.class_desc_str(class),
+                    vm.str_of(m.name),
+                    code.ins_size,
+                    code.registers_size
+                );
+            }
+        }
         let code = m
             .code
             .as_ref()
@@ -184,6 +272,57 @@ impl Vm {
                         } else {
                             Some(f.regs[args.reg_at(0) as usize])
                         };
+                        if std::env::var("DEXVM_TRACE").is_ok() {
+                            let recv = receiver
+                                .and_then(|v| match v {
+                                    JValue::Obj(o) => self
+                                        .object_class(JValue::Obj(o))
+                                        .map(|c| self.class_desc_str(c)),
+                                    _ => None,
+                                })
+                                .unwrap_or_else(|| format!("{:?}", receiver));
+                            let tgt = match &target {
+                                Target::Native(key) => format!(
+                                    "NAT {}.{}",
+                                    self.str_of(key.0),
+                                    self.str_of(key.1)
+                                ),
+                                Target::Bytecode { class, slot, .. } => {
+                                    format!("VM {}.{}", self.class_desc_str(*class), self.str_of(self.classes[*class as usize].methods[*slot as usize].name))
+                                }
+                            };
+                            if std::env::var("DEXVM_TRACE").is_ok() {
+                                if let Target::Bytecode {
+                                    class,
+                                    slot,
+                                    registers,
+                                    ins_size,
+                                    ..
+                                } = &target
+                                {
+                                    eprintln!(
+                                        "DEXVM_TRACE   target {}.{}.{} regs={} ins={} callcount={}",
+                                        self.class_desc_str(*class),
+                                        self.str_of(
+                                            self.classes[*class as usize].methods[*slot as usize]
+                                                .name
+                                        ),
+                                        self.str_of(
+                                            self.classes[*class as usize].methods[*slot as usize]
+                                                .sig
+                                        ),
+                                        registers,
+                                        ins_size,
+                                        args.count
+                                    );
+                                }
+                            }
+                            eprintln!(
+                                "DEXVM_TRACE call {} in {} -> {tgt} recv={recv}",
+                                self.str_of(mref.name),
+                                self.class_desc_str(f.class),
+                            );
+                        }
                         match &target {
                             Target::Native(key) => {
                                 if self.str_of(mref.name) == "<init>" {
@@ -237,6 +376,15 @@ impl Vm {
                                                     .get(ex as usize)
                                                     .map(|o| self.class_desc_str(o.class))
                                                     .unwrap_or_default();
+                                                if std::env::var("DEXVM_TRACE").is_ok() {
+                                                    eprintln!(
+                                                        "DEXVM_TRACE uncaught native-throw at {}::{} from native {} exc-class={}",
+                                                        self.class_desc_str(dbg_c),
+                                                        self.str_of(self.classes[dbg_c as usize].methods[dbg_s as usize].name),
+                                                        self.native_label(nf),
+                                                        exc_cls,
+                                                    );
+                                                }
                                                 info!(
                                                     "DBG uncaught native-throw at {}::{} from native {} exc-class={}",
                                                     self.class_desc_str(dbg_c),
@@ -314,6 +462,15 @@ impl Vm {
                             }
                             _ => String::new(),
                         };
+                        if std::env::var("DEXVM_TRACE").is_ok() {
+                            eprintln!(
+                                "DEXVM_TRACE throw pc={:04x} cls={} m={} msg={:?}",
+                                f.pc,
+                                self.class_desc_str(f.class),
+                                self.method_desc_str(f.class, f.slot),
+                                m
+                            );
+                        }
                         info!(
                             "DBG throw pc={:04x} cls={} msg={:?}",
                             f.pc,
@@ -702,7 +859,13 @@ impl Vm {
                 if n < 0 {
                     return Ok(StepOutcome::Throw(JValue::Obj(self.err_neg_arr_size())));
                 }
-                let arr_class = self.array_class(f.dex, *type_idx)?;
+                let inner_tid = self
+                    .dex_at(f.dex)
+                    .type_descriptor(*type_idx)
+                    .strip_prefix('[')
+                    .and_then(|inner| self.dex_at(f.dex).type_id_of(inner))
+                    .unwrap_or(*type_idx);
+                let arr_class = self.array_class(f.dex, inner_tid)?;
                 let elem_desc = self
                     .dex_at(f.dex)
                     .type_descriptor(*type_idx)
@@ -726,6 +889,20 @@ impl Vm {
                 let count = args.count as usize;
                 let mut data = ArrayData::new(&elem_desc, count);
                 let mut ri = 0u8;
+                if std::env::var("DEXVM_TRACE").is_ok()
+                    && self
+                        .str_of(self.classes[f.class as usize].descriptor)
+                        .contains("MangaDex")
+                {
+                    let vals = (0..count)
+                        .map(|i| format!("{:?}", f.regs[args.reg_at(i as u8) as usize]))
+                        .collect::<Vec<_>>()
+                        .join(",");
+                    eprintln!(
+                        "DEXVM_TRACE filled-new-array {} regs=[{vals}]",
+                        self.dex_at(f.dex).type_descriptor(*type_idx)
+                    );
+                }
                 for i in 0..count {
                     data.set(i, f.regs[args.reg_at(ri) as usize]);
                     ri += 1;
@@ -733,7 +910,13 @@ impl Vm {
                         ri += 1;
                     }
                 }
-                let arr_class = self.array_class(f.dex, *type_idx)?;
+                let inner_tid = self
+                    .dex_at(f.dex)
+                    .type_descriptor(*type_idx)
+                    .strip_prefix('[')
+                    .and_then(|inner| self.dex_at(f.dex).type_id_of(inner))
+                    .unwrap_or(*type_idx);
+                let arr_class = self.array_class(f.dex, inner_tid)?;
                 let o = self
                     .arena
                     .alloc(arr_class, Vec::new(), Some(Native::Array(data)));
@@ -971,6 +1154,15 @@ impl Vm {
                 } else {
                     let r = f.regs[args.reg_at(0) as usize];
                     if r.is_null_ref() {
+                        if std::env::var("DEXVM_TRACE").is_ok() {
+                            eprintln!(
+                                "DEXVM_TRACE nullrecv {}.{} on {} reg0={:?}",
+                                self.class_desc_str(f.class),
+                                self.str_of(mref.name),
+                                self.class_desc_str(f.class),
+                                r
+                            );
+                        }
                         return Ok(StepOutcome::Throw(JValue::Obj(self.err_npe())));
                     }
                     Some(r.as_obj())

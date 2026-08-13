@@ -593,7 +593,24 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/RequestBody;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/CacheControl;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lokhttp3/CacheControl;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [
+            sdef!(
+                "FORCE_NETWORK",
+                "Lokhttp3/CacheControl;",
+                ShimValue::Lazy(native::lazy_cache_control_force_network)
+            ),
+            sdef!(
+                "FORCE_CACHE",
+                "Lokhttp3/CacheControl;",
+                ShimValue::Lazy(native::lazy_cache_control_force_cache)
+            ),
+        ]
+    ),
     #[cfg(feature = "okhttp")]
     shim!(
         "Lokhttp3/Request$Builder;",
@@ -608,7 +625,17 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Response;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/ResponseBody;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lokhttp3/ResponseBody;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "Companion",
+            "Lokhttp3/ResponseBody$Companion;",
+            ShimValue::Lazy(native::lazy_response_body_companion)
+        ),]
+    ),
     #[cfg(feature = "okhttp")]
     shim!(
         "Leu/kanade/tachiyomi/network/RequestsKt;",
@@ -1546,6 +1573,29 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         ACC_INTERFACE | ACC_ABSTRACT
     ),
     shim!("Lkotlin/LazyKt;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lkotlin/LazyThreadSafetyMode;",
+        Some("Ljava/lang/Enum;"),
+        &[],
+        ACC_PUBLIC | ACC_FINAL | ACC_ENUM,
+        [
+            sdef!(
+                "SYNCHRONIZED",
+                "Lkotlin/LazyThreadSafetyMode;",
+                ShimValue::Lazy(native::lazy_lazy_mode_synchronized)
+            ),
+            sdef!(
+                "PUBLICATION",
+                "Lkotlin/LazyThreadSafetyMode;",
+                ShimValue::Lazy(native::lazy_lazy_mode_publication)
+            ),
+            sdef!(
+                "NONE",
+                "Lkotlin/LazyThreadSafetyMode;",
+                ShimValue::Lazy(native::lazy_lazy_mode_none)
+            ),
+        ]
+    ),
     shim!(
         "Lkotlin/time/Duration;",
         Some("Ljava/lang/Object;"),
@@ -2650,6 +2700,13 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "android")]
     shim!("Landroid/text/Html;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "android")]
+    shim!(
+        "Landroid/text/Editable;",
+        None,
+        &[],
+        ACC_INTERFACE | ACC_ABSTRACT
+    ),
+    #[cfg(feature = "android")]
     shim!("Landroid/text/Layout;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "android")]
     shim!(
@@ -3062,21 +3119,28 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!(
         "Lkotlinx/serialization/ContextualSerializer;",
         Some("Ljava/lang/Object;"),
-        &[],
+        &["Lkotlinx/serialization/KSerializer;"],
         0
     ),
     #[cfg(feature = "tachiyomi")]
     shim!(
         "Lkotlinx/serialization/PolymorphicSerializer;",
         Some("Ljava/lang/Object;"),
-        &[],
+        &["Lkotlinx/serialization/KSerializer;"],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/internal/EnumSerializer;",
+        Some("Ljava/lang/Object;"),
+        &["Lkotlinx/serialization/KSerializer;"],
         0
     ),
     #[cfg(feature = "tachiyomi")]
     shim!(
         "Lkotlinx/serialization/SealedClassSerializer;",
         Some("Ljava/lang/Object;"),
-        &[],
+        &["Lkotlinx/serialization/KSerializer;"],
         0
     ),
     #[cfg(feature = "tachiyomi")]
@@ -3111,28 +3175,28 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!(
         "Lkotlinx/serialization/internal/LinkedHashMapSerializer;",
         Some("Ljava/lang/Object;"),
-        &[],
+        &["Lkotlinx/serialization/KSerializer;"],
         0
     ),
     #[cfg(feature = "tachiyomi")]
     shim!(
         "Lkotlinx/serialization/internal/LinkedHashSetSerializer;",
         Some("Ljava/lang/Object;"),
-        &[],
+        &["Lkotlinx/serialization/KSerializer;"],
         0
     ),
     #[cfg(feature = "tachiyomi")]
     shim!(
         "Lkotlinx/serialization/internal/ObjectSerializer;",
         Some("Ljava/lang/Object;"),
-        &[],
+        &["Lkotlinx/serialization/KSerializer;"],
         0
     ),
     #[cfg(feature = "tachiyomi")]
     shim!(
         "Lkotlinx/serialization/internal/PairSerializer;",
         Some("Ljava/lang/Object;"),
-        &[],
+        &["Lkotlinx/serialization/KSerializer;"],
         0
     ),
     #[cfg(feature = "tachiyomi")]
@@ -3222,6 +3286,13 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "tachiyomi")]
     shim!(
         "Lkotlinx/serialization/modules/SerializersModuleBuilder;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/modules/SerializersModule;",
         Some("Ljava/lang/Object;"),
         &[],
         0

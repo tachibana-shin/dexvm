@@ -459,6 +459,12 @@ impl DexFile {
         Some((m.class, m.proto, m.name))
     }
 
+    /// Find the type id whose descriptor equals `desc`.
+    pub fn type_id_of(&self, desc: &str) -> Option<u32> {
+        let sid = self.strings.iter().position(|s| s.as_ref() == desc)? as u32;
+        self.types.iter().position(|t| *t == sid).map(|i| i as u32)
+    }
+
     /// Find a class def by its descriptor string.
     pub fn class_by_descriptor(&self, desc: &str) -> Option<usize> {
         // string_id of descriptor, then type_id, then class_def index

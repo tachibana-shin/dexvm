@@ -87,6 +87,22 @@ pub(super) fn collections_drop(vm: &mut Vm, args: &[JValue]) -> R {
 pub(super) fn collections_plus_iterable(vm: &mut Vm, args: &[JValue]) -> R {
     let mut items = coll_elems(vm, args[0])?;
     items.extend(coll_elems(vm, args[1])?);
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        let classes = items
+            .iter()
+            .map(|v| match v {
+                JValue::Obj(o) => vm
+                    .class_desc_str(vm.arena.objects[*o as usize].class)
+                    .rsplit('/')
+                    .next()
+                    .unwrap_or("?")
+                    .to_string(),
+                other => format!("{other:?}"),
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        eprintln!("DEXVM_TRACE plus len={} elems=[{classes}]", items.len());
+    }
     list_alloc(vm, items)
 }
 
@@ -161,6 +177,22 @@ pub(super) fn collections_add_all(vm: &mut Vm, args: &[JValue]) -> R {
     let additions = coll_elems(vm, args[1])?;
     if additions.is_empty() {
         return Ok(JValue::Int(0));
+    }
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        let classes = additions
+            .iter()
+            .map(|v| match v {
+                JValue::Obj(o) => vm
+                    .class_desc_str(vm.arena.objects[*o as usize].class)
+                    .rsplit('/')
+                    .next()
+                    .unwrap_or("?")
+                    .to_string(),
+                other => format!("{other:?}"),
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        eprintln!("DEXVM_TRACE addAll n={} elems=[{classes}]", additions.len());
     }
     match payload_mut(vm, args[0]) {
         Some(Native::List(items) | Native::Set(items)) => items.extend(additions),
@@ -370,11 +402,27 @@ pub(super) fn collections_list_of_not_null(vm: &mut Vm, args: &[JValue]) -> R {
     } else {
         vec![args[0]]
     };
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        let classes = values
+            .iter()
+            .map(|v| match v {
+                JValue::Obj(o) => vm
+                    .class_desc_str(vm.arena.objects[*o as usize].class)
+                    .rsplit('/')
+                    .next()
+                    .unwrap_or("?")
+                    .to_string(),
+                other => format!("{other:?}"),
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        eprintln!("DEXVM_TRACE listOfNotNull n={} elems=[{classes}]", values.len());
+    }
     list_alloc(
         vm,
         values
             .into_iter()
-            .filter(|value| !value.is_null())
+            .filter(|value| !value.is_null_ref())
             .collect(),
     )
 }
@@ -1486,6 +1534,7 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/collections/CollectionsKt;", "single", "(Ljava/util/List;)Ljava/lang/Object;", false, collections_single),
     ne!("Lkotlin/collections/CollectionsKt;", "single", "(Ljava/lang/Iterable;)Ljava/lang/Object;", false, collections_single),
     ne!("Lkotlin/collections/CollectionsKt;", "singleOrNull", "(Ljava/util/List;)Ljava/lang/Object;", false, collections_single_or_null),
+    ne!("Lkotlin/collections/CollectionsKt;", "singleOrNull", "(Ljava/lang/Iterable;)Ljava/lang/Object;", false, collections_single_or_null),
     ne!("Lkotlin/collections/CollectionsKt;", "toCharArray", "(Ljava/util/Collection;)[C", false, collections_to_char_array),
     ne!("Lkotlin/collections/CollectionsKt;", "toIntArray", "(Ljava/util/Collection;)[I", false, collections_to_int_array),
     ne!("Lkotlin/collections/CollectionsKt;", "toByteArray", "(Ljava/util/Collection;)[B", false, collections_to_byte_array),

@@ -694,6 +694,28 @@ pub enum Native {
         element: JValue,
         members: Option<Vec<(String, JValue)>>,
         index: i32,
+        /// SerializersModule attached to the Json that started the decode,
+        /// used by `PolymorphicSerializer.deserialize`.
+        module: Option<JValue>,
+    },
+    /// kotlin.Lazy (SynchronizedLazyImpl): memoized Function0.
+    KotlinLazy {
+        f: JValue,
+        value: Option<JValue>,
+        evaluating: bool,
+    },
+    /// kotlinx.serialization PolymorphicSerializer (base class KClass).
+    Polymorphic {
+        base: JValue,
+    },
+    /// kotlinx.serialization SerializersModule: polymorphic base -> (subclass
+    /// KClass, serializer, defaultDeserializer lambda) registrations.
+    SerializersModule {
+        polys: Vec<(JValue, Vec<(JValue, JValue)>, Option<JValue>)>,
+    },
+    /// kotlinx.serialization Json instance carrying a SerializersModule.
+    JsonWithModule {
+        module: JValue,
     },
     /// kotlinx.serialization encoder state for one JSON value. Structured
     /// serializers append descriptor-named members before `endStructure`.
@@ -708,9 +730,20 @@ pub enum Native {
     },
     /// kotlinx.serialization JsonElement serializer marker.
     JsonElementSerializer,
+    /// kotlinx.serialization EnumSerializer (constants in order + serial
+    /// names).
+    EnumSerializer {
+        values: Vec<JValue>,
+        names: Vec<String>,
+    },
     /// kotlinx.serialization ArrayListSerializer(elementSerializer).
     ArrayListSerializer {
         child: JValue,
+    },
+    /// kotlinx.serialization LinkedHashMapSerializer(keySerializer, valueSerializer).
+    LinkedHashMapSerializer {
+        key: JValue,
+        value: JValue,
     },
     /// StringSerializer / IntSerializer / LongSerializer singleton marker.
     PrimitiveSerializer(PrimitiveSerializerKind),
@@ -879,6 +912,12 @@ impl Native {
             Native::MapEntry { map, .. } => out.push(*map),
             Native::OkioOutputStream(buffer) => out.push(*buffer),
             Native::Lazy(v) => push(Some(v), out),
+            Native::KotlinLazy { f, value, .. } => {
+                push(Some(f), out);
+                if let Some(v) = value {
+                    push(Some(v), out);
+                }
+            }
             Native::Thread { runnable, .. } => push(Some(runnable), out),
             Native::Pair(a, b) => {
                 push(Some(a), out);
@@ -941,6 +980,20 @@ impl Native {
             }
             Native::SFilter { children, .. } => push_all(children, out),
             Native::SFilterList(v) => push_all(v, out),
+            Native::Polymorphic { base } => push(Some(base), out),
+            Native::SerializersModule { polys } => {
+                for (base, subs, default) in polys {
+                    push(Some(base), out);
+                    for (_, serializer) in subs {
+                        push(Some(serializer), out);
+                    }
+                    if let Some(d) = default {
+                        push(Some(d), out);
+                    }
+                }
+            }
+            Native::JsonWithModule { module } => push(Some(module), out),
+            Native::EnumSerializer { values, .. } => push_all(values, out),
             Native::Json(_)
             | Native::JsonEncoder { .. }
             | Native::SerialDescriptor { .. }
@@ -957,6 +1010,10 @@ impl Native {
                 }
             }
             Native::ArrayListSerializer { child } => push(Some(child), out),
+            Native::LinkedHashMapSerializer { key, value } => {
+                push(Some(key), out);
+                push(Some(value), out);
+            }
             Native::Intent { extras, .. } => {
                 for (_, value) in extras {
                     push(Some(value), out);

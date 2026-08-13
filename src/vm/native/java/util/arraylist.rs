@@ -69,6 +69,13 @@ pub(crate) fn list_set(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn list_add(vm: &mut Vm, args: &[JValue]) -> R {
     let v = args[1];
+    if matches!(v, crate::vm::value::JValue::Int(_)) {
+        let len = match payload(vm, args[0]) {
+            Some(Native::List(items)) => items.len(),
+            _ => 0,
+        };
+        eprintln!("DEXTRACE list_add INT: list={:?} len={len}", args[0]);
+    }
     let Some(n) = payload_mut(vm, args[0]) else {
         return Err(npe(vm));
     };
@@ -256,8 +263,8 @@ pub(crate) fn list_to_array_typed(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::List(items)) => items.clone(),
         _ => return Err(npe(vm)),
     };
-    match payload(vm, args[1]) {
-        Some(Native::Array(ArrayData::Obj(dst))) if dst.len() >= items.len() => {
+    if let Some(Native::Array(ArrayData::Obj(dst))) = payload(vm, args[1]) {
+        if dst.len() >= items.len() {
             let mut out = dst.clone();
             for (i, it) in items.iter().enumerate() {
                 out[i] = *it;
@@ -272,10 +279,16 @@ pub(crate) fn list_to_array_typed(vm: &mut Vm, args: &[JValue]) -> R {
                 Native::Array(ArrayData::Obj(d)) => *d = out,
                 _ => return Err(npe(vm)),
             }
-            Ok(args[1])
+            return Ok(args[1]);
         }
-        _ => list_to_array(vm, args),
+        let cls = vm.arena.objects[args[1].as_obj() as usize].class;
+        return Ok(JValue::Obj(vm.arena.alloc(
+            cls,
+            Vec::new(),
+            Some(Native::Array(ArrayData::Obj(items))),
+        )));
     }
+    list_to_array(vm, args)
 }
 
 pub(crate) fn list_add_all(vm: &mut Vm, args: &[JValue]) -> R {

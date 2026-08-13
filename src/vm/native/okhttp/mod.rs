@@ -887,6 +887,38 @@ pub(crate) fn lazy_http_url_companion(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lokhttp3/HttpUrl$Companion;")
 }
 
+pub(crate) fn lazy_response_body_companion(vm: &mut Vm) -> JValue {
+    opaque_inst(vm, "Lokhttp3/ResponseBody$Companion;")
+}
+
+pub(crate) fn lazy_cache_control_force_network(vm: &mut Vm) -> JValue {
+    alloc(
+        vm,
+        "Lokhttp3/CacheControl;",
+        Native::CacheControl {
+            max_age: -1,
+            no_cache: true,
+            no_store: false,
+            max_stale: -1,
+        },
+    )
+    .expect("CacheControl alloc")
+}
+
+pub(crate) fn lazy_cache_control_force_cache(vm: &mut Vm) -> JValue {
+    alloc(
+        vm,
+        "Lokhttp3/CacheControl;",
+        Native::CacheControl {
+            max_age: -1,
+            no_cache: false,
+            no_store: false,
+            max_stale: i64::MAX,
+        },
+    )
+    .expect("CacheControl alloc")
+}
+
 pub(crate) fn lazy_media_type_companion(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lokhttp3/MediaType$Companion;")
 }
@@ -926,7 +958,28 @@ pub(crate) fn okhttp_http_url_parse(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(url) = jstr(vm, args[1]).ok() else {
         return Err(npe(vm));
     };
-    alloc(vm, "Lokhttp3/HttpUrl;", Native::HttpUrl(url))
+    let url = url.trim();
+    if !valid_http_url(url) {
+        return Ok(JValue::Null);
+    }
+    alloc(vm, "Lokhttp3/HttpUrl;", Native::HttpUrl(url.to_string()))
+}
+
+/// okhttp's `HttpUrl.parse` returns `null` for anything that is not a
+/// well-formed URL (missing scheme, missing host, invalid characters).
+fn valid_http_url(s: &str) -> bool {
+    let Some((scheme, rest)) = s.split_once("://") else {
+        return false;
+    };
+    if scheme.is_empty()
+        || !scheme
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
+    {
+        return false;
+    }
+    let host = rest.split(['/', '?', '#']).next().unwrap_or("");
+    !host.is_empty()
 }
 
 pub(crate) fn okhttp_http_url_new_builder(vm: &mut Vm, args: &[JValue]) -> R {
@@ -2308,6 +2361,22 @@ fn host_execute(vm: &mut Vm, request: JValue) -> R {
         headers,
         body: body_str,
     });
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        let preview: String = resp
+            .body
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .take(60)
+            .map(|b| char::from(*b))
+            .collect();
+        eprintln!(
+            "DEXVM_TRACE http {} code={} body={}",
+            resp.code,
+            resp.message,
+            preview.escape_default().take(120).collect::<String>()
+        );
+    }
     alloc(
         vm,
         RESPONSE,

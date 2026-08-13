@@ -19,9 +19,9 @@ use std::rc::Rc;
 
 use crate::context::{Context, ContextError, SandboxOptions, SettingDefinition, SettingValue};
 use crate::vm::error::JvmError;
+use crate::vm::value::JValue;
 use crate::vm::native::keiyoushi::{FILTER, FILTER_LIST, SCHAPTER, SMANGA};
 use crate::vm::object::Native;
-use crate::vm::value::JValue;
 use crate::vm::Vm;
 
 pub use crate::vm::native::keiyoushi::{HttpData, HttpResp};
@@ -62,6 +62,7 @@ pub struct PageRef {
     pub index: i32,
     pub name: String,
     pub url: String,
+    pub image_url: String,
 }
 
 #[derive(Debug, Clone)]
@@ -423,8 +424,21 @@ impl Keiyoushi {
             _ => return Err(JvmError::Resolution("not a MangasPage".into())),
         };
         let mut out = Vec::with_capacity(mangas.len());
-        for m in mangas {
-            if let Some(manga) = self.read_manga(m)? {
+        for (i, m) in mangas.iter().enumerate() {
+            let desc = if let JValue::Obj(o) = m {
+            let vm = self.ctx.vm();
+            let class = vm.arena.objects[*o as usize].class;
+            vm.class_desc_str(class)
+        } else {
+            format!("{m:?}")
+        };
+        eprintln!("DEXTRACE manga[{i}] = {m:?} class={desc}");
+            #[allow(clippy::manual_let_else)]
+            let value = match m {
+                JValue::Obj(_) => *m,
+                _ => continue,
+            };
+            if let Some(manga) = self.read_manga(value)? {
                 out.push(manga);
             }
         }
@@ -489,15 +503,75 @@ impl Keiyoushi {
     fn read_page_list(&mut self, list: JValue) -> Result<Vec<PageRef>, JvmError> {
         let items = match self.ctx.vm().payload_of(list) {
             Some(Native::List(items)) => items,
-            _ => return Err(JvmError::Resolution("not a List".into())),
+            _ => {
+                if std::env::var("DEXVM_TRACE").is_ok() {
+                    eprintln!(
+                        "DEXVM_TRACE read_page_list: not a List (value={list:?}, native={})",
+                        self.ctx
+                            .vm()
+                            .payload_of(list)
+                            .map(|n| {
+                                match n {
+                                    Native::Json(_) => "Json",
+                                    Native::Str(_) => "Str",
+                                    Native::SPPage { .. } => "SPPage",
+                                    Native::SChapter { .. } => "SChapter",
+                                    Native::SManga { .. } => "SManga",
+                                    Native::Opaque => "Opaque",
+                                    _ => "other",
+                                }
+                            })
+                            .unwrap_or("none")
+                    );
+                }
+                return Err(JvmError::Resolution("not a List".into()));
+            }
         };
+        if std::env::var("DEXVM_TRACE").is_ok() {
+            eprintln!("DEXVM_TRACE read_page_list: items={}", items.len());
+            if let Some(first) = items.first() {
+                eprintln!(
+                    "DEXVM_TRACE read_page_list: first item raw={first:?} class={}",
+                    match first {
+                        JValue::Obj(o) => {
+                            let cls = self.ctx.vm().arena.objects[*o as usize].class;
+                            format!(
+                                "{} (idx {o})",
+                                self.ctx.vm().class_desc_str(cls)
+                            )
+                        }
+                        _ => "-".to_string(),
+                    }
+                );
+                let n = self.ctx.vm().payload_of(*first);
+                eprintln!(
+                    "DEXVM_TRACE read_page_list: first item payload={}",
+                    match n {
+                        Some(Native::SPPage { .. }) => "SPPage",
+                        Some(Native::Str(_)) => "Str",
+                        Some(Native::Json(_)) => "Json",
+                        Some(Native::Opaque) => "Opaque",
+                        Some(_) => "other",
+                        None => "none",
+                    }
+                );
+            }
+        }
         let mut out = Vec::with_capacity(items.len());
         for p in items {
             if let Some(Native::SPPage {
-                index, name, url, ..
+                index,
+                name,
+                url,
+                image_url,
             }) = self.ctx.vm().payload_of(p)
             {
-                out.push(PageRef { index, name, url });
+                out.push(PageRef {
+                    index,
+                    name,
+                    url,
+                    image_url,
+                });
             }
         }
         Ok(out)
