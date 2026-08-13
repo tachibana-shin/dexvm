@@ -1,9 +1,9 @@
 [package]
 name = "dexvm"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Minimal DEX (Dalvik bytecode) VM runtime in Rust, embeddable as a library and tuned for mihon/Tachiyomi (keiyoushi) manga extensions"
-keywords = ["dex", "dalvik", "android", "vm", "mihon"]
+keywords = ["dex", "dalvik", "android", "vm", "mihon", "tachiyomi", "keiyoushi"]
 categories = ["embedded", "virtualization", "parser-implementations"]
 readme = "README.md"
 license = "Apache-2.0"
