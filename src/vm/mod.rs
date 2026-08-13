@@ -1170,9 +1170,13 @@ impl Vm {
 
     /// Legacy (pre-factory) extension shape: a class that *is* the source and
     /// inherits from `HttpSource` directly (e.g. old `ExtensionGenerated`
-    /// classes). Returns the first concrete subclass found in the raw dex.
+    /// classes). Returns the first *concrete* subclass found in the raw dex —
+    /// abstract base classes (modern keiyoushi shape: the abstract source plus
+    /// a generated concrete `ExtensionGenerated` subclass) are skipped.
     pub fn find_http_source_subclass(&mut self) -> Result<String, JvmError> {
         const TARGET: &str = "Leu/kanade/tachiyomi/source/online/HttpSource;";
+        const ACC_ABSTRACT: u32 = 0x0400;
+        let mut candidates: Vec<(Arc<str>, bool)> = Vec::new();
         for dex in &self.dexes {
             for cd in &dex.classes {
                 let type_str = dex
@@ -1191,15 +1195,14 @@ impl Vm {
                         .get(s as usize)
                         .and_then(|&si| dex.strings.get(si as usize).cloned()),
                 };
+                let mut reaches = false;
                 for _ in 0..4 {
                     let Some(sup) = sup_desc else {
                         break;
                     };
                     if sup.as_ref() == TARGET {
-                        let cid = self.ensure_class_by_desc(&type_str)?;
-                        return Ok(self
-                            .str_of(self.classes[cid as usize].descriptor)
-                            .to_string());
+                        reaches = true;
+                        break;
                     }
                     sup_desc = self.class_location(&sup).and_then(|(di, def_idx)| {
                         let d = &self.dexes[di as usize];
@@ -1213,7 +1216,19 @@ impl Vm {
                         }
                     });
                 }
+                if !reaches {
+                    continue;
+                }
+                if cd.access_flags & ACC_ABSTRACT != 0 {
+                    continue;
+                }
+                candidates.push((type_str.clone(), type_str.ends_with("ExtensionGenerated;")));
             }
+        }
+        candidates.sort_by_key(|(_, is_entry)| !*is_entry);
+        for (type_str, _) in candidates {
+            let cid = self.ensure_class_by_desc(&type_str)?;
+            return Ok(self.str_of(self.classes[cid as usize].descriptor).to_string());
         }
         Err(JvmError::Resolution("no HttpSource subclass in dex".into()))
     }

@@ -22,6 +22,13 @@ pub(super) fn boxing_box_int(vm: &mut Vm, args: &[JValue]) -> R {
         Native::IntBox(int_of(vm, args[0])),
     )
 }
+pub(super) fn boxing_box_long(vm: &mut Vm, args: &[JValue]) -> R {
+    boxed(
+        vm,
+        "Ljava/lang/Long;",
+        Native::LongBox(long_of(vm, args[0])),
+    )
+}
 pub(super) fn boxing_identity(_vm: &mut Vm, args: &[JValue]) -> R {
     Ok(args[0])
 }
@@ -139,7 +146,7 @@ pub(crate) const TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxBoolean", "(Z)Ljava/lang/Boolean;", false, boxing_box_boolean),
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxInt", "(I)Ljava/lang/Integer;", false, boxing_box_int),
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxFloat", "(F)Ljava/lang/Float;", false, boxing_identity),
-    ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxLong", "(J)Ljava/lang/Long;", false, boxing_identity),
+    ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxLong", "(J)Ljava/lang/Long;", false, boxing_box_long),
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxChar", "(C)Ljava/lang/Character;", false, boxing_identity),
     ne!("Lkotlin/coroutines/jvm/internal/Boxing;", "boxDouble", "(D)Ljava/lang/Double;", false, boxing_box_double),
     ne!("Lkotlin/random/Random$Default;", "nextDouble", "()D", true, kotlin_random_next_double),

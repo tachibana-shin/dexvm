@@ -318,6 +318,105 @@ fn http_source_fetch_image_url(vm: &mut Vm, args: &[JValue]) -> R {
     )
 }
 
+/// Runs a request/parse pair and returns the parsed value directly. This is
+/// the host-side default for the suspend entries (`getPopularManga`,
+/// `getMangaDetails`, ...) on the HttpSource shim: on a real device the mihon
+/// host bridges them to `fetchXxx(...).awaitSingle()`, whose observable is
+/// evaluated synchronously here, so the continuation argument is dropped and
+/// the single value returned instead of `COROUTINE_SUSPENDED`.
+fn http_source_get_suspend(
+    vm: &mut Vm,
+    args: &[JValue],
+    request_name: &str,
+    request_sig: &str,
+    request_args: &[JValue],
+    parse_name: &str,
+    parse_sig: &str,
+) -> R {
+    let result = (|| {
+        let request = inv_virt(vm, args[0], request_name, request_sig, request_args)?;
+        let response = keiyoushi_execute(vm, &[request])?;
+        inv_virt(vm, args[0], parse_name, parse_sig, &[response])
+    })();
+    match result {
+        Ok(value) => Ok(value),
+        Err(NatErr::Throw(error)) => Err(NatErr::Throw(error)),
+        Err(error) => Err(error),
+    }
+}
+
+fn http_source_get_popular(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_get_suspend(
+        vm,
+        args,
+        "popularMangaRequest",
+        "(I)Lokhttp3/Request;",
+        &args[1..2],
+        "popularMangaParse",
+        "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/MangasPage;",
+    )
+}
+
+fn http_source_get_search(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_get_suspend(
+        vm,
+        args,
+        "searchMangaRequest",
+        "(ILjava/lang/String;Leu/kanade/tachiyomi/source/model/FilterList;)Lokhttp3/Request;",
+        &args[1..4],
+        "searchMangaParse",
+        "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/MangasPage;",
+    )
+}
+
+fn http_source_get_latest(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_get_suspend(
+        vm,
+        args,
+        "latestUpdatesRequest",
+        "(I)Lokhttp3/Request;",
+        &args[1..2],
+        "latestUpdatesParse",
+        "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/MangasPage;",
+    )
+}
+
+fn http_source_get_details(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_get_suspend(
+        vm,
+        args,
+        "mangaDetailsRequest",
+        "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;",
+        &args[1..2],
+        "mangaDetailsParse",
+        "(Lokhttp3/Response;)Leu/kanade/tachiyomi/source/model/SManga;",
+    )
+}
+
+fn http_source_get_chapters(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_get_suspend(
+        vm,
+        args,
+        "chapterListRequest",
+        "(Leu/kanade/tachiyomi/source/model/SManga;)Lokhttp3/Request;",
+        &args[1..2],
+        "chapterListParse",
+        "(Lokhttp3/Response;)Ljava/util/List;",
+    )
+}
+
+fn http_source_get_pages(vm: &mut Vm, args: &[JValue]) -> R {
+    http_source_get_suspend(
+        vm,
+        args,
+        "pageListRequest",
+        "(Leu/kanade/tachiyomi/source/model/SChapter;)Lokhttp3/Request;",
+        &args[1..2],
+        "pageListParse",
+        "(Lokhttp3/Response;)Ljava/util/List;",
+    )
+}
+
 fn http_source_prepare_new_chapter(_vm: &mut Vm, _args: &[JValue]) -> R {
     Ok(JValue::Null)
 }
@@ -882,15 +981,17 @@ pub(crate) fn page_set_image_url(vm: &mut Vm, args: &[JValue]) -> R {
 // ---- MangasPage / FilterList ----
 
 pub(crate) fn mangas_page_init(vm: &mut Vm, args: &[JValue]) -> R {
-    eprintln!(
-        "DEXTRACE mangas_page_init: self={:?} mangas={:?} mangas_class={}",
-        args[0],
-        args[1],
-        match args[1] {
-            JValue::Obj(o) => vm.class_desc_str(vm.arena.objects[o as usize].class),
-            _ => "-".to_string(),
-        }
-    );
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!(
+            "DEXVM_TRACE mangas_page_init: self={:?} mangas={:?} mangas_class={}",
+            args[0],
+            args[1],
+            match args[1] {
+                JValue::Obj(o) => vm.class_desc_str(vm.arena.objects[o as usize].class),
+                _ => "-".to_string(),
+            }
+        );
+    }
     let mangas = match payload(vm, args[1]) {
         Some(Native::List(items)) => items.clone(),
         _ => Vec::new(),
@@ -1587,6 +1688,12 @@ pub const KEIYOUSHI_TABLE: &[NativeEntry] = &[
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchChapterList", "(Leu/kanade/tachiyomi/source/model/SManga;)Lrx/Observable;", true, http_source_fetch_chapters),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchPageList", "(Leu/kanade/tachiyomi/source/model/SChapter;)Lrx/Observable;", true, http_source_fetch_pages),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "fetchImageUrl", "(Leu/kanade/tachiyomi/source/model/Page;)Lrx/Observable;", true, http_source_fetch_image_url),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getPopularManga", "(ILkotlin/coroutines/Continuation;)Ljava/lang/Object;", true, http_source_get_popular),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getSearchManga", "(ILjava/lang/String;Leu/kanade/tachiyomi/source/model/FilterList;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", true, http_source_get_search),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getLatestUpdates", "(ILkotlin/coroutines/Continuation;)Ljava/lang/Object;", true, http_source_get_latest),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getMangaDetails", "(Leu/kanade/tachiyomi/source/model/SManga;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", true, http_source_get_details),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getChapterList", "(Leu/kanade/tachiyomi/source/model/SManga;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", true, http_source_get_chapters),
+    ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "getPageList", "(Leu/kanade/tachiyomi/source/model/SChapter;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;", true, http_source_get_pages),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "prepareNewChapter", "(Leu/kanade/tachiyomi/source/model/SChapter;Leu/kanade/tachiyomi/source/model/SManga;)V", true, http_source_prepare_new_chapter),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "headersBuilder", "()Lokhttp3/Headers$Builder;", true, http_source_headers_builder),
     ne!("Leu/kanade/tachiyomi/source/online/HttpSource;", "setUrlWithoutDomain", "(Leu/kanade/tachiyomi/source/model/SManga;Ljava/lang/String;)V", true, http_source_set_url_no_domain_manga),

@@ -800,6 +800,77 @@ impl Keiyoushi {
         )?;
         self.read_page_list(out)
     }
+
+    /// `getMangaUpdate` (suspend) — the combined details+chapters entry point
+    /// of the tachiyomix 1.6 era, which is what mihon 0.20.1+ calls instead
+    /// of `getMangaDetails`/`getChapterList`. Returns the `SMangaUpdate`
+    /// object; the caller reads the manga or chapter half off it.
+    pub fn manga_update_coro(
+        &mut self,
+        src: &Source,
+        manga: &Manga,
+        fetch_details: bool,
+        fetch_chapters: bool,
+    ) -> Result<JValue, JvmError> {
+        let m = self.alloc_manga(manga)?;
+        let cid = self
+            .ctx
+            .vm()
+            .ensure_class_by_desc("Ljava/util/ArrayList;")?;
+        let empty_list = JValue::Obj(self.ctx.vm().arena.alloc(
+            cid,
+            Vec::new(),
+            Some(Native::List(Vec::new())),
+        ));
+        let cont = self.suspend_cont()?;
+        self.ctx.invoke_on(
+            src.inst,
+            "getMangaUpdate",
+            "(Leu/kanade/tachiyomi/source/model/SManga;Ljava/util/List;ZZLkotlin/coroutines/Continuation;)Ljava/lang/Object;",
+            &[
+                m,
+                empty_list,
+                JValue::Int(i32::from(fetch_details)),
+                JValue::Int(i32::from(fetch_chapters)),
+                cont,
+            ],
+        )
+    }
+
+    /// `getMangaUpdate(..., true, false)` read as a manga.
+    pub fn manga_update_details(&mut self, src: &Source, manga: &Manga) -> Result<Manga, JvmError> {
+        let out = self.manga_update_coro(src, manga, true, false)?;
+        let JValue::Obj(out_id) = out else {
+            return Err(JvmError::Resolution("getMangaUpdate: not an object".into()));
+        };
+        let smanga = self.ctx.invoke_on(
+            out_id,
+            "getManga",
+            "()Leu/kanade/tachiyomi/source/model/SManga;",
+            &[],
+        )?;
+        self.read_manga(smanga)?
+            .ok_or_else(|| JvmError::Resolution("getMangaUpdate: not a SManga".into()))
+    }
+
+    /// `getMangaUpdate(..., false, true)` read as a chapter list.
+    pub fn manga_update_chapters(
+        &mut self,
+        src: &Source,
+        manga: &Manga,
+    ) -> Result<Vec<Chapter>, JvmError> {
+        let out = self.manga_update_coro(src, manga, false, true)?;
+        let JValue::Obj(out_id) = out else {
+            return Err(JvmError::Resolution("getMangaUpdate: not an object".into()));
+        };
+        let list = self.ctx.invoke_on(
+            out_id,
+            "getChapters",
+            "()Ljava/util/List;",
+            &[],
+        )?;
+        self.read_chapter_list(list)
+    }
 }
 
 fn empty_chapter(url: String, name: String) -> Native {

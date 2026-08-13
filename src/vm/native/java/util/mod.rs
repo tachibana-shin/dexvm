@@ -44,6 +44,7 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
         JValue::Obj(_) => match payload(vm, v) {
             Some(Native::List(items)) => Ok(items.clone()),
             Some(Native::Set(items)) => Ok(items.clone()),
+            Some(Native::ArrayDeque(items)) => Ok(items.clone()),
             Some(Native::SFilterList(items)) => Ok(items.clone()),
             Some(Native::Array(ArrayData::Obj(items))) => Ok(items.clone()),
             #[cfg(feature = "jsoup")]

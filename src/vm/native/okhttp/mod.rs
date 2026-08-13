@@ -962,7 +962,46 @@ pub(crate) fn okhttp_http_url_parse(vm: &mut Vm, args: &[JValue]) -> R {
     if !valid_http_url(url) {
         return Ok(JValue::Null);
     }
-    alloc(vm, "Lokhttp3/HttpUrl;", Native::HttpUrl(url.to_string()))
+    alloc(vm, "Lokhttp3/HttpUrl;", Native::HttpUrl(okhttp_url_encode(url)))
+}
+
+/// okhttp percent-encodes characters that are illegal in a raw URL when
+/// parsing a string (spaces, control chars, `"`, `<`, `>`, `{}`, `|`, `\`,
+/// `^`, backtick, non-ASCII). We mirror that minimally so the transport
+/// layer always receives a well-formed request (e.g. search queries
+/// containing spaces). Already-encoded `%XX` sequences are left untouched.
+fn okhttp_url_encode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = String::with_capacity(s.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b == b'%' {
+            let hex_ok = i + 2 < bytes.len()
+                && bytes[i + 1].is_ascii_hexdigit()
+                && bytes[i + 2].is_ascii_hexdigit();
+            if hex_ok {
+                out.push_str(&s[i..i + 3]);
+                i += 3;
+                continue;
+            }
+        }
+        let raw_ok = b.is_ascii_alphanumeric()
+            || matches!(
+                b,
+                b'-' | b'.' | b'_' | b'~'
+                    | b':' | b'/' | b'?' | b'#' | b'[' | b']' | b'@'
+                    | b'!' | b'$' | b'&' | b'\'' | b'(' | b')' | b'*'
+                    | b'+' | b',' | b';' | b'='
+            );
+        if raw_ok {
+            out.push(b as char);
+        } else {
+            out.push_str(&format!("%{b:02X}"));
+        }
+        i += 1;
+    }
+    out
 }
 
 /// okhttp's `HttpUrl.parse` returns `null` for anything that is not a
@@ -2329,6 +2368,7 @@ fn okhttp_call_enqueue(vm: &mut Vm, args: &[JValue]) -> R {
 /// request already sets them.
 fn host_execute(vm: &mut Vm, request: JValue) -> R {
     let (url, method, mut headers, body) = request_parts(vm, request)?;
+    let url = okhttp_url_encode(&url);
     crate::vm::native::keiyoushi::check_network_url(vm, &url)?;
     let host = url_host_and_path(&url).0;
     if let Some(resolve) = &vm.host_headers {
