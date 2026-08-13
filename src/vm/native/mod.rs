@@ -150,6 +150,8 @@ pub(crate) fn form_body_to_string(vm: &mut Vm, body: &Option<JValue>) -> Option<
                 .collect::<Vec<_>>()
                 .join("&"),
         ),
+        Native::Str(s) => Some(s.clone()),
+        Native::RespBody(bytes) => Some(String::from_utf8_lossy(bytes).into_owned()),
         _ => None,
     }
 }
@@ -554,6 +556,7 @@ pub(crate) fn default_native_for(vm: &mut Vm, id: u32) -> Option<Native> {
                 text: String::new(),
                 pos: 0,
                 last: None,
+                groups: Vec::new(),
             })),
             "Ljava/util/Random;" => Some(Native::Random(0)),
             "Ljava/util/Date;" => Some(Native::Date(0)),

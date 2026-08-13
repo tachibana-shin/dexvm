@@ -434,6 +434,7 @@ fn instant_and_match_result_bridges_keep_values() {
                 text: "prefix".into(),
                 pos: 0,
                 last: Some((0, 3)),
+                groups: Vec::new(),
             }),
         )
         .unwrap();
@@ -591,5 +592,34 @@ fn high_frequency_string_and_mutex_bridges_are_real() {
             crate::vm::native::kotlinx::coroutines::mutex_is_locked(vm, &[mutex]).unwrap(),
             JValue::Int(0)
         );
+    });
+}
+
+#[test]
+fn group_values_wire_initial_data() {
+    with_vm(|vm| {
+        let html = "x wire:initial-data=\"{&quot;fingerprint&quot;:1}\" y";
+        let pattern = r#"wire:initial-data="([^"]+)""#;
+        let re = alloc(
+            vm,
+            "Lkotlin/text/Regex;",
+            Native::Pattern {
+                re: fancy_regex::Regex::new(pattern).unwrap(),
+                source: pattern.to_string(),
+            },
+        )
+        .unwrap();
+        let html = s(vm, "x wire:initial-data=\"{&quot;fingerprint&quot;:1}\" y");
+        let found = regex_find_default(
+            vm,
+            &[re, html, JValue::Int(0), JValue::Int(2), JValue::Null],
+        )
+        .unwrap();
+        let values = match_result_get_group_values(vm, &[found]);
+        let out = list_of!(vm, values);
+        eprintln!("groupValues = {out:?}");
+        assert_eq!(out.len(), 2);
+        assert!(out[0].starts_with("wire:initial-data="));
+        assert_eq!(out[1], "{&quot;fingerprint&quot;:1}");
     });
 }

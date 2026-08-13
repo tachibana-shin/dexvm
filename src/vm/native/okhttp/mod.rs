@@ -220,6 +220,27 @@ pub(crate) fn headers_builder_init(vm: &mut Vm, _args: &[JValue]) -> R {
 }
 
 pub(crate) fn headers_builder_add(vm: &mut Vm, args: &[JValue]) -> R {
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!(
+            "DEXVM_TRACE headers_builder_add args={:?}",
+            args.iter()
+                .map(|v| match v {
+                    JValue::Obj(o) => vm
+                        .arena
+                        .objects
+                        .get(*o as usize)
+                        .map(|obj| if obj.native.is_some() {
+                            "obj(payload)".into()
+                        } else {
+                            "obj(no payload)".into()
+                        })
+                        .unwrap_or_else(|| "obj(gone)".into()),
+                    JValue::Null => "null".into(),
+                    other => format!("{other:?}"),
+                })
+                .collect::<Vec<_>>()
+        );
+    }
     let (n, s) = match (jstr(vm, args[1]), jstr(vm, args[2])) {
         (Ok(n), Ok(v)) => (n, v),
         _ => return Err(npe(vm)),
@@ -889,6 +910,10 @@ pub(crate) fn lazy_http_url_companion(vm: &mut Vm) -> JValue {
 
 pub(crate) fn lazy_response_body_companion(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lokhttp3/ResponseBody$Companion;")
+}
+
+pub(crate) fn lazy_request_body_companion(vm: &mut Vm) -> JValue {
+    opaque_inst(vm, "Lokhttp3/RequestBody$Companion;")
 }
 
 pub(crate) fn lazy_cache_control_force_network(vm: &mut Vm) -> JValue {
@@ -2394,6 +2419,13 @@ fn host_execute(vm: &mut Vm, request: JValue) -> R {
     let host = url_host_and_path(&url).0;
     if let Some(resolve) = &vm.host_headers {
         let (ua, cookie) = resolve(&host);
+        if std::env::var("DEXVM_TRACE").is_ok() {
+            eprintln!(
+                "DEXVM_TRACE host_headers host={host} ua={:?} cookie={:?}",
+                ua.is_some(),
+                cookie.as_deref().map(|c| c.len())
+            );
+        }
         if let Some(ua) = ua {
             if !headers
                 .iter()
@@ -2413,6 +2445,11 @@ fn host_execute(vm: &mut Vm, request: JValue) -> R {
     }
     info!("DBG HOST fetch {method} {url} hdrs={}", headers.len());
     let body_str = form_body_to_string(vm, &body);
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!(
+            "DEXVM_TRACE host_execute {method} {url}\n  hdrs={headers:?}\n  body={body_str:?}"
+        );
+    }
     let Some(http) = vm.http.clone() else {
         return Err(uoe(vm, "no HTTP client registered for this SourceEngine"));
     };
@@ -2432,9 +2469,14 @@ fn host_execute(vm: &mut Vm, request: JValue) -> R {
             .map(|b| char::from(*b))
             .collect();
         eprintln!(
-            "DEXVM_TRACE http {} code={} body={}",
+            "DEXVM_TRACE http {} code={} set-cookie={:?} body={}",
             resp.code,
             resp.message,
+            resp
+                .headers
+                .iter()
+                .find(|(k, _)| k.eq_ignore_ascii_case("set-cookie"))
+                .map(|(_, v)| v.clone()),
             preview.escape_default().take(120).collect::<String>()
         );
     }

@@ -836,6 +836,16 @@ pub(crate) fn lazy_json_element_companion(vm: &mut Vm) -> JValue {
     .unwrap_or(JValue::Null)
 }
 
+/// Lazy materializer for the `JsonObject.Companion` static field.
+pub(crate) fn lazy_json_object_companion(vm: &mut Vm) -> JValue {
+    alloc(
+        vm,
+        "Lkotlinx/serialization/json/JsonObject$Companion;",
+        Native::Opaque,
+    )
+    .unwrap_or(JValue::Null)
+}
+
 /// `OkioZstd.zstdDecompress(source)` / `zstdCompress(sink)` — identity: the
 /// cache stores plain JSON (this VM never writes zstd frames).
 pub(crate) fn zstd_identity(vm: &mut Vm, args: &[JValue]) -> R {

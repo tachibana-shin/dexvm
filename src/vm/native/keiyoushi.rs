@@ -1562,6 +1562,10 @@ pub(crate) fn requests_kt_post_default(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(url) = jstr(vm, args[0]).ok() else {
         return Err(npe(vm));
     };
+    let headers = match payload(vm, args[1]) {
+        Some(Native::Headers(h)) => h.clone(),
+        _ => Vec::new(),
+    };
     let body = args[2];
     alloc(
         vm,
@@ -1569,7 +1573,7 @@ pub(crate) fn requests_kt_post_default(vm: &mut Vm, args: &[JValue]) -> R {
         Native::Request {
             url,
             method: "POST".into(),
-            headers: Vec::new(),
+            headers,
             body: Some(body),
         },
     )

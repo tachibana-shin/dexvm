@@ -26,6 +26,7 @@ use dexvm::keiyoushi::{HttpData, HttpResp, Keiyoushi, Manga, Source};
 
 const APK_PRE16: &str = "fixtures/tachiyomi-all.akuma-v1.4.10.apk";
 const APK_16PLUS: &str = "fixtures/tachiyomi-vi.moetruyen-v1.6.8.apk";
+const APK_CUUTRUYEN: &str = "fixtures/tachiyomi-vi.cuutruyenmoe-v1.6.3.apk";
 const QUERY: &str = "one piece";
 
 /// APK under test; override with DEXVM_APK to point at another keiyoushi
@@ -318,4 +319,15 @@ fn live_pre16_flow() {
 #[test]
 fn live_16plus_flow() {
     run_flow(APK_16PLUS, true);
+}
+
+#[test]
+fn live_cuutruyen_flow() {
+    // keiyoushi `vi.cuutruyenmoe` 1.6.3: the site serves a Livewire
+    // "Kuro Neko Gatekeeper" page first; the extension's interceptor
+    // submits the secret (default password) and retries, which exercises
+    // the session-cookie jar in the HTTP driver plus the gate payload
+    // natives (GroupValues, unescapeEntities, JsonObjectBuilder,
+    // RequestBody$Companion.create, Headers$Builder).
+    run_flow(APK_CUUTRUYEN, true);
 }

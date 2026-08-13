@@ -69,16 +69,19 @@ fn regex_replace_function(vm: &mut Vm, args: &[JValue]) -> R {
     let callback = args[2];
     let mut out = String::with_capacity(text.len());
     let mut cursor = 0;
-    for matched in re.find_iter(&text).flatten() {
-        out.push_str(&text[cursor..matched.start()]);
+    for matched in re.captures_iter(&text).flatten() {
+        let m0 = matched.get(0).expect("group 0 exists");
+        out.push_str(&text[cursor..m0.start()]);
+        let groups = match_groups(&matched);
         let match_obj = alloc(
             vm,
             "Lkotlin/text/MatcherMatchResult;",
             Native::Matcher(MatcherState {
                 pattern: re.clone(),
                 text: text.clone(),
-                pos: matched.end(),
-                last: Some((matched.start(), matched.end())),
+                pos: m0.end(),
+                last: Some((m0.start(), m0.end())),
+                groups,
             }),
         )?;
         let replacement = inv_virt(
@@ -89,7 +92,7 @@ fn regex_replace_function(vm: &mut Vm, args: &[JValue]) -> R {
             &[match_obj],
         )?;
         out.push_str(&charseq_of(vm, replacement)?);
-        cursor = matched.end();
+        cursor = m0.end();
     }
     out.push_str(&text[cursor..]);
     Ok(new_str(vm, &out))
@@ -115,13 +118,15 @@ fn regex_match_entire(vm: &mut Vm, args: &[JValue]) -> R {
         _ => return Err(npe(vm)),
     };
     let text = charseq_of(vm, args[1])?;
-    let Some(m) = re.find(&text).ok().flatten() else {
+    let Some(matched) = re.captures(&text).ok().flatten() else {
         return Ok(JValue::Null);
     };
-    if m.start() != 0 || m.end() != text.len() {
+    let m0 = matched.get(0).expect("group 0 exists");
+    if m0.start() != 0 || m0.end() != text.len() {
         return Ok(JValue::Null);
     }
-    let end = m.end();
+    let end = m0.end();
+    let groups = match_groups(&matched);
     alloc(
         vm,
         "Lkotlin/text/MatcherMatchResult;",
@@ -130,6 +135,7 @@ fn regex_match_entire(vm: &mut Vm, args: &[JValue]) -> R {
             text,
             pos: end,
             last: Some((0, end)),
+            groups,
         }),
     )
 }
@@ -155,13 +161,16 @@ fn regex_find_default(vm: &mut Vm, args: &[JValue]) -> R {
         int_of(vm, args[2]).max(0) as usize
     };
     let hit = re
-        .find_iter(&text)
+        .captures_iter(&text)
         .flatten()
-        .find(|matched| matched.start() >= start)
-        .map(|matched| (matched.start(), matched.end()));
-    let Some((match_start, match_end)) = hit else {
+        .find(|c| c.get(0).expect("group 0 exists").start() >= start);
+    let Some(matched) = hit else {
         return Ok(JValue::Null);
     };
+    let m0 = matched.get(0).expect("group 0 exists");
+    let match_start = m0.start();
+    let match_end = m0.end();
+    let groups = match_groups(&matched);
     alloc(
         vm,
         "Lkotlin/text/MatcherMatchResult;",
@@ -170,8 +179,27 @@ fn regex_find_default(vm: &mut Vm, args: &[JValue]) -> R {
             text,
             pos: match_end,
             last: Some((match_start, match_end)),
+            groups,
         }),
     )
+}
+
+/// Capture ranges of a fancy_regex match in Kotlin `MatchResult.groupValues`
+/// order: index 0 is the whole match, then one entry per capturing group
+/// (None for unmatched optional groups).
+fn match_groups(c: &fancy_regex::Captures<'_, String>) -> Vec<Option<(usize, usize)>> {
+    let mut groups = Vec::with_capacity(c.len());
+    for i in 0..c.len() {
+        groups.push(c.get(i).map(|m| (m.start(), m.end())));
+    }
+    // The VM path stores an extra pseudo group 0 (the whole match) before
+    // the real group 0; drop the duplicate so the list lines up with Kotlin
+    // `MatchResult.groupValues` (index 0 = whole match, then one entry per
+    // capturing group).
+    if groups.len() >= 2 && groups[0].is_some() && groups[1] == groups[0] {
+        groups.remove(1);
+    }
+    groups
 }
 
 fn regex_split(vm: &mut Vm, args: &[JValue]) -> R {
@@ -677,6 +705,36 @@ fn match_result_get_value(vm: &mut Vm, args: &[JValue]) -> R {
 fn match_result_destructured_to_list(vm: &mut Vm, args: &[JValue]) -> R {
     let value = match_result_get_value(vm, args)?;
     list_alloc(vm, vec![value])
+}
+
+/// `MatchResult.getGroupValues` — the whole match followed by every
+/// capturing group (unmatched optional groups become empty strings).
+fn match_result_get_group_values(vm: &mut Vm, args: &[JValue]) -> R {
+    let text_values = match payload(vm, args[0]) {
+        Some(Native::Matcher(ms)) => {
+            if !ms.groups.is_empty() {
+                ms.groups
+                    .iter()
+                    .map(|group| match group {
+                        Some((start, end)) => ms.text.get(*start..*end).unwrap_or("").to_string(),
+                        None => String::new(),
+                    })
+                    .collect()
+            } else {
+                let whole = match ms.last {
+                    Some((start, end)) => ms.text.get(start..end).unwrap_or("").to_string(),
+                    None => String::new(),
+                };
+                vec![whole]
+            }
+        }
+        _ => vec![String::new()],
+    };
+    let values: Vec<JValue> = text_values
+        .into_iter()
+        .map(|s| new_str(vm, &s))
+        .collect();
+    list_alloc(vm, values)
 }
 
 fn match_group_get_value(vm: &mut Vm, args: &[JValue]) -> R {
@@ -1650,6 +1708,7 @@ fn match_result_destructured_get_match(vm: &mut Vm, args: &[JValue]) -> R {
             text: ms.text.clone(),
             pos: ms.pos,
             last: ms.last,
+            groups: ms.groups.clone(),
         },
         _ => return Err(npe(vm)),
     };
@@ -1770,6 +1829,7 @@ pub(crate) const KOTLIN_TABLE: &[NativeEntry] = &[
     ne!("Lkotlin/text/CharsKt;", "checkRadix", "(I)I", false, charskt_check_radix),
     ne!("Lkotlin/text/CharsKt;", "titlecase", "(CLjava/util/Locale;)Ljava/lang/String;", false, charskt_titlecase),
     ne!("Lkotlin/text/MatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),
+    ne!("Lkotlin/text/MatchResult;", "getGroupValues", "()Ljava/util/List;", true, match_result_get_group_values),
     ne!("Lkotlin/text/MatchResult$Destructured;", "toList", "()Ljava/util/List;", true, match_result_destructured_to_list),
     ne!("Lkotlin/text/MatchGroup;", "getValue", "()Ljava/lang/String;", true, match_group_get_value),
     ne!("Lkotlin/text/MatcherMatchResult;", "getValue", "()Ljava/lang/String;", true, match_result_get_value),

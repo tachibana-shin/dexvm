@@ -591,7 +591,19 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     #[cfg(feature = "okhttp")]
     shim!("Lokhttp3/Headers;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/RequestBody;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lokhttp3/RequestBody;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [sdef!(
+            "Companion",
+            "Lokhttp3/RequestBody$Companion;",
+            ShimValue::Lazy(native::lazy_request_body_companion)
+        )]
+    ),
+    #[cfg(feature = "okhttp")]
+    shim!("Lokhttp3/RequestBody$Companion;", Some("Ljava/lang/Object;"), &[], 0),
     #[cfg(feature = "okhttp")]
     shim!(
         "Lokhttp3/CacheControl;",
@@ -1812,6 +1824,12 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         &[],
         ACC_INTERFACE | ACC_ABSTRACT
     ),
+    shim!(
+        "Lkotlin/text/MatcherMatchResult;",
+        Some("Ljava/lang/Object;"),
+        &["Lkotlin/text/MatchResult;"],
+        0
+    ),
     shim!("Lkotlin/TuplesKt;", Some("Ljava/lang/Object;"), &[], 0),
     shim!(
         "Lkotlin/ranges/RangesKt;",
@@ -1856,6 +1874,18 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     shim!(
         "Lkotlinx/serialization/json/JsonObject;",
         Some("Lkotlinx/serialization/json/JsonElement;"),
+        &[],
+        0,
+        [sdef!(
+            "Companion",
+            "Lkotlinx/serialization/json/JsonObject$Companion;",
+            ShimValue::Lazy(native::lazy_json_object_companion)
+        )]
+    ),
+    #[cfg(feature = "tachiyomi")]
+    shim!(
+        "Lkotlinx/serialization/json/JsonObject$Companion;",
+        Some("Ljava/lang/Object;"),
         &[],
         0
     ),

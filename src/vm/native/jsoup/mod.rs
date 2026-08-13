@@ -14,7 +14,47 @@ use crate::vm::object::JsoupDocRef;
 // ---------------------------------------------------------------------------
 
 fn select_selector(selector: &str) -> Option<Matcher> {
-    Matcher::new(&normalize_contains(selector)).ok()
+    Matcher::new(&normalize_attr_values(&normalize_contains(selector))).ok()
+}
+
+/// Quote unquoted attribute values inside `[...]` so dom_query accepts the
+/// lenient jsoup syntax (e.g. `a[href*=/truyen/]` -> `a[href*="/truyen/"]`).
+fn normalize_attr_values(selector: &str) -> String {
+    let mut out = String::with_capacity(selector.len());
+    let chars: Vec<char> = selector.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] == '[' {
+            let start = i;
+            i += 1;
+            while i < chars.len() && chars[i] != ']' {
+                i += 1;
+            }
+            let end = i.min(chars.len());
+            let frag = &selector[start + 1..end];
+            if let Some(eq) = frag.find('=') {
+                let value = &frag[eq + 1..];
+                let unquoted = !value.trim_start().starts_with('"')
+                    && !value.trim_start().starts_with('\'');
+                if unquoted {
+                    out.push('[');
+                    out.push_str(&frag[..eq + 1]);
+                    out.push('"');
+                    out.push_str(value);
+                    out.push('"');
+                    out.push(']');
+                    i += 1;
+                    continue;
+                }
+            }
+            out.push_str(&selector[start..=end.min(selector.len() - 1)]);
+            i += 1;
+            continue;
+        }
+        out.push(chars[i]);
+        i += 1;
+    }
+    out
 }
 
 /// jsoup `:contains(...)` is not W3C; quote the argument inside `:contains`.

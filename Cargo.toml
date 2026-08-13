@@ -102,5 +102,5 @@ unicode-normalization = "0.1.25"
 
 [dev-dependencies]
 aes-gcm = "0.11.0"
-ureq = "3.4.0"
+ureq = { version = "3.4.0", features = ["cookies"] }
 env_logger = "0.11"

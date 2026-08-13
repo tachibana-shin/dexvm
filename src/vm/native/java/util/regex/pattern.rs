@@ -42,6 +42,7 @@ pub(crate) fn pattern_matcher(vm: &mut Vm, args: &[JValue]) -> R {
             text,
             pos: 0,
             last: None,
+            groups: Vec::new(),
         }),
     )
 }

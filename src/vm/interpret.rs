@@ -356,6 +356,28 @@ impl Vm {
                                 }
                                 match nf(self, &call_args) {
                                     Ok(v) => {
+                                        // <init> natives conventionally
+                                        // return a freshly allocated object;
+                                        // the bytecode keeps the pre-allocated
+                                        // receiver, so carry the payload over.
+                                        if self.str_of(mref.name) == "<init>" {
+                                            if let (Some(JValue::Obj(r)), JValue::Obj(res)) =
+                                                (receiver, v)
+                                            {
+                                                let payload = self
+                                                    .arena
+                                                    .objects
+                                                    .get(res as usize)
+                                                    .and_then(|o| o.native.clone());
+                                                if payload.is_some() {
+                                                    if let Some(o) =
+                                                        self.arena.objects.get_mut(r as usize)
+                                                    {
+                                                        o.native = payload;
+                                                    }
+                                                }
+                                            }
+                                        }
                                         f.result = v;
                                         f.pc = ret_pc;
                                     }

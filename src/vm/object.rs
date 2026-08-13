@@ -804,6 +804,10 @@ pub struct MatcherState {
     pub pos: usize,
     /// (start, end) of the most recent find()/matches().
     pub last: Option<(usize, usize)>,
+    /// Capture groups of the most recent find()/matches(): index 0 is the
+    /// whole match, then one entry per capturing group (None = unmatched).
+    /// Empty when the state was built without group information.
+    pub groups: Vec<Option<(usize, usize)>>,
 }
 
 /// kotlin.text.HexFormat configuration. The `BytesHexFormat$Builder` shares
