@@ -24,6 +24,7 @@ use std::io::Read;
 use std::path::Path;
 
 use crate::dex::DexFile;
+use crate::manifest::{AppManifest, ManifestError, ResourceTable};
 use crate::permission::{FilesystemPermission, NetworkPermission, Permission, ProcessPermission};
 use crate::vm::error::JvmError;
 pub use crate::vm::object::PreferenceValue as SettingValue;
@@ -321,10 +322,63 @@ impl Context {
     /// Resolves an arena object id to its string payload, if the object is a
     /// java String (used e.g. to read a preference's `default_value`).
     pub fn string_of(&mut self, id: u32) -> Option<String> {
-        match self.vm().arena.objects.get(id as usize).and_then(|o| o.native.as_ref()) {
+        match self
+            .vm()
+            .arena
+            .objects
+            .get(id as usize)
+            .and_then(|o| o.native.as_ref())
+        {
             Some(Native::Str(s)) => Some(s.clone()),
             _ => None,
         }
+    }
+
+    /// Parsed `AndroidManifest.xml` metadata: package id, app name, icon
+    /// resource id and sdk levels of the loaded APK. Fails with
+    /// [`ManifestError::Missing`] for plain dex input.
+    pub fn manifest(&mut self) -> Result<AppManifest, ManifestError> {
+        let bytes = self
+            .vm()
+            .resources
+            .get("AndroidManifest.xml")
+            .cloned()
+            .ok_or_else(|| ManifestError::Missing("AndroidManifest.xml".into()))?;
+        let table = self
+            .vm()
+            .resources
+            .get("resources.arsc")
+            .map(|d| ResourceTable::parse(d))
+            .transpose()?;
+        crate::manifest::parse_manifest(&bytes, table.as_ref())
+    }
+
+    /// Maps a resource id to its APK entry path via `resources.arsc`, e.g.
+    /// the icon `0x7f010000` → `res/9w.png` in obfuscated builds.
+    pub fn resource_path(&mut self, resource_id: u32) -> Option<String> {
+        let table = ResourceTable::parse(self.vm().resources.get("resources.arsc")?).ok()?;
+        table.path(resource_id)
+    }
+
+    /// Maps a resource id to its string value via `resources.arsc`, e.g. a
+    /// `@string/app_name` label.
+    pub fn resource_string(&mut self, resource_id: u32) -> Option<String> {
+        let table = ResourceTable::parse(self.vm().resources.get("resources.arsc")?).ok()?;
+        table.string(resource_id)
+    }
+
+    /// The raw bytes of an APK entry (e.g. an icon path from
+    /// [`Context::resource_path`]).
+    pub fn resource_bytes(&mut self, path: &str) -> Option<Vec<u8>> {
+        self.vm().resources.get(path).cloned()
+    }
+
+    /// The decoded icon of the loaded APK: resolves the manifest
+    /// `android:icon` through the resource table and returns the PNG bytes.
+    pub fn icon_bytes(&mut self) -> Option<Vec<u8>> {
+        let id = self.manifest().ok()?.icon_resource_id?;
+        let path = self.resource_path(id)?;
+        self.resource_bytes(&path)
     }
 
     /// Returns persisted/in-memory values for named settings. Mirrors the

@@ -18,6 +18,7 @@
 use std::rc::Rc;
 
 use crate::context::{Context, ContextError, SandboxOptions, SettingDefinition, SettingValue};
+use crate::manifest::{AppManifest, ManifestError};
 use crate::vm::error::JvmError;
 use crate::vm::native::keiyoushi::{FILTER, FILTER_LIST, SCHAPTER, SMANGA};
 use crate::vm::object::Native;
@@ -190,6 +191,17 @@ impl Keiyoushi {
     /// (e.g. the `default_value` of a [`SettingDefinition`]).
     pub fn string_of(&mut self, id: u32) -> Option<String> {
         self.ctx.string_of(id)
+    }
+
+    /// Parsed `AndroidManifest.xml` metadata of the extension APK:
+    /// package id, app name, icon resource id and sdk levels.
+    pub fn manifest(&mut self) -> Result<AppManifest, ManifestError> {
+        self.ctx.manifest()
+    }
+
+    /// The extension's launcher icon (`android:icon`) as decoded PNG bytes.
+    pub fn app_icon(&mut self) -> Option<Vec<u8>> {
+        self.ctx.icon_bytes()
     }
 
     pub fn get_settings(

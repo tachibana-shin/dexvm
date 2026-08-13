@@ -55,9 +55,11 @@ pub mod context;
 pub mod dex;
 #[cfg(feature = "tachiyomi")]
 pub mod keiyoushi;
+pub mod manifest;
 pub mod permission;
 pub mod vm;
 
 pub use context::{Context, ContextError, SandboxOptions};
+pub use manifest::{AppManifest, ManifestError};
 pub use vm::value::JValue;
 pub use vm::Vm;

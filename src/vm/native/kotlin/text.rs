@@ -730,10 +730,7 @@ fn match_result_get_group_values(vm: &mut Vm, args: &[JValue]) -> R {
         }
         _ => vec![String::new()],
     };
-    let values: Vec<JValue> = text_values
-        .into_iter()
-        .map(|s| new_str(vm, &s))
-        .collect();
+    let values: Vec<JValue> = text_values.into_iter().map(|s| new_str(vm, &s)).collect();
     list_alloc(vm, values)
 }
 

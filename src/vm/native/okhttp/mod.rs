@@ -2472,8 +2472,7 @@ fn host_execute(vm: &mut Vm, request: JValue) -> R {
             "DEXVM_TRACE http {} code={} set-cookie={:?} body={}",
             resp.code,
             resp.message,
-            resp
-                .headers
+            resp.headers
                 .iter()
                 .find(|(k, _)| k.eq_ignore_ascii_case("set-cookie"))
                 .map(|(_, v)| v.clone()),

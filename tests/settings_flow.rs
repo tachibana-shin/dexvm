@@ -46,14 +46,24 @@ fn mihon_preference_definitions_and_roundtrip() {
     // screen becomes a group whose single child is the website_password
     // EditTextPreference.
     let defs = ext.preference_definitions(src).unwrap();
-    assert_eq!(defs.len(), 1, "expected one preference screen root: {defs:?}");
+    assert_eq!(
+        defs.len(),
+        1,
+        "expected one preference screen root: {defs:?}"
+    );
     let screen = &defs[0];
-    assert_eq!(screen.title.as_deref(), None, "screen has no title: {screen:?}");
+    assert_eq!(
+        screen.title.as_deref(),
+        None,
+        "screen has no title: {screen:?}"
+    );
     let wp = screen
         .children
         .iter()
         .find(|d| d.key.as_deref() == Some("website_password"))
-        .unwrap_or_else(|| panic!("cuutruyen must declare the website_password preference: {screen:?}"));
+        .unwrap_or_else(|| {
+            panic!("cuutruyen must declare the website_password preference: {screen:?}")
+        });
     assert_eq!(wp.title.as_deref(), Some("Mật khẩu truy cập website"));
     assert_eq!(wp.summary.as_deref(), Some("Mặc định: 5"));
     // default_value is the java String "5" (arena object holding Str)
@@ -113,7 +123,11 @@ fn pre16_switch_preference_definitions() {
     let src = &srcs[0];
 
     let defs = ext.preference_definitions(src).unwrap();
-    assert_eq!(defs.len(), 1, "expected one preference screen root: {defs:?}");
+    assert_eq!(
+        defs.len(),
+        1,
+        "expected one preference screen root: {defs:?}"
+    );
     let pref = &defs[0].children[0];
     assert_eq!(pref.key.as_deref(), Some("pref_title"));
     assert_eq!(

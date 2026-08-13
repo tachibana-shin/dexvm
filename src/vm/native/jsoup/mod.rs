@@ -34,8 +34,8 @@ fn normalize_attr_values(selector: &str) -> String {
             let frag = &selector[start + 1..end];
             if let Some(eq) = frag.find('=') {
                 let value = &frag[eq + 1..];
-                let unquoted = !value.trim_start().starts_with('"')
-                    && !value.trim_start().starts_with('\'');
+                let unquoted =
+                    !value.trim_start().starts_with('"') && !value.trim_start().starts_with('\'');
                 if unquoted {
                     out.push('[');
                     out.push_str(&frag[..eq + 1]);

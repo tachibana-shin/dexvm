@@ -603,7 +603,12 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         )]
     ),
     #[cfg(feature = "okhttp")]
-    shim!("Lokhttp3/RequestBody$Companion;", Some("Ljava/lang/Object;"), &[], 0),
+    shim!(
+        "Lokhttp3/RequestBody$Companion;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0
+    ),
     #[cfg(feature = "okhttp")]
     shim!(
         "Lokhttp3/CacheControl;",
