@@ -1007,7 +1007,9 @@ impl Keiyoushi {
             "(Lokhttp3/Request;)Lokhttp3/Call;",
             &[req],
         )?;
-        let resp = self.ctx.invoke_on(call.as_obj(), "execute", "()Lokhttp3/Response;", &[])?;
+        let resp = self
+            .ctx
+            .invoke_on(call.as_obj(), "execute", "()Lokhttp3/Response;", &[])?;
         match self.ctx.vm().payload_of(resp) {
             Some(Native::Response { body: Some(b), .. }) => Ok(b.clone()),
             Some(Native::Response { body: None, .. }) => Ok(Vec::new()),

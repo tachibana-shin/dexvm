@@ -46,9 +46,7 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
             Some(Native::Set(items)) => Ok(items.clone()),
             Some(Native::ArrayDeque(items)) => Ok(items.clone()),
             Some(Native::SFilterList(items)) => Ok(items.clone()),
-            Some(Native::IntRange(first, last)) => {
-                Ok((*first..=*last).map(JValue::Int).collect())
-            }
+            Some(Native::IntRange(first, last)) => Ok((*first..=*last).map(JValue::Int).collect()),
             Some(Native::IntProgression(first, last, step)) => {
                 let (mut first, last, step) = (*first, *last, *step);
                 let mut out = Vec::new();
@@ -65,12 +63,12 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
                 }
                 Ok(out)
             }
-            Some(Native::CharRange(first, last)) => {
-                Ok((*first..=*last).map(|c| JValue::Int(c as u16 as i32)).collect())
-            }
+            Some(Native::CharRange(first, last)) => Ok((*first..=*last)
+                .map(|c| JValue::Int(c as u16 as i32))
+                .collect()),
             Some(Native::LongRange(first, last)) => {
                 Ok((*first..=*last).map(JValue::Long).collect())
-            },
+            }
             Some(Native::Array(ArrayData::Obj(items))) => Ok(items.clone()),
             #[cfg(feature = "jsoup")]
             Some(Native::JsoupElements { doc, ids }) => {
@@ -89,7 +87,7 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
                     })
                     .collect()
             }
-_ => {
+            _ => {
                 if std::env::var("DEXVM_TRACE").is_ok() {
                     let payload_desc = payload(vm, v)
                         .map(|p| {
@@ -127,7 +125,9 @@ _ => {
 }
 
 pub(crate) fn list_alloc(vm: &mut Vm, items: Vec<JValue>) -> Result<JValue, NatErr> {
-    if std::env::var("DEXVM_TRACE").is_ok() && items.iter().any(|v| matches!(v, JValue::Int(i) if *i == 0)) {
+    if std::env::var("DEXVM_TRACE").is_ok()
+        && items.iter().any(|v| matches!(v, JValue::Int(i) if *i == 0))
+    {
         eprintln!("DEXTRACE list_alloc WITH INT(0): {items:?}");
         if let Some(f) = vm.frames.last() {
             let cls = &vm.classes[f.class as usize];

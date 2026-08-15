@@ -225,10 +225,17 @@ fn live_tachiyomi_source_api() {
                 !details.title.is_empty() || !details.description.is_empty(),
                 "live details must carry title or description: {details:?}"
             );
-            eprintln!("live: details: title={:?} desc_len={}", details.title, details.description.len());
+            eprintln!(
+                "live: details: title={:?} desc_len={}",
+                details.title,
+                details.description.len()
+            );
         }
         Err(e) if live => {
-            panic!("manga_update_details failed on live data: {}", ext.describe_error(&e))
+            panic!(
+                "manga_update_details failed on live data: {}",
+                ext.describe_error(&e)
+            )
         }
         Err(e) => eprintln!("warn: details blocked: {}", ext.describe_error(&e)),
     }
@@ -255,7 +262,10 @@ fn live_tachiyomi_source_api() {
             first_chapter = chapters.into_iter().next();
         }
         Err(e) if live => {
-            panic!("manga_update_chapters failed on live data: {}", ext.describe_error(&e))
+            panic!(
+                "manga_update_chapters failed on live data: {}",
+                ext.describe_error(&e)
+            )
         }
         Err(e) => eprintln!("warn: chapters blocked: {}", ext.describe_error(&e)),
     }
@@ -301,15 +311,9 @@ fn live_tachiyomi_source_api() {
                             );
                         }
                         Err(e) if live => {
-                            panic!(
-                                "image_data failed on live data: {}",
-                                ext.describe_error(&e)
-                            )
+                            panic!("image_data failed on live data: {}", ext.describe_error(&e))
                         }
-                        Err(e) => eprintln!(
-                            "warn: image_data blocked: {}",
-                            ext.describe_error(&e)
-                        ),
+                        Err(e) => eprintln!("warn: image_data blocked: {}", ext.describe_error(&e)),
                     }
                 }
             }

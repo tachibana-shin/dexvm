@@ -658,10 +658,8 @@ fn case_insensitive_string_ops_handle_multibyte() {
 
         // Split(ignoreCase=true) must not panic on multi-byte strings.
         let comma = s(vm, "ệ");
-        let delimiters = alloc_arr(vm, "Ljava/lang/String;", 1, || {
-            ArrayData::Obj(vec![comma])
-        })
-        .unwrap();
+        let delimiters =
+            alloc_arr(vm, "Ljava/lang/String;", 1, || ArrayData::Obj(vec![comma])).unwrap();
         let pieces = list_of!(
             vm,
             stringskt_split_strings_default(

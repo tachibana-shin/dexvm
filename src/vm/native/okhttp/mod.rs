@@ -2335,10 +2335,7 @@ pub(crate) fn request_body_companion_create_bytes_default(vm: &mut Vm, args: &[J
     alloc(
         vm,
         "Lokhttp3/RequestBody;",
-        Native::RequestBody {
-            data,
-            content_type,
-        },
+        Native::RequestBody { data, content_type },
     )
 }
 

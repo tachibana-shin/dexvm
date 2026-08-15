@@ -1,7 +1,5 @@
 use log::debug;
 
-
-
 use crate::vm::native::*;
 
 // ---- java.util.HashMap ----

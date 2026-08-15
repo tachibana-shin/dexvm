@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use log::debug;
 
-
 use crate::dex::insn::{Args, Binop, CmpOp, FillArray, IfOp, Insn, InvokeKind, Unop};
 use crate::dex::TryItem;
 use crate::vm::error::JvmError;
@@ -1171,13 +1170,11 @@ impl Vm {
                     Insn::IPutObj(..) => {
                         let fty = self.str_of(fr.ty);
                         match (fty, v) {
-                            ("Ljava/lang/Integer;", JValue::Int(i)) => {
-                                crate::vm::native::boxed(
-                                    self,
-                                    "Ljava/lang/Integer;",
-                                    Native::IntBox(i),
-                                )?
-                            }
+                            ("Ljava/lang/Integer;", JValue::Int(i)) => crate::vm::native::boxed(
+                                self,
+                                "Ljava/lang/Integer;",
+                                Native::IntBox(i),
+                            )?,
                             ("Ljava/lang/Long;", JValue::Long(l)) => crate::vm::native::boxed(
                                 self,
                                 "Ljava/lang/Long;",

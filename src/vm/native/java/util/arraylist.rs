@@ -69,9 +69,7 @@ pub(crate) fn list_set(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn list_add(vm: &mut Vm, args: &[JValue]) -> R {
     let v = args[1];
-    if std::env::var("DEXVM_TRACE").is_ok()
-        && matches!(v, crate::vm::value::JValue::Int(_))
-    {
+    if std::env::var("DEXVM_TRACE").is_ok() && matches!(v, crate::vm::value::JValue::Int(_)) {
         let len = match payload(vm, args[0]) {
             Some(Native::List(items)) => items.len(),
             _ => 0,
