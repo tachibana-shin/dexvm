@@ -1022,12 +1022,16 @@ mod tests {
         // No persistence path is configured, so seeding must not touch disk
         // and must not notify the host callback.
         ctx.seed_preferences("source_123", &values);
-        assert_eq!(ctx.get_settings("source_123").get("display_mode"), Some(&PreferenceValue::String("vertical".to_string())));
+        assert_eq!(
+            ctx.get_settings("source_123").get("display_mode"),
+            Some(&PreferenceValue::String("vertical".to_string()))
+        );
         assert_eq!(notified.get(), 0);
         assert_eq!(ctx.preference_file_names(), vec!["source_123".to_string()]);
 
         // update_setting still notifies the host callback.
-        ctx.update_setting("source_123", "mode", PreferenceValue::Int(7)).unwrap();
+        ctx.update_setting("source_123", "mode", PreferenceValue::Int(7))
+            .unwrap();
         assert_eq!(notified.get(), 1);
     }
 }
