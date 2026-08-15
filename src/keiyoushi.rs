@@ -529,7 +529,9 @@ impl Keiyoushi {
             } else {
                 format!("{m:?}")
             };
-            eprintln!("DEXTRACE manga[{i}] = {m:?} class={desc}");
+            if std::env::var("DEXVM_TRACE").is_ok() {
+                eprintln!("DEXTRACE manga[{i}] = {m:?} class={desc}");
+            }
             #[allow(clippy::manual_let_else)]
             let value = match m {
                 JValue::Obj(_) => *m,

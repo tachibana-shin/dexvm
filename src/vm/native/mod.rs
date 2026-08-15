@@ -305,7 +305,9 @@ pub(crate) fn check_native_permission(
 }
 
 pub(crate) fn npe(vm: &mut Vm) -> NatErr {
-    eprintln!("NPE@native");
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!("NPE@native");
+    }
     NatErr::Throw(vm.err_npe())
 }
 pub(crate) fn iae(vm: &mut Vm, m: impl Into<String>) -> NatErr {

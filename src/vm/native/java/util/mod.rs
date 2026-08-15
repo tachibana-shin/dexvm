@@ -72,7 +72,7 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
 }
 
 pub(crate) fn list_alloc(vm: &mut Vm, items: Vec<JValue>) -> Result<JValue, NatErr> {
-    if items.iter().any(|v| matches!(v, JValue::Int(i) if *i == 0)) {
+    if std::env::var("DEXVM_TRACE").is_ok() && items.iter().any(|v| matches!(v, JValue::Int(i) if *i == 0)) {
         eprintln!("DEXTRACE list_alloc WITH INT(0): {items:?}");
         if let Some(f) = vm.frames.last() {
             let cls = &vm.classes[f.class as usize];

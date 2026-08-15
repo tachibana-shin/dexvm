@@ -30,6 +30,7 @@ pub(crate) use result::TABLE as RESULT_TABLE;
 pub(crate) use sequences::TABLE as SEQUENCES_TABLE;
 pub(crate) use statics::{
     duration_companion as lazy_duration_companion, duration_unit_days as lazy_duration_unit_days,
+    duration_unit_hours as lazy_duration_unit_hours,
     duration_unit_millis as lazy_duration_unit_millis,
     duration_unit_seconds as lazy_duration_unit_seconds, global_scope as lazy_global_scope,
     result_companion as lazy_result_companion, unit_instance as lazy_unit_instance,
