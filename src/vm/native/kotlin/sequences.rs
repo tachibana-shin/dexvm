@@ -34,16 +34,14 @@ fn sequence_filter(vm: &mut Vm, args: &[JValue]) -> R {
     let f = args[1];
     let mut out = Vec::new();
     for value in values {
-        if inv_virt(
+        let keep = inv_virt(
             vm,
             f,
             "invoke",
             "(Ljava/lang/Object;)Ljava/lang/Object;",
             &[value],
-        )?
-        .as_int()
-            != 0
-        {
+        )?;
+        if int_of(vm, keep) != 0 {
             out.push(value);
         }
     }
@@ -94,16 +92,14 @@ fn sequence_filter_not(vm: &mut Vm, args: &[JValue]) -> R {
     let f = args[1];
     let mut out = Vec::new();
     for value in values {
-        if inv_virt(
+        let keep = inv_virt(
             vm,
             f,
             "invoke",
             "(Ljava/lang/Object;)Ljava/lang/Object;",
             &[value],
-        )?
-        .as_int()
-            == 0
-        {
+        )?;
+        if int_of(vm, keep) == 0 {
             out.push(value);
         }
     }
@@ -199,16 +195,14 @@ fn sequence_take_while(vm: &mut Vm, args: &[JValue]) -> R {
     let f = args[1];
     let mut out = Vec::new();
     for value in values {
-        if inv_virt(
+        let keep = inv_virt(
             vm,
             f,
             "invoke",
             "(Ljava/lang/Object;)Ljava/lang/Object;",
             &[value],
-        )?
-        .as_int()
-            == 0
-        {
+        )?;
+        if int_of(vm, keep) == 0 {
             break;
         }
         out.push(value);
