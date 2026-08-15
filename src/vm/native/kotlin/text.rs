@@ -709,10 +709,7 @@ fn stringskt_index_of_string_default(vm: &mut Vm, args: &[JValue]) -> R {
     let ignore_case = int_of(vm, args[4]) & 4 == 0 && int_of(vm, args[3]) != 0;
     let suffix = text.get(start..).unwrap_or("");
     let found = if ignore_case {
-        suffix
-            .to_lowercase()
-            .find(&needle.to_lowercase())
-            .map(|index| start + index)
+        find_ignore_case(suffix, &needle).map(|index| start + index)
     } else {
         suffix.find(&needle).map(|index| start + index)
     };
@@ -1393,10 +1390,7 @@ fn stringskt_index_of(vm: &mut Vm, args: &[JValue]) -> R {
     let ignore_case = int_of(vm, args[3]) != 0;
     let suffix = text.get(start..).unwrap_or("");
     let found = if ignore_case {
-        suffix
-            .to_lowercase()
-            .find(&needle.to_lowercase())
-            .map(|i| start + i)
+        find_ignore_case(suffix, &needle).map(|i| start + i)
     } else {
         suffix.find(&needle).map(|i| start + i)
     };
@@ -1466,11 +1460,10 @@ fn stringskt_find_any_of_default(vm: &mut Vm, args: &[JValue]) -> R {
     };
     let ignore_case = mask & 4 == 0 && int_of(vm, args[3]) != 0;
     let hay = &text[start..];
-    let folded = ignore_case.then(|| hay.to_lowercase());
     let mut best: Option<(usize, &str)> = None;
     for needle in &needles {
-        let found = if let Some(f) = &folded {
-            f.find(&needle.to_lowercase())
+        let found = if ignore_case {
+            find_ignore_case(hay, needle)
         } else {
             hay.find(needle)
         };

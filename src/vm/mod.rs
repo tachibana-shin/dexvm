@@ -1236,8 +1236,8 @@ impl Vm {
             }
         }
         candidates.sort_by_key(|(_, is_entry)| !*is_entry);
-        for (type_str, _) in candidates {
-            let cid = self.ensure_class_by_desc(&type_str)?;
+        if let Some((type_str, _)) = candidates.first() {
+            let cid = self.ensure_class_by_desc(type_str)?;
             return Ok(self
                 .str_of(self.classes[cid as usize].descriptor)
                 .to_string());

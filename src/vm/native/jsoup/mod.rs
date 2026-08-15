@@ -21,17 +21,23 @@ fn select_selector(selector: &str) -> Option<Matcher> {
 /// lenient jsoup syntax (e.g. `a[href*=/truyen/]` -> `a[href*="/truyen/"]`).
 fn normalize_attr_values(selector: &str) -> String {
     let mut out = String::with_capacity(selector.len());
-    let chars: Vec<char> = selector.chars().collect();
+    let char_indices: Vec<(usize, char)> = selector.char_indices().collect();
     let mut i = 0;
-    while i < chars.len() {
-        if chars[i] == '[' {
+    while i < char_indices.len() {
+        if char_indices[i].1 == '[' {
             let start = i;
             i += 1;
-            while i < chars.len() && chars[i] != ']' {
+            while i < char_indices.len() && char_indices[i].1 != ']' {
                 i += 1;
             }
-            let end = i.min(chars.len());
-            let frag = &selector[start + 1..end];
+            let end = i;
+            let start_byte = char_indices[start].0;
+            let end_byte = if end < char_indices.len() {
+                char_indices[end].0
+            } else {
+                selector.len()
+            };
+            let frag = &selector[start_byte + 1..end_byte];
             if let Some(eq) = frag.find('=') {
                 let value = &frag[eq + 1..];
                 let unquoted =
@@ -47,11 +53,11 @@ fn normalize_attr_values(selector: &str) -> String {
                     continue;
                 }
             }
-            out.push_str(&selector[start..=end.min(selector.len() - 1)]);
+            out.push_str(&selector[start_byte..=end_byte.min(selector.len() - 1)]);
             i += 1;
             continue;
         }
-        out.push(chars[i]);
+        out.push(char_indices[i].1);
         i += 1;
     }
     out

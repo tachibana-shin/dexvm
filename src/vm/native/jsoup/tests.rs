@@ -68,6 +68,24 @@ macro_rules! list_of {
 }
 
 #[test]
+fn normalize_attr_values_handles_multibyte_before_bracket() {
+    // Regression: the fragment was sliced with char indexes as byte
+    // offsets, panicking with "not a char boundary" on multibyte selectors
+    // (e.g. moetruyen search CSS).
+    let quoted = normalize_attr_values("a[href*=/truyện/]");
+    assert_eq!(quoted, "a[href*=\"/truyện/\"]");
+
+    let quoted_tail = normalize_attr_values("div.mới[data-x=y]");
+    assert_eq!(quoted_tail, "div.mới[data-x=\"y\"]");
+
+    let untouched = normalize_attr_values("p.title");
+    assert_eq!(untouched, "p.title");
+
+    let already_quoted = normalize_attr_values("a[href*=\"/truyện/\"]");
+    assert_eq!(already_quoted, "a[href*=\"/truyện/\"]");
+}
+
+#[test]
 fn select_size_first_document_text() {
     with_vm(|vm| {
         let html = "<div id=\"a\"><p class=\"ch\">Chap 1</p></div>\
