@@ -113,7 +113,6 @@ pub struct Context {
     /// `invoke` can dispatch further methods on it (like
     /// `d4rt_rs::Context::invoke` after `execute`).
     last_instance: Option<u32>,
-    settings_update: Option<std::rc::Rc<dyn Fn(&str, &PreferenceValue)>>,
 }
 
 type ApkContents = (Vec<Vec<u8>>, HashMap<String, Vec<u8>>);
@@ -219,7 +218,6 @@ impl Context {
         Ok(Context {
             vm,
             last_instance: None,
-            settings_update: None,
         })
     }
 
@@ -403,12 +401,14 @@ impl Context {
         self.vm.shared_preferences.keys().cloned().collect()
     }
 
-    /// Registers the host callback invoked by [`Context::update_setting`].
+    /// Registers the host callback invoked whenever the guest (or the host
+    /// itself via [`Context::update_setting`]) changes a `SharedPreferences`
+    /// value. The callback receives the preference key and its new value.
     pub fn on_update_settings<F>(&mut self, callback: F)
     where
         F: Fn(&str, &PreferenceValue) + 'static,
     {
-        self.settings_update = Some(std::rc::Rc::new(callback));
+        self.vm.settings_update = Some(std::rc::Rc::new(callback));
     }
 
     /// Updates one setting through the same persistence path as Android
@@ -430,7 +430,7 @@ impl Context {
                 &self.vm.shared_preferences,
             )?;
         }
-        if let Some(cb) = &self.settings_update {
+        if let Some(cb) = &self.vm.settings_update {
             if let Some(value) = self
                 .vm
                 .shared_preferences
@@ -441,6 +441,29 @@ impl Context {
             }
         }
         Ok(())
+    }
+
+    /// Replaces the in-memory values of one `SharedPreferences` file with
+    /// the host's stored settings. No disk I/O happens and the host
+    /// callback is not notified, so this is safe to call at engine startup
+    /// (e.g. when seeding RakuYomi's `settings.source_settings` into a
+    /// freshly created engine before the extension reads them).
+    pub fn seed_preferences(
+        &mut self,
+        preference_file: &str,
+        values: &HashMap<String, PreferenceValue>,
+    ) {
+        let entry = self
+            .vm
+            .shared_preferences
+            .entry(preference_file.to_string())
+            .or_default();
+        entry.clear();
+        entry.extend(
+            values
+                .iter()
+                .map(|(key, value)| (key.clone(), value.clone())),
+        );
     }
 
     /// Selects a host-owned persistence file for Android `SharedPreferences`.
@@ -979,5 +1002,32 @@ mod tests {
             ContextError::Dex(_) | ContextError::BadArchive(_)
         ));
         assert!(!err.to_string().is_empty());
+    }
+
+    #[test]
+    fn seed_preferences_is_memory_only_and_silent() {
+        let data = std::fs::read("fixtures/multidex.apk").unwrap();
+        let mut ctx = Context::new(&data).unwrap();
+        let mut values = std::collections::HashMap::new();
+        values.insert(
+            "display_mode".to_string(),
+            PreferenceValue::String("vertical".to_string()),
+        );
+        let notified = std::rc::Rc::new(std::cell::Cell::new(0usize));
+        let notified_ref = notified.clone();
+        ctx.on_update_settings(move |_, _| {
+            notified_ref.set(notified_ref.get() + 1);
+        });
+
+        // No persistence path is configured, so seeding must not touch disk
+        // and must not notify the host callback.
+        ctx.seed_preferences("source_123", &values);
+        assert_eq!(ctx.get_settings("source_123").get("display_mode"), Some(&PreferenceValue::String("vertical".to_string())));
+        assert_eq!(notified.get(), 0);
+        assert_eq!(ctx.preference_file_names(), vec!["source_123".to_string()]);
+
+        // update_setting still notifies the host callback.
+        ctx.update_setting("source_123", "mode", PreferenceValue::Int(7)).unwrap();
+        assert_eq!(notified.get(), 1);
     }
 }

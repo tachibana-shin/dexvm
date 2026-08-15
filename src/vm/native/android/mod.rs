@@ -433,6 +433,7 @@ pub(crate) fn editor_apply(vm: &mut Vm, args: &[JValue]) -> R {
         // immediate and persistence is best-effort.
         let _ = persist_shared_preferences(&path, &vm.shared_preferences);
     }
+    notify_settings_update(vm, args[0]);
     Ok(JValue::Null)
 }
 
@@ -444,7 +445,25 @@ pub(crate) fn editor_commit(vm: &mut Vm, args: &[JValue]) -> R {
             return Ok(JValue::Int(0));
         }
     }
+    notify_settings_update(vm, args[0]);
     Ok(JValue::Int(1))
+}
+
+/// Notifies the host callback of every value changed by a
+/// `SharedPreferences$Editor` edit, mirroring the guest's writes back to
+/// the host settings store.
+fn notify_settings_update(vm: &Vm, editor: JValue) {
+    let Some(cb) = &vm.settings_update else {
+        return;
+    };
+    let Some(Native::SharedPreferencesEditor { edits, .. }) = payload(vm, editor) else {
+        return;
+    };
+    for edit in edits {
+        if let PreferenceEdit::Put(key, value) = edit {
+            cb(key, value);
+        }
+    }
 }
 
 pub(crate) fn prefs_obj(vm: &mut Vm, args: &[JValue]) -> R {

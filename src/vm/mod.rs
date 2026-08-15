@@ -100,6 +100,10 @@ pub struct FieldRef {
     pub class_desc: u32,
 }
 
+/// Host callback notified whenever the guest changes a `SharedPreferences`
+/// value. Receives the preference key and its new value.
+pub type SettingsUpdateCallback = std::rc::Rc<dyn Fn(&str, &PreferenceValue)>;
+
 pub struct Vm {
     /// All dex files of the loaded program. Ids in dex tables (strings,
     /// types, methods, fields) are relative to the file that defines the
@@ -155,6 +159,11 @@ pub struct Vm {
     pub shared_preferences_path: Option<PathBuf>,
     /// Whether the configured preferences file has been loaded.
     pub shared_preferences_loaded: bool,
+    /// Host callback notified when the guest updates a `SharedPreferences`
+    /// value (either through `SharedPreferences$Editor` or a host-side
+    /// setting update). The host uses this to mirror changes back into its
+    /// own settings store.
+    pub settings_update: Option<SettingsUpdateCallback>,
     /// FullTypeReference subclass descriptor -> concrete type descriptor,
     /// derived from dex bytecode (`getInstance` result check-casts).
     injekt_type_by_subclass: HashMap<u32, u32>,
@@ -213,6 +222,7 @@ impl Vm {
             shared_preferences: HashMap::new(),
             shared_preferences_path: None,
             shared_preferences_loaded: false,
+            settings_update: None,
             #[cfg(feature = "tachiyomi")]
             http: None,
             #[cfg(feature = "tachiyomi")]

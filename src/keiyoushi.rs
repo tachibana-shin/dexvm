@@ -15,6 +15,7 @@
 //! `*Parse` method. Host-side defaults (`mangaDetailsRequest` etc.) are
 //! implemented as natives on `HttpSource`.
 
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::context::{Context, ContextError, SandboxOptions, SettingDefinition, SettingValue};
@@ -231,6 +232,19 @@ impl Keiyoushi {
         value: SettingValue,
     ) -> std::io::Result<()> {
         self.ctx.update_setting(preference_file, key, value)
+    }
+
+    /// Replaces the in-memory values of one `SharedPreferences` file with
+    /// the host's stored settings. No disk I/O happens and the host
+    /// callback is not notified, so this is safe to call at engine startup
+    /// (e.g. when seeding RakuYomi's `settings.source_settings` into a
+    /// freshly created engine before the extension reads them).
+    pub fn seed_preferences(
+        &mut self,
+        preference_file: &str,
+        values: &HashMap<String, SettingValue>,
+    ) {
+        self.ctx.seed_preferences(preference_file, values)
     }
 
     fn vm(&mut self) -> &mut Vm {
