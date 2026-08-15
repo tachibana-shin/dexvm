@@ -8,6 +8,9 @@ pub(crate) fn duration_companion(vm: &mut Vm) -> JValue {
 pub(crate) fn duration_unit_seconds(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lkotlin/time/DurationUnit;")
 }
+pub(crate) fn clock_system_instance(vm: &mut Vm) -> JValue {
+    opaque_inst(vm, "Lkotlin/time/Clock$System;")
+}
 pub(crate) fn duration_unit_hours(vm: &mut Vm) -> JValue {
     opaque_inst(vm, "Lkotlin/time/DurationUnit;")
 }

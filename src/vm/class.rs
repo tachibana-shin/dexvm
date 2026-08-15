@@ -2530,7 +2530,12 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         "Lkotlin/time/Clock$System;",
         Some("Ljava/lang/Object;"),
         &[],
-        0
+        0,
+        [sdef!(
+            "INSTANCE",
+            "Lkotlin/time/Clock$System;",
+            ShimValue::Lazy(native::lazy_clock_system_instance)
+        ),]
     ),
     #[cfg(feature = "kotlin")]
     shim!(
