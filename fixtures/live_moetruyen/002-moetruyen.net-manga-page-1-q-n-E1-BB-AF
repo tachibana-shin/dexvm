@@ -1,0 +1,4624 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+<style nonce="6jJYQUOpCROBap97AXRu1wZE">
+  html[data-bfang-boot-loading="1"] {
+    overflow: hidden;
+  }
+
+  html[data-bfang-boot-loading="1"] [data-bfang-boot-host="1"] {
+    visibility: hidden !important;
+  }
+
+  html[data-bfang-boot-loading="1"] [data-bfang-boot-host="1"] ~ :not(footer):not(script):not(style),
+  html[data-bfang-boot-loading="1"] body > dialog,
+  html[data-bfang-boot-loading="1"] body > [role="dialog"],
+  html[data-bfang-boot-loading="1"] body > .modal,
+  html[data-bfang-boot-loading="1"] body > #toast {
+    visibility: hidden !important;
+  }
+
+  html[data-bfang-boot-loading="1"]:not([data-bfang-boot-kind="manga-reader"])
+    body.reader-page.reader-page--reader-mode .site > .site-header,
+  html[data-bfang-boot-loading="1"]:not([data-bfang-boot-kind="manga-reader"])
+    body.reader-page.reader-page--reader-mode .site > .site-footer {
+    display: block !important;
+  }
+
+  #bfang-boot-skeleton {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2147483647;
+    overflow: hidden;
+    contain: layout paint style;
+    background: #0c0c0c;
+    font-family: var(--font-body, "Noto Sans JP", "Helvetica Neue", Arial, sans-serif);
+  }
+
+  #bfang-boot-skeleton.bfang-boot-skeleton--mounted {
+    display: block;
+  }
+
+  #bfang-boot-skeleton *,
+  #bfang-boot-skeleton *::before,
+  #bfang-boot-skeleton *::after {
+    box-sizing: border-box;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .bfang-boot-skeleton__status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .bfang-boot-skeleton__block {
+    display: block;
+    background: #202020;
+  }
+
+  .bfang-boot-skeleton__main {
+    width: min(1120px, 92vw);
+    min-height: 100%;
+    margin-inline: auto;
+    padding-block: 2.7rem 3rem;
+  }
+
+  .bfang-boot-skeleton--detail .bfang-boot-skeleton__main {
+    padding-block: 1.8rem 3.2rem;
+  }
+
+  .bfang-boot-skeleton__section-heading {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .bfang-boot-skeleton__section-heading .bfang-boot-skeleton__block:first-child {
+    width: min(230px, 58vw);
+    height: 30px;
+  }
+
+  .bfang-boot-skeleton__section-heading .bfang-boot-skeleton__block:last-child {
+    flex: 1;
+    height: 1px;
+    background: #303030;
+  }
+
+  .bfang-boot-skeleton__lede {
+    width: min(650px, 84vw);
+    height: 14px;
+    margin-bottom: 1.4rem;
+  }
+
+  .bfang-boot-skeleton__home-head {
+    display: grid;
+    justify-items: start;
+    gap: 0.65rem;
+    margin-bottom: 1.6rem;
+  }
+
+  .bfang-boot-skeleton__eyebrow {
+    width: 96px;
+    height: 10px;
+  }
+
+  .bfang-boot-skeleton__home-title {
+    display: grid;
+    gap: 0.45rem;
+    width: 100%;
+    margin-top: 0.15rem;
+  }
+
+  .bfang-boot-skeleton__home-title .bfang-boot-skeleton__block {
+    width: min(760px, 76%);
+    height: 42px;
+  }
+
+  .bfang-boot-skeleton__home-title .bfang-boot-skeleton__block:last-child {
+    width: min(510px, 52%);
+  }
+
+  .bfang-boot-skeleton__home-copy {
+    display: grid;
+    gap: 0.45rem;
+    width: min(680px, 90%);
+    margin-top: 0.2rem;
+  }
+
+  .bfang-boot-skeleton__home-copy .bfang-boot-skeleton__block {
+    width: 100%;
+    height: 14px;
+  }
+
+  .bfang-boot-skeleton__home-copy .bfang-boot-skeleton__block:last-child {
+    width: 72%;
+  }
+
+  .bfang-boot-skeleton__home-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .bfang-boot-skeleton__home-panel,
+  .bfang-boot-skeleton__filter,
+  .bfang-boot-skeleton__account-panel,
+  .bfang-boot-skeleton__page-panel,
+  .bfang-boot-skeleton__lite-panel {
+    border: 1px solid #292929;
+    border-radius: 1rem;
+    background: #111111;
+  }
+
+  .bfang-boot-skeleton__home-panel {
+    display: grid;
+    align-content: start;
+    gap: 0.8rem;
+    min-height: 112px;
+    padding: 1.2rem 1.4rem;
+  }
+
+  .bfang-boot-skeleton__panel-label {
+    width: 94px;
+    height: 10px;
+  }
+
+  .bfang-boot-skeleton__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.4rem;
+  }
+
+  .bfang-boot-skeleton__stat {
+    display: grid;
+    gap: 0.4rem;
+    width: 72px;
+  }
+
+  .bfang-boot-skeleton__stat .bfang-boot-skeleton__block:first-child {
+    width: 62px;
+    height: 24px;
+  }
+
+  .bfang-boot-skeleton__stat .bfang-boot-skeleton__block:last-child {
+    width: 48px;
+    height: 9px;
+  }
+
+  .bfang-boot-skeleton__notice {
+    display: grid;
+    gap: 0.55rem;
+    width: min(650px, 100%);
+  }
+
+  .bfang-boot-skeleton__notice .bfang-boot-skeleton__block {
+    width: 100%;
+    height: 12px;
+  }
+
+  .bfang-boot-skeleton__notice .bfang-boot-skeleton__block:first-child {
+    width: 38%;
+  }
+
+  .bfang-boot-skeleton__notice .bfang-boot-skeleton__block:last-child {
+    width: 68%;
+  }
+
+  .bfang-boot-skeleton__lite-panel {
+    display: grid;
+    gap: 0.9rem;
+    padding: 1rem;
+  }
+
+  .bfang-boot-skeleton__lite-stats,
+  .bfang-boot-skeleton__lite-intro {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .bfang-boot-skeleton__lite-stat,
+  .bfang-boot-skeleton__lite-intro > div {
+    display: grid;
+    gap: 0.55rem;
+    min-height: 74px;
+    padding: 0.75rem;
+    border: 1px solid #292929;
+    border-radius: 0.75rem;
+    background: #171717;
+  }
+
+  .bfang-boot-skeleton__lite-stat .bfang-boot-skeleton__block:first-child {
+    width: 56px;
+    height: 20px;
+  }
+
+  .bfang-boot-skeleton__lite-stat .bfang-boot-skeleton__block:last-child,
+  .bfang-boot-skeleton__lite-intro .bfang-boot-skeleton__block:first-child {
+    width: 88px;
+    height: 10px;
+  }
+
+  .bfang-boot-skeleton__lite-intro .bfang-boot-skeleton__block:not(:first-child) {
+    width: 100%;
+    height: 11px;
+  }
+
+  .bfang-boot-skeleton__filter {
+    display: grid;
+    gap: 1.15rem;
+    margin-bottom: 1.8rem;
+    padding: 1.25rem;
+  }
+
+  .bfang-boot-skeleton__filter-head {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .bfang-boot-skeleton__filter-head .bfang-boot-skeleton__block:first-child {
+    width: 190px;
+    height: 13px;
+  }
+
+  .bfang-boot-skeleton__filter-head .bfang-boot-skeleton__block:last-child {
+    width: min(450px, 88%);
+    height: 11px;
+  }
+
+  .bfang-boot-skeleton__fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+    gap: 1rem;
+  }
+
+  .bfang-boot-skeleton__field {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .bfang-boot-skeleton__field .bfang-boot-skeleton__block:first-child {
+    width: 82px;
+    height: 9px;
+  }
+
+  .bfang-boot-skeleton__field .bfang-boot-skeleton__block:last-child {
+    width: 100%;
+    height: 42px;
+    border: 1px solid #303030;
+    border-radius: 0.7rem;
+    background: #181818;
+  }
+
+  .bfang-boot-skeleton__advanced {
+    width: 100%;
+    height: 46px;
+    border: 1px solid #292929;
+    background: #151515;
+  }
+
+  .bfang-boot-skeleton__cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 0.8rem;
+  }
+
+  .bfang-boot-skeleton__card {
+    overflow: hidden;
+    border: 1px solid #292929;
+    border-radius: 0.8rem;
+    background: #111111;
+  }
+
+  .bfang-boot-skeleton__card-cover {
+    aspect-ratio: 3 / 4;
+    background: #202020;
+  }
+
+  .bfang-boot-skeleton__card-body {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.72rem 0.78rem 0.82rem;
+  }
+
+  .bfang-boot-skeleton__card-body .bfang-boot-skeleton__block {
+    width: 84%;
+    height: 13px;
+  }
+
+  .bfang-boot-skeleton__card-body .bfang-boot-skeleton__block:nth-child(2) {
+    width: 66%;
+    height: 10px;
+  }
+
+  .bfang-boot-skeleton__card-body .bfang-boot-skeleton__block:nth-child(3) {
+    width: 48%;
+    height: 10px;
+  }
+
+  .bfang-boot-skeleton__breadcrumb {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    min-height: 1.52rem;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+    color: #98a2b3;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .bfang-boot-skeleton__breadcrumb-current {
+    color: #f4f5f7;
+    font-weight: 700;
+  }
+
+  .bfang-boot-skeleton__breadcrumb .bfang-boot-skeleton__block {
+    width: 80px;
+    height: 13px;
+  }
+
+  .bfang-boot-skeleton__breadcrumb .bfang-boot-skeleton__block:last-child {
+    width: 144px;
+  }
+
+  .bfang-boot-skeleton__detail {
+    display: grid;
+    grid-template-columns: 192px minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .bfang-boot-skeleton__detail-cover-wrap {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .bfang-boot-skeleton__detail-cover {
+    width: 192px;
+    aspect-ratio: 2 / 3;
+    border-radius: 0.82rem;
+    background: #202020;
+  }
+
+  .bfang-boot-skeleton__detail-cover--reused {
+    overflow: hidden;
+  }
+
+  .bfang-boot-skeleton__detail-cover--reused img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .bfang-boot-skeleton__detail-info {
+    display: grid;
+    justify-items: start;
+    gap: 0.65rem;
+  }
+
+  .bfang-boot-skeleton__preview-title {
+    display: block;
+    width: 100%;
+    margin: 0;
+    color: #f2f2f2;
+    background: none;
+    font-family: var(--font-title, "Noto Sans JP", "Helvetica Neue", Arial, sans-serif);
+    font-size: clamp(2rem, 3vw, 2.6rem);
+    font-weight: 700;
+    line-height: 1.18;
+    letter-spacing: 0;
+  }
+
+  .bfang-boot-skeleton__detail-title {
+    width: min(512px, 76%);
+    height: 42px;
+  }
+
+  .bfang-boot-skeleton__detail-meta {
+    width: min(240px, 72%);
+    height: 15px;
+  }
+
+  .bfang-boot-skeleton__detail-meta--short {
+    width: min(160px, 52%);
+  }
+
+  .bfang-boot-skeleton__pills,
+  .bfang-boot-skeleton__metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 0.1rem;
+  }
+
+  .bfang-boot-skeleton__pills .bfang-boot-skeleton__block {
+    width: 74px;
+    height: 28px;
+    border-radius: 999px;
+  }
+
+  .bfang-boot-skeleton__pills .bfang-boot-skeleton__block:nth-child(2) {
+    width: 86px;
+  }
+
+  .bfang-boot-skeleton__pills .bfang-boot-skeleton__block:nth-child(3) {
+    width: 62px;
+  }
+
+  .bfang-boot-skeleton__metrics {
+    gap: 0.65rem 1rem;
+  }
+
+  .bfang-boot-skeleton__metrics .bfang-boot-skeleton__block {
+    width: 96px;
+    height: 14px;
+  }
+
+  .bfang-boot-skeleton__copy {
+    display: grid;
+    gap: 0.45rem;
+    width: min(60ch, 100%);
+    margin-top: 0.1rem;
+  }
+
+  .bfang-boot-skeleton__copy .bfang-boot-skeleton__block {
+    width: 100%;
+    height: 15px;
+  }
+
+  .bfang-boot-skeleton__copy .bfang-boot-skeleton__block:nth-child(2) {
+    width: 90%;
+  }
+
+  .bfang-boot-skeleton__copy .bfang-boot-skeleton__block:nth-child(3) {
+    width: 62%;
+  }
+
+  .bfang-boot-skeleton__button {
+    width: 136px;
+    height: 39px;
+    margin-top: 0.3rem;
+    border-radius: 0.7rem;
+  }
+
+  .bfang-boot-skeleton--lite-home .bfang-boot-skeleton__main,
+  .bfang-boot-skeleton--lite-detail .bfang-boot-skeleton__main,
+  .bfang-boot-skeleton--lite-reader .bfang-boot-skeleton__main,
+  .bfang-boot-skeleton--lite-forum .bfang-boot-skeleton__main {
+    width: 100%;
+    padding-block: 0 2rem;
+  }
+
+  .bfang-boot-skeleton__lite-detail-panel {
+    padding: 0.85rem;
+  }
+
+  .bfang-boot-skeleton--lite-detail .bfang-boot-skeleton__detail-cover {
+    width: min(280px, 100%);
+    aspect-ratio: 3 / 4;
+  }
+
+  .bfang-boot-skeleton__lite-reader-head {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .bfang-boot-skeleton__lite-reader-head .bfang-boot-skeleton__block:first-child {
+    width: min(560px, 86%);
+    height: 28px;
+  }
+
+  .bfang-boot-skeleton__lite-reader-links,
+  .bfang-boot-skeleton__lite-reader-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  }
+
+  .bfang-boot-skeleton__lite-reader-links .bfang-boot-skeleton__block {
+    width: 112px;
+    height: 28px;
+    border-radius: 999px;
+  }
+
+  .bfang-boot-skeleton__lite-reader-controls .bfang-boot-skeleton__block {
+    width: 110px;
+    height: 36px;
+    border: 1px solid #303030;
+    border-radius: 0.6rem;
+    background: #181818;
+  }
+
+  .bfang-boot-skeleton__lite-reader-page {
+    height: min(54vh, 520px);
+    margin-top: 0.9rem;
+    border: 1px solid #292929;
+    background: #171717;
+  }
+
+  #bfang-boot-skeleton.bfang-boot-skeleton--manga-reader {
+    background: #090909;
+  }
+
+  .bfang-boot-skeleton--manga-reader .bfang-boot-skeleton__main {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+  }
+
+  .bfang-boot-skeleton__reader-image {
+    width: min(820px, 92%);
+    height: calc(100vh - 16px);
+    margin: 8px auto;
+    background: #1b1b1b;
+  }
+
+  #bfang-boot-skeleton.bfang-boot-skeleton--novel-reader {
+    color-scheme: light;
+    background: #f7f3e8;
+  }
+
+  .bfang-boot-skeleton--novel-reader .bfang-boot-skeleton__main {
+    width: min(56rem, calc(100vw - 2rem));
+    padding-top: 1.65rem;
+  }
+
+  .bfang-boot-skeleton--novel-reader .bfang-boot-skeleton__block {
+    background: #ded6c4;
+  }
+
+  html[data-novel-reader-theme="soft"] #bfang-boot-skeleton.bfang-boot-skeleton--novel-reader {
+    background: #fafaf7;
+  }
+
+  html[data-novel-reader-theme="soft"] .bfang-boot-skeleton--novel-reader .bfang-boot-skeleton__block {
+    background: #ddddda;
+  }
+
+  html[data-novel-reader-theme="dark"] #bfang-boot-skeleton.bfang-boot-skeleton--novel-reader {
+    color-scheme: dark;
+    background: #121212;
+  }
+
+  html[data-novel-reader-theme="dark"] .bfang-boot-skeleton--novel-reader .bfang-boot-skeleton__block {
+    background: #2b2b2b;
+  }
+
+  .bfang-boot-skeleton__novel-head {
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+    padding-bottom: 1.05rem;
+    border-bottom: 1px solid #c9bfaa;
+  }
+
+  html[data-novel-reader-theme="dark"] .bfang-boot-skeleton__novel-head {
+    border-bottom-color: #393939;
+  }
+
+  .bfang-boot-skeleton__novel-series {
+    width: min(260px, 68%);
+    height: 16px;
+  }
+
+  .bfang-boot-skeleton__novel-title {
+    width: min(420px, 82%);
+    height: 16px;
+  }
+
+  .bfang-boot-skeleton__novel-meta {
+    width: min(250px, 60%);
+    height: 11px;
+  }
+
+  .bfang-boot-skeleton__novel-controls {
+    display: flex;
+    justify-content: center;
+    gap: 0.48rem;
+    margin: 1rem auto 2.45rem;
+  }
+
+  .bfang-boot-skeleton__novel-controls .bfang-boot-skeleton__block {
+    width: 2.28rem;
+    height: 2.28rem;
+    border: 1px solid #b7ad99;
+    border-radius: 0.48rem;
+    background: #e8e1d2;
+  }
+
+  html[data-novel-reader-theme="dark"] .bfang-boot-skeleton__novel-controls .bfang-boot-skeleton__block {
+    border-color: #474747;
+    background: #242424;
+  }
+
+  .bfang-boot-skeleton__novel-copy {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .bfang-boot-skeleton__novel-copy .bfang-boot-skeleton__block {
+    width: 100%;
+    height: 14px;
+  }
+
+  .bfang-boot-skeleton__novel-copy .bfang-boot-skeleton__block:nth-child(3n + 2) {
+    width: 94%;
+  }
+
+  .bfang-boot-skeleton__novel-copy .bfang-boot-skeleton__block:nth-child(4n) {
+    width: 86%;
+  }
+
+  .bfang-boot-skeleton__novel-copy .bfang-boot-skeleton__block:last-child {
+    width: 62%;
+  }
+
+  .bfang-boot-skeleton__published-list {
+    overflow: hidden;
+    border: 1px solid #292929;
+    border-radius: 0.85rem;
+    background: #111111;
+  }
+
+  .bfang-boot-skeleton__published-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+    gap: 1.6rem;
+    padding: 0.9rem;
+  }
+
+  .bfang-boot-skeleton__published-row + .bfang-boot-skeleton__published-row {
+    border-top: 1px solid #292929;
+  }
+
+  .bfang-boot-skeleton__published-cover {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border: 1px solid #303030;
+    border-radius: 0.7rem;
+    background: #202020;
+  }
+
+  .bfang-boot-skeleton__published-body {
+    display: grid;
+    align-content: start;
+    gap: 0.75rem;
+    padding-top: 0.1rem;
+  }
+
+  .bfang-boot-skeleton__published-title {
+    width: min(470px, 78%);
+    height: 26px;
+  }
+
+  .bfang-boot-skeleton__published-meta,
+  .bfang-boot-skeleton__published-copy {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .bfang-boot-skeleton__published-meta .bfang-boot-skeleton__block {
+    width: 72%;
+    height: 14px;
+  }
+
+  .bfang-boot-skeleton__published-copy .bfang-boot-skeleton__block {
+    width: 100%;
+    height: 13px;
+  }
+
+  .bfang-boot-skeleton__published-copy .bfang-boot-skeleton__block:last-child {
+    width: 64%;
+  }
+
+  .bfang-boot-skeleton__account-panel {
+    display: grid;
+    gap: 1.2rem;
+    min-height: 380px;
+    padding: 1.25rem;
+  }
+
+  .bfang-boot-skeleton__account-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .bfang-boot-skeleton__account-title {
+    display: grid;
+    gap: 0.55rem;
+    width: min(620px, 72%);
+  }
+
+  .bfang-boot-skeleton__account-title .bfang-boot-skeleton__block:first-child {
+    width: 210px;
+    height: 30px;
+  }
+
+  .bfang-boot-skeleton__account-title .bfang-boot-skeleton__block:last-child {
+    width: 100%;
+    height: 12px;
+  }
+
+  .bfang-boot-skeleton__account-action {
+    width: 112px;
+    height: 38px;
+    border-radius: 0.7rem;
+  }
+
+  .bfang-boot-skeleton__account-layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .bfang-boot-skeleton__account-side,
+  .bfang-boot-skeleton__account-content {
+    display: grid;
+    align-content: start;
+    gap: 0.7rem;
+    min-height: 220px;
+    padding: 0.85rem;
+    border: 1px solid #292929;
+    background: #151515;
+  }
+
+  .bfang-boot-skeleton__account-side .bfang-boot-skeleton__block {
+    width: 100%;
+    height: 38px;
+  }
+
+  .bfang-boot-skeleton__account-side .bfang-boot-skeleton__block:first-child {
+    width: 58%;
+    height: 15px;
+  }
+
+  .bfang-boot-skeleton__account-content .bfang-boot-skeleton__block:first-child {
+    width: 180px;
+    height: 22px;
+  }
+
+  .bfang-boot-skeleton__account-content .bfang-boot-skeleton__block:not(:first-child) {
+    width: 100%;
+    height: 44px;
+  }
+
+  .bfang-boot-skeleton--chat .bfang-boot-skeleton__main {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+  }
+
+  .bfang-boot-skeleton__chat {
+    display: grid;
+    grid-template-columns: minmax(296px, 348px) minmax(0, 1fr);
+    height: 100%;
+  }
+
+  .bfang-boot-skeleton__chat-side {
+    display: grid;
+    align-content: start;
+    gap: 0.7rem;
+    padding: 0.9rem;
+    border-right: 1px solid #292929;
+    background: #141414;
+  }
+
+  .bfang-boot-skeleton__chat-side > .bfang-boot-skeleton__block:first-child {
+    width: 132px;
+    height: 24px;
+  }
+
+  .bfang-boot-skeleton__chat-search {
+    width: 100%;
+    height: 38px;
+    border: 1px solid #303030;
+    background: #191919;
+  }
+
+  .bfang-boot-skeleton__chat-thread {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 0.65rem;
+    padding-block: 0.55rem;
+    border-bottom: 1px solid #292929;
+  }
+
+  .bfang-boot-skeleton__chat-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #202020;
+  }
+
+  .bfang-boot-skeleton__chat-thread-copy,
+  .bfang-boot-skeleton__chat-peer {
+    display: grid;
+    align-content: center;
+    gap: 0.42rem;
+  }
+
+  .bfang-boot-skeleton__chat-thread-copy .bfang-boot-skeleton__block:first-child,
+  .bfang-boot-skeleton__chat-peer .bfang-boot-skeleton__block:first-child {
+    width: 52%;
+    height: 13px;
+  }
+
+  .bfang-boot-skeleton__chat-thread-copy .bfang-boot-skeleton__block:last-child,
+  .bfang-boot-skeleton__chat-peer .bfang-boot-skeleton__block:last-child {
+    width: 82%;
+    height: 10px;
+  }
+
+  .bfang-boot-skeleton__chat-main {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    min-width: 0;
+    background: #0c0c0c;
+  }
+
+  .bfang-boot-skeleton__chat-head,
+  .bfang-boot-skeleton__chat-compose {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 0.7rem;
+    align-items: center;
+    padding: 0.72rem;
+    border-bottom: 1px solid #292929;
+  }
+
+  .bfang-boot-skeleton__chat-compose {
+    grid-template-columns: minmax(0, 1fr) 42px;
+    border-top: 1px solid #292929;
+    border-bottom: 0;
+  }
+
+  .bfang-boot-skeleton__chat-compose .bfang-boot-skeleton__block {
+    width: 100%;
+    height: 40px;
+  }
+
+  .bfang-boot-skeleton__chat-messages {
+    display: grid;
+    align-content: end;
+    gap: 0.8rem;
+    padding: 1rem;
+  }
+
+  .bfang-boot-skeleton__chat-bubble {
+    width: min(420px, 62%);
+    height: 48px;
+    background: #202020;
+  }
+
+  .bfang-boot-skeleton__chat-bubble:nth-child(even) {
+    width: min(360px, 56%);
+    margin-left: auto;
+  }
+
+  .bfang-boot-skeleton__profile-hero {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: 1.2rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1.25rem;
+    border: 1px solid #292929;
+    border-radius: 1rem;
+    background: #111111;
+  }
+
+  .bfang-boot-skeleton__profile-avatar {
+    width: 132px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #202020;
+  }
+
+  .bfang-boot-skeleton__profile-hero .bfang-boot-skeleton__account-title {
+    width: min(560px, 90%);
+  }
+
+  .bfang-boot-skeleton__profile-hero .bfang-boot-skeleton__block:nth-child(3) {
+    width: 64%;
+    height: 12px;
+  }
+
+  .bfang-boot-skeleton__team-page,
+  .bfang-boot-skeleton__team-side,
+  .bfang-boot-skeleton__team-series-list {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .bfang-boot-skeleton__team-hero,
+  .bfang-boot-skeleton__team-tabs,
+  .bfang-boot-skeleton__team-card,
+  .bfang-boot-skeleton__team-series {
+    border: 1px solid #292929;
+    border-radius: 1rem;
+    background: #111111;
+    overflow: hidden;
+  }
+
+  .bfang-boot-skeleton__team-cover {
+    height: 190px;
+    background: #171717;
+  }
+
+  .bfang-boot-skeleton__team-identity {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 0.85rem;
+    align-items: center;
+    min-height: 198px;
+    padding: 1rem 1.1rem 1.2rem;
+  }
+
+  .bfang-boot-skeleton__team-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: #202020;
+  }
+
+  .bfang-boot-skeleton__team-meta,
+  .bfang-boot-skeleton__team-row-copy {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .bfang-boot-skeleton__team-name {
+    width: min(320px, 72%);
+    height: 31px;
+  }
+
+  .bfang-boot-skeleton__team-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .bfang-boot-skeleton__team-chips .bfang-boot-skeleton__block {
+    width: 112px;
+    height: 28px;
+    border-radius: 999px;
+  }
+
+  .bfang-boot-skeleton__team-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+    padding: 0.45rem;
+  }
+
+  .bfang-boot-skeleton__team-tabs .bfang-boot-skeleton__block {
+    width: 100%;
+    height: 38px;
+    border-radius: 0.62rem;
+  }
+
+  .bfang-boot-skeleton__team-overview {
+    display: grid;
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .bfang-boot-skeleton__team-side {
+    gap: 0.8rem;
+  }
+
+  .bfang-boot-skeleton__team-card,
+  .bfang-boot-skeleton__team-series {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.9rem;
+  }
+
+  .bfang-boot-skeleton__team-card {
+    min-height: 210px;
+  }
+
+  .bfang-boot-skeleton__team-card .bfang-boot-skeleton__block,
+  .bfang-boot-skeleton__team-row-copy .bfang-boot-skeleton__block {
+    width: 100%;
+    height: 13px;
+  }
+
+  .bfang-boot-skeleton__team-card .bfang-boot-skeleton__block:first-child,
+  .bfang-boot-skeleton__team-row-copy .bfang-boot-skeleton__block:first-child {
+    width: 68%;
+    height: 18px;
+  }
+
+  .bfang-boot-skeleton__team-row {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 0.7rem;
+    min-height: 150px;
+    padding: 0.6rem;
+    border: 1px solid #292929;
+    border-radius: 0.7rem;
+    background: #181818;
+  }
+
+  .bfang-boot-skeleton__team-row-cover {
+    width: 92px;
+    height: 124px;
+    border-radius: 0.5rem;
+    background: #202020;
+  }
+
+  .bfang-boot-skeleton__team-row-copy {
+    align-content: center;
+  }
+
+  .bfang-boot-skeleton__page-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    gap: 1rem;
+  }
+
+  .bfang-boot-skeleton__page-grid--single,
+  .bfang-boot-skeleton--collection .bfang-boot-skeleton__account-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .bfang-boot-skeleton--collection .bfang-boot-skeleton__account-side {
+    display: none;
+  }
+
+  .bfang-boot-skeleton--admin-login .bfang-boot-skeleton__main {
+    display: grid;
+    justify-items: center;
+    width: 100%;
+  }
+
+  .bfang-boot-skeleton--admin-login .bfang-boot-skeleton__section-heading,
+  .bfang-boot-skeleton--admin-login .bfang-boot-skeleton__page-grid {
+    width: min(420px, 94%);
+  }
+
+  .bfang-boot-skeleton__continuation {
+    margin-top: 2rem;
+  }
+
+  .bfang-boot-skeleton__page-panel {
+    display: grid;
+    align-content: start;
+    gap: 0.85rem;
+    min-height: 300px;
+    padding: 1.15rem;
+  }
+
+  .bfang-boot-skeleton__page-panel .bfang-boot-skeleton__block {
+    width: 100%;
+    height: 46px;
+  }
+
+  .bfang-boot-skeleton__page-panel .bfang-boot-skeleton__block:first-child {
+    width: 46%;
+    height: 20px;
+  }
+
+  @media (min-width: 961px) {
+    .bfang-boot-skeleton--admin .bfang-boot-skeleton__main {
+      width: 100%;
+      padding: 1.45rem 18px 1.55rem;
+    }
+  }
+
+  .bfang-boot-skeleton--admin-teams .bfang-boot-skeleton__main {
+    width: 100%;
+  }
+
+  @media (min-width: 761px) and (max-width: 960px) {
+    .bfang-boot-skeleton--admin-teams .bfang-boot-skeleton__main {
+      padding-block: 1.45rem 1.55rem;
+    }
+  }
+
+  @media (max-width: 980px) {
+    .bfang-boot-skeleton__detail {
+      grid-template-columns: 162px minmax(0, 1fr);
+    }
+
+    .bfang-boot-skeleton__detail-cover {
+      width: 162px;
+    }
+  }
+
+  @media (max-width: 920px) {
+    .bfang-boot-skeleton__account-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .bfang-boot-skeleton__account-side {
+      display: none;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .bfang-boot-skeleton__chat {
+      grid-template-columns: 1fr;
+    }
+
+    .bfang-boot-skeleton__chat-side {
+      display: none;
+    }
+  }
+
+  @media (min-width: 860px) {
+    .bfang-boot-skeleton--lite-detail .bfang-boot-skeleton__detail {
+      grid-template-columns: 280px minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 859px) {
+    .bfang-boot-skeleton--lite-detail .bfang-boot-skeleton__detail {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .bfang-boot-skeleton__main {
+      padding-block: 2.1rem 2.4rem;
+    }
+
+    .bfang-boot-skeleton--detail .bfang-boot-skeleton__main {
+      padding-block: 1.4rem 3.2rem;
+    }
+
+    .bfang-boot-skeleton--admin-teams .bfang-boot-skeleton__main {
+      padding-block: 0;
+    }
+
+    .bfang-boot-skeleton__home-title .bfang-boot-skeleton__block {
+      width: 92%;
+      height: 28px;
+    }
+
+    .bfang-boot-skeleton__home-title .bfang-boot-skeleton__block:last-child {
+      width: 64%;
+    }
+
+    .bfang-boot-skeleton__home-copy {
+      width: 100%;
+    }
+
+    .bfang-boot-skeleton__home-panel {
+      padding: 1rem;
+    }
+
+    .bfang-boot-skeleton__lite-intro {
+      grid-template-columns: 1fr;
+    }
+
+    .bfang-boot-skeleton__fields,
+    .bfang-boot-skeleton__detail,
+    .bfang-boot-skeleton__page-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .bfang-boot-skeleton__cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.68rem;
+    }
+
+    .bfang-boot-skeleton__card:nth-child(n + 5) {
+      display: none;
+    }
+
+    .bfang-boot-skeleton__detail {
+      gap: 0.86rem;
+    }
+
+    .bfang-boot-skeleton__detail-cover-wrap {
+      justify-content: center;
+    }
+
+    .bfang-boot-skeleton__detail-cover {
+      width: min(182px, 48vw);
+    }
+
+    .bfang-boot-skeleton__detail-title {
+      width: 76%;
+      height: 28px;
+    }
+
+    .bfang-boot-skeleton__preview-title {
+      font-size: 1.75rem;
+    }
+
+    .bfang-boot-skeleton__breadcrumb {
+      min-height: 1.376rem;
+      margin-bottom: 0.72rem;
+      font-size: 0.86rem;
+    }
+
+    .bfang-boot-skeleton--lite-home .bfang-boot-skeleton__main,
+    .bfang-boot-skeleton--lite-detail .bfang-boot-skeleton__main,
+    .bfang-boot-skeleton--lite-reader .bfang-boot-skeleton__main,
+    .bfang-boot-skeleton--lite-forum .bfang-boot-skeleton__main {
+      padding-block: 0 1.5rem;
+    }
+
+    .bfang-boot-skeleton--lite-detail .bfang-boot-skeleton__detail-cover-wrap {
+      justify-content: flex-start;
+    }
+
+    .bfang-boot-skeleton--lite-detail .bfang-boot-skeleton__detail-cover {
+      width: min(280px, 100%);
+    }
+
+    .bfang-boot-skeleton__reader-image {
+      width: 100%;
+      height: calc(100vh - 49px);
+      margin-block: 5px 0;
+    }
+
+    .bfang-boot-skeleton--novel-reader .bfang-boot-skeleton__main {
+      padding-top: 1.3rem;
+    }
+
+    .bfang-boot-skeleton__novel-controls {
+      margin-bottom: 1.8rem;
+    }
+
+    .bfang-boot-skeleton__published-row {
+      grid-template-columns: minmax(96px, 30vw) minmax(0, 1fr);
+      gap: 0.72rem;
+      padding: 0.62rem;
+    }
+
+    .bfang-boot-skeleton__published-cover {
+      aspect-ratio: 2 / 3;
+    }
+
+    .bfang-boot-skeleton__published-title {
+      width: 92%;
+      height: 20px;
+    }
+
+    .bfang-boot-skeleton__published-copy .bfang-boot-skeleton__block:nth-child(n + 3) {
+      display: none;
+    }
+
+    .bfang-boot-skeleton__account-head {
+      display: grid;
+    }
+
+    .bfang-boot-skeleton__profile-hero {
+      grid-template-columns: 84px minmax(0, 1fr);
+      gap: 0.85rem;
+      padding: 1rem;
+    }
+
+    .bfang-boot-skeleton__profile-avatar {
+      width: 84px;
+    }
+
+    .bfang-boot-skeleton__team-cover {
+      height: 150px;
+    }
+
+    .bfang-boot-skeleton__team-identity {
+      grid-template-columns: 64px minmax(0, 1fr);
+      min-height: 132px;
+    }
+
+    .bfang-boot-skeleton__team-avatar {
+      width: 64px;
+      height: 64px;
+    }
+
+    .bfang-boot-skeleton__team-tabs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.35rem;
+      padding: 0.35rem;
+    }
+
+    .bfang-boot-skeleton__team-overview {
+      grid-template-columns: 1fr;
+    }
+
+    .bfang-boot-skeleton__account-title {
+      width: 100%;
+    }
+
+    .bfang-boot-skeleton__page-panel:last-child {
+      min-height: 160px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .bfang-boot-skeleton__team-cover {
+      height: 132px;
+    }
+
+    .bfang-boot-skeleton__team-identity,
+    .bfang-boot-skeleton__team-row {
+      grid-template-columns: 1fr;
+    }
+
+    .bfang-boot-skeleton__team-row-cover {
+      width: 100%;
+      height: 170px;
+    }
+  }
+
+  @media (max-width: 430px) {
+    .bfang-boot-skeleton__published-row {
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 0.58rem;
+      padding: 0.56rem;
+    }
+  }
+</style>
+<script nonce="6jJYQUOpCROBap97AXRu1wZE">
+  (() => {
+    const initialKind = "";
+    const id = "bfang-boot-skeleton";
+    const block = '<span class="bfang-boot-skeleton__block"></span>';
+    const sectionHeading = `<div class="bfang-boot-skeleton__section-heading">${block}${block}</div>`;
+    const card = `<div class="bfang-boot-skeleton__card"><div class="bfang-boot-skeleton__card-cover"></div><div class="bfang-boot-skeleton__card-body">${block}${block}${block}</div></div>`;
+    const escapeAttribute = (value) => (value || "").toString().replace(/[&<>"']/g, (character) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[character]);
+    const renderBreadcrumb = (pathname, title) => {
+      const safeTitle = (title || "").toString().trim();
+      if (!safeTitle) return `<div class="bfang-boot-skeleton__breadcrumb manga-detail-breadcrumb">${block}${block}</div>`;
+      const isNovel = /^\/novel\//i.test(pathname);
+      return `<div class="bfang-boot-skeleton__breadcrumb manga-detail-breadcrumb"><span>${isNovel ? "Truyện chữ" : "Truyện tranh"}</span><span>/</span><span class="bfang-boot-skeleton__breadcrumb-current">${escapeAttribute(safeTitle)}</span></div>`;
+    };
+    const renderDetailCover = (cover) => {
+      const src = cover && typeof cover.src === "string" ? cover.src.trim() : "";
+      if (!src) return '<div class="bfang-boot-skeleton__detail-cover cover cover--detail"></div>';
+      const adultClass = cover.isAdult ? " cover--adult" : "";
+      const revealedClass = cover.isAdultRevealed ? " is-adult-revealed" : "";
+      return `<div class="bfang-boot-skeleton__detail-cover bfang-boot-skeleton__detail-cover--reused cover cover--detail${adultClass}${revealedClass}"><img src="${escapeAttribute(src)}" alt="${escapeAttribute(cover.alt)}" decoding="async" /></div>`;
+    };
+    const renderDetail = (preview) => {
+      const data = preview && typeof preview === "object" ? preview : {};
+      const title = data.title
+        ? `<h1 class="bfang-boot-skeleton__preview-title manga-detail-title">${escapeAttribute(data.title)}</h1>`
+        : '<span class="bfang-boot-skeleton__block bfang-boot-skeleton__detail-title"></span>';
+      return `<div class="bfang-boot-skeleton__detail detail-grid manga-detail-hero"><div class="bfang-boot-skeleton__detail-cover-wrap detail-cover">${renderDetailCover(data.cover)}</div><div class="bfang-boot-skeleton__detail-info detail-info">${title}<span class="bfang-boot-skeleton__block bfang-boot-skeleton__detail-meta"></span><span class="bfang-boot-skeleton__block bfang-boot-skeleton__detail-meta bfang-boot-skeleton__detail-meta--short"></span><div class="bfang-boot-skeleton__pills">${block}${block}${block}</div><div class="bfang-boot-skeleton__metrics">${block}${block}${block}${block}</div><div class="bfang-boot-skeleton__copy">${block}${block}${block}</div><span class="bfang-boot-skeleton__block bfang-boot-skeleton__button"></span></div></div>`;
+    };
+    const pagePanels = `<div class="bfang-boot-skeleton__page-grid"><div class="bfang-boot-skeleton__page-panel">${block}${block}${block}${block}</div><div class="bfang-boot-skeleton__page-panel">${block}${block}${block}</div></div>`;
+    const singlePanel = `<div class="bfang-boot-skeleton__page-grid bfang-boot-skeleton__page-grid--single"><div class="bfang-boot-skeleton__page-panel">${block}${block}${block}${block}</div></div>`;
+    const publishedRow = `<div class="bfang-boot-skeleton__published-row"><div class="bfang-boot-skeleton__published-cover"></div><div class="bfang-boot-skeleton__published-body"><span class="bfang-boot-skeleton__block bfang-boot-skeleton__published-title"></span><div class="bfang-boot-skeleton__published-meta">${block}${block}</div><div class="bfang-boot-skeleton__published-copy">${block}${block}${block}${block}</div><span class="bfang-boot-skeleton__block bfang-boot-skeleton__button"></span></div></div>`;
+    const chatThread = `<div class="bfang-boot-skeleton__chat-thread"><span class="bfang-boot-skeleton__chat-avatar"></span><div class="bfang-boot-skeleton__chat-thread-copy">${block}${block}</div></div>`;
+    const teamRow = `<div class="bfang-boot-skeleton__team-row"><span class="bfang-boot-skeleton__team-row-cover"></span><div class="bfang-boot-skeleton__team-row-copy">${block}${block}${block}</div></div>`;
+    let nextPathname = window.location.pathname;
+    let shell = null;
+    let shellKind = "";
+    let shellClassName = "";
+    let host = null;
+    let mutationObserver = null;
+    let resizeObserver = null;
+    let watching = false;
+    let revision = 0;
+    const documentNavigationId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    const nativeMobileNavigation = window.navigator && (
+      window.navigator.userAgentData?.mobile === true
+      || /Android|iPhone|iPad|iPod|Mobile/i.test((window.navigator.userAgent || "").toString())
+    );
+
+    const tagDocumentEntry = () => {
+      if (!window.history || typeof window.history.replaceState !== "function") return false;
+      const state = window.history.state && typeof window.history.state === "object" ? window.history.state : {};
+      window.history.replaceState({ ...state, bfangDocumentNavigationId: documentNavigationId }, "", window.location.href);
+      return true;
+    };
+
+    if (!nativeMobileNavigation) tagDocumentEntry();
+
+    const toPathname = (value) => {
+      try {
+        const url = new URL((value || window.location.href).toString(), window.location.href);
+        return url.origin === window.location.origin ? url.pathname : window.location.pathname;
+      } catch (_error) {
+        return window.location.pathname;
+      }
+    };
+
+    const getKind = (pathname) => {
+      if (/^\/admin\/login\/?$/i.test(pathname)) return "admin-login";
+      if (/^\/admin(?:\/|$)/i.test(pathname)) return "admin";
+      if (/^\/m\/manga\/[^/]+\/chapters\/[^/]+\/?$/i.test(pathname)) return "lite-reader";
+      if (/^\/manga\/[^/]+\/chapters\/[^/]+\/?$/i.test(pathname)) return "manga-reader";
+      if (/^\/novel\/[^/]+\/chapters\/[^/]+\/?$/i.test(pathname)) return "novel-reader";
+      if (/^\/novel\/home\/?$/i.test(pathname)) return "listing";
+      if (/^\/novel\/list\/?$/i.test(pathname)) return "catalog";
+      if (/^\/m\/(?:manga|novel)\/[^/]+\/?$/i.test(pathname)) return "lite-detail";
+      if (/^\/(?:manga|novel)\/[^/]+\/?$/i.test(pathname)) return "detail";
+      if (/^\/m\/forum(?:\/|$)/i.test(pathname)) return "lite-forum";
+      if (/^\/m\/?$/i.test(pathname)) return "lite-home";
+      if (pathname === "/") return "home";
+      if (/^\/(?:manga|novel)\/?$/i.test(pathname)) return "catalog";
+      if (/^\/xuat-ban\/?$/i.test(pathname)) return "published";
+      if (/^\/account\/?$/i.test(pathname)) return "account-form";
+      if (/^\/account\/saved\/?$/i.test(pathname)) return "account";
+      if (/^\/account\/(?:saved\/share\/[^/]+|history)\/?$/i.test(pathname)) return "collection";
+      if (/^\/messages\/?$/i.test(pathname)) return "chat";
+      if (/^\/team\/[^/]+(?:\/[^/]+)?\/?$/i.test(pathname)) return "team-profile";
+      if (/^\/user\/[^/]+\/?$/i.test(pathname)) return "profile";
+      if (/^\/tin-tuc(?:\/|$)/i.test(pathname)) return "news";
+      return "page";
+    };
+
+    const renderContent = (kind, navigationPreview, pathname) => {
+      if (kind === "home") {
+        return `<div class="bfang-boot-skeleton__home-head"><span class="bfang-boot-skeleton__block bfang-boot-skeleton__eyebrow"></span><div class="bfang-boot-skeleton__home-title">${block}${block}</div><div class="bfang-boot-skeleton__home-copy">${block}${block}</div></div><div class="bfang-boot-skeleton__home-grid"><div class="bfang-boot-skeleton__home-panel"><span class="bfang-boot-skeleton__block bfang-boot-skeleton__panel-label"></span><div class="bfang-boot-skeleton__stats"><div class="bfang-boot-skeleton__stat">${block}${block}</div><div class="bfang-boot-skeleton__stat">${block}${block}</div></div></div><div class="bfang-boot-skeleton__home-panel"><span class="bfang-boot-skeleton__block bfang-boot-skeleton__panel-label"></span><div class="bfang-boot-skeleton__notice">${block}${block}${block}</div></div></div><div class="bfang-boot-skeleton__continuation">${sectionHeading}<div class="bfang-boot-skeleton__cards">${card.repeat(6)}</div></div>`;
+      }
+      if (kind === "lite-home") {
+        return `<div class="bfang-boot-skeleton__lite-panel"><div class="bfang-boot-skeleton__home-title">${block}${block}</div><div class="bfang-boot-skeleton__home-copy">${block}${block}</div><div class="bfang-boot-skeleton__lite-stats"><div class="bfang-boot-skeleton__lite-stat">${block}${block}</div><div class="bfang-boot-skeleton__lite-stat">${block}${block}</div></div><div class="bfang-boot-skeleton__lite-intro"><div>${block}${block}${block}</div><div>${block}${block}${block}</div></div></div><div class="bfang-boot-skeleton__continuation">${sectionHeading}<div class="bfang-boot-skeleton__cards">${card.repeat(4)}</div></div>`;
+      }
+      if (kind === "catalog") {
+        return `${sectionHeading}<span class="bfang-boot-skeleton__block bfang-boot-skeleton__lede"></span><div class="bfang-boot-skeleton__filter"><div class="bfang-boot-skeleton__filter-head">${block}${block}</div><div class="bfang-boot-skeleton__fields"><div class="bfang-boot-skeleton__field">${block}${block}</div><div class="bfang-boot-skeleton__field">${block}${block}</div></div><div class="bfang-boot-skeleton__advanced"></div></div><div class="bfang-boot-skeleton__cards">${card.repeat(6)}</div>`;
+      }
+      if (kind === "listing") return `${sectionHeading}<div class="bfang-boot-skeleton__cards">${card.repeat(6)}</div>`;
+      if (kind === "detail") {
+        return `${renderBreadcrumb(pathname, navigationPreview && navigationPreview.title)}${renderDetail(navigationPreview)}<div class="bfang-boot-skeleton__continuation">${sectionHeading}${pagePanels}</div>`;
+      }
+      if (kind === "lite-detail") {
+        return `<div class="bfang-boot-skeleton__lite-panel bfang-boot-skeleton__lite-detail-panel">${renderDetail(navigationPreview)}</div><div class="bfang-boot-skeleton__lite-panel bfang-boot-skeleton__continuation">${sectionHeading}<div class="bfang-boot-skeleton__copy">${block}${block}${block}${block}</div></div>`;
+      }
+      if (kind === "manga-reader") {
+        return '<div class="bfang-boot-skeleton__reader-image"></div>';
+      }
+      if (kind === "novel-reader") {
+        return `<div class="bfang-boot-skeleton__novel-head"><span class="bfang-boot-skeleton__block bfang-boot-skeleton__novel-series"></span><span class="bfang-boot-skeleton__block bfang-boot-skeleton__novel-title"></span><span class="bfang-boot-skeleton__block bfang-boot-skeleton__novel-meta"></span></div><div class="bfang-boot-skeleton__novel-controls">${block}${block}${block}${block}${block}</div><div class="bfang-boot-skeleton__novel-copy">${block.repeat(14)}</div>`;
+      }
+      if (kind === "lite-reader") {
+        return `<div class="bfang-boot-skeleton__lite-panel"><div class="bfang-boot-skeleton__lite-reader-head">${block}<div class="bfang-boot-skeleton__lite-reader-links">${block}${block}</div></div><div class="bfang-boot-skeleton__lite-reader-controls">${block}${block}${block}</div><div class="bfang-boot-skeleton__lite-reader-page"></div></div>`;
+      }
+      if (kind === "published") {
+        return `${sectionHeading}<span class="bfang-boot-skeleton__block bfang-boot-skeleton__lede"></span><div class="bfang-boot-skeleton__published-list">${publishedRow.repeat(2)}</div>`;
+      }
+      if (kind === "account" || kind === "collection") {
+        return `<div class="bfang-boot-skeleton__account-panel"><div class="bfang-boot-skeleton__account-head"><div class="bfang-boot-skeleton__account-title">${block}${block}</div><span class="bfang-boot-skeleton__block bfang-boot-skeleton__account-action"></span></div><div class="bfang-boot-skeleton__account-layout"><div class="bfang-boot-skeleton__account-side">${block}${block}${block}${block}</div><div class="bfang-boot-skeleton__account-content">${block}${block}${block}${block}</div></div></div>`;
+      }
+      if (kind === "chat") {
+        return `<div class="bfang-boot-skeleton__chat"><aside class="bfang-boot-skeleton__chat-side">${block}<div class="bfang-boot-skeleton__chat-search"></div>${chatThread.repeat(4)}</aside><section class="bfang-boot-skeleton__chat-main"><div class="bfang-boot-skeleton__chat-head"><span class="bfang-boot-skeleton__chat-avatar"></span><div class="bfang-boot-skeleton__chat-peer">${block}${block}</div></div><div class="bfang-boot-skeleton__chat-messages"><span class="bfang-boot-skeleton__chat-bubble"></span><span class="bfang-boot-skeleton__chat-bubble"></span><span class="bfang-boot-skeleton__chat-bubble"></span></div><div class="bfang-boot-skeleton__chat-compose">${block}${block}</div></section></div>`;
+      }
+      if (kind === "profile") {
+        return `<div class="bfang-boot-skeleton__profile-hero"><span class="bfang-boot-skeleton__profile-avatar"></span><div class="bfang-boot-skeleton__account-title">${block}${block}${block}</div></div>${pagePanels}`;
+      }
+      if (kind === "team-profile") {
+        return `<div class="bfang-boot-skeleton__team-page"><div class="bfang-boot-skeleton__team-hero"><div class="bfang-boot-skeleton__team-cover"></div><div class="bfang-boot-skeleton__team-identity"><span class="bfang-boot-skeleton__team-avatar"></span><div class="bfang-boot-skeleton__team-meta"><span class="bfang-boot-skeleton__block bfang-boot-skeleton__team-name"></span><div class="bfang-boot-skeleton__team-chips">${block.repeat(5)}</div></div></div></div><div class="bfang-boot-skeleton__team-tabs">${block.repeat(3)}</div><div class="bfang-boot-skeleton__team-overview"><div class="bfang-boot-skeleton__team-side"><div class="bfang-boot-skeleton__team-card">${block.repeat(5)}</div><div class="bfang-boot-skeleton__team-card">${block.repeat(4)}</div></div><div class="bfang-boot-skeleton__team-series">${block}<div class="bfang-boot-skeleton__team-series-list">${teamRow.repeat(4)}</div></div></div></div>`;
+      }
+      if (kind === "lite-forum") {
+        return `<div class="bfang-boot-skeleton__lite-panel">${sectionHeading}<div class="bfang-boot-skeleton__account-content">${block}${block}${block}${block}${block}</div></div>`;
+      }
+      if (kind === "admin") return `${sectionHeading}${singlePanel}`;
+      if (kind === "news") return `${sectionHeading}${pagePanels}`;
+      if (kind === "admin-login" || kind === "account-form") return `${sectionHeading}${singlePanel}`;
+      return `${sectionHeading}${singlePanel}`;
+    };
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const findHost = () => shellKind === "manga-reader"
+      ? document.querySelector("[data-reader-lazy-pages]")
+      : document.querySelector("body main");
+
+    const getChrome = (main) => {
+      const siblings = main && main.parentElement ? Array.from(main.parentElement.children || []) : [];
+      return {
+        header: siblings.find((element) => (element.tagName || "").toLowerCase() === "header") || null,
+        footer: siblings.find((element) => (element.tagName || "").toLowerCase() === "footer") || null
+      };
+    };
+
+    const syncBounds = () => {
+      if (!shell || !host || typeof host.getBoundingClientRect !== "function") return;
+
+      const root = document.documentElement;
+      const visualViewport = window.visualViewport;
+      const rootRect = typeof root.getBoundingClientRect === "function" ? root.getBoundingClientRect() : null;
+      const viewportWidth = Number(rootRect && rootRect.width) || Number(root.clientWidth) || Number(visualViewport && visualViewport.width) || Number(window.innerWidth) || 0;
+      const viewportHeight = Number(visualViewport && visualViewport.height) || Number(root.clientHeight) || Number(window.innerHeight) || 0;
+      if (!viewportWidth || !viewportHeight) return;
+
+      const rect = host.getBoundingClientRect();
+      const rawLeft = Number(rect.left) || 0;
+      const rawTop = Number(rect.top) || 0;
+      const rawRight = Number.isFinite(Number(rect.right))
+        ? Number(rect.right)
+        : rawLeft + (Number(rect.width) || viewportWidth);
+      const rawBottom = Number.isFinite(Number(rect.bottom))
+        ? Number(rect.bottom)
+        : rawTop + (Number(rect.height) || viewportHeight);
+      const left = clamp(rawLeft, 0, viewportWidth);
+      const rightEdge = clamp(rawRight, left, viewportWidth);
+      let top = clamp(rawTop, 0, viewportHeight);
+      let bottom = Number(rect.height) > 0
+        ? clamp(viewportHeight - rawBottom, 0, viewportHeight - top)
+        : 0;
+      const { header, footer } = getChrome(host);
+
+      if (header && typeof header.getBoundingClientRect === "function") {
+        const headerRect = header.getBoundingClientRect();
+        const overlaps = Number(headerRect.right) > left && Number(headerRect.left) < rightEdge;
+        if (overlaps && Number(headerRect.bottom) > 0 && Number(headerRect.top) < viewportHeight) {
+          top = Math.max(top, clamp(Number(headerRect.bottom), 0, viewportHeight));
+        }
+      }
+
+      if (footer && typeof footer.getBoundingClientRect === "function") {
+        const footerRect = footer.getBoundingClientRect();
+        const overlaps = Number(footerRect.right) > left && Number(footerRect.left) < rightEdge;
+        if (overlaps && Number(footerRect.bottom) > 0 && Number(footerRect.top) < viewportHeight) {
+          bottom = Math.max(bottom, viewportHeight - clamp(Number(footerRect.top), 0, viewportHeight));
+        }
+      }
+
+      shell.style.top = `${top}px`;
+      shell.style.right = `${viewportWidth - rightEdge}px`;
+      shell.style.bottom = `${bottom}px`;
+      shell.style.left = `${left}px`;
+    };
+
+    const clearHost = () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
+      if (host) host.removeAttribute("data-bfang-boot-host");
+      host = null;
+    };
+
+    const observeHost = () => {
+      if (!host || typeof window.ResizeObserver !== "function") return;
+      resizeObserver = new window.ResizeObserver(syncBounds);
+      resizeObserver.observe(host);
+      const { header, footer } = getChrome(host);
+      if (header) resizeObserver.observe(header);
+      if (footer) resizeObserver.observe(footer);
+    };
+
+    const bindHost = () => {
+      if (!document.documentElement.hasAttribute("data-bfang-boot-loading")) return false;
+      const nextHost = findHost();
+      if (!nextHost) return false;
+      if (nextHost !== host) {
+        clearHost();
+        host = nextHost;
+        host.setAttribute("data-bfang-boot-host", "1");
+        observeHost();
+      }
+      shell.className = `${shellClassName} bfang-boot-skeleton--mounted`;
+      syncBounds();
+      return true;
+    };
+
+    const startWatching = () => {
+      if (!mutationObserver && typeof window.MutationObserver === "function") {
+        mutationObserver = new window.MutationObserver(bindHost);
+        mutationObserver.observe(document.documentElement, { childList: true, subtree: true });
+      }
+      if (watching) return;
+      watching = true;
+      window.addEventListener("resize", syncBounds);
+      window.addEventListener("scroll", syncBounds, { passive: true });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", syncBounds);
+        window.visualViewport.addEventListener("scroll", syncBounds, { passive: true });
+      }
+    };
+
+    const stopWatching = () => {
+      if (mutationObserver) {
+        mutationObserver.disconnect();
+        mutationObserver = null;
+      }
+      if (!watching) return;
+      watching = false;
+      window.removeEventListener("resize", syncBounds);
+      window.removeEventListener("scroll", syncBounds);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", syncBounds);
+        window.visualViewport.removeEventListener("scroll", syncBounds);
+      }
+    };
+
+    const show = (value, kindOverride, navigationPreview) => {
+      const pathname = toPathname(value);
+      revision += 1;
+      const kind = kindOverride || getKind(pathname);
+      shellKind = kind;
+      nextPathname = pathname;
+      shell = document.getElementById(id) || shell || document.createElement("div");
+      shell.id = id;
+      const routeClass = /^\/admin\/teams\/?$/i.test(pathname) ? " bfang-boot-skeleton--admin-teams" : "";
+      shellClassName = `bfang-boot-skeleton bfang-boot-skeleton--${kind}${routeClass}`;
+      shell.className = shellClassName;
+      shell.setAttribute("aria-busy", "true");
+      shell.innerHTML = `<p class="bfang-boot-skeleton__status" role="status" aria-live="polite">Đang tải nội dung…</p><div class="bfang-boot-skeleton__main${kind === "detail" ? " manga-detail-page" : ""}" aria-hidden="true">${renderContent(kind, navigationPreview, pathname)}</div>`;
+      if (!document.getElementById(id)) document.documentElement.appendChild(shell);
+      document.documentElement.setAttribute("data-bfang-boot-kind", kind);
+      document.documentElement.setAttribute("data-bfang-boot-loading", "1");
+      startWatching();
+      bindHost();
+    };
+
+    const hide = () => {
+      revision += 1;
+      stopWatching();
+      clearHost();
+      if (shell) shell.remove();
+      document.documentElement.removeAttribute("data-bfang-boot-kind");
+      document.documentElement.removeAttribute("data-bfang-boot-loading");
+    };
+
+    const hideWhenReady = (expectedRevision) => {
+      const finish = () => {
+        if (revision === expectedRevision) hide();
+      };
+      if (typeof window.requestAnimationFrame === "function") {
+        window.requestAnimationFrame(finish);
+      } else {
+        window.setTimeout(finish, 0);
+      }
+    };
+
+    window.BfangBootSkeleton = { show, hide };
+    show(window.location.pathname, initialKind);
+
+    const ready = () => {
+      bindHost();
+      hideWhenReady(revision);
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", ready, { once: true });
+    } else {
+      ready();
+    }
+
+    document.addEventListener("click", (event) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+      if (!anchor || anchor.hasAttribute("download") || (anchor.target && anchor.target !== "_self")) return;
+      try {
+        const url = new URL(anchor.href, window.location.href);
+        if (url.origin === window.location.origin) nextPathname = url.pathname;
+      } catch (_error) {}
+    }, true);
+
+    document.addEventListener("submit", (event) => {
+      const form = event.target;
+      if (!(form instanceof HTMLFormElement) || (form.target && form.target !== "_self")) return;
+      try {
+        const url = new URL(form.action || window.location.href, window.location.href);
+        if (url.origin === window.location.origin) nextPathname = url.pathname;
+      } catch (_error) {}
+    }, true);
+
+    if (window.navigation && typeof window.navigation.addEventListener === "function") {
+      window.navigation.addEventListener("navigate", (event) => {
+        const destination = event.destination;
+        if (!destination || destination.sameDocument || event.hashChange) return;
+        try {
+          const url = new URL(destination.url, window.location.href);
+          if (url.origin !== window.location.origin) return;
+          nextPathname = url.pathname;
+          show(url.pathname);
+          const navigationRevision = revision;
+          if (event.signal && typeof event.signal.addEventListener === "function") {
+            event.signal.addEventListener("abort", () => {
+              if (revision === navigationRevision) hide();
+            }, { once: true });
+          }
+        } catch (_error) {}
+      });
+    }
+
+    window.addEventListener("beforeunload", () => {
+      if (!document.documentElement.hasAttribute("data-bfang-boot-loading")) show(nextPathname);
+    });
+    window.addEventListener("pagehide", (event) => {
+      if (event.persisted) hide();
+    });
+    window.addEventListener("popstate", (event) => {
+      hide();
+      const entryId = event && event.state && event.state.bfangDocumentNavigationId;
+      if (entryId && entryId !== documentNavigationId) window.location.reload();
+    });
+    window.addEventListener("pageshow", hide);
+  })();
+</script>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+
+    <title>Đọc truyện tranh: nữ — Mòe Truyện</title>
+  <meta name="description" content="Danh sách đọc truyện tranh theo từ khóa và bộ lọc trên Mòe Truyện. Duyệt manga, manhwa, manhua theo thể loại nhanh chóng." />
+  
+    <meta name="keywords" content="đọc truyện tranh, đọc truyện tranh online, manga tiếng Việt, đọc manga miễn phí, truyện tranh mới cập nhật, manga hot, truyện tranh full chapter, truyện tranh hành động, truyện tranh romance, truyện tranh drama, truyện tranh school life, nhóm dịch truyện tranh, Mòe Truyện, đọc truyện tranh theo thể loại, thư viện manga, lọc thể loại manga, nữ" />
+    <meta name="news_keywords" content="đọc truyện tranh, đọc truyện tranh online, manga tiếng Việt, đọc manga miễn phí, truyện tranh mới cập nhật, manga hot, truyện tranh full chapter, truyện tranh hành động, truyện tranh romance, truyện tranh drama, truyện tranh school life, nhóm dịch truyện tranh, Mòe Truyện, đọc truyện tranh theo thể loại, thư viện manga, lọc thể loại manga, nữ" />
+  
+  
+    <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex,max-snippet:0,max-image-preview:none,max-video-preview:0" />
+    <meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex,max-snippet:0,max-image-preview:none,max-video-preview:0" />
+  
+  <meta name="author" content="Mòe Truyện" />
+  <meta name="application-name" content="Mòe Truyện" />
+  <meta name="theme-color" content="#0f0f11" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mòe Truyện" />
+  <link rel="manifest" href="/manifest.webmanifest?t=a792a7a93ee11a24" />
+  <link rel="apple-touch-icon" href="/pwa/apple-touch-icon.png?t=a792a7a93ee11a24" />
+  <link rel="icon" type="image/svg+xml" href="/logobfang.svg?t=a792a7a93ee11a24" />
+
+  
+    <link rel="canonical" href="https://moetruyen.net/manga" />
+    <link rel="alternate" hreflang="vi-VN" href="https://moetruyen.net/manga" />
+    <link rel="alternate" hreflang="x-default" href="https://moetruyen.net/manga" />
+  
+  
+
+  <meta property="og:locale" content="vi_VN" />
+  <meta property="og:type" content="website" />
+  
+  <meta property="og:site_name" content="Mòe Truyện" />
+  <meta property="og:title" content="Đọc truyện tranh: nữ — Mòe Truyện" />
+  <meta property="og:description" content="Danh sách đọc truyện tranh theo từ khóa và bộ lọc trên Mòe Truyện. Duyệt manga, manhwa, manhua theo thể loại nhanh chóng." />
+  
+    <meta property="og:url" content="https://moetruyen.net/manga" />
+  
+  
+    <meta property="og:image" content="https://u.truyen.moe/uploads/covers/1649-ma-phap-toan-nang-cua-thanh-nu.webp" />
+  
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Đọc truyện tranh: nữ — Mòe Truyện" />
+  <meta name="twitter:description" content="Danh sách đọc truyện tranh theo từ khóa và bộ lọc trên Mòe Truyện. Duyệt manga, manhwa, manhua theo thể loại nhanh chóng." />
+  
+    <meta name="twitter:image" content="https://u.truyen.moe/uploads/covers/1649-ma-phap-toan-nang-cua-thanh-nu.webp" />
+  
+
+  
+
+    <script nonce="6jJYQUOpCROBap97AXRu1wZE">
+    window.__SITE_CONFIG = {"branding":{"siteName":"Mòe Truyện","brandMark":"Mòe","brandSubmark":"Truyện","aboutNavLabel":"Về MoeTruyen","heroKicker":"Mòe Truyện Manga","updateTag":"MoeTruyen","footerYear":"2026","dmcaFooterHtml":""},"homepage":{"welcomeMessage":"Chào mừng bạn đến với Mòe Truyện.","introduction":"Mòe Truyện là cộng đồng truyện với hàng nghìn đầu truyện và chục nghìn chương truyện.","aboutTitle":"Về Mòe Truyện","foundedYear":"2026","contentStandardsTitle":"Tiêu chuẩn nội dung","contentStandards":["Chúng tôi chỉ đăng tải truyện tranh hoặc truyện chữ.","Các dự án được dịch thuật chủ yếu từ tiếng Anh hoặc tiếng Nhật."],"contactTitle":"Kênh liên hệ"},"contact":{"facebookUrl":"https://facebook.com/DongMoeReal","facebookLabel":"facebook.com/DongMoeReal","discordUrl":"https://discord.moetruyen.net/","discordLabel":"discord.moetruyen.net","emailAddress":"admin@mail.moetruyen.net","emailLabel":"admin@mail.moetruyen.net"},"seo":{"defaultDescription":"MoeTruyen - Đọc truyện online miễn phí, cập nhật nhanh manga, manhwa, manhua mới mỗi ngày.","homepageTitle":"MoeTruyen - Đọc truyện tranh online miễn phí","homepageDescription":"MoeTruyen là nơi đọc truyện online miễn phí, cập nhật nhanh truyện manga, manhwa, manhua mới nhất. Trải nghiệm mượt mà, cập nhật liên tục, không quảng cáo."},"admin":{"teamManageLabel":"Mòe Truyện Manage","adminLabel":"MoeTruyen Admin","loginNote":"Truy cập dành riêng cho Mòe Truyện."}};
+    window.__AUTH = {"providers":{"google":true,"discord":true},"sessionVersion":"870e4e6ac354b20420fc2b8e"};
+    window.__BFANG_ASSET_VERSION = "a792a7a93ee11a24";
+    if (window.__AUTH && typeof window.__AUTH === "object") {
+      window.__AUTH.notificationsScriptUrl = "/notifications.js?t=a792a7a93ee11a24";
+    }
+    window.__TURNSTILE = {"siteKey":"0x4AAAAAACa5nZookwpdTAxN"};
+  </script>
+  <script nonce="6jJYQUOpCROBap97AXRu1wZE">
+    (() => {
+      const root = document.documentElement;
+      if (!root) return;
+
+      const authConfig = window.__AUTH && typeof window.__AUTH === "object" ? window.__AUTH : {};
+      const initialState = authConfig.initialState && typeof authConfig.initialState === "object"
+        ? authConfig.initialState
+        : null;
+      const hasServerState = Boolean(initialState && initialState.hasServerState === true);
+      const serverSignedIn = Boolean(initialState && initialState.signedIn === true);
+
+      root.setAttribute("data-auth-ready", "0");
+      root.setAttribute("data-auth-hint", serverSignedIn ? "in" : "out");
+
+      if (hasServerState) {
+        try {
+          window.localStorage.setItem("bfang_auth_hint", serverSignedIn ? "in" : "out");
+        } catch (_err) {
+          // ignore
+        }
+        return;
+      }
+
+      try {
+        const hint = (window.localStorage.getItem("bfang_auth_hint") || "").toString().trim();
+        if (hint === "in") {
+          root.setAttribute("data-auth-hint", "in");
+        }
+      } catch (_err) {
+        // ignore
+      }
+    })();
+  </script>
+
+  
+    <link rel="preload" as="font" type="font/woff2" href="/font/anton-vietnamese.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/font/anton-latin.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/font/noto-sans-jp-vietnamese.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/font/noto-sans-jp-latin.woff2" crossorigin />
+  
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  
+  
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  
+  
+  
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,700&amp;family=Noto+Sans+JP:wght@400;500;700&amp;family=Roboto:wght@400;700&amp;display=swap" />
+  
+  
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" media="print" data-head-async-style="1" />
+    <noscript>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" />
+    </noscript>
+  
+  <link rel="stylesheet" href="/styles.css?rev=toast-ui-v63&amp;t=a792a7a93ee11a24" />
+  
+  
+  
+  <script nonce="6jJYQUOpCROBap97AXRu1wZE">
+    (() => {
+      const links = Array.from(document.querySelectorAll("link[data-head-async-style]"));
+      if (!links.length) return;
+
+      const activate = (link) => {
+        if (!link || link.media === "all") return;
+        link.media = "all";
+      };
+
+      links.forEach((link) => {
+        const onDone = () => activate(link);
+        link.addEventListener("load", onDone, { once: true });
+        link.addEventListener("error", onDone, { once: true });
+
+        if (link.sheet) {
+          activate(link);
+          return;
+        }
+
+        window.setTimeout(() => {
+          activate(link);
+        }, 2500);
+      });
+    })();
+  </script>
+  
+
+  
+    <style nonce="6jJYQUOpCROBap97AXRu1wZE">
+      @view-transition { navigation: auto; }
+      .site-header,
+      .admin-header { view-transition-name: bfang-navigation-chrome; }
+      ::view-transition-group(bfang-navigation-chrome),
+      ::view-transition-old(bfang-navigation-chrome),
+      ::view-transition-new(bfang-navigation-chrome) { animation: none; }
+    </style>
+  
+  
+    <style nonce="6jJYQUOpCROBap97AXRu1wZE">
+      .cover--adult {
+        position: relative;
+      }
+
+      .cover--adult img {
+        filter: blur(14px) saturate(0.78) brightness(0.68);
+        transform: scale(1.04);
+        transform-origin: center;
+      }
+
+      .cover--adult::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.58));
+        pointer-events: none;
+      }
+
+      .cover--adult.is-adult-revealed img,
+      .cover--adult[data-adult-revealed="1"] img {
+        filter: none;
+        transform: none;
+      }
+
+      .cover--adult.is-adult-revealed::after,
+      .cover--adult[data-adult-revealed="1"]::after {
+        display: none;
+      }
+    </style>
+  
+    
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-HJBTK1S4HZ"></script>
+  <script nonce="6jJYQUOpCROBap97AXRu1wZE">
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+    gtag("config", "G-HJBTK1S4HZ");
+  </script>
+  
+  
+    <script src="/confirm.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/toast.js?rev=toast-ui-v63&amp;t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/auth-core.js?t=a792a7a93ee11a24" defer></script>
+    <script src="/auth-ui.js?t=a792a7a93ee11a24" defer></script>
+    <script src="/auth.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/button-ui.js?rev=toast-ui-v63&amp;t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/sw-register.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/pwa-install.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/fast-nav-core.js?t=a792a7a93ee11a24" defer></script>
+    <script src="/fast-nav-comments.js?t=a792a7a93ee11a24" defer></script>
+    <script src="/fast-nav.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/continue-reading.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/reading-activity-ticker.js?rev=toast-ui-v63&amp;t=a792a7a93ee11a24" defer></script>
+  
+  
+  
+  
+  
+    <script src="/messages-indicator.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/adult-content.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/comment-emoji.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+  
+  
+  
+    <script src="/filters.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/manga-card-hover.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+    <script src="/header-search.js?t=a792a7a93ee11a24" defer></script>
+  
+  
+  
+  
+  
+  
+
+</head>
+
+  <body>
+    
+      <script type="speculationrules" nonce="6jJYQUOpCROBap97AXRu1wZE">{"prefetch":[{"source":"list","urls":["/manga/1649-ma-phap-toan-nang-cua-thanh-nu","/manga/582-10-nam-bi-chiem-xac-nang-ac-nu-va-su-hoi-han-cua-ngai-hiep-si","/manga/1588-nu-sinh-tru-ta-akane","/manga/1551-destiny-unchain-online","/manga/748-ong-chu-chuyen-sinh-thanh-ac-nu-phan-dien","/manga/1080-ac-nu-tai-sinh-cuoc-doi-thu-hai-va-loi-the-hanh-phuc","/manga/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the","/manga/209-ryoushin-no-shakkin-wo-katagawari-shite-morau-jouken-wa-nihon-ichi-kawaii-joshikousei-to-issho-ni-kurasu-koto-deshita","/manga/231-sau-khi-tinh-co-giup-do-mot-be-gai-lac-duong-nang-my-nu-du-hoc-sinh-nha-ben-thuong-xuyen-lui-toi-can-ho-cua-toi","/manga/794-cau-truyen-tra-thu-huy-hoang-cua-nu-phan-dien-sieu-cap-gian-lan","/manga/44-rekishi-ni-nokoru-akujo-ni-naru-zo-akuyaku-reijou-ni-naru-hodo-ouji-no-dekiai-wa-kasoku-suru-you-desu","/manga/894-nu-anh-hung-muon-duoc-nghi-ngoi","/manga/146-di-choi-cung-nu-game-thu","/manga/119-luyen-thuc-nu","/manga/1942-thanh-nu-va-nu-phan-dien-se-cung-nhau-pha-dao-otome-game","/manga/265-ma-phap-thieu-nu-dandelion","/manga/1732-toi-muon-giup-nu-chinh-thua-cuoc-chien-thang","/manga/1919-uesugi-kun-khong-muon-lam-con-gai-nua"],"eagerness":"moderate"}]}</script>
+    
+    <div class="site">
+      
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="Mòe Truyện">
+      <span class="brand__mark">Mòe</span>
+      <span class="brand__sub">Truyện</span>
+    </a>
+    <div class="header-actions" id="site-main-nav">
+      <div class="header-nav">
+        <button
+          class="header-menu-toggle"
+          type="button"
+          data-header-nav-toggle
+          aria-controls="site-nav-links"
+          aria-expanded="false"
+          title="Mở menu điều hướng"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 7h16" />
+            <path d="M4 12h16" />
+            <path d="M4 17h16" />
+          </svg>
+          <span class="sr-only">Mở menu điều hướng</span>
+        </button>
+        <nav class="nav hidden" id="site-nav-links">
+          <a href="/manga">Truyện tranh</a>
+          <a href="/novel">Truyện chữ</a>
+          
+          
+            <a href="/forum">Diễn đàn</a>
+          
+          <a href="/publish" data-publish-nav-link data-publish-nav-mode="publish">Đăng truyện</a>
+          <a href="/xuat-ban">Xuất bản</a>
+        </nav>
+      </div>
+      <div class="header-search" data-header-search>
+        <button
+          class="header-search-toggle"
+          type="button"
+          data-header-search-toggle
+          aria-controls="header-search-panel"
+          aria-expanded="false"
+          title="Tìm truyện"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.6-3.6" />
+          </svg>
+          <span class="sr-only">Tìm truyện</span>
+        </button>
+        <div class="header-search-panel" id="header-search-panel" hidden data-header-search-panel>
+          <label class="sr-only" for="header-search-input">Tìm truyện</label>
+          <input
+            id="header-search-input"
+            class="header-search-input"
+            type="search"
+            placeholder="Tìm truyện tranh, truyện chữ"
+            autocomplete="off"
+            spellcheck="false"
+            data-header-search-input
+          />
+          <div class="header-search-results" hidden data-header-search-results-wrap>
+            <ul class="header-search-results__list" data-header-search-results role="listbox" aria-label="Kết quả tìm truyện"></ul>
+            <a class="header-search-results__more" href="/manga" hidden data-header-search-more>Xem toàn bộ kết quả</a>
+          </div>
+        </div>
+      </div>
+      <a
+        class="message-trigger"
+        href="/messages"
+        hidden
+        data-auth-member-only="1"
+        data-message-widget
+        title="Tin nhắn"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 14.2a3.8 3.8 0 0 1-3.8 3.8H9l-4.5 3v-3.4A3.8 3.8 0 0 1 1 13.8V6.8A3.8 3.8 0 0 1 4.8 3h12.4A3.8 3.8 0 0 1 21 6.8z" />
+        </svg>
+        <span class="notify-badge" hidden data-message-badge>0</span>
+        <span class="sr-only">Tin nhắn</span>
+      </a>
+      <div class="notify-widget" hidden data-notify-widget>
+        <button
+          class="notify-trigger"
+          type="button"
+          data-notify-toggle
+          aria-haspopup="menu"
+          aria-expanded="false"
+          title="Thông báo"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6.8 9a5.2 5.2 0 1 1 10.4 0v3.1c0 .8.3 1.5.8 2.1l1.1 1.3H5l1.1-1.3c.5-.6.8-1.3.8-2.1z" />
+            <path d="M9.8 18.1a2.2 2.2 0 0 0 4.4 0" />
+          </svg>
+          <span class="notify-badge" hidden data-notify-badge>0</span>
+          <span class="sr-only">Thông báo</span>
+        </button>
+        <div class="notify-menu" hidden data-notify-menu>
+          <div class="notify-menu__head">
+            <strong>Thông báo</strong>
+            <button class="notify-menu__mark" type="button" data-notify-mark-all hidden>
+              Đánh dấu đã đọc
+            </button>
+          </div>
+          <p class="notify-menu__empty" data-notify-empty>Chưa có thông báo nào.</p>
+          <div class="notify-list" data-notify-list role="list"></div>
+        </div>
+      </div>
+      <div class="notify-widget" hidden data-team-notify-widget>
+        <button
+          class="notify-trigger"
+          type="button"
+          data-team-notify-toggle
+          aria-haspopup="menu"
+          aria-expanded="false"
+          title="Thông báo nhóm"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="9" cy="8.3" r="2.4" />
+            <path d="M4.9 16.8c.8-2.1 2.4-3.2 4.1-3.2s3.3 1.1 4.1 3.2" />
+            <circle cx="16.6" cy="9.1" r="2" />
+            <path d="M13.8 16.7c.6-1.7 1.9-2.6 3.2-2.6 1 0 2 .5 2.8 1.6" />
+          </svg>
+          <span class="notify-badge" hidden data-team-notify-badge>0</span>
+          <span class="sr-only">Thông báo nhóm</span>
+        </button>
+        <div class="notify-menu" hidden data-team-notify-menu>
+          <div class="notify-menu__head">
+            <strong>Thông báo nhóm</strong>
+            <button class="notify-menu__mark" type="button" data-team-notify-mark-all hidden>
+              Đánh dấu đã đọc
+            </button>
+          </div>
+          <p class="notify-menu__empty" data-team-notify-empty>Chưa có thông báo nhóm nào.</p>
+          <div class="notify-list" data-team-notify-list role="list"></div>
+          <a class="notify-menu__mark" href="/publish" data-team-notify-more hidden>Xem thêm</a>
+        </div>
+      </div>
+      <div class="auth-widget" data-auth-widget>
+        <button class="button button--ghost auth-widget__login" type="button" data-auth-login >
+          Đăng nhập
+        </button>
+        <div class="auth-widget__profile" hidden data-auth-profile>
+          <button
+            class="auth-trigger"
+            type="button"
+            data-auth-menu-toggle
+            aria-haspopup="menu"
+            aria-expanded="false"
+            title="Tài khoản"
+          >
+            <img
+              class="auth-trigger__avatar"
+              alt=""
+              hidden
+              data-auth-avatar
+              referrerpolicy="no-referrer"
+            />
+            <svg
+              class="auth-trigger__fallback"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c1.6-3.5 5-5 8-5s6.4 1.5 8 5" />
+            </svg>
+          </button>
+          <div class="auth-menu" hidden data-auth-menu>
+            <div class="auth-menu__head">
+              <a class="auth-menu__name auth-menu__name-link" href="/account" data-auth-name data-auth-profile-link></a>
+              <div class="auth-menu__username" data-auth-username></div>
+            </div>
+            <a class="auth-menu__item" href="/account">Cài đặt tài khoản</a>
+            <a class="auth-menu__item" href="/account/saved">Đã lưu</a>
+            <a class="auth-menu__item" href="/account/history">Lịch sử đọc</a>
+            <button class="auth-menu__item" type="button" data-auth-logout>
+              Đăng xuất
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</header>
+<script nonce="6jJYQUOpCROBap97AXRu1wZE">
+  (() => {
+    const restoreBadge = (selector, storageKey) => {
+      const badge = document.querySelector(selector);
+      if (!badge) return;
+      try {
+        const count = Math.max(0, Math.floor(Number(sessionStorage.getItem(storageKey)) || 0));
+        badge.hidden = count === 0;
+        badge.textContent = count > 99 ? "99+" : String(count);
+        const messageWidget = badge.closest("[data-message-widget]");
+        if (messageWidget) messageWidget.setAttribute("data-has-unread", count > 0 ? "1" : "0");
+      } catch (_error) {}
+    };
+
+    restoreBadge("[data-notify-badge]", "bfang.header.notifications.default");
+    restoreBadge("[data-team-notify-badge]", "bfang.header.notifications.team");
+    restoreBadge("[data-message-badge]", "bfang.header.messages");
+  })();
+</script>
+
+      <main>
+        <section class="section container" data-manga-catalog data-manga-catalog-endpoint="/manga/filter">
+          <div class="section-header">
+            <h1>Truyện tranh</h1>
+            <span class="section-line"></span>
+          </div>
+          <p class="lede">Toàn bộ series do Mòe Truyện lưu trữ và quản lý.</p>
+          <div class="filter-panel panel">
+            <div class="filter-head">
+              <p class="filter-title">Tìm kiếm truyện tranh</p>
+              <p class="filter-sub">Nhập tên truyện tranh hoặc tác giả, chọn trạng thái nếu cần.</p>
+            </div>
+            <form class="filter-form filter-form--advanced" action="/manga" method="get" data-manga-catalog-form>
+              <div class="filter-basic-grid">
+                <label class="filter-field">
+                  <span>Tên truyện tranh, tác giả</span>
+                  <input
+                    type="search"
+                    name="q"
+                    placeholder="Tên truyện tranh hoặc tác giả"
+                    value="nữ"
+                  />
+                </label>
+                <label class="filter-field">
+                  <span>Trạng thái</span>
+                  <select name="status">
+                    <option value="">Tất cả trạng thái</option>
+                    
+                      <option value="Còn tiếp" >
+                        Còn tiếp (1028)
+                      </option>
+                    
+                      <option value="Hoàn thành" >
+                        Hoàn thành (741)
+                      </option>
+                    
+                      <option value="Tạm dừng" >
+                        Tạm dừng (71)
+                      </option>
+                    
+                  </select>
+                </label>
+              </div>
+
+              <details class="filter-advanced" >
+                <summary class="filter-advanced__summary">
+                  <i class="fa-solid fa-caret-right filter-advanced__chevron" aria-hidden="true"></i>
+                  <span>Tìm kiếm nâng cao</span>
+                </summary>
+                <div class="filter-advanced__body">
+                  <label class="filter-field filter-field--sort">
+                    <span>Sắp xếp theo</span>
+                    <select name="sort">
+                      
+                        <option value="updated_desc" selected>
+                          Mới cập nhật
+                        </option>
+                      
+                        <option value="views_desc" >
+                          Lượt xem cao nhất
+                        </option>
+                      
+                        <option value="views_asc" >
+                          Lượt xem thấp nhất
+                        </option>
+                      
+                        <option value="bookmarks_desc" >
+                          Lượt lưu nhiều nhất
+                        </option>
+                      
+                        <option value="bookmarks_asc" >
+                          Lượt lưu ít nhất
+                        </option>
+                      
+                        <option value="title_asc" >
+                          Tên truyện A-Z
+                        </option>
+                      
+                        <option value="title_desc" >
+                          Tên truyện Z-A
+                        </option>
+                      
+                        <option value="chapters_desc" >
+                          Nhiều chương nhất
+                        </option>
+                      
+                        <option value="chapters_asc" >
+                          Ít chương nhất
+                        </option>
+                      
+                        <option value="comments_desc" >
+                          Bình luận nhiều nhất
+                        </option>
+                      
+                        <option value="comments_asc" >
+                          Bình luận ít nhất
+                        </option>
+                      
+                    </select>
+                  </label>
+                  
+                  <div class="filter-group">
+                    <p class="filter-group-title">Thể loại</p>
+                    <p class="filter-sub filter-sub--compact">Nhấn 1 lần để chọn, 2 lần để loại trừ, 3 lần để bỏ.</p>
+                    
+                      <div class="filter-options" data-filter-options>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2715"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">4-Koma</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="1"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Action</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="12"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Adventure</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="13"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Comedy</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2712"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Cooking</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="68"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Crossdressing</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2716"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Doujinshi</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="4"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Drama</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="64"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Ecchi</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="15"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Fantasy</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2717"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Full Color</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="67"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Gender Bender</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="65"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Harem</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="26"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Historical</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="16"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Horror</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="46"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Isekai</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="44"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Josei</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2720"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Magic</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="192"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Martial Arts</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="73"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Mature</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2718"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Mecha</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2721"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Music</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Mystery</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2722"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Office Workers</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="76"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Oneshot</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="6"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Psychological</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="19"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Romance</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="27"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">School Life</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="7"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Sci-Fi</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="3"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Seinen</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2703"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Shoujo</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="8"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Shounen</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="21"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Slice Of Life</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2711"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Sport</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="22"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Supernatural</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2719"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Thriller</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="49"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Time Travel</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="39"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Tragedy</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2714"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Truyện Việt</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2713"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Webtoon</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="2710"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Yaoi</span>
+                          </button>
+                        
+                          
+                          <button
+                            type="button"
+                            class="filter-option filter-option--toggle "
+                            data-genre="70"
+                            data-state="none"
+                          >
+                            <span class="filter-state"></span>
+                            <span class="filter-name">Yuri</span>
+                          </button>
+                        
+                      </div>
+                    
+                  </div>
+                  <div class="filter-hidden" data-filter-hidden>
+                    
+                    
+                  </div>
+                </div>
+              </details>
+
+              <div class="filter-actions">
+                <a
+                  class="button button--ghost"
+                  href="/manga"
+                  data-manga-catalog-reset
+                  
+                >Xóa lọc</a>
+              </div>
+            </form>
+            <p class="filter-summary">Tất cả <span data-manga-catalog-count>72</span> truyện tranh.</p>
+          </div>
+          <div class="manga-catalog-results" data-manga-catalog-results aria-live="polite" aria-busy="false">
+            
+
+  <div class="manga-grid manga-grid--catalog manga-grid--list-style">
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1649-ma-phap-toan-nang-cua-thanh-nu">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1649-ma-phap-toan-nang-cua-thanh-nu-md.webp?t=1782704849918"
+                srcset="https://u.truyen.moe/uploads/covers/1649-ma-phap-toan-nang-cua-thanh-nu-sm.webp?t=1782704849918 132w, https://u.truyen.moe/uploads/covers/1649-ma-phap-toan-nang-cua-thanh-nu-md.webp?t=1782704849918 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Ma pháp toàn năng của Thánh nữ"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 31</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Ma pháp toàn năng của Thánh nữ">Ma pháp toàn năng...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 5.528 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 71 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 22 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Ma pháp toàn năng của Thánh nữ</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Adventure</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Fantasy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+4</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Nguyệt Hồ Lâu</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Sống cuộc sống cuồng công việc ở độ tuổi giữa 20, Sei chưa bao giờ nghĩ mình sẽ được triệu hồi đến một thế giới khác, chứ đừng nói đến việc có được sức mạnh của một vị Thánh nữ. Và cô càng không ngờ mình lại bị người dân hoàn toàn phớt lờ! Trong khi vương q...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/582-10-nam-bi-chiem-xac-nang-ac-nu-va-su-hoi-han-cua-ngai-hiep-si">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/582-10-nam-bi-chiem-xac-nang-ac-nu-va-su-hoi-han-cua-ngai-hiep-si-md.webp?t=1775040351917"
+                srcset="https://u.truyen.moe/uploads/covers/582-10-nam-bi-chiem-xac-nang-ac-nu-va-su-hoi-han-cua-ngai-hiep-si-sm.webp?t=1775040351917 132w, https://u.truyen.moe/uploads/covers/582-10-nam-bi-chiem-xac-nang-ac-nu-va-su-hoi-han-cua-ngai-hiep-si-md.webp?t=1775040351917 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa 10 Năm Bị Chiếm Xác: Nàng Ác Nữ Và Sự Hối Hận Của Ngài Hiệp Sĩ"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 19</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="10 Năm Bị Chiếm Xác: Nàng Ác Nữ Và Sự Hối Hận Của Ngài Hiệp Sĩ">10 Năm Bị Chiếm...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 3.070 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 50 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 9 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">10 Năm Bị Chiếm Xác: Nàng Ác Nữ Và Sự Hối Hận Của Ngài Hiệp Sĩ</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Fantasy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Hạ</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Vốn là một tiểu thư bá tước cao quý, Sade đã bị một linh hồn lạ chiếm hữu thân xác suốt 10 năm ròng. Trong khoảng thời gian kinh khủng đó, cô bỗng chốc trở thành &#34;ác nữ lừng danh thế kỷ&#34; trong mắt mọi người. Đúng vào khoảnh khắc cô giành lại được quyền kiểm...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1588-nu-sinh-tru-ta-akane">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1588-nu-sinh-tru-ta-akane-md.webp?t=1782131907047"
+                srcset="https://u.truyen.moe/uploads/covers/1588-nu-sinh-tru-ta-akane-sm.webp?t=1782131907047 132w, https://u.truyen.moe/uploads/covers/1588-nu-sinh-tru-ta-akane-md.webp?t=1782131907047 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Nữ sinh trừ tà Akane!"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 22</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Nữ sinh trừ tà Akane!">Nữ sinh trừ tà...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 8.332 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 192 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 180 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Nữ sinh trừ tà Akane!</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+4</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>NamCan / Kurotoko</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Shinonome Akane là một nữ sinh cấp ba bình thường hơi hám tiền. Một ngày ông bố của cô bỏ trốn với gái, cùng phần lớn tiền tiết kiệm của gia đình. Để kiếm sống Akane quyết định nối nghiệp trừ tà của ông bố này, nhưng cái cách trừ tà có hơi... Chap 1-9 được...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1551-destiny-unchain-online">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1551-destiny-unchain-online-md.webp?t=1781851260531"
+                srcset="https://u.truyen.moe/uploads/covers/1551-destiny-unchain-online-sm.webp?t=1781851260531 132w, https://u.truyen.moe/uploads/covers/1551-destiny-unchain-online-md.webp?t=1781851260531 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Destiny Unchain Online"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 56</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Destiny Unchain Online">Destiny Unchain Online</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.036 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 73 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 14 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Destiny Unchain Online</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Action</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Adventure</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Dịch Truyện Drop Gender Bender / Dịch Truyện Linh Tinh</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Kou Mitsuki là một game thủ với những kỹ năng phải nói là quá ghê gớm, có biệt danh là &#34;Thợ săn táo Crim&#34;. Cậu tham gia thử nghiệm một thiết bị trò chơi mới cho trò chơi mới mà do chính cha của cậu tạo ra, &#34;Destiny Unchained Online&#34;. Nhưng trò chơi đầy lỗi...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/748-ong-chu-chuyen-sinh-thanh-ac-nu-phan-dien">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/748-ong-chu-chuyen-sinh-thanh-ac-nu-phan-dien-md.webp?t=1775182895176"
+                srcset="https://u.truyen.moe/uploads/covers/748-ong-chu-chuyen-sinh-thanh-ac-nu-phan-dien-sm.webp?t=1775182895176 132w, https://u.truyen.moe/uploads/covers/748-ong-chu-chuyen-sinh-thanh-ac-nu-phan-dien-md.webp?t=1775182895176 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Ông chú chuyển sinh thành ác nữ phản diện"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 33</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Ông chú chuyển sinh thành ác nữ phản diện">Ông chú chuyển sinh...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 2.061 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 63 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 7 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Ông chú chuyển sinh thành ác nữ phản diện</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Fantasy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Gender Bender</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Tứ Linh Truyện</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Kenzaburou Tondenbayashi, một công chức nghiêm túc 52 tuổi, gặp tai nạn giao thông. Khi tỉnh lại, ông nhận ra mình đã bị chuyển sinh vào một thế giới giống như trò chơi otome, nơi ông trở thành Grace, tiểu thư kiêu ngạo của gia tộc hầu tước Auvergne!? Một c...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1080-ac-nu-tai-sinh-cuoc-doi-thu-hai-va-loi-the-hanh-phuc">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1080-ac-nu-tai-sinh-cuoc-doi-thu-hai-va-loi-the-hanh-phuc-md.webp?t=1782529605299"
+                srcset="https://u.truyen.moe/uploads/covers/1080-ac-nu-tai-sinh-cuoc-doi-thu-hai-va-loi-the-hanh-phuc-sm.webp?t=1782529605299 132w, https://u.truyen.moe/uploads/covers/1080-ac-nu-tai-sinh-cuoc-doi-thu-hai-va-loi-the-hanh-phuc-md.webp?t=1782529605299 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Ác Nữ Tái Sinh, Cuộc Đời Thứ Hai Và Lời Thề Hạnh Phúc"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 7</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Ác Nữ Tái Sinh, Cuộc Đời Thứ Hai Và Lời Thề Hạnh Phúc">Ác Nữ Tái Sinh,...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 7.814 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 225 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 48 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Ác Nữ Tái Sinh, Cuộc Đời Thứ Hai Và Lời Thề Hạnh Phúc</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Fantasy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Đám hề vô danh</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Page nhỏ của mình: https://www.facebook.com/UnnamedCircus Trong một thế giới nơi chỉ giới quý tộc mới sở hữu ma thuật, Eltriede, con gái của công tước Eldenvalk, sinh ra mà không hề có chút ma lực nào. Bị gán mác &#34;vô năng&#34;, cô phải chịu đựng cuộc sống đầy c...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-md.webp?t=1786697195997"
+                srcset="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-sm.webp?t=1786697195997 132w, https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-md.webp?t=1786697195997 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 27</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế">Sống chung với Nữ...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 21.266 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 486 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 251 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+4</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Dịch Truyện Linh Tinh</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Vào một đêm nọ, Yamamoto - một sinh viên đại học làm việc bán thời gian tại một cửa hàng tiện lợi, được một khách hàng nữ mặc áo nỉ tiếp cận ở quầy thu ngân. Tên cô ấy là Megumi Hayashi - bạn cùng lớp của Yamamoto từ thời trung học và là cô gái xinh đẹp nhấ...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/209-ryoushin-no-shakkin-wo-katagawari-shite-morau-jouken-wa-nihon-ichi-kawaii-joshikousei-to-issho-ni-kurasu-koto-deshita">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/209-ryoushin-no-shakkin-wo-katagawari-shite-morau-jouken-wa-nihon-ichi-kawaii-joshikousei-to-issho-ni-kurasu-koto-deshita-md.webp?t=1774213019318"
+                srcset="https://u.truyen.moe/uploads/covers/209-ryoushin-no-shakkin-wo-katagawari-shite-morau-jouken-wa-nihon-ichi-kawaii-joshikousei-to-issho-ni-kurasu-koto-deshita-sm.webp?t=1774213019318 132w, https://u.truyen.moe/uploads/covers/209-ryoushin-no-shakkin-wo-katagawari-shite-morau-jouken-wa-nihon-ichi-kawaii-joshikousei-to-issho-ni-kurasu-koto-deshita-md.webp?t=1774213019318 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Ryoushin no Shakkin wo Katagawari shite morau Jouken wa Nihon Ichi Kawaii Joshikousei to Issho ni Kurasu koto deshita"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 40</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Ryoushin no Shakkin wo Katagawari shite morau Jouken wa Nihon Ichi Kawaii Joshikousei to Issho ni Kurasu koto deshita">Ryoushin no Shakkin wo...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 5.919 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 243 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 16 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Ryoushin no Shakkin wo Katagawari shite morau Jouken wa Nihon Ichi Kawaii Joshikousei to Issho ni Kurasu koto deshita</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Ecchi</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+3</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>HUST Electro-Neko Team</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Điều kiện xóa nợ cho cha mẹ tôi là, tôi phải sống chung với nữ sinh cao trung dễ thương nhất Nhật Bản. Chàng trai không hề có kinh nghiệm tình trường, nhưng luôn vô tư buông lời ngọt ngào. Hoa khôi nữ sinh cao trung toàn quốc, ở trường thì lạnh lùng còn ở n...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/231-sau-khi-tinh-co-giup-do-mot-be-gai-lac-duong-nang-my-nu-du-hoc-sinh-nha-ben-thuong-xuyen-lui-toi-can-ho-cua-toi">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/231-sau-khi-tinh-co-giup-do-mot-be-gai-lac-duong-nang-my-nu-du-hoc-sinh-nha-ben-thuong-xuyen-lui-toi-can-ho-cua-toi-md.webp?t=1774242777636"
+                srcset="https://u.truyen.moe/uploads/covers/231-sau-khi-tinh-co-giup-do-mot-be-gai-lac-duong-nang-my-nu-du-hoc-sinh-nha-ben-thuong-xuyen-lui-toi-can-ho-cua-toi-sm.webp?t=1774242777636 132w, https://u.truyen.moe/uploads/covers/231-sau-khi-tinh-co-giup-do-mot-be-gai-lac-duong-nang-my-nu-du-hoc-sinh-nha-ben-thuong-xuyen-lui-toi-can-ho-cua-toi-md.webp?t=1774242777636 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Sau Khi Tình Cờ Giúp Đỡ Một Bé Gái Lạc Đường, Nàng Mỹ Nữ Du Học Sinh Nhà Bên Thường Xuyên Lui Tới Căn Hộ Của Tôi"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 27</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Sau Khi Tình Cờ Giúp Đỡ Một Bé Gái Lạc Đường, Nàng Mỹ Nữ Du Học Sinh Nhà Bên Thường Xuyên Lui Tới Căn Hộ Của Tôi">Sau Khi Tình Cờ...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 9.198 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 315 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 55 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Sau Khi Tình Cờ Giúp Đỡ Một Bé Gái Lạc Đường, Nàng Mỹ Nữ Du Học Sinh Nhà Bên Thường Xuyên Lui Tới Căn Hộ Của Tôi</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Romance</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>SAM Shelter</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">- Credit: + Chương 1-6: The Round(about) Table + Chương 7-17: Shin Translation + Chương 18-hiện tại: SAM Shelter *đang cập nhật*</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/794-cau-truyen-tra-thu-huy-hoang-cua-nu-phan-dien-sieu-cap-gian-lan">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/794-cau-truyen-tra-thu-huy-hoang-cua-nu-phan-dien-sieu-cap-gian-lan-md.webp?t=1775206367654"
+                srcset="https://u.truyen.moe/uploads/covers/794-cau-truyen-tra-thu-huy-hoang-cua-nu-phan-dien-sieu-cap-gian-lan-sm.webp?t=1775206367654 132w, https://u.truyen.moe/uploads/covers/794-cau-truyen-tra-thu-huy-hoang-cua-nu-phan-dien-sieu-cap-gian-lan-md.webp?t=1775206367654 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Câu truyện trả thù huy hoàng của nữ phản diện siêu cấp &#34;gian lận&#34;"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 14</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Câu truyện trả thù huy hoàng của nữ phản diện siêu cấp &#34;gian lận&#34;">Câu truyện trả thù...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.939 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 92 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 15 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Câu truyện trả thù huy hoàng của nữ phản diện siêu cấp &#34;gian lận&#34;</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Action</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Tứ Linh Truyện</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Nữ chính tái sinh thành nhân vật phản diện tên Lunaria il von Solfege trong tựa otome game yêu thích, ngay sau đó ký ức bi thảm của Lunaria ùa vào tâm trí cô. Nữ phản diện đã bị kết tội và bỏ rơi mà không một ai quan tâm, rồi dùng dao găm kết liễu cuộc đời...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/44-rekishi-ni-nokoru-akujo-ni-naru-zo-akuyaku-reijou-ni-naru-hodo-ouji-no-dekiai-wa-kasoku-suru-you-desu">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/44-rekishi-ni-nokoru-akujo-ni-naru-zo-akuyaku-reijou-ni-naru-hodo-ouji-no-dekiai-wa-kasoku-suru-you-desu-md.webp?t=1774108345033"
+                srcset="https://u.truyen.moe/uploads/covers/44-rekishi-ni-nokoru-akujo-ni-naru-zo-akuyaku-reijou-ni-naru-hodo-ouji-no-dekiai-wa-kasoku-suru-you-desu-sm.webp?t=1774108345033 132w, https://u.truyen.moe/uploads/covers/44-rekishi-ni-nokoru-akujo-ni-naru-zo-akuyaku-reijou-ni-naru-hodo-ouji-no-dekiai-wa-kasoku-suru-you-desu-md.webp?t=1774108345033 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Rekishi ni Nokoru Akujo ni naru zo Akuyaku Reijou ni naru hodo Ouji no Dekiai wa Kasoku suru you desu!"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 25.5</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Rekishi ni Nokoru Akujo ni naru zo Akuyaku Reijou ni naru hodo Ouji no Dekiai wa Kasoku suru you desu!">Rekishi ni Nokoru Akujo...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 5.217 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 129 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 18 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Rekishi ni Nokoru Akujo ni naru zo Akuyaku Reijou ni naru hodo Ouji no Dekiai wa Kasoku suru you desu!</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Action</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Adventure</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+12</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Kafka_Team</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">&#34;Mình ghét cái thế giới đẹp đẽ giả tạo này! Mình sẽ trở thành một nhân vật phản diện đỉnh cao đi vào sách sử!!&#34; Là một người ghét nữ chính dạng &#34;gái ngoan&#34; điển hình, tôi đã được tái sinh thành nữ nhân vật phản diện trong trò chơi otome yêu thích! Vì điều ư...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/894-nu-anh-hung-muon-duoc-nghi-ngoi">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/894-nu-anh-hung-muon-duoc-nghi-ngoi-md.webp?t=1775410382586"
+                srcset="https://u.truyen.moe/uploads/covers/894-nu-anh-hung-muon-duoc-nghi-ngoi-sm.webp?t=1775410382586 132w, https://u.truyen.moe/uploads/covers/894-nu-anh-hung-muon-duoc-nghi-ngoi-md.webp?t=1775410382586 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Nữ Anh Hùng muốn được nghỉ ngơi"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-hiatus">
+              Tạm dừng
+            </span>
+            <span class="manga-chapter-label">Ch. 16</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Nữ Anh Hùng muốn được nghỉ ngơi">Nữ Anh Hùng muốn...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 959 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 30 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 4 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Nữ Anh Hùng muốn được nghỉ ngơi</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Fantasy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Cá Mắc Cạn</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Nữ Anh Hùng một mình chống lại quỷ vương và đánh bại hắn, mang lại chiến thắng cho nhân loại. Tưởng rằng mình sẽ có một cuộc sống yên bình sau việc này, cô trở về nhân quốc nhưng không kèn trống chào mừng cô đột nhiên bị cả vương quốc cho là quỷ vương kế nh...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/146-di-choi-cung-nu-game-thu">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/146-di-choi-cung-nu-game-thu-md.webp?t=1784458459978"
+                srcset="https://u.truyen.moe/uploads/covers/146-di-choi-cung-nu-game-thu-sm.webp?t=1784458459978 132w, https://u.truyen.moe/uploads/covers/146-di-choi-cung-nu-game-thu-md.webp?t=1784458459978 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Đi chơi cùng nữ game thủ"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-complete">
+              Hoàn thành
+            </span>
+            <span class="manga-chapter-label">Ch. 241.6</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Đi chơi cùng nữ game thủ">Đi chơi cùng nữ...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 70.483 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 268 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 294 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Đi chơi cùng nữ game thủ</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Crossdressing</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+5</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>LT Translation</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Anh main nhà ta dùng một tài khoản game online tên Kaori và kết bạn được với anh chàng tên Nanami trong đó. Hôm nay cả hai sẽ có một buổi gặp mặt với nhau, và cậu bạn Nanami không biết rằng ngoài đời main là con trai. Thế nhưng main còn ngạc nhiên hơn cả Na...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/119-luyen-thuc-nu">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/119-luyen-thuc-nu-md.webp?t=1786286987354"
+                srcset="https://u.truyen.moe/uploads/covers/119-luyen-thuc-nu-sm.webp?t=1786286987354 132w, https://u.truyen.moe/uploads/covers/119-luyen-thuc-nu-md.webp?t=1786286987354 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Luyến Thực Nữ"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 46</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Luyến Thực Nữ">Luyến Thực Nữ</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 16.450 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 347 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 91 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Luyến Thực Nữ</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+4</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Shin Translation</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Ooishi Kyou, một nam sinh trung học mắc chứng sợ phụ nữ, bỗng dưng nhận được lời tỏ tình đồng loạt từ năm cô gái. Trong số đó, bốn người thực chất là Luyến Thực, những sinh thể chuyên ăn nuốt cảm xúc yêu đương của con người. Nếu để chúng &#34;ăn&#34; mất tình cảm c...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1942-thanh-nu-va-nu-phan-dien-se-cung-nhau-pha-dao-otome-game">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1942-thanh-nu-va-nu-phan-dien-se-cung-nhau-pha-dao-otome-game-md.webp?t=1786002634837"
+                srcset="https://u.truyen.moe/uploads/covers/1942-thanh-nu-va-nu-phan-dien-se-cung-nhau-pha-dao-otome-game-sm.webp?t=1786002634837 132w, https://u.truyen.moe/uploads/covers/1942-thanh-nu-va-nu-phan-dien-se-cung-nhau-pha-dao-otome-game-md.webp?t=1786002634837 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Thánh nữ và nữ phản diện sẽ cùng nhau phá đảo Otome game!"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 1</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Thánh nữ và nữ phản diện sẽ cùng nhau phá đảo Otome game!">Thánh nữ và nữ...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 203 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 45 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 11 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Thánh nữ và nữ phản diện sẽ cùng nhau phá đảo Otome game!</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Adventure</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+5</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>The Greenhorn</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Thánh nữ Militia đã lấy lại kí ức trong nhà vệ sinh nữ!! Tôi tên là Tosaka Kakeru, một nam sinh cấp ba, và quan trọng hơn là, cái thứ quý giá giữa hai chân của tôi đã biến mất rồi!! Tôi đã được chuyển sinh vào trong thế giới của Otome game!! Hơn nữa, thằng...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/265-ma-phap-thieu-nu-dandelion">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/265-ma-phap-thieu-nu-dandelion-md.webp?t=1774254091731"
+                srcset="https://u.truyen.moe/uploads/covers/265-ma-phap-thieu-nu-dandelion-sm.webp?t=1774254091731 132w, https://u.truyen.moe/uploads/covers/265-ma-phap-thieu-nu-dandelion-md.webp?t=1774254091731 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Ma pháp thiếu nữ Dandelion"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 25</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Ma pháp thiếu nữ Dandelion">Ma pháp thiếu nữ...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 4.333 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 174 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 17 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Ma pháp thiếu nữ Dandelion</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Action</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>SNT Trans</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Một câu chuyện về ánh sáng và bóng tối, giữa ma pháp thiếu nữ Tanpopo Ohanami, và ác ma bóng tối Shade, người đáng ra là kẻ địch của mình, chiến đấu vì những người họ yêu thương.</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1732-toi-muon-giup-nu-chinh-thua-cuoc-chien-thang">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1732-toi-muon-giup-nu-chinh-thua-cuoc-chien-thang-md.webp?t=1784120618790"
+                srcset="https://u.truyen.moe/uploads/covers/1732-toi-muon-giup-nu-chinh-thua-cuoc-chien-thang-sm.webp?t=1784120618790 132w, https://u.truyen.moe/uploads/covers/1732-toi-muon-giup-nu-chinh-thua-cuoc-chien-thang-md.webp?t=1784120618790 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Tôi Muốn Giúp Nữ Chính Thua Cuộc Chiến Thắng!!"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-hiatus">
+              Tạm dừng
+            </span>
+            <span class="manga-chapter-label">Ch. 26</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Tôi Muốn Giúp Nữ Chính Thua Cuộc Chiến Thắng!!">Tôi Muốn Giúp Nữ...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 13.135 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 337 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 281 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Tôi Muốn Giúp Nữ Chính Thua Cuộc Chiến Thắng!!</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Romance</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Page Này Nghiện Hài Lãng Mạn</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Manaka Kawashima, một nữ sinh trung học, đã thầm yêu người bạn thuở nhỏ đồng thời cũng là bạn cùng lớp của mình, Ei Eguchi. Cô vẫn luôn một lòng hướng về cậu ấy… Thế nhưng rồi một ngày, một nữ chính khác tên Ayame Takabi bất ngờ chuyển đến lớp. Khác với Kaw...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1919-uesugi-kun-khong-muon-lam-con-gai-nua">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1919-uesugi-kun-khong-muon-lam-con-gai-nua-md.webp?t=1785866306197"
+                srcset="https://u.truyen.moe/uploads/covers/1919-uesugi-kun-khong-muon-lam-con-gai-nua-sm.webp?t=1785866306197 132w, https://u.truyen.moe/uploads/covers/1919-uesugi-kun-khong-muon-lam-con-gai-nua-md.webp?t=1785866306197 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Uesugi-kun không muốn làm con gái nữa"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 1</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Uesugi-kun không muốn làm con gái nữa">Uesugi-kun không muốn là...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 110 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 31 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 6 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Uesugi-kun không muốn làm con gái nữa</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Gender Bender</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+4</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Trans Uesugi-kun xfm xfm</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Uesugi Keisuke là một cậu trai nhỏ nhắn, đáng yêu như con gái. Cậu thầm thương cô bạn thanh mai trúc mã của mình, nhưng rồi một hôm vô tình nghe được cô ấy nói rằng: &#34;Nếu Uesugi là con gái thì chắc sẽ dễ thương lắm nhỉ?!&#34; Tuy không cao lớn như người bạn thu...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/116-ma-phap-thieu-nu-mazoka">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/116-ma-phap-thieu-nu-mazoka-md.webp?t=1774172666270"
+                srcset="https://u.truyen.moe/uploads/covers/116-ma-phap-thieu-nu-mazoka-sm.webp?t=1774172666270 132w, https://u.truyen.moe/uploads/covers/116-ma-phap-thieu-nu-mazoka-md.webp?t=1774172666270 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Ma pháp &#34;thiếu nữ&#34; ♥ Mazoka"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 5</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Ma pháp &#34;thiếu nữ&#34; ♥ Mazoka">Ma pháp &#34;thiếu nữ&#34;...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.253 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 73 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 13 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Ma pháp &#34;thiếu nữ&#34; ♥ Mazoka</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Gender Bender</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+1</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>1% còn lại của Vini</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Câu chuyện về anh trai biến thành ma pháp &#34;thiếu nữ&#34;</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1709-lam-ma-phap-thieu-nu-that-kho-qua-di">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1709-lam-ma-phap-thieu-nu-that-kho-qua-di-md.webp?t=1783446844373"
+                srcset="https://u.truyen.moe/uploads/covers/1709-lam-ma-phap-thieu-nu-that-kho-qua-di-sm.webp?t=1783446844373 132w, https://u.truyen.moe/uploads/covers/1709-lam-ma-phap-thieu-nu-that-kho-qua-di-md.webp?t=1783446844373 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Làm ma pháp thiếu nữ thật khó quá đi."
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 4</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Làm ma pháp thiếu nữ thật khó quá đi.">Làm ma pháp thiếu...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 419 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 24 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 3 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Làm ma pháp thiếu nữ thật khó quá đi.</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Action</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+4</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Kessoku Translation Team</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Được những thế lực bề trên lựa chọn, nhóm các thiếu niên được ban sức mạnh trở thành &#34;ma pháp thiếu nữ&#34; sẵn sàng chiến đấu bảo vệ thành phố và mang lại niềm hy vọng cho mọi người! Yamabuki Rin vừa mới chuyển đến thị trấn, cậu vẫn còn nhiều bỡ ngỡ và cần thê...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/944-tu-than-thanh-nu">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/944-tu-than-thanh-nu-md.webp?t=1775627618417"
+                srcset="https://u.truyen.moe/uploads/covers/944-tu-than-thanh-nu-sm.webp?t=1775627618417 132w, https://u.truyen.moe/uploads/covers/944-tu-than-thanh-nu-md.webp?t=1775627618417 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Tử Thần Thánh Nữ"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 2</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Tử Thần Thánh Nữ">Tử Thần Thánh Nữ</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 243 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 35 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 4 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Tử Thần Thánh Nữ</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Adventure</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+4</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Lazy Majo</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Ở một thế giới nơi con người khi chết đi sẽ biến thành quái vật, cách duy nhất để ngăn chặn thảm kịch là &#34;Thấu hiểu&#34; người quá cố và hóa thi thể thành hoa. Đây là câu chuyện về các thiếu nữ - những Tử Thần Thánh Nữ - trên hành trình tìm kiếm tiếng nói cuối...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1603-bi-quyet-ru-ngu-nu-hoang-mat-trang">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1603-bi-quyet-ru-ngu-nu-hoang-mat-trang-md.webp?t=1782315545863"
+                srcset="https://u.truyen.moe/uploads/covers/1603-bi-quyet-ru-ngu-nu-hoang-mat-trang-sm.webp?t=1782315545863 132w, https://u.truyen.moe/uploads/covers/1603-bi-quyet-ru-ngu-nu-hoang-mat-trang-md.webp?t=1782315545863 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Bí quyết ru ngủ nữ hoàng mặt trăng"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 3</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Bí quyết ru ngủ nữ hoàng mặt trăng">Bí quyết ru ngủ...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.827 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 180 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 51 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Bí quyết ru ngủ nữ hoàng mặt trăng</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Ecchi</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Exist in this world</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Hitsujiya Yaichiro là một biên tập viên mới vào nghề. Khổ nỗi, vì tính cách quá đỗi êm đềm và từ tốn, cậu liên tục bị các tác giả do mình phụ trách lẩn tránh với lý do: &#34;Càng bàn nhiều về công việc, tôi lại càng thấy buồn ngủ&#34;. Dù trong lòng cậu thực tâm rấ...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/40-danjohi-1-5-no-sekai-demo-futsu-ni-ikirareru-to-omotta-geki-juu-kanjou-na-kanojotachi-ga-mujikaku-danshi-ni-honrousaretara">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/40-danjohi-1-5-no-sekai-demo-futsu-ni-ikirareru-to-omotta-geki-juu-kanjou-na-kanojotachi-ga-mujikaku-danshi-ni-honrousaretara-md.webp?t=1782731061790"
+                srcset="https://u.truyen.moe/uploads/covers/40-danjohi-1-5-no-sekai-demo-futsu-ni-ikirareru-to-omotta-geki-juu-kanjou-na-kanojotachi-ga-mujikaku-danshi-ni-honrousaretara-sm.webp?t=1782731061790 132w, https://u.truyen.moe/uploads/covers/40-danjohi-1-5-no-sekai-demo-futsu-ni-ikirareru-to-omotta-geki-juu-kanjou-na-kanojotachi-ga-mujikaku-danshi-ni-honrousaretara-md.webp?t=1782731061790 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Danjohi 1:5 no Sekai demo Futsu ni Ikirareru to Omotta? ~ Geki Juu Kanjou na Kanojotachi ga Mujikaku Danshi ni Honrousaretara"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 22</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Danjohi 1:5 no Sekai demo Futsu ni Ikirareru to Omotta? ~ Geki Juu Kanjou na Kanojotachi ga Mujikaku Danshi ni Honrousaretara">Danjohi 1:5 no Sekai...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 7.708 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 385 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 80 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Danjohi 1:5 no Sekai demo Futsu ni Ikirareru to Omotta? ~ Geki Juu Kanjou na Kanojotachi ga Mujikaku Danshi ni Honrousaretara</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+6</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Kafka_Team</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Trước khi kịp nhận ra, Masato đã bị dịch chuyển đến một thế giới nơi phụ nữ có số lượng áp đảo so với đàn ông. Tuy nhiên, ngoài việc phụ nữ có phần chủ động hơn, thế giới đó không quá khác biệt so với thế giới cũ... có lẽ là vậy. Masato không biết rằng, lòn...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1824-sakigake-no-hana-miko">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1824-sakigake-no-hana-miko-md.webp?t=1785334843201"
+                srcset="https://u.truyen.moe/uploads/covers/1824-sakigake-no-hana-miko-sm.webp?t=1785334843201 132w, https://u.truyen.moe/uploads/covers/1824-sakigake-no-hana-miko-md.webp?t=1785334843201 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Sakigake no Hana Miko"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 5</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Sakigake no Hana Miko">Sakigake no Hana Miko</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 935 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 80 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 9 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Sakigake no Hana Miko</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Action</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+4</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Yuki&#39;s Milky Way Translation / Yuki&#39;s Milky Way v2</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Có một nhóm thiếu nữ xinh đẹp chiến đấu chống lại &#34;thần tai ương&#34; chuyên mang đến bất hạnh cho con người. Họ được gọi là &#34;Hoa Vũ Nữ&#34; và sống cùng nhau trong &#34;Đền thờ&#34;. Arata, một giáo viên trung học bán thời gian, quyết định trở thành người đứng đầu của Hoa...</p>
+</div>
+
+      </article>
+    
+  </div>
+
+  
+    
+    
+      
+    
+
+    <nav class="admin-pagination" aria-label="Phân trang truyện">
+      <a
+        class="button button--ghost is-disabled"
+        href="#"
+        aria-label="Trang trước"
+        data-manga-catalog-page="1"
+        tabindex=&#34;-1&#34; aria-disabled=&#34;true&#34;
+      >
+        Trước
+      </a>
+
+      <div class="admin-pagination__numbers">
+        
+          
+            <span class="chip">1</span>
+          
+        
+          
+            <a class="button button--ghost" href="/manga?q=n%E1%BB%AF&amp;page=2" data-manga-catalog-page="2">2</a>
+          
+        
+          
+            <a class="button button--ghost" href="/manga?q=n%E1%BB%AF&amp;page=3" data-manga-catalog-page="3">3</a>
+          
+        
+      </div>
+
+      <a
+        class="button button--ghost "
+        href="/manga?q=n%E1%BB%AF&amp;page=2"
+        aria-label="Trang sau"
+        data-manga-catalog-page="2"
+        
+      >
+        Sau
+      </a>
+    </nav>
+  
+
+
+          </div>
+        </section>
+      </main>
+      
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-meta">
+      <span>© 2026 Mòe Truyện</span>
+      <div class="footer-links">
+        <a class="inline-link" href="/manga">Truyện tranh</a>
+        <span class="footer-separator" aria-hidden="true">·</span>
+        <a class="inline-link" href="/novel">Truyện chữ</a>
+        
+        
+          <span class="footer-separator" aria-hidden="true">·</span>
+          <a class="inline-link" href="/forum">Diễn đàn</a>
+        
+        <span class="footer-links__legal">
+          <span class="footer-separator footer-separator--legal-start" aria-hidden="true">·</span>
+          <a class="inline-link" href="/privacy-policy">Chính sách bảo mật</a>
+          <span class="footer-links__legal-dot" aria-hidden="true">·</span>
+          <a class="inline-link" href="/terms-of-service">Điều khoản dịch vụ</a>
+          <span class="footer-links__legal-dot" aria-hidden="true">&middot;</span>
+          <a class="inline-link" href="/copyright">Copyright</a>
+        </span>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+
+<dialog class="modal" data-public-confirm-dialog aria-label="Xác nhận thao tác">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 class="modal-title" data-public-confirm-title>Xác nhận</h2>
+      <button class="modal-close" type="button" data-public-confirm-close aria-label="Đóng">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12" />
+          <path d="M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+    <p class="modal-body" data-public-confirm-body></p>
+    <div class="modal-meta" data-public-confirm-meta></div>
+    <div class="modal-actions">
+      <button class="button button--ghost" type="button" data-public-confirm-cancel>Hủy</button>
+      <button class="button" type="button" data-public-confirm-ok>Xác nhận</button>
+    </div>
+  </div>
+</dialog>
+
+
+    </div>
+  <script nonce="6jJYQUOpCROBap97AXRu1wZE">(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.nonce='6jJYQUOpCROBap97AXRu1wZE';d.innerHTML="window.__CF$cv$params={r:'a2b9fcdec96d8523',t:'MTc4NjgxNTY2MQ=='};var a=document.createElement('script');a.nonce='6jJYQUOpCROBap97AXRu1wZE';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
