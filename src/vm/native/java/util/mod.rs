@@ -46,6 +46,31 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
             Some(Native::Set(items)) => Ok(items.clone()),
             Some(Native::ArrayDeque(items)) => Ok(items.clone()),
             Some(Native::SFilterList(items)) => Ok(items.clone()),
+            Some(Native::IntRange(first, last)) => {
+                Ok((*first..=*last).map(JValue::Int).collect())
+            }
+            Some(Native::IntProgression(first, last, step)) => {
+                let (mut first, last, step) = (*first, *last, *step);
+                let mut out = Vec::new();
+                if step > 0 {
+                    while first <= last {
+                        out.push(JValue::Int(first));
+                        first += step;
+                    }
+                } else {
+                    while first >= last {
+                        out.push(JValue::Int(first));
+                        first += step;
+                    }
+                }
+                Ok(out)
+            }
+            Some(Native::CharRange(first, last)) => {
+                Ok((*first..=*last).map(|c| JValue::Int(c as u16 as i32)).collect())
+            }
+            Some(Native::LongRange(first, last)) => {
+                Ok((*first..=*last).map(JValue::Long).collect())
+            },
             Some(Native::Array(ArrayData::Obj(items))) => Ok(items.clone()),
             #[cfg(feature = "jsoup")]
             Some(Native::JsoupElements { doc, ids }) => {
@@ -64,7 +89,37 @@ pub(crate) fn coll_elems(vm: &mut Vm, v: JValue) -> Result<Vec<JValue>, NatErr> 
                     })
                     .collect()
             }
-            _ => Err(iae(vm, "not a collection")),
+_ => {
+                if std::env::var("DEXVM_TRACE").is_ok() {
+                    let payload_desc = payload(vm, v)
+                        .map(|p| {
+                            let name = match p {
+                                Native::List(_) => "List",
+                                Native::Set(_) => "Set",
+                                Native::ArrayDeque(_) => "ArrayDeque",
+                                Native::Json(_) => "Json",
+                                Native::Str(_) => "Str",
+                                Native::Opaque => "Opaque",
+                                Native::SPPage { .. } => "SPPage",
+                                Native::SChapter { .. } => "SChapter",
+                                Native::SManga { .. } => "SManga",
+                                _ => "other",
+                            };
+                            name.to_string()
+                        })
+                        .unwrap_or_else(|| "none".to_string());
+                    eprintln!(
+                        "DEXTRACE coll_elems fail: value={v:?} class={} payload={payload_desc}",
+                        if let JValue::Obj(o) = v {
+                            let cls = vm.arena.objects[o as usize].class;
+                            vm.class_desc_str(cls)
+                        } else {
+                            "-".into()
+                        }
+                    );
+                }
+                Err(iae(vm, "not a collection"))
+            }
         },
         JValue::Null => Err(npe(vm)),
         _ => Err(iae(vm, "not a collection")),

@@ -217,6 +217,13 @@ pub(super) fn collections_size_or_default(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(super) fn collections_join_to_string_default(vm: &mut Vm, args: &[JValue]) -> R {
     let items = coll_elems(vm, args[0])?;
+    join_to_string_with_items(vm, &items, args)
+}
+
+/// Shared joinToString machinery over an explicit item list; `args` carry
+/// the trailing `$default` parameters (separator, prefix, postfix, limit,
+/// truncated, transform).
+fn join_to_string_with_items(vm: &mut Vm, items: &[JValue], args: &[JValue]) -> R {
     let mask = if args.len() > 7 {
         int_of(vm, args[7])
     } else {
@@ -245,6 +252,15 @@ pub(super) fn collections_join_to_string_default(vm: &mut Vm, args: &[JValue]) -
         "...".to_string()
     };
     let transform = if has(5) { args[6] } else { JValue::Null };
+    if std::env::var("DEXVM_TRACE").is_ok() {
+        eprintln!(
+            "DEXTRACE join_to_string: n={} mask={} sep_null={} first={:?}",
+            items.len(),
+            mask,
+            args[1].is_null_ref(),
+            items.first()
+        );
+    }
     let mut out = String::new();
     out.push_str(&prefix);
     let n = items.len();
@@ -255,7 +271,12 @@ pub(super) fn collections_join_to_string_default(vm: &mut Vm, args: &[JValue]) -
             out.push_str(&separator);
         }
         let s = if transform.is_null_ref() {
-            charseq_of(vm, *v)?
+            match v {
+                JValue::Int(i) => i.to_string(),
+                JValue::Long(l) => l.to_string(),
+                JValue::Float(f) => f.to_string(),
+                _ => charseq_of(vm, *v)?,
+            }
         } else {
             let r = inv_virt(
                 vm,
@@ -896,14 +917,14 @@ pub(super) fn arrayskt_join_bytes_default(vm: &mut Vm, args: &[JValue]) -> R {
         Some(Native::Array(ArrayData::Byte(values))) => values.clone(),
         _ => return Err(npe(vm)),
     };
-    let items: Vec<JValue> = bytes.iter().map(|b| new_str(vm, &b.to_string())).collect();
-    let list = list_alloc(vm, items)?;
-    collections_join_to_string_default(
-        vm,
-        &[
-            list, args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8],
-        ],
-    )
+    // The transform lambda receives a boxed java.lang.Byte, matching
+    // Kotlin's `byteArray.joinToString { byte -> ... }`; passing a plain
+    // Int used to break extensions that cast the element to an object.
+    let items: Vec<JValue> = bytes
+        .iter()
+        .map(|b| boxed(vm, "Ljava/lang/Byte;", Native::ByteBox(*b)))
+        .collect::<Result<Vec<_>, _>>()?;
+    join_to_string_with_items(vm, &items, args)
 }
 
 pub(super) fn arrayskt_plus_arrays(vm: &mut Vm, args: &[JValue]) -> R {

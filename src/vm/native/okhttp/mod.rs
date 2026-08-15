@@ -979,6 +979,15 @@ pub(crate) fn media_type_get(vm: &mut Vm, args: &[JValue]) -> R {
     alloc(vm, "Lokhttp3/MediaType;", Native::Str(mt))
 }
 
+/// Reads the media type payload (a `Native::Str`) out of a `Lokhttp3/MediaType;`
+/// value; returns `None` for null or unknown payloads.
+fn media_type_of(vm: &mut Vm, v: JValue) -> Option<String> {
+    match payload(vm, v) {
+        Some(Native::Str(mt)) => Some(mt.clone()),
+        _ => None,
+    }
+}
+
 pub(crate) fn okhttp_http_url_parse(vm: &mut Vm, args: &[JValue]) -> R {
     let Some(url) = jstr(vm, args[1]).ok() else {
         return Err(npe(vm));
@@ -2102,19 +2111,27 @@ pub(crate) fn request_body_content_length(vm: &mut Vm, args: &[JValue]) -> R {
     let len = match payload(vm, args[0]) {
         Some(Native::Str(s)) => s.len(),
         Some(Native::RespBody(b)) => b.len(),
+        Some(Native::RequestBody { data, .. }) => data.len(),
         _ => 0,
     };
     Ok(JValue::Long(len as i64))
 }
 
-pub(crate) fn request_body_content_type(_vm: &mut Vm, _args: &[JValue]) -> R {
-    Ok(JValue::Null)
+pub(crate) fn request_body_content_type(vm: &mut Vm, args: &[JValue]) -> R {
+    let Some(Native::RequestBody { content_type, .. }) = payload(vm, args[0]) else {
+        return Ok(JValue::Null);
+    };
+    match content_type {
+        Some(mt) => alloc(vm, "Lokhttp3/MediaType;", Native::Str(mt.clone())),
+        None => Ok(JValue::Null),
+    }
 }
 
 pub(crate) fn request_body_write_to(vm: &mut Vm, args: &[JValue]) -> R {
     let data = match payload(vm, args[0]) {
         Some(Native::Str(s)) => s.as_bytes().to_vec(),
         Some(Native::RespBody(b)) => b.clone(),
+        Some(Native::RequestBody { data, .. }) => data.clone(),
         _ => return Err(npe(vm)),
     };
     match payload_mut(vm, args[1]) {
@@ -2127,7 +2144,15 @@ pub(crate) fn request_body_write_to(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn request_body_companion_create_bytes(vm: &mut Vm, args: &[JValue]) -> R {
     let bytes = bytes_of(vm, args[1]).ok_or_else(|| npe(vm))?;
-    alloc(vm, "Lokhttp3/RequestBody;", Native::RespBody(bytes))
+    let content_type = media_type_of(vm, args[2]);
+    alloc(
+        vm,
+        "Lokhttp3/RequestBody;",
+        Native::RequestBody {
+            data: bytes,
+            content_type,
+        },
+    )
 }
 
 pub(crate) fn cache_control_builder_no_cache(vm: &mut Vm, args: &[JValue]) -> R {
@@ -2265,7 +2290,21 @@ pub(crate) fn response_body_companion_create_source_default(vm: &mut Vm, args: &
 }
 
 pub(crate) fn request_body_companion_create_string_default(vm: &mut Vm, args: &[JValue]) -> R {
-    request_body_create_string(vm, &[args[0], args[1]])
+    let content = jstr(vm, args[1])?;
+    let mask = int_of(vm, args[3]);
+    let content_type = if mask & 1 != 0 {
+        None
+    } else {
+        media_type_of(vm, args[2])
+    };
+    alloc(
+        vm,
+        "Lokhttp3/RequestBody;",
+        Native::RequestBody {
+            data: content.into_bytes(),
+            content_type,
+        },
+    )
 }
 
 pub(crate) fn request_body_companion_create_bytes_default(vm: &mut Vm, args: &[JValue]) -> R {
@@ -2287,7 +2326,20 @@ pub(crate) fn request_body_companion_create_bytes_default(vm: &mut Vm, args: &[J
         .take(byte_count)
         .copied()
         .collect();
-    alloc(vm, "Lokhttp3/RequestBody;", Native::RespBody(data))
+    let mask = int_of(vm, args[5]);
+    let content_type = if mask & 1 != 0 {
+        None
+    } else {
+        media_type_of(vm, args[2])
+    };
+    alloc(
+        vm,
+        "Lokhttp3/RequestBody;",
+        Native::RequestBody {
+            data,
+            content_type,
+        },
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -2445,6 +2497,20 @@ fn host_execute(vm: &mut Vm, request: JValue) -> R {
     }
     debug!("DBG HOST fetch {method} {url} hdrs={}", headers.len());
     let body_str = form_body_to_string(vm, &body);
+    if let Some(JValue::Obj(id)) = body.as_ref() {
+        if let Some(Native::RequestBody { content_type, .. }) =
+            vm.arena.get(*id).and_then(|o| o.native.as_ref())
+        {
+            if let Some(mt) = content_type {
+                if !headers
+                    .iter()
+                    .any(|(k, _)| k.eq_ignore_ascii_case("Content-Type"))
+                {
+                    headers.push(("Content-Type".to_string(), mt.clone()));
+                }
+            }
+        }
+    }
     if std::env::var("DEXVM_TRACE").is_ok() {
         eprintln!(
             "DEXVM_TRACE host_execute {method} {url}\n  hdrs={headers:?}\n  body={body_str:?}"
@@ -2616,7 +2682,15 @@ pub(crate) fn response_builder_message(vm: &mut Vm, args: &[JValue]) -> R {
 
 pub(crate) fn request_body_create_string(vm: &mut Vm, args: &[JValue]) -> R {
     let content = jstr(vm, args[1])?;
-    alloc(vm, "Lokhttp3/RequestBody;", Native::Str(content))
+    let content_type = media_type_of(vm, args[2]);
+    alloc(
+        vm,
+        "Lokhttp3/RequestBody;",
+        Native::RequestBody {
+            data: content.into_bytes(),
+            content_type,
+        },
+    )
 }
 
 pub(crate) fn request_builder_post(vm: &mut Vm, args: &[JValue]) -> R {

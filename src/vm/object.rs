@@ -253,6 +253,12 @@ pub enum Native {
     Matcher(MatcherState),
     /// okhttp3.ResponseBody with a binary payload (image bytes etc.).
     RespBody(Vec<u8>),
+    /// okhttp3.RequestBody: serialized bytes plus the media type supplied by
+    /// the extension (used for the `Content-Type` request header).
+    RequestBody {
+        data: Vec<u8>,
+        content_type: Option<String>,
+    },
     /// java.io.ByteArrayInputStream: cursor over in-memory bytes.
     ByteArrayInputStream {
         bytes: Vec<u8>,
@@ -1124,6 +1130,7 @@ impl Native {
             | Native::LongRange(..)
             | Native::ArrayDesc(_)
             | Native::RespBody(_)
+            | Native::RequestBody { .. }
             | Native::ByteArrayInputStream { .. }
             | Native::Reader(_)
             | Native::ByteArrayOutputStream(_)

@@ -7,8 +7,11 @@
 //! - `getPopularManga` / `getLatestUpdates` / `getSearchManga`
 //!   (suspend coroutine API — moetruyen v1.6.8 stubs the classic
 //!   `*Request`/`*Parse` pairs with UnsupportedOperationException)
-//! - `getMangaDetails`/`getChapterList`/`getPageList`: asserted to surface
-//!   the extension's own UnsupportedOperationException (listing-only source)
+//! - `mangaUpdate` details/chapters + `getPageList` via the suspend API —
+//!   the exact path RakuYomi exercises; asserted to return real data when
+//!   the live site parses (regression for `Clock$System.INSTANCE` and
+//!   `DurationUnit` resolution, and for char-boundary panics on the
+//!   multi-byte query)
 //!
 //! Gated on `DEXVM_LIVE=1` — without it the test prints a note and passes,
 //! keeping CI offline. moetruyen.net sits behind geo-blocking and serves
@@ -24,7 +27,10 @@ use dexvm::keiyoushi::{Chapter, FilterState, HttpData, HttpResp, Keiyoushi, Mang
 
 const APK: &str = "fixtures/tachiyomi-vi.moetruyen-v1.6.8.apk";
 const LIVE_DIR: &str = "fixtures/live_moetruyen";
-const QUERY: &str = "one piece";
+/// Multi-byte query: exercises the case-insensitive string paths
+/// (`split`/`replaceFirst`/`lastIndexOf`/jsoup attr normalization) that
+/// used to panic with "not a char boundary" on Vietnamese text.
+const QUERY: &str = "nữ";
 
 fn real_http(req: &HttpData) -> HttpResp {
     static AGENT: std::sync::OnceLock<ureq::Agent> = std::sync::OnceLock::new();
@@ -207,34 +213,78 @@ fn live_tachiyomi_source_api() {
         m0.url
     );
 
-    // 4. details + chapters + pages: this extension is listing-only — every
-    // classic pair is stubbed, so the standard calls must surface the stub's
-    // UnsupportedOperationException instead of hanging the pipeline.
-    for (label, res) in [
-        ("getMangaDetails", ext.manga_details(src, &m0).map(|_| ())),
-        ("getChapterList", ext.chapters(src, &m0).map(|_| ())),
-    ] {
-        let e = res.expect_err(&format!("{label} must fail on the stub"));
-        let msg = ext.describe_error(&e);
-        assert!(
-            msg.contains("UnsupportedOperationException"),
-            "{label}: unexpected error: {msg}"
-        );
+    // 4. details + chapters + pages via the suspend API — the exact path
+    //    RakuYomi's `get_chapter_list`/`get_page_list` exercise (coro first,
+    //    classic fallback). Requires `kotlin.time.Clock$System.INSTANCE`,
+    //    `DurationUnit.HOURS` and friends to resolve. When the live site
+    //    parses, real data is asserted; when it serves a block/error page
+    //    the pipeline is still exercised end to end.
+    match ext.manga_update_details(src, &m0) {
+        Ok(details) => {
+            assert!(
+                !details.title.is_empty() || !details.description.is_empty(),
+                "live details must carry title or description: {details:?}"
+            );
+            eprintln!("live: details: title={:?} desc_len={}", details.title, details.description.len());
+        }
+        Err(e) if live => {
+            panic!("manga_update_details failed on live data: {}", ext.describe_error(&e))
+        }
+        Err(e) => eprintln!("warn: details blocked: {}", ext.describe_error(&e)),
     }
-    let pages = ext.pages_coro(
-        src,
-        &Chapter {
-            url: m0.url.clone(),
-            name: m0.title.clone(),
-            ..Default::default()
-        },
-    );
-    let e = pages.expect_err("getPageList must fail on the stub");
-    let msg = ext.describe_error(&e);
-    assert!(
-        msg.contains("UnsupportedOperationException"),
-        "getPageList: unexpected error: {msg}"
-    );
+    let mut first_chapter: Option<Chapter> = None;
+    match ext.manga_update_chapters(src, &m0) {
+        Ok(chapters) => {
+            assert!(
+                !chapters.is_empty(),
+                "live chapters must be listed for {:?}",
+                m0.url
+            );
+            for chapter in chapters.iter().take(3) {
+                assert!(
+                    !chapter.name.is_empty() && !chapter.url.is_empty(),
+                    "every chapter must carry name and url: {chapter:?}"
+                );
+            }
+            eprintln!(
+                "live: {} chapters; first = {:?} url={:?}",
+                chapters.len(),
+                chapters[0].name,
+                chapters[0].url
+            );
+            first_chapter = chapters.into_iter().next();
+        }
+        Err(e) if live => {
+            panic!("manga_update_chapters failed on live data: {}", ext.describe_error(&e))
+        }
+        Err(e) => eprintln!("warn: chapters blocked: {}", ext.describe_error(&e)),
+    }
+    if let Some(chapter) = first_chapter {
+        match ext.pages_coro(src, &chapter) {
+            Ok(pages) => {
+                assert!(
+                    !pages.is_empty(),
+                    "live reader pages must parse for {:?}",
+                    chapter.url
+                );
+                for page in pages.iter().take(3) {
+                    assert!(
+                        !page.image_url.is_empty(),
+                        "every page must carry an image url: {page:?}"
+                    );
+                }
+                eprintln!(
+                    "live: {} pages; first = {}",
+                    pages.len(),
+                    pages[0].image_url
+                );
+            }
+            Err(e) if live => {
+                panic!("pages_coro failed on live data: {}", ext.describe_error(&e))
+            }
+            Err(e) => eprintln!("warn: pages blocked: {}", ext.describe_error(&e)),
+        }
+    }
 
     let caps = captures.borrow();
     assert!(!caps.is_empty(), "pipeline must issue real HTTP requests");

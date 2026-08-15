@@ -152,6 +152,7 @@ pub(crate) fn form_body_to_string(vm: &mut Vm, body: &Option<JValue>) -> Option<
         ),
         Native::Str(s) => Some(s.clone()),
         Native::RespBody(bytes) => Some(String::from_utf8_lossy(bytes).into_owned()),
+        Native::RequestBody { data, .. } => Some(String::from_utf8_lossy(data).into_owned()),
         _ => None,
     }
 }
