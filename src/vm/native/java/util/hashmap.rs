@@ -1,6 +1,6 @@
-//! java.util.HashMap host shims.
+use log::debug;
 
-use log::info;
+
 
 use crate::vm::native::*;
 
@@ -16,13 +16,13 @@ pub(crate) fn map_init(vm: &mut Vm, args: &[JValue]) -> R {
         Vec::new()
     };
     let Some(n) = payload_mut(vm, args[0]) else {
-        info!("MAP_INIT: no payload for {:?} args={}", args[0], args.len());
+        debug!("MAP_INIT: no payload for {:?} args={}", args[0], args.len());
         return Err(npe(vm));
     };
     match n {
         Native::Map(dst) => *dst = entries,
         other => {
-            info!(
+            debug!(
                 "MAP_INIT: wrong payload variant {:?}",
                 std::mem::discriminant(other)
             );

@@ -3,7 +3,8 @@
 
 use std::sync::Arc;
 
-use log::info;
+use log::debug;
+
 
 use crate::dex::insn::{Args, Binop, CmpOp, FillArray, IfOp, Insn, InvokeKind, Unop};
 use crate::dex::TryItem;
@@ -241,7 +242,7 @@ impl Vm {
             let step = match self.step(&mut f) {
                 Ok(s) => s,
                 Err(e) => {
-                    info!(
+                    debug!(
                         "ERR {} pc={:#06x} class={} method={}: {e}",
                         self.str_of(self.classes[f.class as usize].descriptor),
                         f.pc,
@@ -330,7 +331,7 @@ impl Vm {
                             Target::Native(key) => {
                                 if self.str_of(mref.name) == "<init>" {
                                     let (kc, _, ks) = *key;
-                                    info!(
+                                    debug!(
                                         "INV native <init> sig={} class={} args={}",
                                         self.str_of(ks),
                                         self.str_of(kc),
@@ -410,7 +411,7 @@ impl Vm {
                                                         exc_cls,
                                                     );
                                                 }
-                                                info!(
+                                                debug!(
                                                     "DBG uncaught native-throw at {}::{} from native {} exc-class={}",
                                                     self.class_desc_str(dbg_c),
                                                     self.str_of(self.classes[dbg_c as usize].methods[dbg_s as usize].name),
@@ -496,7 +497,7 @@ impl Vm {
                                 m
                             );
                         }
-                        info!(
+                        debug!(
                             "DBG throw pc={:04x} cls={} msg={:?}",
                             f.pc,
                             self.class_desc_str(f.class),
@@ -519,7 +520,7 @@ impl Vm {
                                 )),
                                 _ => None,
                             };
-                            info!(
+                            debug!(
                                 "DBG NPE-throw pc={:04x} cls={} insn={:?} v6={:?}",
                                 f.pc,
                                 self.class_desc_str(f.class),
@@ -545,7 +546,7 @@ impl Vm {
                                     if let Native::List(l) =
                                         self.payload_of(JValue::Obj(lo)).unwrap_or(Native::Opaque)
                                     {
-                                        info!("DBG {fcls}#{name} list len={}", l.len());
+                                        debug!("DBG {fcls}#{name} list len={}", l.len());
                                         for (i, it) in l.iter().enumerate() {
                                             let c = match *it {
                                                 JValue::Obj(o) => self.class_desc_str(
@@ -553,7 +554,7 @@ impl Vm {
                                                 ),
                                                 _ => format!("{it:?}"),
                                             };
-                                            info!("DBG rules[{i}] = {c}");
+                                            debug!("DBG rules[{i}] = {c}");
                                             if let JValue::Obj(ro) = *it {
                                                 for (n, _) in [("a", ""), ("b", ""), ("c", "")] {
                                                     let (idx, val) = match self
@@ -562,23 +563,23 @@ impl Vm {
                                                         Some((i, val)) => (i, format!("{val:?}")),
                                                         None => (usize::MAX, "none".into()),
                                                     };
-                                                    info!("DBG   c1.{n}[{idx}] = {val}");
+                                                    debug!("DBG   c1.{n}[{idx}] = {val}");
                                                 }
                                                 let o = self.arena.objects.get(ro as usize);
                                                 match o {
                                                     Some(o) => {
-                                                        info!(
+                                                        debug!(
                                                             "DBG   c1-cid={} fields-len={}",
                                                             o.class,
                                                             o.fields.len()
                                                         );
                                                         for (i, fv) in o.fields.iter().enumerate() {
-                                                            info!("DBG   c1.F[{i}] = {fv:?}");
+                                                            debug!("DBG   c1.F[{i}] = {fv:?}");
                                                         }
                                                         let Some(ccls) =
                                                             self.classes.get(o.class as usize)
                                                         else {
-                                                            info!("DBG   c1-class-missing");
+                                                            debug!("DBG   c1-class-missing");
                                                             continue;
                                                         };
                                                         let names: Vec<&str> = ccls
@@ -586,9 +587,9 @@ impl Vm {
                                                             .iter()
                                                             .map(|(n, ..)| self.str_of(*n))
                                                             .collect();
-                                                        info!("DBG   c1-i-field-names={names:?}");
+                                                        debug!("DBG   c1-i-field-names={names:?}");
                                                     }
-                                                    None => info!("DBG   c1-not-found"),
+                                                    None => debug!("DBG   c1-not-found"),
                                                 }
                                             }
                                         }
@@ -611,7 +612,7 @@ impl Vm {
                                 JValue::Obj(o) => o,
                                 _ => 0,
                             };
-                            info!(
+                            debug!(
                                 "DBG uncaught throw at {}::{}",
                                 self.class_desc_str(dbg_c),
                                 self.str_of(
@@ -655,7 +656,7 @@ impl Vm {
             let catch_addr = {
                 for t in tries.iter() {
                     let end = t.start_addr + u32::from(t.insn_count);
-                    info!(
+                    debug!(
                         "DBG try [{:04x},{:04x}) handlers={:?} catchall={:?}",
                         t.start_addr, end, t.handlers, t.catch_all
                     );
@@ -694,7 +695,7 @@ impl Vm {
             };
             match catch_addr {
                 Some(addr) => {
-                    info!("DBG unwind catch @ {:04x}", addr);
+                    debug!("DBG unwind catch @ {:04x}", addr);
                     let Some(f) = self.frames.last_mut() else {
                         return Err(JvmError::Fatal(
                             "empty frame stack while installing catch".into(),
@@ -746,7 +747,7 @@ impl Vm {
                     }
                 }
             }
-            info!(
+            debug!(
                 "DBG step {} @ {:04x} {:?}{}",
                 self.class_desc_str(f.class),
                 pc,
@@ -1120,7 +1121,7 @@ impl Vm {
                         }
                         _ => format!("{fv:?}"),
                     };
-                    info!(
+                    debug!(
                         "DBG IGet {} {} -> d{} = {}",
                         fcls,
                         self.str_of(fr.name),
@@ -1156,7 +1157,7 @@ impl Vm {
                         }
                         _ => format!("{v:?}"),
                     };
-                    info!(
+                    debug!(
                         "DBG IPut {} {} <- src{}({}) = {}",
                         fcls,
                         self.str_of(fr.name),
@@ -1198,14 +1199,14 @@ impl Vm {
                     _ => None,
                 };
                 if matches!(tcls.as_deref(), Some("m" | "a0" | "c" | "b" | "y2")) {
-                    info!("DBG inv {tcls:?} {}", self.str_of(mref.name));
+                    debug!("DBG inv {tcls:?} {}", self.str_of(mref.name));
                 }
                 if *kind == InvokeKind::Direct && self.str_of(mref.name) == "<init>" {
                     let a0 = f.regs[args.reg_at(0) as usize];
                     if let JValue::Obj(a0) = a0 {
                         let cdesc =
                             self.class_desc_str(self.object_class(JValue::Obj(a0)).unwrap_or(0));
-                        info!("DBG CTOR {cdesc} argc={}", args.count);
+                        debug!("DBG CTOR {cdesc} argc={}", args.count);
                         if cdesc == "c1" || cdesc == "g1" || cdesc == "f1" {
                             for ai in 1..7 {
                                 if ai >= args.count as usize {
@@ -1218,7 +1219,7 @@ impl Vm {
                                     ),
                                     _ => format!("{av:?}"),
                                 };
-                                info!("DBG   {cdesc} arg{ai}: {s}");
+                                debug!("DBG   {cdesc} arg{ai}: {s}");
                             }
                         }
                     }

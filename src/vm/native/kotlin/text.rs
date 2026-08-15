@@ -414,13 +414,12 @@ fn split_literal(value: &str, delimiters: &[String], ignore_case: bool, limit: i
     let mut offset = 0;
     while offset <= value.len() && (limit <= 0 || output.len() + 1 < limit as usize) {
         let rest = &value[offset..];
-        let folded = ignore_case.then(|| rest.to_lowercase());
         let hit = delimiters
             .iter()
             .filter(|delimiter| !delimiter.is_empty())
             .filter_map(|delimiter| {
-                let index = if let Some(folded) = &folded {
-                    folded.find(&delimiter.to_lowercase())
+                let index = if ignore_case {
+                    find_ignore_case(rest, delimiter)
                 } else {
                     rest.find(delimiter)
                 }?;
@@ -435,6 +434,50 @@ fn split_literal(value: &str, delimiters: &[String], ignore_case: bool, limit: i
     }
     output.push(value[offset..].to_string());
     output
+}
+
+/// Finds `needle` in `haystack` case-insensitively, returning a byte index
+/// that is a valid char boundary of `haystack`. Unlike `to_lowercase()`
+/// based lookups this is safe for strings whose lowercasing changes their
+/// byte length.
+fn find_ignore_case(haystack: &str, needle: &str) -> Option<usize> {
+    let needle_chars: Vec<char> = needle.chars().collect();
+    if needle_chars.is_empty() {
+        return Some(0);
+    }
+    let haystack_chars: Vec<(usize, char)> = haystack.char_indices().collect();
+    haystack_chars
+        .windows(needle_chars.len())
+        .find_map(|window| {
+            let matches = window
+                .iter()
+                .zip(&needle_chars)
+                .all(|((_, hay_char), needle_char)| {
+                    hay_char.to_lowercase().next() == needle_char.to_lowercase().next()
+                });
+            matches.then_some(window[0].0)
+        })
+}
+
+/// Like [`find_ignore_case`], but returns the last match.
+fn rfind_ignore_case(haystack: &str, needle: &str) -> Option<usize> {
+    let needle_chars: Vec<char> = needle.chars().collect();
+    if needle_chars.is_empty() {
+        return Some(haystack.len());
+    }
+    let haystack_chars: Vec<(usize, char)> = haystack.char_indices().collect();
+    haystack_chars
+        .windows(needle_chars.len())
+        .filter(|window| {
+            window
+                .iter()
+                .zip(&needle_chars)
+                .all(|((_, hay_char), needle_char)| {
+                    hay_char.to_lowercase().next() == needle_char.to_lowercase().next()
+                })
+        })
+        .last()
+        .map(|window| window[0].0)
 }
 
 fn stringskt_split_strings_default(vm: &mut Vm, args: &[JValue]) -> R {
@@ -538,7 +581,7 @@ fn stringskt_last_index_of_default(vm: &mut Vm, args: &[JValue]) -> R {
     };
     let hay = &text[..start.min(text.len())];
     let found = if int_of(vm, args[3]) != 0 {
-        hay.to_lowercase().rfind(&needle.to_lowercase())
+        rfind_ignore_case(hay, &needle)
     } else {
         hay.rfind(&needle)
     };
@@ -840,7 +883,7 @@ fn stringskt_replace_first_default(vm: &mut Vm, args: &[JValue]) -> R {
     let to = charseq_of(vm, args[2])?;
     let ignore = args[3].as_int() != 0 && args[4].as_int() & 4 == 0;
     let pos = if ignore {
-        s.to_lowercase().find(&from.to_lowercase())
+        find_ignore_case(&s, &from)
     } else {
         s.find(&from)
     };
@@ -985,7 +1028,7 @@ fn stringskt_substring_after(vm: &mut Vm, args: &[JValue]) -> R {
 fn regex_replace_case_insensitive(s: &str, from: &str, to: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut rest = s;
-    while let Some(idx) = rest.to_lowercase().find(&from.to_lowercase()) {
+    while let Some(idx) = find_ignore_case(rest, from) {
         out.push_str(&rest[..idx]);
         out.push_str(to);
         rest = &rest[idx + from.len()..];
@@ -1145,7 +1188,8 @@ fn stringskt_last_index_of_char_default(vm: &mut Vm, args: &[JValue]) -> R {
     let ignore_case = mask & 0x10 == 0 && int_of(vm, args[3]) != 0;
     let hay = &text[..start.min(text.len())];
     let found = if ignore_case {
-        hay.to_lowercase().rfind(&needle.to_lowercase().to_string())
+        let needle_str = needle.to_string();
+        rfind_ignore_case(hay, &needle_str)
     } else {
         hay.rfind(needle)
     };

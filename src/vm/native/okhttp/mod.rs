@@ -8,7 +8,7 @@ pub(crate) const RESPONSE: &str = "Lokhttp3/Response;";
 pub(crate) const REQUEST: &str = "Lokhttp3/Request;";
 pub(crate) const HTTP_URL: &str = "Lokhttp3/HttpUrl;";
 
-use log::{info, warn};
+use log::{debug, warn};
 
 use super::*;
 
@@ -2443,7 +2443,7 @@ fn host_execute(vm: &mut Vm, request: JValue) -> R {
             }
         }
     }
-    info!("DBG HOST fetch {method} {url} hdrs={}", headers.len());
+    debug!("DBG HOST fetch {method} {url} hdrs={}", headers.len());
     let body_str = form_body_to_string(vm, &body);
     if std::env::var("DEXVM_TRACE").is_ok() {
         eprintln!(
@@ -2541,7 +2541,7 @@ pub(crate) fn chain_proceed(vm: &mut Vm, args: &[JValue]) -> R {
             Some(JValue::Obj(o)) => vm.class_desc_str(vm.object_class(JValue::Obj(o)).unwrap_or(0)),
             _ => String::new(),
         };
-        info!("DBG chain.proceed -> {cls}");
+        debug!("DBG chain.proceed -> {cls}");
     }
     match next {
         Some(interceptor) => vm

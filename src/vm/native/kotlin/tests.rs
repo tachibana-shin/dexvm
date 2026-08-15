@@ -623,3 +623,77 @@ fn group_values_wire_initial_data() {
         assert_eq!(out[1], "{&quot;fingerprint&quot;:1}");
     });
 }
+
+/// Case-insensitive `replaceFirst`/`replace`/`split`/`lastIndexOf` must not
+/// slice at byte offsets computed from a lowercased copy: `to_lowercase`
+/// can change the byte length (`İ` -> "i\u{307}"), which used to panic with
+/// "not a char boundary" on multi-byte strings.
+#[test]
+fn case_insensitive_string_ops_handle_multibyte() {
+    with_vm(|vm| {
+        // ReplaceFirst(..., ignoreCase=true): the byte index of the match in
+        // a lowercased copy (4) no longer matches the original string,
+        // where 'ệ' starts at byte 3.
+        let value = s(vm, "İxệy");
+        let from = s(vm, "ệ");
+        let to = s(vm, "ệN");
+        let out = s_of!(
+            vm,
+            stringskt_replace_first_default(
+                vm,
+                &[value, from, to, JValue::Int(1), JValue::Null, JValue::Null],
+            )
+        );
+        assert_eq!(out, "İxệNy");
+
+        // Replace(..., ignoreCase=true) over the whole string.
+        let out = s_of!(
+            vm,
+            stringskt_replace_default(
+                vm,
+                &[value, from, to, JValue::Int(1), JValue::Null, JValue::Null],
+            )
+        );
+        assert_eq!(out, "İxệNy");
+
+        // Split(ignoreCase=true) must not panic on multi-byte strings.
+        let comma = s(vm, "ệ");
+        let delimiters = alloc_arr(vm, "Ljava/lang/String;", 1, || {
+            ArrayData::Obj(vec![comma])
+        })
+        .unwrap();
+        let pieces = list_of!(
+            vm,
+            stringskt_split_strings_default(
+                vm,
+                &[
+                    value,
+                    delimiters,
+                    JValue::Int(0),
+                    JValue::Int(1),
+                    JValue::Int(6),
+                    JValue::Null,
+                ]
+            )
+        );
+        assert_eq!(pieces, ["İx", "y"]);
+
+        // LastIndexOf(ignoreCase=true) returns an index into the original
+        // string, not into the lowercased copy (which would yield 4).
+        let hay = s(vm, "İxệy");
+        let needle = s(vm, "ệ");
+        let found = stringskt_last_index_of_default(
+            vm,
+            &[
+                hay,
+                needle,
+                JValue::Int(2),
+                JValue::Int(1),
+                JValue::Int(4),
+                JValue::Null,
+            ],
+        )
+        .unwrap();
+        assert_eq!(int_of(found), 3);
+    });
+}

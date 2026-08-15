@@ -23,7 +23,7 @@ fn quickjs_payload(vm: &mut Vm, v: JValue) -> Result<Rc<QuickJsHost>, NatErr> {
 }
 
 fn quickjs_create(vm: &mut Vm, _args: &[JValue]) -> R {
-    log::info!("quickjs: creating engine");
+    log::debug!("quickjs: creating engine");
     let rt = Runtime::new().map_err(|e| iae(vm, format!("quickjs runtime: {e}")))?;
     let ctx = Context::full(&rt).map_err(|e| iae(vm, format!("quickjs context: {e}")))?;
     let host = Rc::new(QuickJsHost {
