@@ -44,6 +44,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Install system deps
+        run: sudo apt update && sudo apt install -y pkg-config libfontconfig1-dev libfreetype6-dev
       - name: Default features
         if: matrix.features == 'default'
         run: cargo test
