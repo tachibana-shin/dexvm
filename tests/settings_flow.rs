@@ -16,9 +16,6 @@
 use dexvm::keiyoushi::Keiyoushi;
 
 const APK: &str = "fixtures/tachiyomi-vi.cuutruyenmoe-v1.6.3.apk";
-/// Preference file name the extension requests via
-/// `getSharedPreferences("source_<source-id-hash>", ...)`.
-const PREFS_FILE: &str = "source_3973269831131863421";
 const APK_PRE16: &str = "fixtures/tachiyomi-all.akuma-v1.4.10.apk";
 
 fn init_logger() {
@@ -41,6 +38,11 @@ fn mihon_preference_definitions_and_roundtrip() {
     let srcs = ext.sources().unwrap();
     assert_eq!(srcs.len(), 1);
     let src = &srcs[0];
+
+    // mihon's preferenceKey(): "source_<id>" — the id literal the fixture
+    // was built with, so the file name is stable across engines.
+    let prefs_file = ext.preference_file(src).unwrap();
+    assert_eq!(prefs_file, "source_3973269831131863421");
 
     // 1. definitions materialize without any network access. The preference
     // screen becomes a group whose single child is the website_password
@@ -76,7 +78,7 @@ fn mihon_preference_definitions_and_roundtrip() {
     assert_eq!(default_str, "5");
 
     // 2. get: nothing persisted yet
-    let got = ext.get_settings(PREFS_FILE);
+    let got = ext.get_settings(&prefs_file);
     assert!(
         got.is_empty(),
         "fresh extension must report no saved settings: {got:?}"
@@ -84,12 +86,12 @@ fn mihon_preference_definitions_and_roundtrip() {
 
     // 3. save
     ext.update_setting(
-        PREFS_FILE,
+        &prefs_file,
         "website_password",
         dexvm::context::SettingValue::String("hunter2".into()),
     )
     .unwrap();
-    let got = ext.get_settings(PREFS_FILE);
+    let got = ext.get_settings(&prefs_file);
     assert_eq!(
         got.get("website_password"),
         Some(&dexvm::context::SettingValue::String("hunter2".into()))
@@ -99,7 +101,7 @@ fn mihon_preference_definitions_and_roundtrip() {
     drop(ext);
     let mut ext2 = Keiyoushi::open(APK).unwrap();
     ext2.set_shared_preferences_path(&prefs_path);
-    let got = ext2.get_settings(PREFS_FILE);
+    let got = ext2.get_settings(&prefs_file);
     assert_eq!(
         got.get("website_password"),
         Some(&dexvm::context::SettingValue::String("hunter2".into())),
@@ -142,16 +144,18 @@ fn pre16_switch_preference_definitions() {
     assert!(pref.enabled);
 
     // same get/save round-trip, via the extension's own prefs file name
-    let got = ext.get_settings("source_akuma_prefs");
+    let prefs_file = ext.preference_file(src).unwrap();
+    assert_eq!(prefs_file, "source_1843646695111412994");
+    let got = ext.get_settings(&prefs_file);
     assert!(got.is_empty());
     ext.update_setting(
-        "source_akuma_prefs",
+        &prefs_file,
         "pref_title",
         dexvm::context::SettingValue::Bool(true),
     )
     .unwrap();
     assert_eq!(
-        ext.get_settings("source_akuma_prefs").get("pref_title"),
+        ext.get_settings(&prefs_file).get("pref_title"),
         Some(&dexvm::context::SettingValue::Bool(true))
     );
 

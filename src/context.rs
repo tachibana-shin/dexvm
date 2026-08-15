@@ -395,6 +395,14 @@ impl Context {
             .unwrap_or_default()
     }
 
+    /// The names of the Android `SharedPreferences` files the guest has
+    /// requested so far (e.g. `source_3973269831131863421` for a mihon 1.6
+    /// source). Hosts must persist settings under these names, not
+    /// hardcoded ones, for the extension to see them.
+    pub fn preference_file_names(&self) -> Vec<String> {
+        self.vm.shared_preferences.keys().cloned().collect()
+    }
+
     /// Registers the host callback invoked by [`Context::update_setting`].
     pub fn on_update_settings<F>(&mut self, callback: F)
     where

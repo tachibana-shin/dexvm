@@ -211,6 +211,12 @@ impl Keiyoushi {
         self.ctx.get_settings(preference_file)
     }
 
+    /// The names of the `SharedPreferences` files the extension has
+    /// requested so far; settings must be persisted under these names.
+    pub fn preference_file_names(&self) -> Vec<String> {
+        self.ctx.preference_file_names()
+    }
+
     pub fn on_update_settings<F>(&mut self, callback: F)
     where
         F: Fn(&str, &SettingValue) + 'static,
@@ -272,6 +278,22 @@ impl Keiyoushi {
 
     pub fn source_lang(&mut self, src: &Source) -> Result<String, JvmError> {
         self.call_str(src, "getLang", "()Ljava/lang/String;", &[])
+    }
+
+    pub fn source_id(&mut self, src: &Source) -> Result<i64, JvmError> {
+        let v = self.ctx.invoke_on(src.inst, "getId", "()J", &[])?;
+        match v {
+            JValue::Long(l) => Ok(l),
+            JValue::Int(i) => Ok(i64::from(i)),
+            other => Err(JvmError::Resolution(format!("getId returned {other:?}"))),
+        }
+    }
+
+    /// The `SharedPreferences` file name the source reads its settings
+    /// from: mihon's `preferenceKey() = "source_<id>"`. Settings must be
+    /// persisted under this name for the extension to see them.
+    pub fn preference_file(&mut self, src: &Source) -> Result<String, JvmError> {
+        Ok(format!("source_{}", self.source_id(src)?))
     }
 
     pub fn supports_latest(&mut self, src: &Source) -> Result<bool, JvmError> {
