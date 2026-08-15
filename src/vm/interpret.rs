@@ -1168,6 +1168,54 @@ impl Vm {
                 }
                 let stored = match insn {
                     Insn::IPutObj(..) if v.is_null_ref() => JValue::Null,
+                    Insn::IPutObj(..) => {
+                        let fty = self.str_of(fr.ty);
+                        match (fty, v) {
+                            ("Ljava/lang/Integer;", JValue::Int(i)) => {
+                                crate::vm::native::boxed(
+                                    self,
+                                    "Ljava/lang/Integer;",
+                                    Native::IntBox(i),
+                                )?
+                            }
+                            ("Ljava/lang/Long;", JValue::Long(l)) => crate::vm::native::boxed(
+                                self,
+                                "Ljava/lang/Long;",
+                                Native::LongBox(l),
+                            )?,
+                            ("Ljava/lang/Float;", JValue::Float(fv)) => crate::vm::native::boxed(
+                                self,
+                                "Ljava/lang/Float;",
+                                Native::FloatBox(fv),
+                            )?,
+                            ("Ljava/lang/Double;", JValue::Float(fv)) => crate::vm::native::boxed(
+                                self,
+                                "Ljava/lang/Double;",
+                                Native::DoubleBox(f64::from(fv)),
+                            )?,
+                            ("Ljava/lang/Boolean;", JValue::Int(b)) => crate::vm::native::boxed(
+                                self,
+                                "Ljava/lang/Boolean;",
+                                Native::BoolBox(b != 0),
+                            )?,
+                            ("Ljava/lang/Character;", JValue::Int(c)) => crate::vm::native::boxed(
+                                self,
+                                "Ljava/lang/Character;",
+                                Native::CharBox(c as u16),
+                            )?,
+                            ("Ljava/lang/Byte;", JValue::Int(b)) => crate::vm::native::boxed(
+                                self,
+                                "Ljava/lang/Byte;",
+                                Native::ByteBox(b as i8),
+                            )?,
+                            ("Ljava/lang/Short;", JValue::Int(s)) => crate::vm::native::boxed(
+                                self,
+                                "Ljava/lang/Short;",
+                                Native::ShortBox(s as i16),
+                            )?,
+                            _ => v,
+                        }
+                    }
                     _ => v,
                 };
                 self.arena.objects[o as usize].fields[off as usize] = stored;
@@ -1179,6 +1227,17 @@ impl Vm {
                     None
                 } else {
                     let r = f.regs[args.reg_at(0) as usize];
+                    if std::env::var("DEXVM_TRACE").is_ok()
+                        && !matches!(r, JValue::Obj(_) | JValue::Null)
+                    {
+                        eprintln!(
+                            "DEXTRACE bad-recv {} {} kind={kind:?} reg={:?} regs={:?}",
+                            self.class_desc_str(f.class),
+                            self.str_of(mref.name),
+                            r,
+                            &f.regs[..f.regs.len().min(8)]
+                        );
+                    }
                     if r.is_null_ref() {
                         if std::env::var("DEXVM_TRACE").is_ok() {
                             eprintln!(

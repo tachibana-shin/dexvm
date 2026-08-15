@@ -278,6 +278,40 @@ fn live_tachiyomi_source_api() {
                     pages.len(),
                     pages[0].image_url
                 );
+                if let Some(page) = pages.first() {
+                    match ext.image_data(src, &page.image_url) {
+                        Ok(bytes) => {
+                            let magic: Vec<u8> = bytes.iter().take(8).copied().collect();
+                            let looks_like_image = matches!(
+                                magic.as_slice(),
+                                [0xFF, 0xD8, ..]
+                                    | [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]
+                                    | [b'R', b'I', b'F', b'F', ..]
+                                    | [b'G', b'I', b'F', b'8', ..]
+                            );
+                            assert!(
+                                looks_like_image,
+                                "decrypted image must start with image magic, got {magic:02x?}"
+                            );
+                            eprintln!(
+                                "live: image_data({}) -> {} bytes, magic={:02x?}",
+                                page.image_url,
+                                bytes.len(),
+                                magic
+                            );
+                        }
+                        Err(e) if live => {
+                            panic!(
+                                "image_data failed on live data: {}",
+                                ext.describe_error(&e)
+                            )
+                        }
+                        Err(e) => eprintln!(
+                            "warn: image_data blocked: {}",
+                            ext.describe_error(&e)
+                        ),
+                    }
+                }
             }
             Err(e) if live => {
                 panic!("pages_coro failed on live data: {}", ext.describe_error(&e))

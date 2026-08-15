@@ -177,3 +177,27 @@ fn probe_chm() {
     let r2 = ctx.invoke_on(h.as_obj(), "<init>", "()V", &[]);
     println!("HashMap init: {:?}", r2.is_ok());
 }
+
+/// `Keiyoushi::image_data` drives the production image path end to end:
+/// getClient() -> newCall -> execute -> La0 IMGX decrypt -> plaintext,
+/// with a mocked CDN serving an encrypted payload.
+#[test]
+fn image_data_decrypts_mock_imgx() {
+    init_logger();
+    let mock = imgx_gcm_payload(&[7u8; 32], &[9u8; 12], &pic_plain());
+    let mut ext = Keiyoushi::open(APK).expect("open apk");
+    let srcs = ext.sources().expect("sources");
+    assert!(!srcs.is_empty(), "apk must yield at least one source");
+    let src = srcs[0];
+
+    // Wire the grant map (h) on the live source instance, exactly like the
+    // extension's own getPageList would.
+    {
+        let ctx = ext.ctx();
+        attach_rule(ctx, JValue::Obj(src.inst()), IMG_URL);
+    }
+
+    ext.set_http(move |_req| dexvm::keiyoushi::HttpResp::ok_bytes(mock.clone()));
+    let bytes = ext.image_data(&src, IMG_URL).expect("image_data");
+    assert_eq!(bytes, pic_plain());
+}

@@ -39,6 +39,13 @@ pub struct Source {
     inst: u32,
 }
 
+impl Source {
+    /// The arena id of the underlying extension source object.
+    pub fn inst(&self) -> u32 {
+        self.inst
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Manga {
     pub title: String,
@@ -97,6 +104,12 @@ impl Keiyoushi {
         Ok(Keiyoushi {
             ctx: Context::new_with(data, SandboxOptions::allow_all())?,
         })
+    }
+
+    /// Borrows the underlying VM context (used by tests and embedders that
+    /// need to poke at extension objects or the arena directly).
+    pub fn ctx(&mut self) -> &mut Context {
+        &mut self.ctx
     }
 
     /// Loads an extension together with additional DEX/APK libraries that
@@ -963,6 +976,45 @@ impl Keiyoushi {
             .ctx
             .invoke_on(out_id, "getChapters", "()Ljava/util/List;", &[])?;
         self.read_chapter_list(list)
+    }
+
+    /// Fetches the plaintext bytes of a page image through the extension's
+    /// own OkHttpClient, so client-side interceptors (IMGX-style decrypt,
+    /// per-host auth, custom headers) run exactly like in mihon:
+    /// `getClient()` → `newCall(request)` → `execute()`.
+    ///
+    /// Extensions without decrypt interceptors simply return the raw bytes;
+    /// the request carries no extra headers beyond what the extension's
+    /// client and the registered host-header resolver add.
+    pub fn image_data(&mut self, src: &Source, url: &str) -> Result<Vec<u8>, JvmError> {
+        let client = self
+            .ctx
+            .invoke_on(src.inst, "getClient", "()Lokhttp3/OkHttpClient;", &[])?;
+        let cid = self.ctx.vm().ensure_class_by_desc("Lokhttp3/Request;")?;
+        let req = JValue::Obj(self.ctx.vm().arena.alloc(
+            cid,
+            Vec::new(),
+            Some(Native::Request {
+                url: url.to_string(),
+                method: "GET".to_string(),
+                headers: Vec::new(),
+                body: None,
+            }),
+        ));
+        let call = self.ctx.invoke_on(
+            client.as_obj(),
+            "newCall",
+            "(Lokhttp3/Request;)Lokhttp3/Call;",
+            &[req],
+        )?;
+        let resp = self.ctx.invoke_on(call.as_obj(), "execute", "()Lokhttp3/Response;", &[])?;
+        match self.ctx.vm().payload_of(resp) {
+            Some(Native::Response { body: Some(b), .. }) => Ok(b.clone()),
+            Some(Native::Response { body: None, .. }) => Ok(Vec::new()),
+            _ => Err(JvmError::Resolution(
+                "image request did not yield a Response payload".into(),
+            )),
+        }
     }
 }
 

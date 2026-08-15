@@ -46,5 +46,14 @@ impl From<DexError> for JvmError {
     }
 }
 
+impl From<crate::vm::NatErr> for JvmError {
+    fn from(e: crate::vm::NatErr) -> Self {
+        match e {
+            crate::vm::NatErr::Throw(t) => JvmError::Uncaught(t),
+            crate::vm::NatErr::Fatal(j) => j,
+        }
+    }
+}
+
 /// Result of a VM operation: normal result or a thrown Java exception object.
 pub type ExecResult<T = JValue> = Result<T, u32>;
