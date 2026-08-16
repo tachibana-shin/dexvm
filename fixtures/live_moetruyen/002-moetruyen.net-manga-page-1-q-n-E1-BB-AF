@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   
-<style nonce="6jJYQUOpCROBap97AXRu1wZE">
+<style nonce="Lvm0eTnJ3DzP/rRBII6lhZop">
   html[data-bfang-boot-loading="1"] {
     overflow: hidden;
   }
@@ -1375,7 +1375,7 @@
     }
   }
 </style>
-<script nonce="6jJYQUOpCROBap97AXRu1wZE">
+<script nonce="Lvm0eTnJ3DzP/rRBII6lhZop">
   (() => {
     const initialKind = "";
     const id = "bfang-boot-skeleton";
@@ -1875,19 +1875,19 @@
     <meta property="og:url" content="https://moetruyen.net/manga" />
   
   
-    <meta property="og:image" content="https://u.truyen.moe/uploads/covers/1649-ma-phap-toan-nang-cua-thanh-nu.webp" />
+    <meta property="og:image" content="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the.webp" />
   
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Đọc truyện tranh: nữ — Mòe Truyện" />
   <meta name="twitter:description" content="Danh sách đọc truyện tranh theo từ khóa và bộ lọc trên Mòe Truyện. Duyệt manga, manhwa, manhua theo thể loại nhanh chóng." />
   
-    <meta name="twitter:image" content="https://u.truyen.moe/uploads/covers/1649-ma-phap-toan-nang-cua-thanh-nu.webp" />
+    <meta name="twitter:image" content="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the.webp" />
   
 
   
 
-    <script nonce="6jJYQUOpCROBap97AXRu1wZE">
+    <script nonce="Lvm0eTnJ3DzP/rRBII6lhZop">
     window.__SITE_CONFIG = {"branding":{"siteName":"Mòe Truyện","brandMark":"Mòe","brandSubmark":"Truyện","aboutNavLabel":"Về MoeTruyen","heroKicker":"Mòe Truyện Manga","updateTag":"MoeTruyen","footerYear":"2026","dmcaFooterHtml":""},"homepage":{"welcomeMessage":"Chào mừng bạn đến với Mòe Truyện.","introduction":"Mòe Truyện là cộng đồng truyện với hàng nghìn đầu truyện và chục nghìn chương truyện.","aboutTitle":"Về Mòe Truyện","foundedYear":"2026","contentStandardsTitle":"Tiêu chuẩn nội dung","contentStandards":["Chúng tôi chỉ đăng tải truyện tranh hoặc truyện chữ.","Các dự án được dịch thuật chủ yếu từ tiếng Anh hoặc tiếng Nhật."],"contactTitle":"Kênh liên hệ"},"contact":{"facebookUrl":"https://facebook.com/DongMoeReal","facebookLabel":"facebook.com/DongMoeReal","discordUrl":"https://discord.moetruyen.net/","discordLabel":"discord.moetruyen.net","emailAddress":"admin@mail.moetruyen.net","emailLabel":"admin@mail.moetruyen.net"},"seo":{"defaultDescription":"MoeTruyen - Đọc truyện online miễn phí, cập nhật nhanh manga, manhwa, manhua mới mỗi ngày.","homepageTitle":"MoeTruyen - Đọc truyện tranh online miễn phí","homepageDescription":"MoeTruyen là nơi đọc truyện online miễn phí, cập nhật nhanh truyện manga, manhwa, manhua mới nhất. Trải nghiệm mượt mà, cập nhật liên tục, không quảng cáo."},"admin":{"teamManageLabel":"Mòe Truyện Manage","adminLabel":"MoeTruyen Admin","loginNote":"Truy cập dành riêng cho Mòe Truyện."}};
     window.__AUTH = {"providers":{"google":true,"discord":true},"sessionVersion":"870e4e6ac354b20420fc2b8e"};
     window.__BFANG_ASSET_VERSION = "a792a7a93ee11a24";
@@ -1896,7 +1896,7 @@
     }
     window.__TURNSTILE = {"siteKey":"0x4AAAAAACa5nZookwpdTAxN"};
   </script>
-  <script nonce="6jJYQUOpCROBap97AXRu1wZE">
+  <script nonce="Lvm0eTnJ3DzP/rRBII6lhZop">
     (() => {
       const root = document.documentElement;
       if (!root) return;
@@ -1957,7 +1957,7 @@
   
   
   
-  <script nonce="6jJYQUOpCROBap97AXRu1wZE">
+  <script nonce="Lvm0eTnJ3DzP/rRBII6lhZop">
     (() => {
       const links = Array.from(document.querySelectorAll("link[data-head-async-style]"));
       if (!links.length) return;
@@ -1986,7 +1986,7 @@
   
 
   
-    <style nonce="6jJYQUOpCROBap97AXRu1wZE">
+    <style nonce="Lvm0eTnJ3DzP/rRBII6lhZop">
       @view-transition { navigation: auto; }
       .site-header,
       .admin-header { view-transition-name: bfang-navigation-chrome; }
@@ -1996,7 +1996,7 @@
     </style>
   
   
-    <style nonce="6jJYQUOpCROBap97AXRu1wZE">
+    <style nonce="Lvm0eTnJ3DzP/rRBII6lhZop">
       .cover--adult {
         position: relative;
       }
@@ -2030,7 +2030,7 @@
     
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-HJBTK1S4HZ"></script>
-  <script nonce="6jJYQUOpCROBap97AXRu1wZE">
+  <script nonce="Lvm0eTnJ3DzP/rRBII6lhZop">
     window.dataLayer = window.dataLayer || [];
     function gtag() {
       dataLayer.push(arguments);
@@ -2104,7 +2104,7 @@
 
   <body>
     
-      <script type="speculationrules" nonce="6jJYQUOpCROBap97AXRu1wZE">{"prefetch":[{"source":"list","urls":["/manga/1649-ma-phap-toan-nang-cua-thanh-nu","/manga/582-10-nam-bi-chiem-xac-nang-ac-nu-va-su-hoi-han-cua-ngai-hiep-si","/manga/1588-nu-sinh-tru-ta-akane","/manga/1551-destiny-unchain-online","/manga/748-ong-chu-chuyen-sinh-thanh-ac-nu-phan-dien","/manga/1080-ac-nu-tai-sinh-cuoc-doi-thu-hai-va-loi-the-hanh-phuc","/manga/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the","/manga/209-ryoushin-no-shakkin-wo-katagawari-shite-morau-jouken-wa-nihon-ichi-kawaii-joshikousei-to-issho-ni-kurasu-koto-deshita","/manga/231-sau-khi-tinh-co-giup-do-mot-be-gai-lac-duong-nang-my-nu-du-hoc-sinh-nha-ben-thuong-xuyen-lui-toi-can-ho-cua-toi","/manga/794-cau-truyen-tra-thu-huy-hoang-cua-nu-phan-dien-sieu-cap-gian-lan","/manga/44-rekishi-ni-nokoru-akujo-ni-naru-zo-akuyaku-reijou-ni-naru-hodo-ouji-no-dekiai-wa-kasoku-suru-you-desu","/manga/894-nu-anh-hung-muon-duoc-nghi-ngoi","/manga/146-di-choi-cung-nu-game-thu","/manga/119-luyen-thuc-nu","/manga/1942-thanh-nu-va-nu-phan-dien-se-cung-nhau-pha-dao-otome-game","/manga/265-ma-phap-thieu-nu-dandelion","/manga/1732-toi-muon-giup-nu-chinh-thua-cuoc-chien-thang","/manga/1919-uesugi-kun-khong-muon-lam-con-gai-nua"],"eagerness":"moderate"}]}</script>
+      <script type="speculationrules" nonce="Lvm0eTnJ3DzP/rRBII6lhZop">{"prefetch":[{"source":"list","urls":["/manga/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the","/manga/1649-ma-phap-toan-nang-cua-thanh-nu","/manga/582-10-nam-bi-chiem-xac-nang-ac-nu-va-su-hoi-han-cua-ngai-hiep-si","/manga/1588-nu-sinh-tru-ta-akane","/manga/1551-destiny-unchain-online","/manga/748-ong-chu-chuyen-sinh-thanh-ac-nu-phan-dien","/manga/1080-ac-nu-tai-sinh-cuoc-doi-thu-hai-va-loi-the-hanh-phuc","/manga/209-ryoushin-no-shakkin-wo-katagawari-shite-morau-jouken-wa-nihon-ichi-kawaii-joshikousei-to-issho-ni-kurasu-koto-deshita","/manga/231-sau-khi-tinh-co-giup-do-mot-be-gai-lac-duong-nang-my-nu-du-hoc-sinh-nha-ben-thuong-xuyen-lui-toi-can-ho-cua-toi","/manga/794-cau-truyen-tra-thu-huy-hoang-cua-nu-phan-dien-sieu-cap-gian-lan","/manga/44-rekishi-ni-nokoru-akujo-ni-naru-zo-akuyaku-reijou-ni-naru-hodo-ouji-no-dekiai-wa-kasoku-suru-you-desu","/manga/894-nu-anh-hung-muon-duoc-nghi-ngoi","/manga/146-di-choi-cung-nu-game-thu","/manga/119-luyen-thuc-nu","/manga/1942-thanh-nu-va-nu-phan-dien-se-cung-nhau-pha-dao-otome-game","/manga/265-ma-phap-thieu-nu-dandelion","/manga/1732-toi-muon-giup-nu-chinh-thua-cuoc-chien-thang","/manga/1919-uesugi-kun-khong-muon-lam-con-gai-nua"],"eagerness":"moderate"}]}</script>
     
     <div class="site">
       
@@ -2296,7 +2296,7 @@
     
   </div>
 </header>
-<script nonce="6jJYQUOpCROBap97AXRu1wZE">
+<script nonce="Lvm0eTnJ3DzP/rRBII6lhZop">
   (() => {
     const restoreBadge = (selector, storageKey) => {
       const badge = document.querySelector(selector);
@@ -2914,6 +2914,73 @@
       
       
       <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-md.webp?t=1786697195997"
+                srcset="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-sm.webp?t=1786697195997 132w, https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-md.webp?t=1786697195997 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 28</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế">Sống chung với Nữ...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 21.496 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 488 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 255 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+4</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Dịch Truyện Linh Tinh</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Vào một đêm nọ, Yamamoto - một sinh viên đại học làm việc bán thời gian tại một cửa hàng tiện lợi, được một khách hàng nữ mặc áo nỉ tiếp cận ở quầy thu ngân. Tên cô ấy là Megumi Hayashi - bạn cùng lớp của Yamamoto từ thời trung học và là cô gái xinh đẹp nhấ...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
         <a href="/manga/1649-ma-phap-toan-nang-cua-thanh-nu">
           <div class="cover " >
             
@@ -2940,9 +3007,9 @@
             
             <h3 title="Ma pháp toàn năng của Thánh nữ">Ma pháp toàn năng...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 5.528 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 5.549 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 71 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 22 bình luận</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 23 bình luận</span>
             </div>
           </div>
         </a>
@@ -3007,8 +3074,8 @@
             
             <h3 title="10 Năm Bị Chiếm Xác: Nàng Ác Nữ Và Sự Hối Hận Của Ngài Hiệp Sĩ">10 Năm Bị Chiếm...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 3.070 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 50 lượt lưu</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 3.099 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 51 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 9 bình luận</span>
             </div>
           </div>
@@ -3074,9 +3141,9 @@
             
             <h3 title="Nữ sinh trừ tà Akane!">Nữ sinh trừ tà...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 8.332 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 8.373 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 192 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 180 bình luận</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 181 bình luận</span>
             </div>
           </div>
         </a>
@@ -3141,7 +3208,7 @@
             
             <h3 title="Destiny Unchain Online">Destiny Unchain Online</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.036 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.037 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 73 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 14 bình luận</span>
             </div>
@@ -3208,7 +3275,7 @@
             
             <h3 title="Ông chú chuyển sinh thành ác nữ phản diện">Ông chú chuyển sinh...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 2.061 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 2.073 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 63 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 7 bình luận</span>
             </div>
@@ -3275,7 +3342,7 @@
             
             <h3 title="Ác Nữ Tái Sinh, Cuộc Đời Thứ Hai Và Lời Thề Hạnh Phúc">Ác Nữ Tái Sinh,...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 7.814 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 7.878 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 225 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 48 bình luận</span>
             </div>
@@ -3316,73 +3383,6 @@
       
       
       <article class="manga-card manga-card--has-hover manga-card--list">
-        <a href="/manga/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the">
-          <div class="cover " >
-            
-              
-              
-              <img
-                src="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-md.webp?t=1786697195997"
-                srcset="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-sm.webp?t=1786697195997 132w, https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-md.webp?t=1786697195997 262w"
-                sizes="(max-width: 760px) 47vw, 174px"
-                alt="Bìa Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế"
-                loading="lazy"
-                decoding="async"
-                fetchpriority="low"
-                width="420"
-                height="600"
-              />
-            
-            <span class="manga-badge is-ongoing">
-              Còn tiếp
-            </span>
-            <span class="manga-chapter-label">Ch. 27</span>
-          </div>
-          <div class="manga-body">
-            
-            <h3 title="Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế">Sống chung với Nữ...</h3>
-            <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 21.266 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 486 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 251 bình luận</span>
-            </div>
-          </div>
-        </a>
-        
-<div class="manga-hover-popup" aria-hidden="true">
-  <div class="manga-hover-popup__header">
-    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
-  </div>
-  <h4 class="manga-hover-popup__title">Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế</h4>
-  <dl class="manga-hover-popup__meta">
-    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
-      <dt>Thể loại</dt>
-      <dd class="manga-hover-popup__genre-list">
-        
-          
-            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-          
-            <span class="manga-hover-popup__genre-more">+4</span>
-          
-        
-      </dd>
-    </div>
-    <div class="manga-hover-popup__meta-row">
-      <dt>Nhóm dịch</dt>
-      <dd>Dịch Truyện Linh Tinh</dd>
-    </div>
-  </dl>
-  <p class="manga-hover-popup__description">Vào một đêm nọ, Yamamoto - một sinh viên đại học làm việc bán thời gian tại một cửa hàng tiện lợi, được một khách hàng nữ mặc áo nỉ tiếp cận ở quầy thu ngân. Tên cô ấy là Megumi Hayashi - bạn cùng lớp của Yamamoto từ thời trung học và là cô gái xinh đẹp nhấ...</p>
-</div>
-
-      </article>
-    
-      
-      
-      <article class="manga-card manga-card--has-hover manga-card--list">
         <a href="/manga/209-ryoushin-no-shakkin-wo-katagawari-shite-morau-jouken-wa-nihon-ichi-kawaii-joshikousei-to-issho-ni-kurasu-koto-deshita">
           <div class="cover " >
             
@@ -3409,8 +3409,8 @@
             
             <h3 title="Ryoushin no Shakkin wo Katagawari shite morau Jouken wa Nihon Ichi Kawaii Joshikousei to Issho ni Kurasu koto deshita">Ryoushin no Shakkin wo...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 5.919 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 243 lượt lưu</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 5.973 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 244 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 16 bình luận</span>
             </div>
           </div>
@@ -3476,7 +3476,7 @@
             
             <h3 title="Sau Khi Tình Cờ Giúp Đỡ Một Bé Gái Lạc Đường, Nàng Mỹ Nữ Du Học Sinh Nhà Bên Thường Xuyên Lui Tới Căn Hộ Của Tôi">Sau Khi Tình Cờ...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 9.198 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 9.205 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 315 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 55 bình luận</span>
             </div>
@@ -3543,7 +3543,7 @@
             
             <h3 title="Câu truyện trả thù huy hoàng của nữ phản diện siêu cấp &#34;gian lận&#34;">Câu truyện trả thù...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.939 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.943 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 92 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 15 bình luận</span>
             </div>
@@ -3610,7 +3610,7 @@
             
             <h3 title="Rekishi ni Nokoru Akujo ni naru zo Akuyaku Reijou ni naru hodo Ouji no Dekiai wa Kasoku suru you desu!">Rekishi ni Nokoru Akujo...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 5.217 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 5.220 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 129 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 18 bình luận</span>
             </div>
@@ -3744,7 +3744,7 @@
             
             <h3 title="Đi chơi cùng nữ game thủ">Đi chơi cùng nữ...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 70.483 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 70.486 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 268 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 294 bình luận</span>
             </div>
@@ -3811,7 +3811,7 @@
             
             <h3 title="Luyến Thực Nữ">Luyến Thực Nữ</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 16.450 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 16.468 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 347 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 91 bình luận</span>
             </div>
@@ -3878,7 +3878,7 @@
             
             <h3 title="Thánh nữ và nữ phản diện sẽ cùng nhau phá đảo Otome game!">Thánh nữ và nữ...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 203 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 204 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 45 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 11 bình luận</span>
             </div>
@@ -4012,7 +4012,7 @@
             
             <h3 title="Tôi Muốn Giúp Nữ Chính Thua Cuộc Chiến Thắng!!">Tôi Muốn Giúp Nữ...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 13.135 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 13.140 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 337 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 281 bình luận</span>
             </div>
@@ -4079,7 +4079,7 @@
             
             <h3 title="Uesugi-kun không muốn làm con gái nữa">Uesugi-kun không muốn là...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 110 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 112 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 31 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 6 bình luận</span>
             </div>
@@ -4146,7 +4146,7 @@
             
             <h3 title="Ma pháp &#34;thiếu nữ&#34; ♥ Mazoka">Ma pháp &#34;thiếu nữ&#34;...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.253 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.254 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 73 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 13 bình luận</span>
             </div>
@@ -4414,7 +4414,7 @@
             
             <h3 title="Danjohi 1:5 no Sekai demo Futsu ni Ikirareru to Omotta? ~ Geki Juu Kanjou na Kanojotachi ga Mujikaku Danshi ni Honrousaretara">Danjohi 1:5 no Sekai...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 7.708 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 7.732 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 385 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 80 bình luận</span>
             </div>
@@ -4481,7 +4481,7 @@
             
             <h3 title="Sakigake no Hana Miko">Sakigake no Hana Miko</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 935 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 941 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 80 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 9 bình luận</span>
             </div>
@@ -4620,5 +4620,5 @@
 
 
     </div>
-  <script nonce="6jJYQUOpCROBap97AXRu1wZE">(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.nonce='6jJYQUOpCROBap97AXRu1wZE';d.innerHTML="window.__CF$cv$params={r:'a2b9fcdec96d8523',t:'MTc4NjgxNTY2MQ=='};var a=document.createElement('script');a.nonce='6jJYQUOpCROBap97AXRu1wZE';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+  <script nonce="Lvm0eTnJ3DzP/rRBII6lhZop">(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.nonce='Lvm0eTnJ3DzP/rRBII6lhZop';d.innerHTML="window.__CF$cv$params={r:'a2bd1b9f88e4f4fc',t:'MTc4Njg0ODM3OA=='};var a=document.createElement('script');a.nonce='Lvm0eTnJ3DzP/rRBII6lhZop';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

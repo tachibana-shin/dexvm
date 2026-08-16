@@ -116,11 +116,34 @@ pub(super) fn rangeskt_down_to(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 pub(super) fn progression_step(vm: &mut Vm, args: &[JValue]) -> R {
-    let (first, last, _) = progression_bounds(vm, args[0])?;
+    let (first, last, old_step) = progression_bounds(vm, args[0])?;
+    let step = int_of(vm, args[1]);
+    if step <= 0 {
+        return Err(NatErr::Throw(vm.throwable_of(
+            "Ljava/lang/IllegalArgumentException;",
+            &format!("Step must be positive, was: {step}"),
+        )));
+    }
+    // Real Kotlin `IntProgression.step`: the direction follows the
+    // original progression and the last element is recomputed so the
+    // stepped progression covers only values reachable by the new step
+    // (e.g. `(0 until 20).step(5)` has last 15, not 19).
+    let step = if old_step > 0 { step } else { -step };
+    let new_last = if step > 0 {
+        if first >= last {
+            last
+        } else {
+            last - (last - first).rem_euclid(step)
+        }
+    } else if first <= last {
+        last
+    } else {
+        last + (first - last).rem_euclid(-step)
+    };
     alloc(
         vm,
         "Lkotlin/ranges/IntProgression;",
-        Native::IntProgression(first, last, int_of(vm, args[1])),
+        Native::IntProgression(first, new_last, step),
     )
 }
 

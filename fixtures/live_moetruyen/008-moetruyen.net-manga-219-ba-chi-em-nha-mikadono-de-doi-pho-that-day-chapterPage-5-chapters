@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   
-<style nonce="xPuHNwfKrfT6crULj3Fgf9w9">
+<style nonce="w8ymTXM091yHX2DTdUHZjei4">
   html[data-bfang-boot-loading="1"] {
     overflow: hidden;
   }
@@ -1375,7 +1375,7 @@
     }
   }
 </style>
-<script nonce="xPuHNwfKrfT6crULj3Fgf9w9">
+<script nonce="w8ymTXM091yHX2DTdUHZjei4">
   (() => {
     const initialKind = "";
     const id = "bfang-boot-skeleton";
@@ -1913,7 +1913,7 @@
 
   
 
-    <script nonce="xPuHNwfKrfT6crULj3Fgf9w9">
+    <script nonce="w8ymTXM091yHX2DTdUHZjei4">
     window.__SITE_CONFIG = {"branding":{"siteName":"Mòe Truyện","brandMark":"Mòe","brandSubmark":"Truyện","aboutNavLabel":"Về MoeTruyen","heroKicker":"Mòe Truyện Manga","updateTag":"MoeTruyen","footerYear":"2026","dmcaFooterHtml":""},"homepage":{"welcomeMessage":"Chào mừng bạn đến với Mòe Truyện.","introduction":"Mòe Truyện là cộng đồng truyện với hàng nghìn đầu truyện và chục nghìn chương truyện.","aboutTitle":"Về Mòe Truyện","foundedYear":"2026","contentStandardsTitle":"Tiêu chuẩn nội dung","contentStandards":["Chúng tôi chỉ đăng tải truyện tranh hoặc truyện chữ.","Các dự án được dịch thuật chủ yếu từ tiếng Anh hoặc tiếng Nhật."],"contactTitle":"Kênh liên hệ"},"contact":{"facebookUrl":"https://facebook.com/DongMoeReal","facebookLabel":"facebook.com/DongMoeReal","discordUrl":"https://discord.moetruyen.net/","discordLabel":"discord.moetruyen.net","emailAddress":"admin@mail.moetruyen.net","emailLabel":"admin@mail.moetruyen.net"},"seo":{"defaultDescription":"MoeTruyen - Đọc truyện online miễn phí, cập nhật nhanh manga, manhwa, manhua mới mỗi ngày.","homepageTitle":"MoeTruyen - Đọc truyện tranh online miễn phí","homepageDescription":"MoeTruyen là nơi đọc truyện online miễn phí, cập nhật nhanh truyện manga, manhwa, manhua mới nhất. Trải nghiệm mượt mà, cập nhật liên tục, không quảng cáo."},"admin":{"teamManageLabel":"Mòe Truyện Manage","adminLabel":"MoeTruyen Admin","loginNote":"Truy cập dành riêng cho Mòe Truyện."}};
     window.__AUTH = {"providers":{"google":true,"discord":true},"sessionVersion":"870e4e6ac354b20420fc2b8e"};
     window.__BFANG_ASSET_VERSION = "a792a7a93ee11a24";
@@ -1922,7 +1922,7 @@
     }
     window.__TURNSTILE = {"siteKey":"0x4AAAAAACa5nZookwpdTAxN"};
   </script>
-  <script nonce="xPuHNwfKrfT6crULj3Fgf9w9">
+  <script nonce="w8ymTXM091yHX2DTdUHZjei4">
     (() => {
       const root = document.documentElement;
       if (!root) return;
@@ -1983,7 +1983,7 @@
   
   
   
-  <script nonce="xPuHNwfKrfT6crULj3Fgf9w9">
+  <script nonce="w8ymTXM091yHX2DTdUHZjei4">
     (() => {
       const links = Array.from(document.querySelectorAll("link[data-head-async-style]"));
       if (!links.length) return;
@@ -2012,7 +2012,7 @@
   
 
   
-    <style nonce="xPuHNwfKrfT6crULj3Fgf9w9">
+    <style nonce="w8ymTXM091yHX2DTdUHZjei4">
       @view-transition { navigation: auto; }
       .site-header,
       .admin-header { view-transition-name: bfang-navigation-chrome; }
@@ -2022,7 +2022,7 @@
     </style>
   
   
-    <style nonce="xPuHNwfKrfT6crULj3Fgf9w9">
+    <style nonce="w8ymTXM091yHX2DTdUHZjei4">
       .cover--adult {
         position: relative;
       }
@@ -2056,7 +2056,7 @@
     
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-HJBTK1S4HZ"></script>
-  <script nonce="xPuHNwfKrfT6crULj3Fgf9w9">
+  <script nonce="w8ymTXM091yHX2DTdUHZjei4">
     window.dataLayer = window.dataLayer || [];
     function gtag() {
       dataLayer.push(arguments);
@@ -2322,7 +2322,7 @@
     
   </div>
 </header>
-<script nonce="xPuHNwfKrfT6crULj3Fgf9w9">
+<script nonce="w8ymTXM091yHX2DTdUHZjei4">
   (() => {
     const restoreBadge = (selector, storageKey) => {
       const badge = document.querySelector(selector);
@@ -2424,7 +2424,7 @@
                   <div class="manga-detail-stats-meta">
                     <span>
                       <i class="fa-regular fa-eye" aria-hidden="true"></i>
-                      165.589
+                      165.802
                     </span>
                     <span>
                       <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
@@ -2618,7 +2618,7 @@
                               
                             </span>
                           
-                          <span class="homepage-honor-card__meta manga-translation-team-card__meta" title="132.128 lượt xem">
+                          <span class="homepage-honor-card__meta manga-translation-team-card__meta" title="132.476 lượt xem">
                             <i class="fa-regular fa-eye" aria-hidden="true"></i>
                             132K lượt xem
                           </span>
@@ -2754,7 +2754,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      554
+                                                      555
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -2792,7 +2792,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                554 lượt xem
+                                                555 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -2847,7 +2847,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      558
+                                                      559
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -2885,7 +2885,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                558 lượt xem
+                                                559 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -2940,7 +2940,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      582
+                                                      583
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -2978,7 +2978,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                582 lượt xem
+                                                583 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3033,7 +3033,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      587
+                                                      588
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3071,7 +3071,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                587 lượt xem
+                                                588 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3126,7 +3126,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      593
+                                                      594
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3164,7 +3164,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                593 lượt xem
+                                                594 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3219,7 +3219,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      568
+                                                      569
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3257,7 +3257,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                568 lượt xem
+                                                569 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3312,7 +3312,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      564
+                                                      565
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3350,7 +3350,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                564 lượt xem
+                                                565 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3405,7 +3405,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      577
+                                                      578
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3443,7 +3443,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                577 lượt xem
+                                                578 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3498,7 +3498,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      568
+                                                      569
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3536,7 +3536,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                568 lượt xem
+                                                569 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3591,7 +3591,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      587
+                                                      588
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3629,7 +3629,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                587 lượt xem
+                                                588 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3684,7 +3684,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      582
+                                                      583
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3722,7 +3722,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                582 lượt xem
+                                                583 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3777,7 +3777,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      600
+                                                      601
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3815,7 +3815,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                600 lượt xem
+                                                601 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3870,7 +3870,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      591
+                                                      593
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3908,7 +3908,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                591 lượt xem
+                                                593 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3963,7 +3963,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      632
+                                                      634
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -4001,7 +4001,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                632 lượt xem
+                                                634 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -4056,7 +4056,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      597
+                                                      599
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -4094,7 +4094,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                597 lượt xem
+                                                599 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -4149,7 +4149,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      601
+                                                      603
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -4187,7 +4187,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                601 lượt xem
+                                                603 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -4215,378 +4215,6 @@
                                                   <span class="chapter-sep" aria-hidden="true">-</span>
                                                   <span class="chapter-title" title="Ghi chép của Yuu">
                                                     Ghi chép của Yuu
-                                                  </span>
-                                                  
-                                                     
-                                                         
-                                                         
-                                            </div>
-                                            
-                                              
-                                              
-                                                <div class="chapter-subrow" title="Thông tin chương">
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <circle cx="12" cy="8" r="4" />
-                                                    <path d="M4 20c1.6-3.5 5-5 8-5s6.4 1.5 8 5" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text">
-                                                    Shirotako Translation
-                                                  </span>
-                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <path
-                                                      d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
-                                                    <circle cx="12" cy="12" r="2.9" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text chapter-sub-metric">
-                                                    <span class="chapter-sub-value">
-                                                      610
-                                                    </span>
-                                                    <span class="chapter-sub-label">lượt xem</span>
-                                                  </span>
-                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <path
-                                                      d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v5A3.5 3.5 0 0 1 16.5 16H9l-4.2 3v-3.1A3.5 3.5 0 0 1 4 12.5v-5Z" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text chapter-sub-metric">
-                                                    <span class="chapter-sub-value">
-                                                      0
-                                                    </span>
-                                                    <span class="chapter-sub-label">bình luận</span>
-                                                  </span>
-                                                </div>
-                                          </div>
-                                          <div class="chapter-meta">
-                                            <span class="chapter-time" title="Cập nhật 23/03/2026">
-                                              <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                <circle cx="12" cy="12" r="9" />
-                                                <path d="M12 7v5l3 2" />
-                                              </svg>
-                                              4 tháng trước
-                                            </span>
-                                            <span class="chapter-views" title="Lượt xem chương">
-                                              <span class="view-eye" aria-hidden="true">
-                                                <svg class="view-eye-icon" viewBox="0 0 24 24" fill="none"
-                                                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                                                  stroke-linejoin="round" aria-hidden="true">
-                                                  <path
-                                                    d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
-                                                  <circle cx="12" cy="12" r="2.9" />
-                                                </svg>
-                                              </span>
-                                              <span>
-                                                610 lượt xem
-                                              </span>
-                                            </span>
-                                          </div>
-                                        </a>
-                                      </li>
-                                      
-                                
-                                  
-                                    
-                                      <li class="chapter" data-chapter-id="7499">
-                                        <a class="chapter-link"
-                                          href="/manga/219-ba-chi-em-nha-mikadono-de-doi-pho-that-day/chapters/78"
-                                          data-chapter-id="7499"
-                                          data-chapter-number="78"
-                                          data-manga-slug="219-ba-chi-em-nha-mikadono-de-doi-pho-that-day"
-                                          data-read-state="0"
-                                          aria-label="Xem Ch. 78">
-                                          <div class="chapter-main">
-                                            <div class="chapter-title-row">
-                                              <span class="chapter-num">
-                                                Ch. 78
-                                              </span>
-                                              
-                                                
-                                                  <span class="chapter-sep" aria-hidden="true">-</span>
-                                                  <span class="chapter-title" title="Chỉ cần nói ra thôi">
-                                                    Chỉ cần nói ra thôi
-                                                  </span>
-                                                  
-                                                     
-                                                         
-                                                         
-                                            </div>
-                                            
-                                              
-                                              
-                                                <div class="chapter-subrow" title="Thông tin chương">
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <circle cx="12" cy="8" r="4" />
-                                                    <path d="M4 20c1.6-3.5 5-5 8-5s6.4 1.5 8 5" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text">
-                                                    Shirotako Translation
-                                                  </span>
-                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <path
-                                                      d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
-                                                    <circle cx="12" cy="12" r="2.9" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text chapter-sub-metric">
-                                                    <span class="chapter-sub-value">
-                                                      613
-                                                    </span>
-                                                    <span class="chapter-sub-label">lượt xem</span>
-                                                  </span>
-                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <path
-                                                      d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v5A3.5 3.5 0 0 1 16.5 16H9l-4.2 3v-3.1A3.5 3.5 0 0 1 4 12.5v-5Z" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text chapter-sub-metric">
-                                                    <span class="chapter-sub-value">
-                                                      3
-                                                    </span>
-                                                    <span class="chapter-sub-label">bình luận</span>
-                                                  </span>
-                                                </div>
-                                          </div>
-                                          <div class="chapter-meta">
-                                            <span class="chapter-time" title="Cập nhật 23/03/2026">
-                                              <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                <circle cx="12" cy="12" r="9" />
-                                                <path d="M12 7v5l3 2" />
-                                              </svg>
-                                              4 tháng trước
-                                            </span>
-                                            <span class="chapter-views" title="Lượt xem chương">
-                                              <span class="view-eye" aria-hidden="true">
-                                                <svg class="view-eye-icon" viewBox="0 0 24 24" fill="none"
-                                                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                                                  stroke-linejoin="round" aria-hidden="true">
-                                                  <path
-                                                    d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
-                                                  <circle cx="12" cy="12" r="2.9" />
-                                                </svg>
-                                              </span>
-                                              <span>
-                                                613 lượt xem
-                                              </span>
-                                            </span>
-                                          </div>
-                                        </a>
-                                      </li>
-                                      
-                                
-                                  
-                                    
-                                      <li class="chapter" data-chapter-id="7498">
-                                        <a class="chapter-link"
-                                          href="/manga/219-ba-chi-em-nha-mikadono-de-doi-pho-that-day/chapters/77"
-                                          data-chapter-id="7498"
-                                          data-chapter-number="77"
-                                          data-manga-slug="219-ba-chi-em-nha-mikadono-de-doi-pho-that-day"
-                                          data-read-state="0"
-                                          aria-label="Xem Ch. 77">
-                                          <div class="chapter-main">
-                                            <div class="chapter-title-row">
-                                              <span class="chapter-num">
-                                                Ch. 77
-                                              </span>
-                                              
-                                                
-                                                  <span class="chapter-sep" aria-hidden="true">-</span>
-                                                  <span class="chapter-title" title="Vũ khí sẵn sàng">
-                                                    Vũ khí sẵn sàng
-                                                  </span>
-                                                  
-                                                     
-                                                         
-                                                         
-                                            </div>
-                                            
-                                              
-                                              
-                                                <div class="chapter-subrow" title="Thông tin chương">
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <circle cx="12" cy="8" r="4" />
-                                                    <path d="M4 20c1.6-3.5 5-5 8-5s6.4 1.5 8 5" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text">
-                                                    Shirotako Translation
-                                                  </span>
-                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <path
-                                                      d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
-                                                    <circle cx="12" cy="12" r="2.9" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text chapter-sub-metric">
-                                                    <span class="chapter-sub-value">
-                                                      609
-                                                    </span>
-                                                    <span class="chapter-sub-label">lượt xem</span>
-                                                  </span>
-                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <path
-                                                      d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v5A3.5 3.5 0 0 1 16.5 16H9l-4.2 3v-3.1A3.5 3.5 0 0 1 4 12.5v-5Z" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text chapter-sub-metric">
-                                                    <span class="chapter-sub-value">
-                                                      1
-                                                    </span>
-                                                    <span class="chapter-sub-label">bình luận</span>
-                                                  </span>
-                                                </div>
-                                          </div>
-                                          <div class="chapter-meta">
-                                            <span class="chapter-time" title="Cập nhật 23/03/2026">
-                                              <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                <circle cx="12" cy="12" r="9" />
-                                                <path d="M12 7v5l3 2" />
-                                              </svg>
-                                              4 tháng trước
-                                            </span>
-                                            <span class="chapter-views" title="Lượt xem chương">
-                                              <span class="view-eye" aria-hidden="true">
-                                                <svg class="view-eye-icon" viewBox="0 0 24 24" fill="none"
-                                                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                                                  stroke-linejoin="round" aria-hidden="true">
-                                                  <path
-                                                    d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
-                                                  <circle cx="12" cy="12" r="2.9" />
-                                                </svg>
-                                              </span>
-                                              <span>
-                                                609 lượt xem
-                                              </span>
-                                            </span>
-                                          </div>
-                                        </a>
-                                      </li>
-                                      
-                                
-                                  
-                                    
-                                      <li class="chapter" data-chapter-id="7497">
-                                        <a class="chapter-link"
-                                          href="/manga/219-ba-chi-em-nha-mikadono-de-doi-pho-that-day/chapters/76.5"
-                                          data-chapter-id="7497"
-                                          data-chapter-number="76.5"
-                                          data-manga-slug="219-ba-chi-em-nha-mikadono-de-doi-pho-that-day"
-                                          data-read-state="0"
-                                          aria-label="Xem Ch. 76.5">
-                                          <div class="chapter-main">
-                                            <div class="chapter-title-row">
-                                              <span class="chapter-num">
-                                                Ch. 76.5
-                                              </span>
-                                              
-                                                
-                                                  <span class="chapter-sep" aria-hidden="true">-</span>
-                                                  <span class="chapter-title" title="Phụ chương">
-                                                    Phụ chương
-                                                  </span>
-                                                  
-                                                     
-                                                         
-                                                         
-                                            </div>
-                                            
-                                              
-                                              
-                                                <div class="chapter-subrow" title="Thông tin chương">
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <circle cx="12" cy="8" r="4" />
-                                                    <path d="M4 20c1.6-3.5 5-5 8-5s6.4 1.5 8 5" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text">
-                                                    Shirotako Translation
-                                                  </span>
-                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <path
-                                                      d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
-                                                    <circle cx="12" cy="12" r="2.9" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text chapter-sub-metric">
-                                                    <span class="chapter-sub-value">
-                                                      512
-                                                    </span>
-                                                    <span class="chapter-sub-label">lượt xem</span>
-                                                  </span>
-                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
-                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                    <path
-                                                      d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v5A3.5 3.5 0 0 1 16.5 16H9l-4.2 3v-3.1A3.5 3.5 0 0 1 4 12.5v-5Z" />
-                                                  </svg>
-                                                  <span class="chapter-sub-text chapter-sub-metric">
-                                                    <span class="chapter-sub-value">
-                                                      1
-                                                    </span>
-                                                    <span class="chapter-sub-label">bình luận</span>
-                                                  </span>
-                                                </div>
-                                          </div>
-                                          <div class="chapter-meta">
-                                            <span class="chapter-time" title="Cập nhật 23/03/2026">
-                                              <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                <circle cx="12" cy="12" r="9" />
-                                                <path d="M12 7v5l3 2" />
-                                              </svg>
-                                              4 tháng trước
-                                            </span>
-                                            <span class="chapter-views" title="Lượt xem chương">
-                                              <span class="view-eye" aria-hidden="true">
-                                                <svg class="view-eye-icon" viewBox="0 0 24 24" fill="none"
-                                                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                                                  stroke-linejoin="round" aria-hidden="true">
-                                                  <path
-                                                    d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
-                                                  <circle cx="12" cy="12" r="2.9" />
-                                                </svg>
-                                              </span>
-                                              <span>
-                                                512 lượt xem
-                                              </span>
-                                            </span>
-                                          </div>
-                                        </a>
-                                      </li>
-                                      
-                                
-                                  
-                                    
-                                      <li class="chapter" data-chapter-id="7495">
-                                        <a class="chapter-link"
-                                          href="/manga/219-ba-chi-em-nha-mikadono-de-doi-pho-that-day/chapters/76"
-                                          data-chapter-id="7495"
-                                          data-chapter-number="76"
-                                          data-manga-slug="219-ba-chi-em-nha-mikadono-de-doi-pho-that-day"
-                                          data-read-state="0"
-                                          aria-label="Xem Ch. 76">
-                                          <div class="chapter-main">
-                                            <div class="chapter-title-row">
-                                              <span class="chapter-num">
-                                                Ch. 76
-                                              </span>
-                                              
-                                                
-                                                  <span class="chapter-sep" aria-hidden="true">-</span>
-                                                  <span class="chapter-title" title="Kỳ nghỉ hè tại hòn đảo phía Nam">
-                                                    Kỳ nghỉ hè tại hòn đảo phía Nam
                                                   </span>
                                                   
                                                      
@@ -4653,6 +4281,378 @@
                                               </span>
                                               <span>
                                                 612 lượt xem
+                                              </span>
+                                            </span>
+                                          </div>
+                                        </a>
+                                      </li>
+                                      
+                                
+                                  
+                                    
+                                      <li class="chapter" data-chapter-id="7499">
+                                        <a class="chapter-link"
+                                          href="/manga/219-ba-chi-em-nha-mikadono-de-doi-pho-that-day/chapters/78"
+                                          data-chapter-id="7499"
+                                          data-chapter-number="78"
+                                          data-manga-slug="219-ba-chi-em-nha-mikadono-de-doi-pho-that-day"
+                                          data-read-state="0"
+                                          aria-label="Xem Ch. 78">
+                                          <div class="chapter-main">
+                                            <div class="chapter-title-row">
+                                              <span class="chapter-num">
+                                                Ch. 78
+                                              </span>
+                                              
+                                                
+                                                  <span class="chapter-sep" aria-hidden="true">-</span>
+                                                  <span class="chapter-title" title="Chỉ cần nói ra thôi">
+                                                    Chỉ cần nói ra thôi
+                                                  </span>
+                                                  
+                                                     
+                                                         
+                                                         
+                                            </div>
+                                            
+                                              
+                                              
+                                                <div class="chapter-subrow" title="Thông tin chương">
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <circle cx="12" cy="8" r="4" />
+                                                    <path d="M4 20c1.6-3.5 5-5 8-5s6.4 1.5 8 5" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text">
+                                                    Shirotako Translation
+                                                  </span>
+                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <path
+                                                      d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
+                                                    <circle cx="12" cy="12" r="2.9" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text chapter-sub-metric">
+                                                    <span class="chapter-sub-value">
+                                                      614
+                                                    </span>
+                                                    <span class="chapter-sub-label">lượt xem</span>
+                                                  </span>
+                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <path
+                                                      d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v5A3.5 3.5 0 0 1 16.5 16H9l-4.2 3v-3.1A3.5 3.5 0 0 1 4 12.5v-5Z" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text chapter-sub-metric">
+                                                    <span class="chapter-sub-value">
+                                                      3
+                                                    </span>
+                                                    <span class="chapter-sub-label">bình luận</span>
+                                                  </span>
+                                                </div>
+                                          </div>
+                                          <div class="chapter-meta">
+                                            <span class="chapter-time" title="Cập nhật 23/03/2026">
+                                              <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path d="M12 7v5l3 2" />
+                                              </svg>
+                                              4 tháng trước
+                                            </span>
+                                            <span class="chapter-views" title="Lượt xem chương">
+                                              <span class="view-eye" aria-hidden="true">
+                                                <svg class="view-eye-icon" viewBox="0 0 24 24" fill="none"
+                                                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                                                  stroke-linejoin="round" aria-hidden="true">
+                                                  <path
+                                                    d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
+                                                  <circle cx="12" cy="12" r="2.9" />
+                                                </svg>
+                                              </span>
+                                              <span>
+                                                614 lượt xem
+                                              </span>
+                                            </span>
+                                          </div>
+                                        </a>
+                                      </li>
+                                      
+                                
+                                  
+                                    
+                                      <li class="chapter" data-chapter-id="7498">
+                                        <a class="chapter-link"
+                                          href="/manga/219-ba-chi-em-nha-mikadono-de-doi-pho-that-day/chapters/77"
+                                          data-chapter-id="7498"
+                                          data-chapter-number="77"
+                                          data-manga-slug="219-ba-chi-em-nha-mikadono-de-doi-pho-that-day"
+                                          data-read-state="0"
+                                          aria-label="Xem Ch. 77">
+                                          <div class="chapter-main">
+                                            <div class="chapter-title-row">
+                                              <span class="chapter-num">
+                                                Ch. 77
+                                              </span>
+                                              
+                                                
+                                                  <span class="chapter-sep" aria-hidden="true">-</span>
+                                                  <span class="chapter-title" title="Vũ khí sẵn sàng">
+                                                    Vũ khí sẵn sàng
+                                                  </span>
+                                                  
+                                                     
+                                                         
+                                                         
+                                            </div>
+                                            
+                                              
+                                              
+                                                <div class="chapter-subrow" title="Thông tin chương">
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <circle cx="12" cy="8" r="4" />
+                                                    <path d="M4 20c1.6-3.5 5-5 8-5s6.4 1.5 8 5" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text">
+                                                    Shirotako Translation
+                                                  </span>
+                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <path
+                                                      d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
+                                                    <circle cx="12" cy="12" r="2.9" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text chapter-sub-metric">
+                                                    <span class="chapter-sub-value">
+                                                      610
+                                                    </span>
+                                                    <span class="chapter-sub-label">lượt xem</span>
+                                                  </span>
+                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <path
+                                                      d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v5A3.5 3.5 0 0 1 16.5 16H9l-4.2 3v-3.1A3.5 3.5 0 0 1 4 12.5v-5Z" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text chapter-sub-metric">
+                                                    <span class="chapter-sub-value">
+                                                      1
+                                                    </span>
+                                                    <span class="chapter-sub-label">bình luận</span>
+                                                  </span>
+                                                </div>
+                                          </div>
+                                          <div class="chapter-meta">
+                                            <span class="chapter-time" title="Cập nhật 23/03/2026">
+                                              <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path d="M12 7v5l3 2" />
+                                              </svg>
+                                              4 tháng trước
+                                            </span>
+                                            <span class="chapter-views" title="Lượt xem chương">
+                                              <span class="view-eye" aria-hidden="true">
+                                                <svg class="view-eye-icon" viewBox="0 0 24 24" fill="none"
+                                                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                                                  stroke-linejoin="round" aria-hidden="true">
+                                                  <path
+                                                    d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
+                                                  <circle cx="12" cy="12" r="2.9" />
+                                                </svg>
+                                              </span>
+                                              <span>
+                                                610 lượt xem
+                                              </span>
+                                            </span>
+                                          </div>
+                                        </a>
+                                      </li>
+                                      
+                                
+                                  
+                                    
+                                      <li class="chapter" data-chapter-id="7497">
+                                        <a class="chapter-link"
+                                          href="/manga/219-ba-chi-em-nha-mikadono-de-doi-pho-that-day/chapters/76.5"
+                                          data-chapter-id="7497"
+                                          data-chapter-number="76.5"
+                                          data-manga-slug="219-ba-chi-em-nha-mikadono-de-doi-pho-that-day"
+                                          data-read-state="0"
+                                          aria-label="Xem Ch. 76.5">
+                                          <div class="chapter-main">
+                                            <div class="chapter-title-row">
+                                              <span class="chapter-num">
+                                                Ch. 76.5
+                                              </span>
+                                              
+                                                
+                                                  <span class="chapter-sep" aria-hidden="true">-</span>
+                                                  <span class="chapter-title" title="Phụ chương">
+                                                    Phụ chương
+                                                  </span>
+                                                  
+                                                     
+                                                         
+                                                         
+                                            </div>
+                                            
+                                              
+                                              
+                                                <div class="chapter-subrow" title="Thông tin chương">
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <circle cx="12" cy="8" r="4" />
+                                                    <path d="M4 20c1.6-3.5 5-5 8-5s6.4 1.5 8 5" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text">
+                                                    Shirotako Translation
+                                                  </span>
+                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <path
+                                                      d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
+                                                    <circle cx="12" cy="12" r="2.9" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text chapter-sub-metric">
+                                                    <span class="chapter-sub-value">
+                                                      513
+                                                    </span>
+                                                    <span class="chapter-sub-label">lượt xem</span>
+                                                  </span>
+                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <path
+                                                      d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v5A3.5 3.5 0 0 1 16.5 16H9l-4.2 3v-3.1A3.5 3.5 0 0 1 4 12.5v-5Z" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text chapter-sub-metric">
+                                                    <span class="chapter-sub-value">
+                                                      1
+                                                    </span>
+                                                    <span class="chapter-sub-label">bình luận</span>
+                                                  </span>
+                                                </div>
+                                          </div>
+                                          <div class="chapter-meta">
+                                            <span class="chapter-time" title="Cập nhật 23/03/2026">
+                                              <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path d="M12 7v5l3 2" />
+                                              </svg>
+                                              4 tháng trước
+                                            </span>
+                                            <span class="chapter-views" title="Lượt xem chương">
+                                              <span class="view-eye" aria-hidden="true">
+                                                <svg class="view-eye-icon" viewBox="0 0 24 24" fill="none"
+                                                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                                                  stroke-linejoin="round" aria-hidden="true">
+                                                  <path
+                                                    d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
+                                                  <circle cx="12" cy="12" r="2.9" />
+                                                </svg>
+                                              </span>
+                                              <span>
+                                                513 lượt xem
+                                              </span>
+                                            </span>
+                                          </div>
+                                        </a>
+                                      </li>
+                                      
+                                
+                                  
+                                    
+                                      <li class="chapter" data-chapter-id="7495">
+                                        <a class="chapter-link"
+                                          href="/manga/219-ba-chi-em-nha-mikadono-de-doi-pho-that-day/chapters/76"
+                                          data-chapter-id="7495"
+                                          data-chapter-number="76"
+                                          data-manga-slug="219-ba-chi-em-nha-mikadono-de-doi-pho-that-day"
+                                          data-read-state="0"
+                                          aria-label="Xem Ch. 76">
+                                          <div class="chapter-main">
+                                            <div class="chapter-title-row">
+                                              <span class="chapter-num">
+                                                Ch. 76
+                                              </span>
+                                              
+                                                
+                                                  <span class="chapter-sep" aria-hidden="true">-</span>
+                                                  <span class="chapter-title" title="Kỳ nghỉ hè tại hòn đảo phía Nam">
+                                                    Kỳ nghỉ hè tại hòn đảo phía Nam
+                                                  </span>
+                                                  
+                                                     
+                                                         
+                                                         
+                                            </div>
+                                            
+                                              
+                                              
+                                                <div class="chapter-subrow" title="Thông tin chương">
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <circle cx="12" cy="8" r="4" />
+                                                    <path d="M4 20c1.6-3.5 5-5 8-5s6.4 1.5 8 5" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text">
+                                                    Shirotako Translation
+                                                  </span>
+                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <path
+                                                      d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
+                                                    <circle cx="12" cy="12" r="2.9" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text chapter-sub-metric">
+                                                    <span class="chapter-sub-value">
+                                                      613
+                                                    </span>
+                                                    <span class="chapter-sub-label">lượt xem</span>
+                                                  </span>
+                                                  <span class="chapter-sub-dot" aria-hidden="true">•</span>
+                                                  <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                    <path
+                                                      d="M4 7.5A3.5 3.5 0 0 1 7.5 4h9A3.5 3.5 0 0 1 20 7.5v5A3.5 3.5 0 0 1 16.5 16H9l-4.2 3v-3.1A3.5 3.5 0 0 1 4 12.5v-5Z" />
+                                                  </svg>
+                                                  <span class="chapter-sub-text chapter-sub-metric">
+                                                    <span class="chapter-sub-value">
+                                                      0
+                                                    </span>
+                                                    <span class="chapter-sub-label">bình luận</span>
+                                                  </span>
+                                                </div>
+                                          </div>
+                                          <div class="chapter-meta">
+                                            <span class="chapter-time" title="Cập nhật 23/03/2026">
+                                              <svg class="chapter-icon" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path d="M12 7v5l3 2" />
+                                              </svg>
+                                              4 tháng trước
+                                            </span>
+                                            <span class="chapter-views" title="Lượt xem chương">
+                                              <span class="view-eye" aria-hidden="true">
+                                                <svg class="view-eye-icon" viewBox="0 0 24 24" fill="none"
+                                                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                                                  stroke-linejoin="round" aria-hidden="true">
+                                                  <path
+                                                    d="M2.2 12c1.9-3.6 5.6-6 9.8-6s7.9 2.4 9.8 6c-1.9 3.6-5.6 6-9.8 6s-7.9-2.4-9.8-6Z" />
+                                                  <circle cx="12" cy="12" r="2.9" />
+                                                </svg>
+                                              </span>
+                                              <span>
+                                                613 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -5574,14 +5574,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1607-vi-ly-do-nao-do-ma-nang-gyaru-cu-bam-lay-toi" aria-label="&#272;&#7885;c Vì lý do nào đó mà nàng gyaru cứ bám lấy tôi!">
+  <a class="manga-related-card__link" href="/manga/187-sekimen-shinaide-sekime-san" aria-label="&#272;&#7885;c Sekimen Shinaide Sekime-san">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1607-vi-ly-do-nao-do-ma-nang-gyaru-cu-bam-lay-toi-sm.webp?t=1782363748014"
-          srcset="https://u.truyen.moe/uploads/covers/1607-vi-ly-do-nao-do-ma-nang-gyaru-cu-bam-lay-toi-sm.webp?t=1782363748014 132w, https://u.truyen.moe/uploads/covers/1607-vi-ly-do-nao-do-ma-nang-gyaru-cu-bam-lay-toi-md.webp?t=1782363748014 262w"
+          src="https://u.truyen.moe/uploads/covers/187-sekimen-shinaide-sekime-san-sm.webp?t=1774199056223"
+          srcset="https://u.truyen.moe/uploads/covers/187-sekimen-shinaide-sekime-san-sm.webp?t=1774199056223 132w, https://u.truyen.moe/uploads/covers/187-sekimen-shinaide-sekime-san-md.webp?t=1774199056223 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Vì lý do nào đó mà nàng gyaru cứ bám lấy tôi!"
+          alt="B&#236;a Sekimen Shinaide Sekime-san"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5590,8 +5590,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Vì lý do nào đó mà nàng gyaru cứ bám lấy tôi!">
-      <span>Vì lý do nào đó mà nàng gyaru cứ bám lấy tôi!</span>
+    <h3 class="manga-related-card__title" title="Sekimen Shinaide Sekime-san">
+      <span>Sekimen Shinaide Sekime-san</span>
     </h3>
   </a>
 </article>
@@ -5599,14 +5599,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1294-servamp" aria-label="&#272;&#7885;c Servamp">
+  <a class="manga-related-card__link" href="/manga/1371-em-la-mua-xuan-nghiet-nga-cua-toi" aria-label="&#272;&#7885;c Em là mùa xuân nghiệt ngã của tôi">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1294-servamp-sm.webp?t=1779536830167"
-          srcset="https://u.truyen.moe/uploads/covers/1294-servamp-sm.webp?t=1779536830167 132w, https://u.truyen.moe/uploads/covers/1294-servamp-md.webp?t=1779536830167 262w"
+          src="https://u.truyen.moe/uploads/covers/1371-em-la-mua-xuan-nghiet-nga-cua-toi-sm.webp?t=1780309702521"
+          srcset="https://u.truyen.moe/uploads/covers/1371-em-la-mua-xuan-nghiet-nga-cua-toi-sm.webp?t=1780309702521 132w, https://u.truyen.moe/uploads/covers/1371-em-la-mua-xuan-nghiet-nga-cua-toi-md.webp?t=1780309702521 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Servamp"
+          alt="B&#236;a Em là mùa xuân nghiệt ngã của tôi"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5615,8 +5615,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Servamp">
-      <span>Servamp</span>
+    <h3 class="manga-related-card__title" title="Em là mùa xuân nghiệt ngã của tôi">
+      <span>Em là mùa xuân nghiệt ngã của tôi</span>
     </h3>
   </a>
 </article>
@@ -5624,14 +5624,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1906-co-hau-gai-nho" aria-label="&#272;&#7885;c Cô hầu gái nhỏ">
+  <a class="manga-related-card__link" href="/manga/1662-moi-tinh-dau-cua-toi-se-khong-thanh-hien-thuc" aria-label="&#272;&#7885;c Mối tình đầu của tôi sẽ không thành hiện thực">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1906-co-hau-gai-nho-sm.webp?t=1785770513682"
-          srcset="https://u.truyen.moe/uploads/covers/1906-co-hau-gai-nho-sm.webp?t=1785770513682 132w, https://u.truyen.moe/uploads/covers/1906-co-hau-gai-nho-md.webp?t=1785770513682 262w"
+          src="https://u.truyen.moe/uploads/covers/1662-moi-tinh-dau-cua-toi-se-khong-thanh-hien-thuc-sm.webp?t=1782807395582"
+          srcset="https://u.truyen.moe/uploads/covers/1662-moi-tinh-dau-cua-toi-se-khong-thanh-hien-thuc-sm.webp?t=1782807395582 132w, https://u.truyen.moe/uploads/covers/1662-moi-tinh-dau-cua-toi-se-khong-thanh-hien-thuc-md.webp?t=1782807395582 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Cô hầu gái nhỏ"
+          alt="B&#236;a Mối tình đầu của tôi sẽ không thành hiện thực"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5640,8 +5640,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Cô hầu gái nhỏ">
-      <span>Cô hầu gái nhỏ</span>
+    <h3 class="manga-related-card__title" title="Mối tình đầu của tôi sẽ không thành hiện thực">
+      <span>Mối tình đầu của tôi sẽ không thành hiện thực</span>
     </h3>
   </a>
 </article>
@@ -5649,14 +5649,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1795-tieu-thu-phan-dien-da-ga-vao-nha-mot-quy-toc-vo-danh-noi-bien-ai-hoa-ra-lai-la-mot-co-vo-hoan-hao" aria-label="&#272;&#7885;c Tiểu Thư Phản Diện Đã Gả Vào Nhà Một Quý Tộc Vô Danh Nơi Biên Ải, Hóa Ra Lại Là Một Cô Vợ Hoàn Hảo?">
+  <a class="manga-related-card__link" href="/manga/109-thinh-thich-moi-som-mai" aria-label="&#272;&#7885;c Thình thịch mỗi sớm mai">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1795-tieu-thu-phan-dien-da-ga-vao-nha-mot-quy-toc-vo-danh-noi-bien-ai-hoa-ra-lai-la-mot-co-vo-hoan-hao-sm.webp?t=1784740574655"
-          srcset="https://u.truyen.moe/uploads/covers/1795-tieu-thu-phan-dien-da-ga-vao-nha-mot-quy-toc-vo-danh-noi-bien-ai-hoa-ra-lai-la-mot-co-vo-hoan-hao-sm.webp?t=1784740574655 132w, https://u.truyen.moe/uploads/covers/1795-tieu-thu-phan-dien-da-ga-vao-nha-mot-quy-toc-vo-danh-noi-bien-ai-hoa-ra-lai-la-mot-co-vo-hoan-hao-md.webp?t=1784740574655 262w"
+          src="https://u.truyen.moe/uploads/covers/109-thinh-thich-moi-som-mai-sm.webp?t=1774170879047"
+          srcset="https://u.truyen.moe/uploads/covers/109-thinh-thich-moi-som-mai-sm.webp?t=1774170879047 132w, https://u.truyen.moe/uploads/covers/109-thinh-thich-moi-som-mai-md.webp?t=1774170879047 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Tiểu Thư Phản Diện Đã Gả Vào Nhà Một Quý Tộc Vô Danh Nơi Biên Ải, Hóa Ra Lại Là Một Cô Vợ Hoàn Hảo?"
+          alt="B&#236;a Thình thịch mỗi sớm mai"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5665,8 +5665,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Tiểu Thư Phản Diện Đã Gả Vào Nhà Một Quý Tộc Vô Danh Nơi Biên Ải, Hóa Ra Lại Là Một Cô Vợ Hoàn Hảo?">
-      <span>Tiểu Thư Phản Diện Đã Gả Vào Nhà Một Quý Tộc Vô Danh Nơi Biên Ải, Hóa Ra Lại Là Một Cô Vợ Hoàn Hảo?</span>
+    <h3 class="manga-related-card__title" title="Thình thịch mỗi sớm mai">
+      <span>Thình thịch mỗi sớm mai</span>
     </h3>
   </a>
 </article>
@@ -5674,14 +5674,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1514-komi-nu-than-so-giao-tiep" aria-label="&#272;&#7885;c Komi - Nữ thần sợ giao tiếp">
+  <a class="manga-related-card__link" href="/manga/108-co-nang-ao-dam-dang-khong-the-hoc-duoc" aria-label="&#272;&#7885;c Cô nàng Ao &#34;đảm đang&#34; không thể học được">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1514-komi-nu-than-so-giao-tiep-sm.webp?t=1781492836275"
-          srcset="https://u.truyen.moe/uploads/covers/1514-komi-nu-than-so-giao-tiep-sm.webp?t=1781492836275 132w, https://u.truyen.moe/uploads/covers/1514-komi-nu-than-so-giao-tiep-md.webp?t=1781492836275 262w"
+          src="https://u.truyen.moe/uploads/covers/108-co-nang-ao-dam-dang-khong-the-hoc-duoc-sm.webp?t=1774169937724"
+          srcset="https://u.truyen.moe/uploads/covers/108-co-nang-ao-dam-dang-khong-the-hoc-duoc-sm.webp?t=1774169937724 132w, https://u.truyen.moe/uploads/covers/108-co-nang-ao-dam-dang-khong-the-hoc-duoc-md.webp?t=1774169937724 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Komi - Nữ thần sợ giao tiếp"
+          alt="B&#236;a Cô nàng Ao &#34;đảm đang&#34; không thể học được"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5690,8 +5690,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Komi - Nữ thần sợ giao tiếp">
-      <span>Komi - Nữ thần sợ giao tiếp</span>
+    <h3 class="manga-related-card__title" title="Cô nàng Ao &#34;đảm đang&#34; không thể học được">
+      <span>Cô nàng Ao &#34;đảm đang&#34; không thể học được</span>
     </h3>
   </a>
 </article>
@@ -5699,14 +5699,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1049-so-nhat-ky-hoc-vien-housen" aria-label="&#272;&#7885;c Sổ nhật ký Học viện Housen">
+  <a class="manga-related-card__link" href="/manga/1571-hana-yori-dango-cafe-de-hanadan" aria-label="&#272;&#7885;c Hana Yori Dango: Cafe dé Hanadan">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1049-so-nhat-ky-hoc-vien-housen-sm.webp?t=1776149686527"
-          srcset="https://u.truyen.moe/uploads/covers/1049-so-nhat-ky-hoc-vien-housen-sm.webp?t=1776149686527 132w, https://u.truyen.moe/uploads/covers/1049-so-nhat-ky-hoc-vien-housen-md.webp?t=1776149686527 262w"
+          src="https://u.truyen.moe/uploads/covers/1571-hana-yori-dango-cafe-de-hanadan-sm.webp?t=1781924150000"
+          srcset="https://u.truyen.moe/uploads/covers/1571-hana-yori-dango-cafe-de-hanadan-sm.webp?t=1781924150000 132w, https://u.truyen.moe/uploads/covers/1571-hana-yori-dango-cafe-de-hanadan-md.webp?t=1781924150000 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Sổ nhật ký Học viện Housen"
+          alt="B&#236;a Hana Yori Dango: Cafe dé Hanadan"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5715,8 +5715,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Sổ nhật ký Học viện Housen">
-      <span>Sổ nhật ký Học viện Housen</span>
+    <h3 class="manga-related-card__title" title="Hana Yori Dango: Cafe dé Hanadan">
+      <span>Hana Yori Dango: Cafe dé Hanadan</span>
     </h3>
   </a>
 </article>
@@ -5724,14 +5724,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1826-pppppp" aria-label="&#272;&#7885;c PPPPPP">
+  <a class="manga-related-card__link" href="/manga/1727-disney-twisted-wonderland-truyen-tranh-tap-octavinelle" aria-label="&#272;&#7885;c Disney Twisted Wonderland: Truyện tranh — Tập Octavinelle">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1826-pppppp-sm.webp?t=1785346130894"
-          srcset="https://u.truyen.moe/uploads/covers/1826-pppppp-sm.webp?t=1785346130894 132w, https://u.truyen.moe/uploads/covers/1826-pppppp-md.webp?t=1785346130894 262w"
+          src="https://u.truyen.moe/uploads/covers/1727-disney-twisted-wonderland-truyen-tranh-tap-octavinelle-sm.webp?t=1783667028625"
+          srcset="https://u.truyen.moe/uploads/covers/1727-disney-twisted-wonderland-truyen-tranh-tap-octavinelle-sm.webp?t=1783667028625 132w, https://u.truyen.moe/uploads/covers/1727-disney-twisted-wonderland-truyen-tranh-tap-octavinelle-md.webp?t=1783667028625 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a PPPPPP"
+          alt="B&#236;a Disney Twisted Wonderland: Truyện tranh — Tập Octavinelle"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5740,8 +5740,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="PPPPPP">
-      <span>PPPPPP</span>
+    <h3 class="manga-related-card__title" title="Disney Twisted Wonderland: Truyện tranh — Tập Octavinelle">
+      <span>Disney Twisted Wonderland: Truyện tranh — Tập Octavinelle</span>
     </h3>
   </a>
 </article>
@@ -5749,14 +5749,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1310-tobioriru-chokuzen-no-doukyuusei-ni-sekkusu-shiyou-to-teianshite-mita" aria-label="&#272;&#7885;c Tobioriru Chokuzen no Doukyuusei ni &#34;Sekkusu Shiyou!&#34; to Teianshite Mita.">
+  <a class="manga-related-card__link" href="/manga/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the" aria-label="&#272;&#7885;c Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1310-tobioriru-chokuzen-no-doukyuusei-ni-sekkusu-shiyou-to-teianshite-mita-sm.webp?t=1779975124568"
-          srcset="https://u.truyen.moe/uploads/covers/1310-tobioriru-chokuzen-no-doukyuusei-ni-sekkusu-shiyou-to-teianshite-mita-sm.webp?t=1779975124568 132w, https://u.truyen.moe/uploads/covers/1310-tobioriru-chokuzen-no-doukyuusei-ni-sekkusu-shiyou-to-teianshite-mita-md.webp?t=1779975124568 262w"
+          src="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-sm.webp?t=1786697195997"
+          srcset="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-sm.webp?t=1786697195997 132w, https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-md.webp?t=1786697195997 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Tobioriru Chokuzen no Doukyuusei ni &#34;Sekkusu Shiyou!&#34; to Teianshite Mita."
+          alt="B&#236;a Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5765,8 +5765,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Tobioriru Chokuzen no Doukyuusei ni &#34;Sekkusu Shiyou!&#34; to Teianshite Mita.">
-      <span>Tobioriru Chokuzen no Doukyuusei ni &#34;Sekkusu Shiyou!&#34; to Teianshite Mita.</span>
+    <h3 class="manga-related-card__title" title="Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế">
+      <span>Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế</span>
     </h3>
   </a>
 </article>
@@ -5774,14 +5774,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1823-kushuku-gakkou-no-alice" aria-label="&#272;&#7885;c Kushuku Gakkou No Alice">
+  <a class="manga-related-card__link" href="/manga/1744-song-lai-tuoi-thanh-xuan-cuoc-song-thu-hai-ben-thieu-nu-tua-thien-than" aria-label="&#272;&#7885;c Sống Lại Tuổi Thanh Xuân: Cuộc Sống Thứ Hai Bên Thiếu Nữ Tựa Thiên Thần">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1823-kushuku-gakkou-no-alice-sm.webp?t=1785333591942"
-          srcset="https://u.truyen.moe/uploads/covers/1823-kushuku-gakkou-no-alice-sm.webp?t=1785333591942 132w, https://u.truyen.moe/uploads/covers/1823-kushuku-gakkou-no-alice-md.webp?t=1785333591942 262w"
+          src="https://u.truyen.moe/uploads/covers/1744-song-lai-tuoi-thanh-xuan-cuoc-song-thu-hai-ben-thieu-nu-tua-thien-than-sm.webp?t=1783829608573"
+          srcset="https://u.truyen.moe/uploads/covers/1744-song-lai-tuoi-thanh-xuan-cuoc-song-thu-hai-ben-thieu-nu-tua-thien-than-sm.webp?t=1783829608573 132w, https://u.truyen.moe/uploads/covers/1744-song-lai-tuoi-thanh-xuan-cuoc-song-thu-hai-ben-thieu-nu-tua-thien-than-md.webp?t=1783829608573 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Kushuku Gakkou No Alice"
+          alt="B&#236;a Sống Lại Tuổi Thanh Xuân: Cuộc Sống Thứ Hai Bên Thiếu Nữ Tựa Thiên Thần"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5790,8 +5790,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Kushuku Gakkou No Alice">
-      <span>Kushuku Gakkou No Alice</span>
+    <h3 class="manga-related-card__title" title="Sống Lại Tuổi Thanh Xuân: Cuộc Sống Thứ Hai Bên Thiếu Nữ Tựa Thiên Thần">
+      <span>Sống Lại Tuổi Thanh Xuân: Cuộc Sống Thứ Hai Bên Thiếu Nữ Tựa Thiên Thần</span>
     </h3>
   </a>
 </article>
@@ -5799,14 +5799,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1588-nu-sinh-tru-ta-akane" aria-label="&#272;&#7885;c Nữ sinh trừ tà Akane!">
+  <a class="manga-related-card__link" href="/manga/84-khi-toi-nuong-chieu-co-nang-kuuderella-nha-ben-cuoi-cung-thi-toi-da-dua-chia-khoa-nha-cho-co-ay" aria-label="&#272;&#7885;c Khi Tôi Nuông Chiều Cô Nàng Kuuderella Nhà Bên, Cuối Cùng Thì Tôi Đã Đưa Chìa Khóa Nhà Cho Cô Ấy">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1588-nu-sinh-tru-ta-akane-sm.webp?t=1782131907047"
-          srcset="https://u.truyen.moe/uploads/covers/1588-nu-sinh-tru-ta-akane-sm.webp?t=1782131907047 132w, https://u.truyen.moe/uploads/covers/1588-nu-sinh-tru-ta-akane-md.webp?t=1782131907047 262w"
+          src="https://u.truyen.moe/uploads/covers/84-khi-toi-nuong-chieu-co-nang-kuuderella-nha-ben-cuoi-cung-thi-toi-da-dua-chia-khoa-nha-cho-co-ay-sm.webp?t=1786196707311"
+          srcset="https://u.truyen.moe/uploads/covers/84-khi-toi-nuong-chieu-co-nang-kuuderella-nha-ben-cuoi-cung-thi-toi-da-dua-chia-khoa-nha-cho-co-ay-sm.webp?t=1786196707311 132w, https://u.truyen.moe/uploads/covers/84-khi-toi-nuong-chieu-co-nang-kuuderella-nha-ben-cuoi-cung-thi-toi-da-dua-chia-khoa-nha-cho-co-ay-md.webp?t=1786196707311 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Nữ sinh trừ tà Akane!"
+          alt="B&#236;a Khi Tôi Nuông Chiều Cô Nàng Kuuderella Nhà Bên, Cuối Cùng Thì Tôi Đã Đưa Chìa Khóa Nhà Cho Cô Ấy"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5815,8 +5815,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Nữ sinh trừ tà Akane!">
-      <span>Nữ sinh trừ tà Akane!</span>
+    <h3 class="manga-related-card__title" title="Khi Tôi Nuông Chiều Cô Nàng Kuuderella Nhà Bên, Cuối Cùng Thì Tôi Đã Đưa Chìa Khóa Nhà Cho Cô Ấy">
+      <span>Khi Tôi Nuông Chiều Cô Nàng Kuuderella Nhà Bên, Cuối Cùng Thì Tôi Đã Đưa Chìa Khóa Nhà Cho Cô Ấy</span>
     </h3>
   </a>
 </article>
@@ -5876,7 +5876,7 @@
                 </section>
                 
                   </main>
-                  <script nonce="xPuHNwfKrfT6crULj3Fgf9w9">
+                  <script nonce="w8ymTXM091yHX2DTdUHZjei4">
   (() => {
     const commentsRoot = document.querySelector("#comments");
     if (!commentsRoot) return;
@@ -5983,7 +5983,7 @@
       const script = document.createElement("script");
       script.src = scriptSrc;
       script.defer = true;
-      script.nonce = "xPuHNwfKrfT6crULj3Fgf9w9";
+      script.nonce = "w8ymTXM091yHX2DTdUHZjei4";
       script.addEventListener("load", () => {
         notifyReaderLayout("hydrate-loaded");
         markScriptReady();
@@ -6122,6 +6122,6 @@
 
 
                       </div>
-    <script nonce="xPuHNwfKrfT6crULj3Fgf9w9">(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.nonce='xPuHNwfKrfT6crULj3Fgf9w9';d.innerHTML="window.__CF$cv$params={r:'a2b9fcf0ee458523',t:'MTc4NjgxNTY2NA=='};var a=document.createElement('script');a.nonce='xPuHNwfKrfT6crULj3Fgf9w9';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    <script nonce="w8ymTXM091yHX2DTdUHZjei4">(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.nonce='w8ymTXM091yHX2DTdUHZjei4';d.innerHTML="window.__CF$cv$params={r:'a2bd1baec9a9f4fc',t:'MTc4Njg0ODM4MQ=='};var a=document.createElement('script');a.nonce='w8ymTXM091yHX2DTdUHZjei4';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 
   </html>

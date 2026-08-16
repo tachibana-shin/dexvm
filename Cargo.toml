@@ -1,6 +1,6 @@
 [package]
 name = "dexvm"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 description = "Minimal DEX (Dalvik bytecode) VM runtime in Rust, embeddable as a library and tuned for mihon/Tachiyomi (keiyoushi) manga extensions"
 keywords = ["dex", "dalvik", "android", "vm", "mihon"]

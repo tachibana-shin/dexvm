@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   
-<style nonce="k9w1YThPteWyfKvqOT070bG4">
+<style nonce="qsl7Xaqw+hXaTVeamM5VkRFw">
   html[data-bfang-boot-loading="1"] {
     overflow: hidden;
   }
@@ -1375,7 +1375,7 @@
     }
   }
 </style>
-<script nonce="k9w1YThPteWyfKvqOT070bG4">
+<script nonce="qsl7Xaqw+hXaTVeamM5VkRFw">
   (() => {
     const initialKind = "";
     const id = "bfang-boot-skeleton";
@@ -1875,29 +1875,29 @@
     <meta property="og:url" content="https://moetruyen.net/manga" />
   
   
-    <meta property="og:image" content="https://u.truyen.moe/uploads/covers/796-chao-mung-den-voi-nha-hang-cua-nhung-ke-bi-ruong-bo.webp" />
+    <meta property="og:image" content="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the.webp" />
   
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Đọc truyện tranh | Danh mục truyện tranh — Mòe Truyện" />
   <meta name="twitter:description" content="Mòe Truyện là kho đọc truyện tranh online miễn phí, cập nhật liên tục manga, manhwa, manhua mới nhất mỗi ngày." />
   
-    <meta name="twitter:image" content="https://u.truyen.moe/uploads/covers/796-chao-mung-den-voi-nha-hang-cua-nhung-ke-bi-ruong-bo.webp" />
+    <meta name="twitter:image" content="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the.webp" />
   
 
   
     
-      <script type="application/ld+json" nonce="k9w1YThPteWyfKvqOT070bG4">{"@context":"https://schema.org","@type":"Organization","@id":"https://moetruyen.net/#organization","name":"Mòe Truyện","url":"https://moetruyen.net/","logo":"https://moetruyen.net/logobfang.svg"}</script>
+      <script type="application/ld+json" nonce="qsl7Xaqw+hXaTVeamM5VkRFw">{"@context":"https://schema.org","@type":"Organization","@id":"https://moetruyen.net/#organization","name":"Mòe Truyện","url":"https://moetruyen.net/","logo":"https://moetruyen.net/logobfang.svg"}</script>
     
-      <script type="application/ld+json" nonce="k9w1YThPteWyfKvqOT070bG4">{"@context":"https://schema.org","@type":"WebSite","@id":"https://moetruyen.net/#website","name":"Mòe Truyện","url":"https://moetruyen.net/","inLanguage":"vi-VN","publisher":{"@id":"https://moetruyen.net/#organization"},"potentialAction":{"@type":"SearchAction","target":"https://moetruyen.net/manga?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
+      <script type="application/ld+json" nonce="qsl7Xaqw+hXaTVeamM5VkRFw">{"@context":"https://schema.org","@type":"WebSite","@id":"https://moetruyen.net/#website","name":"Mòe Truyện","url":"https://moetruyen.net/","inLanguage":"vi-VN","publisher":{"@id":"https://moetruyen.net/#organization"},"potentialAction":{"@type":"SearchAction","target":"https://moetruyen.net/manga?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
     
-      <script type="application/ld+json" nonce="k9w1YThPteWyfKvqOT070bG4">{"@context":"https://schema.org","@type":"CollectionPage","@id":"https://moetruyen.net/manga#webpage","url":"https://moetruyen.net/manga","name":"Đọc truyện tranh | Danh mục truyện tranh","description":"Mòe Truyện là kho đọc truyện tranh online miễn phí, cập nhật liên tục manga, manhwa, manhua mới nhất mỗi ngày.","inLanguage":"vi-VN","isPartOf":{"@id":"https://moetruyen.net/#website"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://u.truyen.moe/uploads/covers/796-chao-mung-den-voi-nha-hang-cua-nhung-ke-bi-ruong-bo.webp"},"keywords":"đọc truyện tranh, đọc truyện tranh online, manga tiếng Việt, đọc manga miễn phí, truyện tranh mới cập nhật, manga hot, truyện tranh full chapter, truyện tranh hành động, truyện tranh romance, truyện tranh drama, truyện tranh school life, nhóm dịch truyện tranh, Mòe Truyện, đọc truyện tranh theo thể loại, thư viện manga, lọc thể loại manga"}</script>
+      <script type="application/ld+json" nonce="qsl7Xaqw+hXaTVeamM5VkRFw">{"@context":"https://schema.org","@type":"CollectionPage","@id":"https://moetruyen.net/manga#webpage","url":"https://moetruyen.net/manga","name":"Đọc truyện tranh | Danh mục truyện tranh","description":"Mòe Truyện là kho đọc truyện tranh online miễn phí, cập nhật liên tục manga, manhwa, manhua mới nhất mỗi ngày.","inLanguage":"vi-VN","isPartOf":{"@id":"https://moetruyen.net/#website"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the.webp"},"keywords":"đọc truyện tranh, đọc truyện tranh online, manga tiếng Việt, đọc manga miễn phí, truyện tranh mới cập nhật, manga hot, truyện tranh full chapter, truyện tranh hành động, truyện tranh romance, truyện tranh drama, truyện tranh school life, nhóm dịch truyện tranh, Mòe Truyện, đọc truyện tranh theo thể loại, thư viện manga, lọc thể loại manga"}</script>
     
-      <script type="application/ld+json" nonce="k9w1YThPteWyfKvqOT070bG4">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Trang chủ","item":"https://moetruyen.net/"},{"@type":"ListItem","position":2,"name":"Truyện tranh","item":"https://moetruyen.net/manga"}]}</script>
+      <script type="application/ld+json" nonce="qsl7Xaqw+hXaTVeamM5VkRFw">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Trang chủ","item":"https://moetruyen.net/"},{"@type":"ListItem","position":2,"name":"Truyện tranh","item":"https://moetruyen.net/manga"}]}</script>
     
   
 
-    <script nonce="k9w1YThPteWyfKvqOT070bG4">
+    <script nonce="qsl7Xaqw+hXaTVeamM5VkRFw">
     window.__SITE_CONFIG = {"branding":{"siteName":"Mòe Truyện","brandMark":"Mòe","brandSubmark":"Truyện","aboutNavLabel":"Về MoeTruyen","heroKicker":"Mòe Truyện Manga","updateTag":"MoeTruyen","footerYear":"2026","dmcaFooterHtml":""},"homepage":{"welcomeMessage":"Chào mừng bạn đến với Mòe Truyện.","introduction":"Mòe Truyện là cộng đồng truyện với hàng nghìn đầu truyện và chục nghìn chương truyện.","aboutTitle":"Về Mòe Truyện","foundedYear":"2026","contentStandardsTitle":"Tiêu chuẩn nội dung","contentStandards":["Chúng tôi chỉ đăng tải truyện tranh hoặc truyện chữ.","Các dự án được dịch thuật chủ yếu từ tiếng Anh hoặc tiếng Nhật."],"contactTitle":"Kênh liên hệ"},"contact":{"facebookUrl":"https://facebook.com/DongMoeReal","facebookLabel":"facebook.com/DongMoeReal","discordUrl":"https://discord.moetruyen.net/","discordLabel":"discord.moetruyen.net","emailAddress":"admin@mail.moetruyen.net","emailLabel":"admin@mail.moetruyen.net"},"seo":{"defaultDescription":"MoeTruyen - Đọc truyện online miễn phí, cập nhật nhanh manga, manhwa, manhua mới mỗi ngày.","homepageTitle":"MoeTruyen - Đọc truyện tranh online miễn phí","homepageDescription":"MoeTruyen là nơi đọc truyện online miễn phí, cập nhật nhanh truyện manga, manhwa, manhua mới nhất. Trải nghiệm mượt mà, cập nhật liên tục, không quảng cáo."},"admin":{"teamManageLabel":"Mòe Truyện Manage","adminLabel":"MoeTruyen Admin","loginNote":"Truy cập dành riêng cho Mòe Truyện."}};
     window.__AUTH = {"providers":{"google":true,"discord":true},"sessionVersion":"870e4e6ac354b20420fc2b8e"};
     window.__BFANG_ASSET_VERSION = "a792a7a93ee11a24";
@@ -1906,7 +1906,7 @@
     }
     window.__TURNSTILE = {"siteKey":"0x4AAAAAACa5nZookwpdTAxN"};
   </script>
-  <script nonce="k9w1YThPteWyfKvqOT070bG4">
+  <script nonce="qsl7Xaqw+hXaTVeamM5VkRFw">
     (() => {
       const root = document.documentElement;
       if (!root) return;
@@ -1967,7 +1967,7 @@
   
   
   
-  <script nonce="k9w1YThPteWyfKvqOT070bG4">
+  <script nonce="qsl7Xaqw+hXaTVeamM5VkRFw">
     (() => {
       const links = Array.from(document.querySelectorAll("link[data-head-async-style]"));
       if (!links.length) return;
@@ -1996,7 +1996,7 @@
   
 
   
-    <style nonce="k9w1YThPteWyfKvqOT070bG4">
+    <style nonce="qsl7Xaqw+hXaTVeamM5VkRFw">
       @view-transition { navigation: auto; }
       .site-header,
       .admin-header { view-transition-name: bfang-navigation-chrome; }
@@ -2006,7 +2006,7 @@
     </style>
   
   
-    <style nonce="k9w1YThPteWyfKvqOT070bG4">
+    <style nonce="qsl7Xaqw+hXaTVeamM5VkRFw">
       .cover--adult {
         position: relative;
       }
@@ -2040,7 +2040,7 @@
     
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-HJBTK1S4HZ"></script>
-  <script nonce="k9w1YThPteWyfKvqOT070bG4">
+  <script nonce="qsl7Xaqw+hXaTVeamM5VkRFw">
     window.dataLayer = window.dataLayer || [];
     function gtag() {
       dataLayer.push(arguments);
@@ -2114,7 +2114,7 @@
 
   <body>
     
-      <script type="speculationrules" nonce="k9w1YThPteWyfKvqOT070bG4">{"prefetch":[{"source":"list","urls":["/manga/796-chao-mung-den-voi-nha-hang-cua-nhung-ke-bi-ruong-bo","/manga/789-tho-san-ac-linh","/manga/2007-beast-complex","/manga/742-khi-toi-co-gang-tra-thu-nhung-ke-bat-nat-o-que-nha-mot-cuoc-chien-khac-lai-bat-dau","/manga/1776-iincho-to-furyou-kun","/manga/182-nang-nhan-ngu-se-khong-cat-tieng-hat","/manga/537-cau-la-co-4-la","/manga/1306-behemoth-no-hanamuko","/manga/1827-tuu-lau-gen-noi-di-gioi","/manga/1964-vo-si-blue-ursus","/manga/1298-yugo-ke-thuong-thuyet-phan-2","/manga/1844-kininaru-kurumi-san","/manga/590-enma-no-kyoushitsu","/manga/1991-tuyen-tap-nhung-co-gai-utopia","/manga/1981-toi-dung-tren-mot-trieu-sinh-mang","/manga/1972-nihonkoku-shoukan","/manga/375-kaoru-hana-wa-rin-to-saku","/manga/1561-thanh-luy-bang-gia"],"eagerness":"moderate"}]}</script>
+      <script type="speculationrules" nonce="qsl7Xaqw+hXaTVeamM5VkRFw">{"prefetch":[{"source":"list","urls":["/manga/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the","/manga/1934-ban-gai-dot-nhien-nho-ra-kiep-truoc-co-ay-la-bo-toi","/manga/2003-barefaced","/manga/2007-beast-complex","/manga/1298-yugo-ke-thuong-thuyet-phan-2","/manga/796-chao-mung-den-voi-nha-hang-cua-nhung-ke-bi-ruong-bo","/manga/789-tho-san-ac-linh","/manga/742-khi-toi-co-gang-tra-thu-nhung-ke-bat-nat-o-que-nha-mot-cuoc-chien-khac-lai-bat-dau","/manga/1776-iincho-to-furyou-kun","/manga/182-nang-nhan-ngu-se-khong-cat-tieng-hat","/manga/537-cau-la-co-4-la","/manga/1306-behemoth-no-hanamuko","/manga/1827-tuu-lau-gen-noi-di-gioi","/manga/1964-vo-si-blue-ursus","/manga/1844-kininaru-kurumi-san","/manga/590-enma-no-kyoushitsu","/manga/1991-tuyen-tap-nhung-co-gai-utopia","/manga/1981-toi-dung-tren-mot-trieu-sinh-mang"],"eagerness":"moderate"}]}</script>
     
     <div class="site">
       
@@ -2306,7 +2306,7 @@
     
   </div>
 </header>
-<script nonce="k9w1YThPteWyfKvqOT070bG4">
+<script nonce="qsl7Xaqw+hXaTVeamM5VkRFw">
   (() => {
     const restoreBadge = (selector, storageKey) => {
       const badge = document.querySelector(selector);
@@ -2924,6 +2924,341 @@
       
       
       <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-md.webp?t=1786697195997"
+                srcset="https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-sm.webp?t=1786697195997 132w, https://u.truyen.moe/uploads/covers/1681-song-chung-voi-nu-hoang-kieu-ngao-thoi-cao-trung-hoa-ra-lai-khong-he-kho-chiu-den-the-md.webp?t=1786697195997 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 28</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế">Sống chung với Nữ...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 21.486 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 488 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 255 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Sống chung với Nữ hoàng kiêu ngạo thời cao trung hoá ra lại không hề khó chịu đến thế</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+4</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Dịch Truyện Linh Tinh</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Vào một đêm nọ, Yamamoto - một sinh viên đại học làm việc bán thời gian tại một cửa hàng tiện lợi, được một khách hàng nữ mặc áo nỉ tiếp cận ở quầy thu ngân. Tên cô ấy là Megumi Hayashi - bạn cùng lớp của Yamamoto từ thời trung học và là cô gái xinh đẹp nhấ...</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1934-ban-gai-dot-nhien-nho-ra-kiep-truoc-co-ay-la-bo-toi">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1934-ban-gai-dot-nhien-nho-ra-kiep-truoc-co-ay-la-bo-toi-md.webp?t=1785944245084"
+                srcset="https://u.truyen.moe/uploads/covers/1934-ban-gai-dot-nhien-nho-ra-kiep-truoc-co-ay-la-bo-toi-sm.webp?t=1785944245084 132w, https://u.truyen.moe/uploads/covers/1934-ban-gai-dot-nhien-nho-ra-kiep-truoc-co-ay-la-bo-toi-md.webp?t=1785944245084 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Bạn Gái Đột Nhiên Nhớ Ra Kiếp Trước Cô Ấy Là Bố Tôi!?"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 11</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Bạn Gái Đột Nhiên Nhớ Ra Kiếp Trước Cô Ấy Là Bố Tôi!?">Bạn Gái Đột Nhiên...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 4.282 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 50 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 43 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Bạn Gái Đột Nhiên Nhớ Ra Kiếp Trước Cô Ấy Là Bố Tôi!?</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Doujinshi</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>Góc Nhỏ Của Proxy</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">No Captions</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/2003-barefaced">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/2003-barefaced-md.webp?t=1786714128994"
+                srcset="https://u.truyen.moe/uploads/covers/2003-barefaced-sm.webp?t=1786714128994 132w, https://u.truyen.moe/uploads/covers/2003-barefaced-md.webp?t=1786714128994 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Barefaced"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 4</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Barefaced">Barefaced</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 637 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 53 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 16 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Barefaced</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Action</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>To ANOther Reality</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Huyền thoại lực lượng An ninh Nhật Bản đột ngột rời ngành để đi làm thám tử quèn.</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/2007-beast-complex">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/2007-beast-complex-md.webp?t=1786810688826"
+                srcset="https://u.truyen.moe/uploads/covers/2007-beast-complex-sm.webp?t=1786810688826 132w, https://u.truyen.moe/uploads/covers/2007-beast-complex-md.webp?t=1786810688826 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa BEAST COMPLEX"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 26</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="BEAST COMPLEX">BEAST COMPLEX</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 276 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 4 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 1 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">BEAST COMPLEX</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+7</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>numbuh1 Subteam</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Tuyển tập truyện ngắn của Itagaki Paru trong thế giới của Beastars. (Mỗi chương một câu chuyện khác nhau.)</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
+        <a href="/manga/1298-yugo-ke-thuong-thuyet-phan-2">
+          <div class="cover " >
+            
+              
+              
+              <img
+                src="https://u.truyen.moe/uploads/covers/1298-yugo-ke-thuong-thuyet-phan-2-md.webp?t=1786404511089"
+                srcset="https://u.truyen.moe/uploads/covers/1298-yugo-ke-thuong-thuyet-phan-2-sm.webp?t=1786404511089 132w, https://u.truyen.moe/uploads/covers/1298-yugo-ke-thuong-thuyet-phan-2-md.webp?t=1786404511089 262w"
+                sizes="(max-width: 760px) 47vw, 174px"
+                alt="Bìa Yugo - Kẻ thương thuyết - phần 2"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="420"
+                height="600"
+              />
+            
+            <span class="manga-badge is-ongoing">
+              Còn tiếp
+            </span>
+            <span class="manga-chapter-label">Ch. 11</span>
+          </div>
+          <div class="manga-body">
+            
+            <h3 title="Yugo - Kẻ thương thuyết - phần 2">Yugo - Kẻ thương...</h3>
+            <div class="manga-list-meta" aria-label="Thông tin truyện">
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 573 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 32 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 5 bình luận</span>
+            </div>
+          </div>
+        </a>
+        
+<div class="manga-hover-popup" aria-hidden="true">
+  <div class="manga-hover-popup__header">
+    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
+  </div>
+  <h4 class="manga-hover-popup__title">Yugo - Kẻ thương thuyết - phần 2</h4>
+  <dl class="manga-hover-popup__meta">
+    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
+      <dt>Thể loại</dt>
+      <dd class="manga-hover-popup__genre-list">
+        
+          
+            <span class="manga-hover-popup__genre">Adventure</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
+          
+          
+            <span class="manga-hover-popup__genre-more">+2</span>
+          
+        
+      </dd>
+    </div>
+    <div class="manga-hover-popup__meta-row">
+      <dt>Nhóm dịch</dt>
+      <dd>To ANOther Reality</dd>
+    </div>
+  </dl>
+  <p class="manga-hover-popup__description">Phần tiếp theo về những thương vụ của nhà thương thuyết Yugo.</p>
+</div>
+
+      </article>
+    
+      
+      
+      <article class="manga-card manga-card--has-hover manga-card--list">
         <a href="/manga/796-chao-mung-den-voi-nha-hang-cua-nhung-ke-bi-ruong-bo">
           <div class="cover " >
             
@@ -2950,9 +3285,9 @@
             
             <h3 title="Chào mừng đến với nhà hàng của những kẻ bị ruồng bỏ">Chào mừng đến với...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 6.254 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 128 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 13 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 6.679 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 131 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 14 bình luận</span>
             </div>
           </div>
         </a>
@@ -3017,9 +3352,9 @@
             
             <h3 title="Thợ săn ác linh">Thợ săn ác linh</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 8.188 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 288 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 50 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 8.449 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 302 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 51 bình luận</span>
             </div>
           </div>
         </a>
@@ -3058,73 +3393,6 @@
       
       
       <article class="manga-card manga-card--has-hover manga-card--list">
-        <a href="/manga/2007-beast-complex">
-          <div class="cover " >
-            
-              
-              
-              <img
-                src="https://u.truyen.moe/uploads/covers/2007-beast-complex-md.webp?t=1786810688826"
-                srcset="https://u.truyen.moe/uploads/covers/2007-beast-complex-sm.webp?t=1786810688826 132w, https://u.truyen.moe/uploads/covers/2007-beast-complex-md.webp?t=1786810688826 262w"
-                sizes="(max-width: 760px) 47vw, 174px"
-                alt="Bìa BEAST COMPLEX"
-                loading="lazy"
-                decoding="async"
-                fetchpriority="low"
-                width="420"
-                height="600"
-              />
-            
-            <span class="manga-badge is-ongoing">
-              Còn tiếp
-            </span>
-            <span class="manga-chapter-label">Ch. 26</span>
-          </div>
-          <div class="manga-body">
-            
-            <h3 title="BEAST COMPLEX">BEAST COMPLEX</h3>
-            <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 51 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 2 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 0 bình luận</span>
-            </div>
-          </div>
-        </a>
-        
-<div class="manga-hover-popup" aria-hidden="true">
-  <div class="manga-hover-popup__header">
-    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
-  </div>
-  <h4 class="manga-hover-popup__title">BEAST COMPLEX</h4>
-  <dl class="manga-hover-popup__meta">
-    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
-      <dt>Thể loại</dt>
-      <dd class="manga-hover-popup__genre-list">
-        
-          
-            <span class="manga-hover-popup__genre">Comedy</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-          
-            <span class="manga-hover-popup__genre-more">+7</span>
-          
-        
-      </dd>
-    </div>
-    <div class="manga-hover-popup__meta-row">
-      <dt>Nhóm dịch</dt>
-      <dd>numbuh1 Subteam</dd>
-    </div>
-  </dl>
-  <p class="manga-hover-popup__description">Tuyển tập truyện ngắn của Itagaki Paru trong thế giới của Beastars. (Mỗi chương một câu chuyện khác nhau. Sẽ phục hồi chương 1-6 và 11 sau)</p>
-</div>
-
-      </article>
-    
-      
-      
-      <article class="manga-card manga-card--has-hover manga-card--list">
         <a href="/manga/742-khi-toi-co-gang-tra-thu-nhung-ke-bat-nat-o-que-nha-mot-cuoc-chien-khac-lai-bat-dau">
           <div class="cover " >
             
@@ -3151,9 +3419,9 @@
             
             <h3 title="Khi tôi cố gắng trả thù những kẻ bắt nạt ở quê nhà, một cuộc chiến khác lại bắt đầu">Khi tôi cố gắng...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 16.965 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 342 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 79 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 17.297 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 348 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 82 bình luận</span>
             </div>
           </div>
         </a>
@@ -3218,9 +3486,9 @@
             
             <h3 title="Iincho to Furyou-kun">Iincho to Furyou-kun</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 4.031 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 94 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 19 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 4.159 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 95 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 21 bình luận</span>
             </div>
           </div>
         </a>
@@ -3285,8 +3553,8 @@
             
             <h3 title="Nàng nhân ngư sẽ không cất tiếng hát">Nàng nhân ngư sẽ...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 2.100 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 51 lượt lưu</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 2.138 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 53 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 24 bình luận</span>
             </div>
           </div>
@@ -3352,9 +3620,9 @@
             
             <h3 title="Cậu là cỏ 4 lá">Cậu là cỏ 4...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 9.495 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 206 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 103 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 9.740 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 208 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 109 bình luận</span>
             </div>
           </div>
         </a>
@@ -3419,9 +3687,9 @@
             
             <h3 title="Behemoth no Hanamuko">Behemoth no Hanamuko</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.670 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 146 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 27 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.857 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 154 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 31 bình luận</span>
             </div>
           </div>
         </a>
@@ -3486,7 +3754,7 @@
             
             <h3 title="Tửu lầu &#39;Gen&#39; nơi dị giới">Tửu lầu &#39;Gen&#39; nơi...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 437 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 475 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 39 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 26 bình luận</span>
             </div>
@@ -3553,9 +3821,9 @@
             
             <h3 title="Võ sĩ Blue Ursus">Võ sĩ Blue Ursus</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 3.919 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 3.992 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 69 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 27 bình luận</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 28 bình luận</span>
             </div>
           </div>
         </a>
@@ -3594,73 +3862,6 @@
       
       
       <article class="manga-card manga-card--has-hover manga-card--list">
-        <a href="/manga/1298-yugo-ke-thuong-thuyet-phan-2">
-          <div class="cover " >
-            
-              
-              
-              <img
-                src="https://u.truyen.moe/uploads/covers/1298-yugo-ke-thuong-thuyet-phan-2-md.webp?t=1786404511089"
-                srcset="https://u.truyen.moe/uploads/covers/1298-yugo-ke-thuong-thuyet-phan-2-sm.webp?t=1786404511089 132w, https://u.truyen.moe/uploads/covers/1298-yugo-ke-thuong-thuyet-phan-2-md.webp?t=1786404511089 262w"
-                sizes="(max-width: 760px) 47vw, 174px"
-                alt="Bìa Yugo - Kẻ thương thuyết - phần 2"
-                loading="lazy"
-                decoding="async"
-                fetchpriority="low"
-                width="420"
-                height="600"
-              />
-            
-            <span class="manga-badge is-ongoing">
-              Còn tiếp
-            </span>
-            <span class="manga-chapter-label">Ch. 10</span>
-          </div>
-          <div class="manga-body">
-            
-            <h3 title="Yugo - Kẻ thương thuyết - phần 2">Yugo - Kẻ thương...</h3>
-            <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 521 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 30 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 5 bình luận</span>
-            </div>
-          </div>
-        </a>
-        
-<div class="manga-hover-popup" aria-hidden="true">
-  <div class="manga-hover-popup__header">
-    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
-  </div>
-  <h4 class="manga-hover-popup__title">Yugo - Kẻ thương thuyết - phần 2</h4>
-  <dl class="manga-hover-popup__meta">
-    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
-      <dt>Thể loại</dt>
-      <dd class="manga-hover-popup__genre-list">
-        
-          
-            <span class="manga-hover-popup__genre">Adventure</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-          
-            <span class="manga-hover-popup__genre-more">+2</span>
-          
-        
-      </dd>
-    </div>
-    <div class="manga-hover-popup__meta-row">
-      <dt>Nhóm dịch</dt>
-      <dd>To ANOther Reality</dd>
-    </div>
-  </dl>
-  <p class="manga-hover-popup__description">Phần tiếp theo về những thương vụ của nhà thương thuyết Yugo.</p>
-</div>
-
-      </article>
-    
-      
-      
-      <article class="manga-card manga-card--has-hover manga-card--list">
         <a href="/manga/1844-kininaru-kurumi-san">
           <div class="cover " >
             
@@ -3687,9 +3888,9 @@
             
             <h3 title="Kininaru Kurumi-san!">Kininaru Kurumi-san!</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 723 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 48 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 5 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 930 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 54 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 6 bình luận</span>
             </div>
           </div>
         </a>
@@ -3754,9 +3955,9 @@
             
             <h3 title="Enma no Kyoushitsu">Enma no Kyoushitsu</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 2.926 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 98 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 45 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 3.105 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 107 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 46 bình luận</span>
             </div>
           </div>
         </a>
@@ -3821,9 +4022,9 @@
             
             <h3 title="Tuyển Tập Những Cô Gái Utopia">Tuyển Tập Những Cô...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.765 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 82 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 29 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.953 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 86 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 31 bình luận</span>
             </div>
           </div>
         </a>
@@ -3886,9 +4087,9 @@
             
             <h3 title="Tôi đứng trên một triệu sinh mạng">Tôi đứng trên một...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 891 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 81 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 25 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 935 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 83 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 26 bình luận</span>
             </div>
           </div>
         </a>
@@ -3953,9 +4154,9 @@
             
             <h3 title="Nihonkoku Shoukan">Nihonkoku Shoukan</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 2.350 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 2.489 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 52 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 39 bình luận</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 41 bình luận</span>
             </div>
           </div>
         </a>
@@ -4020,9 +4221,9 @@
             
             <h3 title="Kaoru Hana wa Rin to Saku">Kaoru Hana wa Rin...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 20.558 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 289 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 51 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 20.727 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 290 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 52 bình luận</span>
             </div>
           </div>
         </a>
@@ -4087,9 +4288,9 @@
             
             <h3 title="Thành Lũy Băng Giá">Thành Lũy Băng Giá</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.120 lượt xem</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 1.137 lượt xem</span>
               <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 71 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 12 bình luận</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 13 bình luận</span>
             </div>
           </div>
         </a>
@@ -4154,9 +4355,9 @@
             
             <h3 title="Chiếc Xe Buýt Của Đôi Ta">Chiếc Xe Buýt Của...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 16.321 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 523 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 209 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 16.468 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 525 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 214 bình luận</span>
             </div>
           </div>
         </a>
@@ -4221,8 +4422,8 @@
             
             <h3 title="Tên đầu gấu và bữa ăn khoa học">Tên đầu gấu và...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 3.627 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 206 lượt lưu</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 3.707 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 209 lượt lưu</span>
               <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 71 bình luận</span>
             </div>
           </div>
@@ -4288,9 +4489,9 @@
             
             <h3 title="Cô bạn bàn bên Kurokawa">Cô bạn bàn bên...</h3>
             <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 23.374 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 545 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 295 bình luận</span>
+              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 23.892 lượt xem</span>
+              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 550 lượt lưu</span>
+              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 307 bình luận</span>
             </div>
           </div>
         </a>
@@ -4322,207 +4523,6 @@
     </div>
   </dl>
   <p class="manga-hover-popup__description">Bí mật giữa mình và cậu ấy tuy bình thường nhưng quan trọng! Hajime Takahashi nhập học tại trường cao trung Shuubi chỉ vì nơi đó là thánh địa trong bộ truyện tranh cậu yêu thích. Tất cả mọi ngóc ngách của trường đều được phác họa trong bộ truyện, điều đó kh...</p>
-</div>
-
-      </article>
-    
-      
-      
-      <article class="manga-card manga-card--has-hover manga-card--list">
-        <a href="/manga/998-mobile-suit-gundam-msv-r-legend-of-the-universal-century-heroes-the-fabulous-shin-matsunaga">
-          <div class="cover " >
-            
-              
-              
-              <img
-                src="https://u.truyen.moe/uploads/covers/998-mobile-suit-gundam-msv-r-legend-of-the-universal-century-heroes-the-fabulous-shin-matsunaga-md.webp?t=1775799501464"
-                srcset="https://u.truyen.moe/uploads/covers/998-mobile-suit-gundam-msv-r-legend-of-the-universal-century-heroes-the-fabulous-shin-matsunaga-sm.webp?t=1775799501464 132w, https://u.truyen.moe/uploads/covers/998-mobile-suit-gundam-msv-r-legend-of-the-universal-century-heroes-the-fabulous-shin-matsunaga-md.webp?t=1775799501464 262w"
-                sizes="(max-width: 760px) 47vw, 174px"
-                alt="Bìa MOBILE SUIT GUNDAM MSV-R LEGEND OF THE UNIVERSAL CENTURY HEROES: THE FABULOUS SHIN MATSUNAGA"
-                loading="lazy"
-                decoding="async"
-                fetchpriority="low"
-                width="420"
-                height="600"
-              />
-            
-            <span class="manga-badge is-ongoing">
-              Còn tiếp
-            </span>
-            <span class="manga-chapter-label">Ch. 15</span>
-          </div>
-          <div class="manga-body">
-            
-            <h3 title="MOBILE SUIT GUNDAM MSV-R LEGEND OF THE UNIVERSAL CENTURY HEROES: THE FABULOUS SHIN MATSUNAGA">MOBILE SUIT GUNDAM MSV-R...</h3>
-            <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 297 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 14 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 2 bình luận</span>
-            </div>
-          </div>
-        </a>
-        
-<div class="manga-hover-popup" aria-hidden="true">
-  <div class="manga-hover-popup__header">
-    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
-  </div>
-  <h4 class="manga-hover-popup__title">MOBILE SUIT GUNDAM MSV-R LEGEND OF THE UNIVERSAL CENTURY HEROES: THE FABULOUS SHIN MATSUNAGA</h4>
-  <dl class="manga-hover-popup__meta">
-    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
-      <dt>Thể loại</dt>
-      <dd class="manga-hover-popup__genre-list">
-        
-          
-            <span class="manga-hover-popup__genre">Action</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-          
-            <span class="manga-hover-popup__genre-more">+2</span>
-          
-        
-      </dd>
-    </div>
-    <div class="manga-hover-popup__meta-row">
-      <dt>Nhóm dịch</dt>
-      <dd>Xóm Nhựa</dd>
-    </div>
-  </dl>
-  <p class="manga-hover-popup__description">ĐÂY LÀ SHIN MATSUNAGA, NGƯỜI ĐÀN ÔNG ĐƯỢC GỌI &#34;BẠCH LANG CỦA SOLOMON&#34;. MỘT NGƯỜI ĐÃ TỪNG ĐƯỢC GỌI LÀ CÁNH TAY PHẢI CỦA TRUNG TƯỚNG DOZLE ZABI, CHỈ HUY CỦA LỰC LƯỢNG TẤN CÔNG KHÔNG GIAN CỦA CỘNG HÒA ZEON. UNIVERSAL CENTURY 0079, ĐÓ LÀ NĂM ĐƯỢC DỆT LÊN BỞI CÁ...</p>
-</div>
-
-      </article>
-    
-      
-      
-      <article class="manga-card manga-card--has-hover manga-card--list">
-        <a href="/manga/2006-nang-dau-nha-ho-kyougane">
-          <div class="cover " >
-            
-              
-              
-              <img
-                src="https://u.truyen.moe/uploads/covers/2006-nang-dau-nha-ho-kyougane-md.webp?t=1786789154574"
-                srcset="https://u.truyen.moe/uploads/covers/2006-nang-dau-nha-ho-kyougane-sm.webp?t=1786789154574 132w, https://u.truyen.moe/uploads/covers/2006-nang-dau-nha-ho-kyougane-md.webp?t=1786789154574 262w"
-                sizes="(max-width: 760px) 47vw, 174px"
-                alt="Bìa Nàng Dâu nhà họ Kyougane"
-                loading="lazy"
-                decoding="async"
-                fetchpriority="low"
-                width="420"
-                height="600"
-              />
-            
-            <span class="manga-badge is-ongoing">
-              Còn tiếp
-            </span>
-            <span class="manga-chapter-label">Ch. 1</span>
-          </div>
-          <div class="manga-body">
-            
-            <h3 title="Nàng Dâu nhà họ Kyougane">Nàng Dâu nhà họ...</h3>
-            <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 177 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 58 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 5 bình luận</span>
-            </div>
-          </div>
-        </a>
-        
-<div class="manga-hover-popup" aria-hidden="true">
-  <div class="manga-hover-popup__header">
-    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
-  </div>
-  <h4 class="manga-hover-popup__title">Nàng Dâu nhà họ Kyougane</h4>
-  <dl class="manga-hover-popup__meta">
-    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
-      <dt>Thể loại</dt>
-      <dd class="manga-hover-popup__genre-list">
-        
-          
-            <span class="manga-hover-popup__genre">Action</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-            <span class="manga-hover-popup__genre">Fantasy</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-          
-            <span class="manga-hover-popup__genre-more">+2</span>
-          
-        
-      </dd>
-    </div>
-    <div class="manga-hover-popup__meta-row">
-      <dt>Nhóm dịch</dt>
-      <dd>Yuki&#39;s Milky Way v2 / Yuki&#39;s Milky Way Translation</dd>
-    </div>
-  </dl>
-  <p class="manga-hover-popup__description">Dòng họ Kyougane - danh gia vọng tộc diệt ma kéo dài suốt ngàn năm. Được đưa đến trước mặt vị đương chủ hiện tại lắm tài nhiều tật - Kyougane Kurou, là một cô dâu mang vẻ ngoài kiều diễm nhưng &#34;bí mật&#34; ẩn sau vẻ đẹp đó đó rốt cuộc là gì!?</p>
-</div>
-
-      </article>
-    
-      
-      
-      <article class="manga-card manga-card--has-hover manga-card--list">
-        <a href="/manga/604-uma-musume-pretty-derby-star-blossom">
-          <div class="cover " >
-            
-              
-              
-              <img
-                src="https://u.truyen.moe/uploads/covers/604-uma-musume-pretty-derby-star-blossom-md.webp?t=1775138452642"
-                srcset="https://u.truyen.moe/uploads/covers/604-uma-musume-pretty-derby-star-blossom-sm.webp?t=1775138452642 132w, https://u.truyen.moe/uploads/covers/604-uma-musume-pretty-derby-star-blossom-md.webp?t=1775138452642 262w"
-                sizes="(max-width: 760px) 47vw, 174px"
-                alt="Bìa Uma Musume - Pretty Derby: Star Blossom"
-                loading="lazy"
-                decoding="async"
-                fetchpriority="low"
-                width="420"
-                height="600"
-              />
-            
-            <span class="manga-badge is-ongoing">
-              Còn tiếp
-            </span>
-            <span class="manga-chapter-label">Ch. 17</span>
-          </div>
-          <div class="manga-body">
-            
-            <h3 title="Uma Musume - Pretty Derby: Star Blossom">Uma Musume - Pretty...</h3>
-            <div class="manga-list-meta" aria-label="Thông tin truyện">
-              <span><i class="fa-regular fa-eye" aria-hidden="true"></i> 609 lượt xem</span>
-              <span><i class="fa-regular fa-bookmark" aria-hidden="true"></i> 38 lượt lưu</span>
-              <span><i class="fa-regular fa-comments" aria-hidden="true"></i> 2 bình luận</span>
-            </div>
-          </div>
-        </a>
-        
-<div class="manga-hover-popup" aria-hidden="true">
-  <div class="manga-hover-popup__header">
-    <p class="manga-hover-popup__eyebrow">Thông tin truyện</p>
-  </div>
-  <h4 class="manga-hover-popup__title">Uma Musume - Pretty Derby: Star Blossom</h4>
-  <dl class="manga-hover-popup__meta">
-    <div class="manga-hover-popup__meta-row manga-hover-popup__meta-row--genres">
-      <dt>Thể loại</dt>
-      <dd class="manga-hover-popup__genre-list">
-        
-          
-            <span class="manga-hover-popup__genre">Action</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-            <span class="manga-hover-popup__genre">Drama</span><span class="manga-hover-popup__genre-separator">,</span>
-          
-          
-            <span class="manga-hover-popup__genre-more">+1</span>
-          
-        
-      </dd>
-    </div>
-    <div class="manga-hover-popup__meta-row">
-      <dt>Nhóm dịch</dt>
-      <dd>NaJung Translation</dd>
-    </div>
-  </dl>
-  <p class="manga-hover-popup__description">Chưa có sơ lược.</p>
 </div>
 
       </article>
@@ -4640,5 +4640,5 @@
 
 
     </div>
-  <script nonce="k9w1YThPteWyfKvqOT070bG4">(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.nonce='k9w1YThPteWyfKvqOT070bG4';d.innerHTML="window.__CF$cv$params={r:'a2b9fce0babe8523',t:'MTc4NjgxNTY2Mg=='};var a=document.createElement('script');a.nonce='k9w1YThPteWyfKvqOT070bG4';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+  <script nonce="qsl7Xaqw+hXaTVeamM5VkRFw">(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.nonce='qsl7Xaqw+hXaTVeamM5VkRFw';d.innerHTML="window.__CF$cv$params={r:'a2bd1ba1cd3ff4fc',t:'MTc4Njg0ODM3OQ=='};var a=document.createElement('script');a.nonce='qsl7Xaqw+hXaTVeamM5VkRFw';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

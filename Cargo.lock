@@ -509,7 +509,7 @@ dependencies = [
 
 [[package]]
 name = "dexvm"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "aes 0.8.4",
  "aes-gcm",

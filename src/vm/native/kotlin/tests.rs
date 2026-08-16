@@ -695,3 +695,20 @@ fn case_insensitive_string_ops_handle_multibyte() {
         assert_eq!(int_of(found), 3);
     });
 }
+
+#[test]
+fn step_recomputes_last_like_kotlin() {
+    with_vm(|vm| {
+        for n in [20i32, 21, 23, 37, 62] {
+            let range = rangeskt_until(vm, &[JValue::Int(0), JValue::Int(n)]).unwrap();
+            let prog = progression_step(vm, &[range, JValue::Int(5)]).unwrap();
+            let last = int_of(progression_get_last(vm, &[prog]).unwrap());
+            let expected = n - 1 - (n - 1).rem_euclid(5);
+            eprintln!("until(0,{n}).step(5).last = {last}  (real Kotlin: {expected})");
+            assert_eq!(
+                last, expected,
+                "progression_step must recompute last (n={n})"
+            );
+        }
+    });
+}

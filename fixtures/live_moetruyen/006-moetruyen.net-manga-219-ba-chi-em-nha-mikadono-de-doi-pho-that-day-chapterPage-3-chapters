@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   
-<style nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">
+<style nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">
   html[data-bfang-boot-loading="1"] {
     overflow: hidden;
   }
@@ -1375,7 +1375,7 @@
     }
   }
 </style>
-<script nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">
+<script nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">
   (() => {
     const initialKind = "";
     const id = "bfang-boot-skeleton";
@@ -1913,7 +1913,7 @@
 
   
 
-    <script nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">
+    <script nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">
     window.__SITE_CONFIG = {"branding":{"siteName":"Mòe Truyện","brandMark":"Mòe","brandSubmark":"Truyện","aboutNavLabel":"Về MoeTruyen","heroKicker":"Mòe Truyện Manga","updateTag":"MoeTruyen","footerYear":"2026","dmcaFooterHtml":""},"homepage":{"welcomeMessage":"Chào mừng bạn đến với Mòe Truyện.","introduction":"Mòe Truyện là cộng đồng truyện với hàng nghìn đầu truyện và chục nghìn chương truyện.","aboutTitle":"Về Mòe Truyện","foundedYear":"2026","contentStandardsTitle":"Tiêu chuẩn nội dung","contentStandards":["Chúng tôi chỉ đăng tải truyện tranh hoặc truyện chữ.","Các dự án được dịch thuật chủ yếu từ tiếng Anh hoặc tiếng Nhật."],"contactTitle":"Kênh liên hệ"},"contact":{"facebookUrl":"https://facebook.com/DongMoeReal","facebookLabel":"facebook.com/DongMoeReal","discordUrl":"https://discord.moetruyen.net/","discordLabel":"discord.moetruyen.net","emailAddress":"admin@mail.moetruyen.net","emailLabel":"admin@mail.moetruyen.net"},"seo":{"defaultDescription":"MoeTruyen - Đọc truyện online miễn phí, cập nhật nhanh manga, manhwa, manhua mới mỗi ngày.","homepageTitle":"MoeTruyen - Đọc truyện tranh online miễn phí","homepageDescription":"MoeTruyen là nơi đọc truyện online miễn phí, cập nhật nhanh truyện manga, manhwa, manhua mới nhất. Trải nghiệm mượt mà, cập nhật liên tục, không quảng cáo."},"admin":{"teamManageLabel":"Mòe Truyện Manage","adminLabel":"MoeTruyen Admin","loginNote":"Truy cập dành riêng cho Mòe Truyện."}};
     window.__AUTH = {"providers":{"google":true,"discord":true},"sessionVersion":"870e4e6ac354b20420fc2b8e"};
     window.__BFANG_ASSET_VERSION = "a792a7a93ee11a24";
@@ -1922,7 +1922,7 @@
     }
     window.__TURNSTILE = {"siteKey":"0x4AAAAAACa5nZookwpdTAxN"};
   </script>
-  <script nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">
+  <script nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">
     (() => {
       const root = document.documentElement;
       if (!root) return;
@@ -1983,7 +1983,7 @@
   
   
   
-  <script nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">
+  <script nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">
     (() => {
       const links = Array.from(document.querySelectorAll("link[data-head-async-style]"));
       if (!links.length) return;
@@ -2012,7 +2012,7 @@
   
 
   
-    <style nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">
+    <style nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">
       @view-transition { navigation: auto; }
       .site-header,
       .admin-header { view-transition-name: bfang-navigation-chrome; }
@@ -2022,7 +2022,7 @@
     </style>
   
   
-    <style nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">
+    <style nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">
       .cover--adult {
         position: relative;
       }
@@ -2056,7 +2056,7 @@
     
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-HJBTK1S4HZ"></script>
-  <script nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">
+  <script nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">
     window.dataLayer = window.dataLayer || [];
     function gtag() {
       dataLayer.push(arguments);
@@ -2322,7 +2322,7 @@
     
   </div>
 </header>
-<script nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">
+<script nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">
   (() => {
     const restoreBadge = (selector, storageKey) => {
       const badge = document.querySelector(selector);
@@ -2424,7 +2424,7 @@
                   <div class="manga-detail-stats-meta">
                     <span>
                       <i class="fa-regular fa-eye" aria-hidden="true"></i>
-                      165.589
+                      165.802
                     </span>
                     <span>
                       <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
@@ -2618,7 +2618,7 @@
                               
                             </span>
                           
-                          <span class="homepage-honor-card__meta manga-translation-team-card__meta" title="132.128 lượt xem">
+                          <span class="homepage-honor-card__meta manga-translation-team-card__meta" title="132.476 lượt xem">
                             <i class="fa-regular fa-eye" aria-hidden="true"></i>
                             132K lượt xem
                           </span>
@@ -2843,7 +2843,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      620
+                                                      621
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -2881,7 +2881,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                620 lượt xem
+                                                621 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -2936,7 +2936,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      606
+                                                      607
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -2974,7 +2974,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                606 lượt xem
+                                                607 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -3029,7 +3029,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      595
+                                                      596
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -3067,7 +3067,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                595 lượt xem
+                                                596 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -4703,7 +4703,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      609
+                                                      610
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -4741,7 +4741,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                609 lượt xem
+                                                610 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -4796,7 +4796,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      601
+                                                      602
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -4834,7 +4834,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                601 lượt xem
+                                                602 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -4889,7 +4889,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      607
+                                                      608
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -4927,7 +4927,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                607 lượt xem
+                                                608 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -4982,7 +4982,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      597
+                                                      598
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -5020,7 +5020,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                597 lượt xem
+                                                598 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -5075,7 +5075,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      605
+                                                      607
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -5113,7 +5113,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                605 lượt xem
+                                                607 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -5168,7 +5168,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      619
+                                                      620
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -5206,7 +5206,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                619 lượt xem
+                                                620 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -5261,7 +5261,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      592
+                                                      594
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -5299,7 +5299,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                592 lượt xem
+                                                594 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -5354,7 +5354,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      613
+                                                      615
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -5392,7 +5392,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                613 lượt xem
+                                                615 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -5447,7 +5447,7 @@
                                                   </svg>
                                                   <span class="chapter-sub-text chapter-sub-metric">
                                                     <span class="chapter-sub-value">
-                                                      597
+                                                      599
                                                     </span>
                                                     <span class="chapter-sub-label">lượt xem</span>
                                                   </span>
@@ -5485,7 +5485,7 @@
                                                 </svg>
                                               </span>
                                               <span>
-                                                597 lượt xem
+                                                599 lượt xem
                                               </span>
                                             </span>
                                           </div>
@@ -5566,14 +5566,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1371-em-la-mua-xuan-nghiet-nga-cua-toi" aria-label="&#272;&#7885;c Em là mùa xuân nghiệt ngã của tôi">
+  <a class="manga-related-card__link" href="/manga/1185-chuyen-gi-se-xay-ra-neu-ban-cuu-mot-nu-sinh-trung-hoc-dang-dinh-nhay-lau" aria-label="&#272;&#7885;c Chuyện Gì Sẽ Xảy Ra Nếu Bạn Cứu Một Nữ Sinh Trung Học Đang Định Nhảy Lầu?">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1371-em-la-mua-xuan-nghiet-nga-cua-toi-sm.webp?t=1780309702521"
-          srcset="https://u.truyen.moe/uploads/covers/1371-em-la-mua-xuan-nghiet-nga-cua-toi-sm.webp?t=1780309702521 132w, https://u.truyen.moe/uploads/covers/1371-em-la-mua-xuan-nghiet-nga-cua-toi-md.webp?t=1780309702521 262w"
+          src="https://u.truyen.moe/uploads/covers/1185-chuyen-gi-se-xay-ra-neu-ban-cuu-mot-nu-sinh-trung-hoc-dang-dinh-nhay-lau-sm.webp?t=1777192327796"
+          srcset="https://u.truyen.moe/uploads/covers/1185-chuyen-gi-se-xay-ra-neu-ban-cuu-mot-nu-sinh-trung-hoc-dang-dinh-nhay-lau-sm.webp?t=1777192327796 132w, https://u.truyen.moe/uploads/covers/1185-chuyen-gi-se-xay-ra-neu-ban-cuu-mot-nu-sinh-trung-hoc-dang-dinh-nhay-lau-md.webp?t=1777192327796 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Em là mùa xuân nghiệt ngã của tôi"
+          alt="B&#236;a Chuyện Gì Sẽ Xảy Ra Nếu Bạn Cứu Một Nữ Sinh Trung Học Đang Định Nhảy Lầu?"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5582,33 +5582,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Em là mùa xuân nghiệt ngã của tôi">
-      <span>Em là mùa xuân nghiệt ngã của tôi</span>
-    </h3>
-  </a>
-</article>
-
-                    
-                      
-<article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1065-haikyuu-bu" aria-label="&#272;&#7885;c Haikyuu-bu!!">
-    <div class="manga-related-card__cover " >
-      
-        <img
-          src="https://u.truyen.moe/uploads/covers/1065-haikyuu-bu-sm.webp?t=1776241375973"
-          srcset="https://u.truyen.moe/uploads/covers/1065-haikyuu-bu-sm.webp?t=1776241375973 132w, https://u.truyen.moe/uploads/covers/1065-haikyuu-bu-md.webp?t=1776241375973 262w"
-          sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Haikyuu-bu!!"
-          loading="lazy"
-          decoding="async"
-          fetchpriority="low"
-          width="420"
-          height="600"
-        />
-      
-    </div>
-    <h3 class="manga-related-card__title" title="Haikyuu-bu!!">
-      <span>Haikyuu-bu!!</span>
+    <h3 class="manga-related-card__title" title="Chuyện Gì Sẽ Xảy Ra Nếu Bạn Cứu Một Nữ Sinh Trung Học Đang Định Nhảy Lầu?">
+      <span>Chuyện Gì Sẽ Xảy Ra Nếu Bạn Cứu Một Nữ Sinh Trung Học Đang Định Nhảy Lầu?</span>
     </h3>
   </a>
 </article>
@@ -5641,14 +5616,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1514-komi-nu-than-so-giao-tiep" aria-label="&#272;&#7885;c Komi - Nữ thần sợ giao tiếp">
+  <a class="manga-related-card__link" href="/manga/1046-drawn-to-the-fire" aria-label="&#272;&#7885;c Drawn to the Fire">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1514-komi-nu-than-so-giao-tiep-sm.webp?t=1781492836275"
-          srcset="https://u.truyen.moe/uploads/covers/1514-komi-nu-than-so-giao-tiep-sm.webp?t=1781492836275 132w, https://u.truyen.moe/uploads/covers/1514-komi-nu-than-so-giao-tiep-md.webp?t=1781492836275 262w"
+          src="https://u.truyen.moe/uploads/covers/1046-drawn-to-the-fire-sm.webp?t=1776093383835"
+          srcset="https://u.truyen.moe/uploads/covers/1046-drawn-to-the-fire-sm.webp?t=1776093383835 132w, https://u.truyen.moe/uploads/covers/1046-drawn-to-the-fire-md.webp?t=1776093383835 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Komi - Nữ thần sợ giao tiếp"
+          alt="B&#236;a Drawn to the Fire"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5657,8 +5632,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Komi - Nữ thần sợ giao tiếp">
-      <span>Komi - Nữ thần sợ giao tiếp</span>
+    <h3 class="manga-related-card__title" title="Drawn to the Fire">
+      <span>Drawn to the Fire</span>
     </h3>
   </a>
 </article>
@@ -5666,14 +5641,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1478-kanojo-okarishimasu" aria-label="&#272;&#7885;c Kanojo, Okarishimasu">
+  <a class="manga-related-card__link" href="/manga/786-killing-bites" aria-label="&#272;&#7885;c Killing Bites">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1478-kanojo-okarishimasu-sm.webp?t=1781265060661"
-          srcset="https://u.truyen.moe/uploads/covers/1478-kanojo-okarishimasu-sm.webp?t=1781265060661 132w, https://u.truyen.moe/uploads/covers/1478-kanojo-okarishimasu-md.webp?t=1781265060661 262w"
+          src="https://u.truyen.moe/uploads/covers/786-killing-bites-sm.webp?t=1775205599913"
+          srcset="https://u.truyen.moe/uploads/covers/786-killing-bites-sm.webp?t=1775205599913 132w, https://u.truyen.moe/uploads/covers/786-killing-bites-md.webp?t=1775205599913 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Kanojo, Okarishimasu"
+          alt="B&#236;a Killing Bites"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5682,8 +5657,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Kanojo, Okarishimasu">
-      <span>Kanojo, Okarishimasu</span>
+    <h3 class="manga-related-card__title" title="Killing Bites">
+      <span>Killing Bites</span>
     </h3>
   </a>
 </article>
@@ -5691,14 +5666,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1263-chan-truong" aria-label="&#272;&#7885;c Chán &#34;Trường&#34;">
+  <a class="manga-related-card__link" href="/manga/1525-rookies" aria-label="&#272;&#7885;c Rookies">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1263-chan-truong-sm.webp?t=1781874897281"
-          srcset="https://u.truyen.moe/uploads/covers/1263-chan-truong-sm.webp?t=1781874897281 132w, https://u.truyen.moe/uploads/covers/1263-chan-truong-md.webp?t=1781874897281 262w"
+          src="https://u.truyen.moe/uploads/covers/1525-rookies-sm.webp?t=1781675706378"
+          srcset="https://u.truyen.moe/uploads/covers/1525-rookies-sm.webp?t=1781675706378 132w, https://u.truyen.moe/uploads/covers/1525-rookies-md.webp?t=1781675706378 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Chán &#34;Trường&#34;"
+          alt="B&#236;a Rookies"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5707,8 +5682,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Chán &#34;Trường&#34;">
-      <span>Chán &#34;Trường&#34;</span>
+    <h3 class="manga-related-card__title" title="Rookies">
+      <span>Rookies</span>
     </h3>
   </a>
 </article>
@@ -5716,14 +5691,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1110-to-doi-huy-diet-anh-hung-lop-2b" aria-label="&#272;&#7885;c Tổ Đội Hủy Diệt Anh Hùng Lớp 2B">
+  <a class="manga-related-card__link" href="/manga/1253-hasumi-kun-va-hasumi-san" aria-label="&#272;&#7885;c Hasumi-kun và Hasumi-san">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1110-to-doi-huy-diet-anh-hung-lop-2b-sm.webp?t=1776706948480"
-          srcset="https://u.truyen.moe/uploads/covers/1110-to-doi-huy-diet-anh-hung-lop-2b-sm.webp?t=1776706948480 132w, https://u.truyen.moe/uploads/covers/1110-to-doi-huy-diet-anh-hung-lop-2b-md.webp?t=1776706948480 262w"
+          src="https://u.truyen.moe/uploads/covers/1253-hasumi-kun-va-hasumi-san-sm.webp?t=1777779532236"
+          srcset="https://u.truyen.moe/uploads/covers/1253-hasumi-kun-va-hasumi-san-sm.webp?t=1777779532236 132w, https://u.truyen.moe/uploads/covers/1253-hasumi-kun-va-hasumi-san-md.webp?t=1777779532236 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Tổ Đội Hủy Diệt Anh Hùng Lớp 2B"
+          alt="B&#236;a Hasumi-kun và Hasumi-san"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5732,8 +5707,33 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Tổ Đội Hủy Diệt Anh Hùng Lớp 2B">
-      <span>Tổ Đội Hủy Diệt Anh Hùng Lớp 2B</span>
+    <h3 class="manga-related-card__title" title="Hasumi-kun và Hasumi-san">
+      <span>Hasumi-kun và Hasumi-san</span>
+    </h3>
+  </a>
+</article>
+
+                    
+                      
+<article class="manga-related-card" role="listitem">
+  <a class="manga-related-card__link" href="/manga/1280-devilman" aria-label="&#272;&#7885;c Devilman">
+    <div class="manga-related-card__cover " >
+      
+        <img
+          src="https://u.truyen.moe/uploads/covers/1280-devilman-sm.webp?t=1778075280989"
+          srcset="https://u.truyen.moe/uploads/covers/1280-devilman-sm.webp?t=1778075280989 132w, https://u.truyen.moe/uploads/covers/1280-devilman-md.webp?t=1778075280989 262w"
+          sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
+          alt="B&#236;a Devilman"
+          loading="lazy"
+          decoding="async"
+          fetchpriority="low"
+          width="420"
+          height="600"
+        />
+      
+    </div>
+    <h3 class="manga-related-card__title" title="Devilman">
+      <span>Devilman</span>
     </h3>
   </a>
 </article>
@@ -5766,14 +5766,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1544-nangoku-yuta-girl" aria-label="&#272;&#7885;c Nangoku! Yuta Girl">
+  <a class="manga-related-card__link" href="/manga/1327-mayonaka-heart-tune" aria-label="&#272;&#7885;c Mayonaka Heart Tune">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1544-nangoku-yuta-girl-sm.webp?t=1781801427969"
-          srcset="https://u.truyen.moe/uploads/covers/1544-nangoku-yuta-girl-sm.webp?t=1781801427969 132w, https://u.truyen.moe/uploads/covers/1544-nangoku-yuta-girl-md.webp?t=1781801427969 262w"
+          src="https://u.truyen.moe/uploads/covers/1327-mayonaka-heart-tune-sm.webp?t=1781457701317"
+          srcset="https://u.truyen.moe/uploads/covers/1327-mayonaka-heart-tune-sm.webp?t=1781457701317 132w, https://u.truyen.moe/uploads/covers/1327-mayonaka-heart-tune-md.webp?t=1781457701317 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a Nangoku! Yuta Girl"
+          alt="B&#236;a Mayonaka Heart Tune"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5782,8 +5782,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="Nangoku! Yuta Girl">
-      <span>Nangoku! Yuta Girl</span>
+    <h3 class="manga-related-card__title" title="Mayonaka Heart Tune">
+      <span>Mayonaka Heart Tune</span>
     </h3>
   </a>
 </article>
@@ -5791,14 +5791,14 @@
                     
                       
 <article class="manga-related-card" role="listitem">
-  <a class="manga-related-card__link" href="/manga/1287-be-blues-ao-ni-nare" aria-label="&#272;&#7885;c BE BLUES ~Ao ni Nare~">
+  <a class="manga-related-card__link" href="/manga/817-tokyo-kinoko-nu-sinh-trung-hoc-manh-nhat-the-gioi-voi-ki-nang-giao-tiep-cuc-te" aria-label="&#272;&#7885;c Tokyo Kinoko: Nữ Sinh Trung Học Mạnh Nhất Thế Giới Với Kĩ Năng Giao Tiếp Cực Tệ">
     <div class="manga-related-card__cover " >
       
         <img
-          src="https://u.truyen.moe/uploads/covers/1287-be-blues-ao-ni-nare-sm.webp?t=1779453023328"
-          srcset="https://u.truyen.moe/uploads/covers/1287-be-blues-ao-ni-nare-sm.webp?t=1779453023328 132w, https://u.truyen.moe/uploads/covers/1287-be-blues-ao-ni-nare-md.webp?t=1779453023328 262w"
+          src="https://u.truyen.moe/uploads/covers/817-tokyo-kinoko-nu-sinh-trung-hoc-manh-nhat-the-gioi-voi-ki-nang-giao-tiep-cuc-te-sm.webp?t=1775223991524"
+          srcset="https://u.truyen.moe/uploads/covers/817-tokyo-kinoko-nu-sinh-trung-hoc-manh-nhat-the-gioi-voi-ki-nang-giao-tiep-cuc-te-sm.webp?t=1775223991524 132w, https://u.truyen.moe/uploads/covers/817-tokyo-kinoko-nu-sinh-trung-hoc-manh-nhat-the-gioi-voi-ki-nang-giao-tiep-cuc-te-md.webp?t=1775223991524 262w"
           sizes="(max-width: 520px) 78px, (max-width: 760px) 20vw, 112px"
-          alt="B&#236;a BE BLUES ~Ao ni Nare~"
+          alt="B&#236;a Tokyo Kinoko: Nữ Sinh Trung Học Mạnh Nhất Thế Giới Với Kĩ Năng Giao Tiếp Cực Tệ"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -5807,8 +5807,8 @@
         />
       
     </div>
-    <h3 class="manga-related-card__title" title="BE BLUES ~Ao ni Nare~">
-      <span>BE BLUES ~Ao ni Nare~</span>
+    <h3 class="manga-related-card__title" title="Tokyo Kinoko: Nữ Sinh Trung Học Mạnh Nhất Thế Giới Với Kĩ Năng Giao Tiếp Cực Tệ">
+      <span>Tokyo Kinoko: Nữ Sinh Trung Học Mạnh Nhất Thế Giới Với Kĩ Năng Giao Tiếp Cực Tệ</span>
     </h3>
   </a>
 </article>
@@ -5868,7 +5868,7 @@
                 </section>
                 
                   </main>
-                  <script nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">
+                  <script nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">
   (() => {
     const commentsRoot = document.querySelector("#comments");
     if (!commentsRoot) return;
@@ -5975,7 +5975,7 @@
       const script = document.createElement("script");
       script.src = scriptSrc;
       script.defer = true;
-      script.nonce = "GJF2CdmlOK9w8YBj1Y9SfdTd";
+      script.nonce = "T6XFm+YnjNmGGuXp5Qn4ML2T";
       script.addEventListener("load", () => {
         notifyReaderLayout("hydrate-loaded");
         markScriptReady();
@@ -6114,6 +6114,6 @@
 
 
                       </div>
-    <script nonce="GJF2CdmlOK9w8YBj1Y9SfdTd">(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.nonce='GJF2CdmlOK9w8YBj1Y9SfdTd';d.innerHTML="window.__CF$cv$params={r:'a2b9fceb2a928523',t:'MTc4NjgxNTY2Mw=='};var a=document.createElement('script');a.nonce='GJF2CdmlOK9w8YBj1Y9SfdTd';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    <script nonce="T6XFm+YnjNmGGuXp5Qn4ML2T">(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.nonce='T6XFm+YnjNmGGuXp5Qn4ML2T';d.innerHTML="window.__CF$cv$params={r:'a2bd1baa2803f4fc',t:'MTc4Njg0ODM4MA=='};var a=document.createElement('script');a.nonce='T6XFm+YnjNmGGuXp5Qn4ML2T';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 
   </html>
