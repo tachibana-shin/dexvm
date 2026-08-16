@@ -23,6 +23,8 @@ pub(crate) use io::TABLE as IO_TABLE;
 pub(crate) use jvm::TABLE as JVM_TABLE;
 pub(crate) use lazy::{
     lazy_lazy_mode_none, lazy_lazy_mode_publication, lazy_lazy_mode_synchronized,
+    lazy_regex_option_comments, lazy_regex_option_dot_matches_all, lazy_regex_option_ignore_case,
+    lazy_regex_option_literal, lazy_regex_option_multiline, lazy_regex_option_unix_lines,
     TABLE as LAZY_TABLE,
 };
 pub(crate) use ranges::TABLE as RANGES_TABLE;

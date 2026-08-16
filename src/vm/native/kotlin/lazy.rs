@@ -87,6 +87,42 @@ pub(crate) fn lazy_lazy_mode_none(vm: &mut Vm) -> JValue {
     lazy_mode_enum(vm, "NONE", 2)
 }
 
+fn regex_option_enum(vm: &mut Vm, name: &str, ordinal: i32) -> JValue {
+    alloc(
+        vm,
+        "Lkotlin/text/RegexOption;",
+        Native::Enum {
+            name: name.into(),
+            ordinal,
+        },
+    )
+    .expect("alloc RegexOption")
+}
+
+pub(crate) fn lazy_regex_option_unix_lines(vm: &mut Vm) -> JValue {
+    regex_option_enum(vm, "UNIX_LINES", 0)
+}
+
+pub(crate) fn lazy_regex_option_comments(vm: &mut Vm) -> JValue {
+    regex_option_enum(vm, "COMMENTS", 1)
+}
+
+pub(crate) fn lazy_regex_option_ignore_case(vm: &mut Vm) -> JValue {
+    regex_option_enum(vm, "IGNORE_CASE", 2)
+}
+
+pub(crate) fn lazy_regex_option_multiline(vm: &mut Vm) -> JValue {
+    regex_option_enum(vm, "MULTILINE", 3)
+}
+
+pub(crate) fn lazy_regex_option_dot_matches_all(vm: &mut Vm) -> JValue {
+    regex_option_enum(vm, "DOT_MATCHES_ALL", 4)
+}
+
+pub(crate) fn lazy_regex_option_literal(vm: &mut Vm) -> JValue {
+    regex_option_enum(vm, "LITERAL", 5)
+}
+
 pub(crate) const TABLE: &[NativeEntry] = &[
     ne!(
         "Lkotlin/Lazy;",

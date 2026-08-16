@@ -353,6 +353,45 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
     ),
     #[cfg(feature = "kotlin")]
     shim!(
+        "Lkotlin/text/RegexOption;",
+        Some("Ljava/lang/Enum;"),
+        &[],
+        ACC_PUBLIC | ACC_FINAL | ACC_ENUM,
+        [
+            sdef!(
+                "UNIX_LINES",
+                "Lkotlin/text/RegexOption;",
+                ShimValue::Lazy(native::lazy_regex_option_unix_lines)
+            ),
+            sdef!(
+                "COMMENTS",
+                "Lkotlin/text/RegexOption;",
+                ShimValue::Lazy(native::lazy_regex_option_comments)
+            ),
+            sdef!(
+                "IGNORE_CASE",
+                "Lkotlin/text/RegexOption;",
+                ShimValue::Lazy(native::lazy_regex_option_ignore_case)
+            ),
+            sdef!(
+                "MULTILINE",
+                "Lkotlin/text/RegexOption;",
+                ShimValue::Lazy(native::lazy_regex_option_multiline)
+            ),
+            sdef!(
+                "DOT_MATCHES_ALL",
+                "Lkotlin/text/RegexOption;",
+                ShimValue::Lazy(native::lazy_regex_option_dot_matches_all)
+            ),
+            sdef!(
+                "LITERAL",
+                "Lkotlin/text/RegexOption;",
+                ShimValue::Lazy(native::lazy_regex_option_literal)
+            ),
+        ]
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
         "Lkotlin/text/Charsets;",
         Some("Ljava/lang/Object;"),
         &[],
