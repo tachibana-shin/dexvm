@@ -378,8 +378,12 @@ pub(crate) fn element_attr(vm: &mut Vm, args: &[JValue]) -> R {
 }
 
 /// jsoup `abs:` attribute semantics: resolve a relative URL against the
-/// document base URI (the response URL).
+/// document base URI (the response URL). Leading/trailing whitespace is
+/// trimmed first: some WordPress themes emit attributes like
+/// `src=" https://host/img.jpg"`, which real jsoup keeps verbatim and
+/// java.net.URL then mangles into a relative join.
 fn jsoup_abs_attr(doc: &JsoupDocRef, raw: &str) -> String {
+    let raw = raw.trim();
     let Some(base) = doc.base.as_ref() else {
         return raw.to_string();
     };

@@ -207,6 +207,27 @@ fn attr_abs_hasattr_tag() {
 }
 
 #[test]
+fn abs_attr_trims_leading_whitespace() {
+    with_vm(|vm| {
+        // Some WordPress themes emit `src=" https://host/img.jpg"`; the
+        // whitespace must not leak into the resolved URL.
+        let html = r#"<img id="i" src=" https://allporncomics.co/wp-content/uploads/00.jpg" class="wp-manga-chapter-img">"#;
+        let doc = doc_of(
+            vm,
+            html,
+            Some("https://allporncomics.co/comic/foo/chapter-10/"),
+        );
+        let sel_img = s(vm, "img");
+        let img = element_select_first(vm, &[doc, sel_img]).unwrap();
+        let sel_abs = s(vm, "abs:src");
+        assert_eq!(
+            s_of!(vm, element_attr(vm, &[img, sel_abs])),
+            "https://allporncomics.co/wp-content/uploads/00.jpg"
+        );
+    });
+}
+
+#[test]
 fn abs_attr_without_base_stays_raw() {
     with_vm(|vm| {
         let html = r#"<a href="/manga/5">Title</a>"#;
