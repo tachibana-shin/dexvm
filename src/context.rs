@@ -43,6 +43,17 @@ pub struct SettingDefinition {
     pub enabled: bool,
     pub visible: bool,
     pub children: Vec<SettingDefinition>,
+    /// Dotted class name of the AndroidX preference, e.g.
+    /// `androidx.preference.ListPreference` (None for preference screens).
+    pub kind: Option<String>,
+    /// `ListPreference` entry display names.
+    pub entries: Vec<String>,
+    /// `ListPreference` entry values.
+    pub entry_values: Vec<String>,
+    /// String-typed default value (single-value preferences).
+    pub default_text: Option<String>,
+    /// Set-typed default value (`MultiSelectListPreference`).
+    pub default_values: Vec<String>,
 }
 
 /// Errors produced while constructing a [`Context`] from bytes or a file.
@@ -257,12 +268,8 @@ impl Context {
             }
         }
         fn walk(vm: &Vm, v: JValue) -> Option<SettingDefinition> {
-            match vm
-                .arena
-                .objects
-                .get(v.as_obj() as usize)
-                .and_then(|o| o.native.as_ref())
-            {
+            let id = v.as_obj() as usize;
+            match vm.arena.objects.get(id).and_then(|o| o.native.as_ref()) {
                 Some(Native::Preference {
                     key,
                     title,
@@ -270,6 +277,8 @@ impl Context {
                     default_value,
                     enabled,
                     visible,
+                    entries,
+                    entry_values,
                     ..
                 }) => Some(SettingDefinition {
                     key: text(vm, *key),
@@ -279,6 +288,27 @@ impl Context {
                     enabled: *enabled,
                     visible: *visible,
                     children: Vec::new(),
+                    kind: vm.arena.objects.get(id).map(|o| vm.class_desc_str(o.class)),
+                    entries: entries.iter().filter_map(|e| text(vm, Some(*e))).collect(),
+                    entry_values: entry_values
+                        .iter()
+                        .filter_map(|e| text(vm, Some(*e)))
+                        .collect(),
+                    default_text: text(vm, Some(*default_value)),
+                    default_values: match default_value {
+                        JValue::Obj(id) => match vm
+                            .arena
+                            .objects
+                            .get(*id as usize)
+                            .and_then(|o| o.native.as_ref())
+                        {
+                            Some(Native::Set(items)) => {
+                                items.iter().filter_map(|e| text(vm, Some(*e))).collect()
+                            }
+                            _ => Vec::new(),
+                        },
+                        _ => Vec::new(),
+                    },
                 }),
                 Some(Native::PreferenceScreen { children, title }) => Some(SettingDefinition {
                     key: None,
@@ -288,6 +318,11 @@ impl Context {
                     enabled: true,
                     visible: true,
                     children: children.iter().filter_map(|c| walk(vm, *c)).collect(),
+                    kind: None,
+                    entries: Vec::new(),
+                    entry_values: Vec::new(),
+                    default_text: None,
+                    default_values: Vec::new(),
                 }),
                 _ => None,
             }
@@ -1033,5 +1068,130 @@ mod tests {
         ctx.update_setting("source_123", "mode", PreferenceValue::Int(7))
             .unwrap();
         assert_eq!(notified.get(), 1);
+    }
+
+    #[test]
+    fn preference_definitions_expose_kind_entries_and_defaults() {
+        let data = std::fs::read("fixtures/classes.dex").unwrap();
+        let mut ctx = Context::new_with(&data, SandboxOptions::allow_all()).unwrap();
+        let vm = ctx.vm();
+        fn str_obj(vm: &mut Vm, s: &str) -> JValue {
+            vm.alloc_string(s)
+        }
+        fn pref(vm: &mut Vm, desc: &str) -> u32 {
+            vm.ensure_class_by_desc(desc).unwrap()
+        }
+
+        let list_cls = pref(vm, "Landroidx/preference/ListPreference;");
+        let multi_cls = pref(vm, "Landroidx/preference/MultiSelectListPreference;");
+        let switch_cls = pref(vm, "Landroidx/preference/SwitchPreferenceCompat;");
+        let screen_cls = pref(vm, "Landroidx/preference/PreferenceScreen;");
+        let domain_key = str_obj(vm, "domain");
+        let domain_title = str_obj(vm, "Chọn tên miền");
+        let domain_default = str_obj(vm, "a.net");
+        let domain_entries = vec![str_obj(vm, "Domain A"), str_obj(vm, "Domain B")];
+        let domain_values = vec![str_obj(vm, "a.net"), str_obj(vm, "b.net")];
+        let genres_key = str_obj(vm, "genres");
+        let genres_title = str_obj(vm, "Genres");
+        let genres_entries = vec![str_obj(vm, "Action"), str_obj(vm, "Drama")];
+        let genres_values = vec![str_obj(vm, "action"), str_obj(vm, "drama")];
+        let genres_default = str_obj(vm, "action");
+        let genres_default2 = str_obj(vm, "drama");
+        let blur_key = str_obj(vm, "blur");
+        let blur_title = str_obj(vm, "Blur covers");
+        let screen_title = str_obj(vm, "Settings");
+
+        let list = vm.arena.alloc(
+            list_cls,
+            Vec::new(),
+            Some(Native::Preference {
+                key: Some(domain_key),
+                title: Some(domain_title),
+                summary: None,
+                default_value: domain_default,
+                enabled: true,
+                visible: true,
+                entries: domain_entries,
+                entry_values: domain_values,
+            }),
+        );
+        let set = vm.arena.alloc(
+            0,
+            Vec::new(),
+            Some(Native::Set(vec![genres_default, genres_default2])),
+        );
+        let multi = vm.arena.alloc(
+            multi_cls,
+            Vec::new(),
+            Some(Native::Preference {
+                key: Some(genres_key),
+                title: Some(genres_title),
+                summary: None,
+                default_value: JValue::Obj(set),
+                enabled: true,
+                visible: true,
+                entries: genres_entries,
+                entry_values: genres_values,
+            }),
+        );
+        let switch = vm.arena.alloc(
+            switch_cls,
+            Vec::new(),
+            Some(Native::Preference {
+                key: Some(blur_key),
+                title: Some(blur_title),
+                summary: None,
+                default_value: JValue::Int(1),
+                enabled: true,
+                visible: true,
+                entries: Vec::new(),
+                entry_values: Vec::new(),
+            }),
+        );
+        vm.arena.alloc(
+            screen_cls,
+            Vec::new(),
+            Some(Native::PreferenceScreen {
+                children: vec![JValue::Obj(list), JValue::Obj(multi), JValue::Obj(switch)],
+                title: Some(screen_title),
+            }),
+        );
+
+        let defs = ctx.get_all_setting_definitions();
+        assert_eq!(defs.len(), 1, "only the root screen is returned");
+        let root = &defs[0];
+        assert_eq!(root.kind, None);
+        assert_eq!(root.children.len(), 3);
+        let by_key: std::collections::HashMap<&str, &crate::context::SettingDefinition> = root
+            .children
+            .iter()
+            .map(|c| (c.key.as_deref().unwrap(), c))
+            .collect();
+
+        let domain = by_key["domain"];
+        assert_eq!(
+            domain.kind.as_deref(),
+            Some("androidx.preference.ListPreference")
+        );
+        assert_eq!(domain.entries, vec!["Domain A", "Domain B"]);
+        assert_eq!(domain.entry_values, vec!["a.net", "b.net"]);
+        assert_eq!(domain.default_text.as_deref(), Some("a.net"));
+        assert!(domain.default_values.is_empty());
+
+        let genres = by_key["genres"];
+        assert_eq!(
+            genres.kind.as_deref(),
+            Some("androidx.preference.MultiSelectListPreference")
+        );
+        assert_eq!(genres.default_values, vec!["action", "drama"]);
+        assert_eq!(genres.default_text, None);
+
+        let blur = by_key["blur"];
+        assert_eq!(
+            blur.kind.as_deref(),
+            Some("androidx.preference.SwitchPreferenceCompat")
+        );
+        assert_eq!(blur.default_value, JValue::Int(1));
+        assert_eq!(blur.default_text, None);
     }
 }
