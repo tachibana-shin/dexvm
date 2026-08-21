@@ -754,6 +754,7 @@ impl Vm {
                 interfaces: &[],
                 flags: class::ACC_PUBLIC,
                 statics: &[],
+                instance_fields: &[],
             });
         let superclass = match def.super_desc {
             Some(s) => Some(self.ensure_class_by_desc(s)?),
@@ -830,12 +831,31 @@ impl Vm {
             }
             static_fields.insert((name, ty), (id, off));
         }
+
+        // instance fields declared on the shim; offsets continue after the
+        // superclass's so `iget`/`iput` resolve like dex-declared fields.
+        let mut field_offsets = superclass
+            .map(|s| self.classes[s as usize].field_offsets.clone())
+            .unwrap_or_default();
+        let mut instance_fields = superclass
+            .map(|s| self.classes[s as usize].instance_fields.clone())
+            .unwrap_or_default();
+        for (fname, fty) in def.instance_fields {
+            let name = self.intern(fname);
+            let ty = self.intern(fty);
+            let off = instance_fields.len() as u32;
+            field_offsets.insert((name, ty), off);
+            instance_fields.push((name, ty, class::ACC_PUBLIC));
+        }
+
         let cl = &mut self.classes[id as usize];
         cl.methods = methods;
         cl.dispatch = dispatch;
         cl.statics = statics;
         cl.statics_lazy = statics_lazy;
         cl.static_fields = static_fields;
+        cl.field_offsets = field_offsets;
+        cl.instance_fields = instance_fields;
         Ok(id)
     }
 

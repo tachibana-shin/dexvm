@@ -85,6 +85,10 @@ pub struct ShimDef {
     pub interfaces: &'static [&'static str],
     pub flags: u32,
     pub statics: &'static [ShimStaticDef],
+    /// Instance fields `(name, descriptor)` declared on the shim, so
+    /// extension code can `iget`/`iput` them (e.g. Kotlin's
+    /// `Ref$ObjectRef.element`). Offsets continue after the superclass's.
+    pub instance_fields: &'static [(&'static str, &'static str)],
 }
 
 macro_rules! shim {
@@ -95,6 +99,7 @@ macro_rules! shim {
             interfaces: $interfaces,
             flags: $flags,
             statics: &[],
+            instance_fields: &[],
         }
     };
     ($desc:expr, $super_desc:expr, $interfaces:expr, $flags:expr, [$($s:expr),* $(,)?]) => {
@@ -104,6 +109,17 @@ macro_rules! shim {
             interfaces: $interfaces,
             flags: $flags,
             statics: &[$($s),*],
+            instance_fields: &[],
+        }
+    };
+    ($desc:expr, $super_desc:expr, $interfaces:expr, $flags:expr, [$($s:expr),* $(,)?], fields = [$(($fname:expr, $fty:expr)),* $(,)?]) => {
+        ShimDef {
+            desc: $desc,
+            super_desc: $super_desc,
+            interfaces: $interfaces,
+            flags: $flags,
+            statics: &[$($s),*],
+            instance_fields: &[$(($fname, $fty)),*],
         }
     };
 }
@@ -2336,35 +2352,81 @@ pub static SHIM_CLASSES: &[ShimDef] = &[
         "Lkotlin/jvm/internal/Ref$BooleanRef;",
         Some("Ljava/lang/Object;"),
         &[],
-        0
+        0,
+        [],
+        fields = [("element", "Z")]
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/Ref$ByteRef;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [],
+        fields = [("element", "B")]
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/Ref$CharRef;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [],
+        fields = [("element", "C")]
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/Ref$DoubleRef;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [],
+        fields = [("element", "D")]
     ),
     #[cfg(feature = "kotlin")]
     shim!(
         "Lkotlin/jvm/internal/Ref$FloatRef;",
         Some("Ljava/lang/Object;"),
         &[],
-        0
+        0,
+        [],
+        fields = [("element", "F")]
     ),
     #[cfg(feature = "kotlin")]
     shim!(
         "Lkotlin/jvm/internal/Ref$IntRef;",
         Some("Ljava/lang/Object;"),
         &[],
-        0
+        0,
+        [],
+        fields = [("element", "I")]
     ),
     #[cfg(feature = "kotlin")]
     shim!(
         "Lkotlin/jvm/internal/Ref$LongRef;",
         Some("Ljava/lang/Object;"),
         &[],
-        0
+        0,
+        [],
+        fields = [("element", "J")]
     ),
     #[cfg(feature = "kotlin")]
     shim!(
         "Lkotlin/jvm/internal/Ref$ObjectRef;",
         Some("Ljava/lang/Object;"),
         &[],
-        0
+        0,
+        [],
+        fields = [("element", "Ljava/lang/Object;")]
+    ),
+    #[cfg(feature = "kotlin")]
+    shim!(
+        "Lkotlin/jvm/internal/Ref$ShortRef;",
+        Some("Ljava/lang/Object;"),
+        &[],
+        0,
+        [],
+        fields = [("element", "S")]
     ),
     #[cfg(feature = "kotlin")]
     shim!(
